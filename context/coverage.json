@@ -1,0 +1,12 @@
+{
+  "as_of": "2026-08-23",
+  "machines_total": 100,
+  "machines_with_any_character_mapping": 81,
+  "machines_with_at_least_one_verified_birthday_character": 39,
+  "characters_total": 180,
+  "verified_birthdays_total": 120,
+  "verified_primary": 9,
+  "verified_secondary": 111,
+  "unknown_birthdays": 60,
+  "note": "未確認は推測で埋めず、unknownのまま保持。"
+}
