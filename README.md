@@ -68,6 +68,30 @@ python3 scripts/query_birthdays.py --all-statuses machine からくり
 python3 scripts/query_birthdays.py --json date 12-20
 ```
 
+## 朝の共有レポート
+
+`scripts/morning_report.py` は「今日の誕生日 + 今後N日」を1つにまとめて出します。
+毎朝の定期通知に流すことを想定した出力です。
+
+```bash
+python3 scripts/morning_report.py              # 今日 + 今後7日
+python3 scripts/morning_report.py --days 14
+python3 scripts/morning_report.py --protagonists-only
+python3 scripts/morning_report.py --json
+```
+
+**該当が0件のときは何も出力しません。** 呼び出し側はこれを見て通知自体を抑止できます。
+`--always` を付けると「該当なし」と明示します。
+
+verified誕生日は年365日のうち96日（26%）にしか該当しないため、「今日だけ」だと
+4日に3日は空振りします。7日窓にすると347日（95%）で何かが出ます。
+
+## テスト
+
+```bash
+python3 -m unittest discover -s tests
+```
+
 ## Claude Code
 
 リポジトリ直下でClaude Codeを起動してください。`CLAUDE.md`に運用ルールがあります。

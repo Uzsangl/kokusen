@@ -27,6 +27,10 @@
 「来週の誕生日」
 → `python3 scripts/query_birthdays.py upcoming --days 7`
 
+「朝の共有」「今日なんかある？」
+→ `python3 scripts/morning_report.py`
+出力が空なら該当0件。**その場合は通知しない**（「該当なし」を毎朝送らない）。
+
 ## データ編集
 
 ### characters.csv
