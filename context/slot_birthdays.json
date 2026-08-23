@@ -1,0 +1,3004 @@
+{
+  "generated_from": "data/*.csv",
+  "policy": "verified birthdays only",
+  "characters": [
+    {
+      "character_id": "C070",
+      "character_name": "ジュリ",
+      "franchise": "ストリートファイター",
+      "birthday_mmdd": "01-01",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M033",
+          "machine_name": "スマスロ ストリートファイター6",
+          "relation": "major",
+          "priority": 4
+        }
+      ]
+    },
+    {
+      "character_id": "C005",
+      "character_name": "四宮かぐや",
+      "franchise": "かぐや様は告らせたい",
+      "birthday_mmdd": "01-01",
+      "birthday_status": "verified_primary",
+      "source_id": "SRC006",
+      "verified_at": "2026-08-23",
+      "notes": "共同主人公",
+      "source": {
+        "source_id": "SRC006",
+        "title": "かぐや様は告らせたい CHARACTER",
+        "publisher": "アニメ『かぐや様は告らせたい』公式",
+        "source_tier": "primary",
+        "url": "https://kaguya.love/2nd/character/",
+        "accessed_at": "2026-08-23",
+        "notes": "四宮かぐや・白銀御行等の公式プロフィール確認用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M018",
+          "machine_name": "パチスロ かぐや様は告らせたい",
+          "relation": "co_protagonist",
+          "priority": 1
+        }
+      ]
+    },
+    {
+      "character_id": "C011",
+      "character_name": "神楽ひかり",
+      "franchise": "少女☆歌劇 レヴュースタァライト",
+      "birthday_mmdd": "01-08",
+      "birthday_status": "verified_primary",
+      "source_id": "SRC010",
+      "verified_at": "2026-08-23",
+      "notes": "共同主人公",
+      "source": {
+        "source_id": "SRC010",
+        "title": "少女☆歌劇 レヴュースタァライト 神楽ひかり誕生日",
+        "publisher": "Bushiroad",
+        "source_tier": "primary",
+        "url": "https://revuestarlight.bushimo.jp/2020/01/08/264/",
+        "accessed_at": "2026-08-23",
+        "notes": "神楽ひかり1/8の一次確認用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M060",
+          "machine_name": "L少女☆歌劇 レヴュースタァライト -The SLOT-",
+          "relation": "co_protagonist",
+          "priority": 2
+        }
+      ]
+    },
+    {
+      "character_id": "C023",
+      "character_name": "犬塚キューマ",
+      "franchise": "革命機ヴァルヴレイヴ",
+      "birthday_mmdd": "01-09",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": []
+    },
+    {
+      "character_id": "C093",
+      "character_name": "レイコ",
+      "franchise": "南国育ち",
+      "birthday_mmdd": "01-19",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M055",
+          "machine_name": "L南国育ち SPECIAL",
+          "relation": "major",
+          "priority": 3
+        }
+      ]
+    },
+    {
+      "character_id": "C086",
+      "character_name": "エキドナ",
+      "franchise": "Re:ゼロから始める異世界生活",
+      "birthday_mmdd": "01-24",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": []
+    },
+    {
+      "character_id": "C017",
+      "character_name": "侑那",
+      "franchise": "甲鉄城のカバネリ",
+      "birthday_mmdd": "01-26",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": []
+    },
+    {
+      "character_id": "C074",
+      "character_name": "バルログ",
+      "franchise": "ストリートファイター",
+      "birthday_mmdd": "01-27",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": []
+    },
+    {
+      "character_id": "C052",
+      "character_name": "南野ハナ",
+      "franchise": "沖ドキ！",
+      "birthday_mmdd": "01-27",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "代表キャラクター",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M087",
+          "machine_name": "スマスロ 沖ドキ！DUO アンコール",
+          "relation": "representative",
+          "priority": 2
+        },
+        {
+          "machine_id": "M019",
+          "machine_name": "沖ドキ！BLACK",
+          "relation": "representative",
+          "priority": 2
+        },
+        {
+          "machine_id": "M023",
+          "machine_name": "沖ドキ！GOLD-30",
+          "relation": "representative",
+          "priority": 2
+        }
+      ]
+    },
+    {
+      "character_id": "C080",
+      "character_name": "姫",
+      "franchise": "吉宗",
+      "birthday_mmdd": "02-01",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M067",
+          "machine_name": "吉宗",
+          "relation": "major",
+          "priority": 2
+        },
+        {
+          "machine_id": "M036",
+          "machine_name": "真打 吉宗",
+          "relation": "major",
+          "priority": 2
+        }
+      ]
+    },
+    {
+      "character_id": "C085",
+      "character_name": "ラム",
+      "franchise": "Re:ゼロから始める異世界生活",
+      "birthday_mmdd": "02-02",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M100",
+          "machine_name": "スマスロ Re:ゼロから始める異世界生活 season2",
+          "relation": "major",
+          "priority": 4
+        }
+      ]
+    },
+    {
+      "character_id": "C084",
+      "character_name": "レム",
+      "franchise": "Re:ゼロから始める異世界生活",
+      "birthday_mmdd": "02-02",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M100",
+          "machine_name": "スマスロ Re:ゼロから始める異世界生活 season2",
+          "relation": "major",
+          "priority": 3
+        }
+      ]
+    },
+    {
+      "character_id": "C024",
+      "character_name": "連坊小路アキラ",
+      "franchise": "革命機ヴァルヴレイヴ",
+      "birthday_mmdd": "02-02",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": []
+    },
+    {
+      "character_id": "C100",
+      "character_name": "ラクス・クライン",
+      "franchise": "機動戦士ガンダムSEED",
+      "birthday_mmdd": "02-05",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M071",
+          "machine_name": "Lパチスロ 機動戦士ガンダムSEED",
+          "relation": "major",
+          "priority": 3
+        }
+      ]
+    },
+    {
+      "character_id": "C061",
+      "character_name": "サチ",
+      "franchise": "ソードアート・オンライン",
+      "birthday_mmdd": "02-11",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": []
+    },
+    {
+      "character_id": "C072",
+      "character_name": "ブランカ",
+      "franchise": "ストリートファイター",
+      "birthday_mmdd": "02-12",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": []
+    },
+    {
+      "character_id": "C068",
+      "character_name": "ケン",
+      "franchise": "ストリートファイター",
+      "birthday_mmdd": "02-14",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M033",
+          "machine_name": "スマスロ ストリートファイター6",
+          "relation": "major",
+          "priority": 2
+        }
+      ]
+    },
+    {
+      "character_id": "C044",
+      "character_name": "新門紅丸",
+      "franchise": "炎炎ノ消防隊",
+      "birthday_mmdd": "02-20",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M020",
+          "machine_name": "Lパチスロ 炎炎ノ消防隊2",
+          "relation": "major",
+          "priority": 3
+        }
+      ]
+    },
+    {
+      "character_id": "C045",
+      "character_name": "環古達",
+      "franchise": "炎炎ノ消防隊",
+      "birthday_mmdd": "02-22",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M020",
+          "machine_name": "Lパチスロ 炎炎ノ消防隊2",
+          "relation": "major",
+          "priority": 4
+        }
+      ]
+    },
+    {
+      "character_id": "C025",
+      "character_name": "野火マリエ",
+      "franchise": "革命機ヴァルヴレイヴ",
+      "birthday_mmdd": "02-27",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": []
+    },
+    {
+      "character_id": "C014",
+      "character_name": "生駒",
+      "franchise": "甲鉄城のカバネリ",
+      "birthday_mmdd": "02-28",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主人公",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M004",
+          "machine_name": "スマスロ 甲鉄城のカバネリ 海門決戦",
+          "relation": "protagonist",
+          "priority": 1
+        }
+      ]
+    },
+    {
+      "character_id": "C030",
+      "character_name": "カイン",
+      "franchise": "革命機ヴァルヴレイヴ",
+      "birthday_mmdd": "02-29",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": []
+    },
+    {
+      "character_id": "C069",
+      "character_name": "春麗",
+      "franchise": "ストリートファイター",
+      "birthday_mmdd": "03-01",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M033",
+          "machine_name": "スマスロ ストリートファイター6",
+          "relation": "major",
+          "priority": 3
+        }
+      ]
+    },
+    {
+      "character_id": "C036",
+      "character_name": "石上優",
+      "franchise": "かぐや様は告らせたい",
+      "birthday_mmdd": "03-03",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M018",
+          "machine_name": "パチスロ かぐや様は告らせたい",
+          "relation": "major",
+          "priority": 4
+        }
+      ]
+    },
+    {
+      "character_id": "C037",
+      "character_name": "藤原千花",
+      "franchise": "かぐや様は告らせたい",
+      "birthday_mmdd": "03-03",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M018",
+          "machine_name": "パチスロ かぐや様は告らせたい",
+          "relation": "major",
+          "priority": 3
+        }
+      ]
+    },
+    {
+      "character_id": "C020",
+      "character_name": "青島優子",
+      "franchise": "モンキーターン",
+      "birthday_mmdd": "03-07",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M007",
+          "machine_name": "スマスロモンキーターンV",
+          "relation": "major",
+          "priority": 2
+        }
+      ]
+    },
+    {
+      "character_id": "C062",
+      "character_name": "エギル",
+      "franchise": "ソードアート・オンライン",
+      "birthday_mmdd": "03-09",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": []
+    },
+    {
+      "character_id": "C046",
+      "character_name": "ヴィクトル・リヒト",
+      "franchise": "炎炎ノ消防隊",
+      "birthday_mmdd": "03-14",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": []
+    },
+    {
+      "character_id": "C055",
+      "character_name": "土宮神楽",
+      "franchise": "喰霊-零-",
+      "birthday_mmdd": "03-22",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "共同主人公",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M026",
+          "machine_name": "Lパチスロ 喰霊-零-Re",
+          "relation": "co_protagonist",
+          "priority": 1
+        }
+      ]
+    },
+    {
+      "character_id": "C032",
+      "character_name": "アリサ・イリーニチナ・アミエーラ",
+      "franchise": "ゴッドイーター",
+      "birthday_mmdd": "03-25",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M016",
+          "machine_name": "スマスロ ゴッドイーター リザレクション",
+          "relation": "major",
+          "priority": 2
+        }
+      ]
+    },
+    {
+      "character_id": "C047",
+      "character_name": "秋樽桜備",
+      "franchise": "炎炎ノ消防隊",
+      "birthday_mmdd": "03-27",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": []
+    },
+    {
+      "character_id": "C103",
+      "character_name": "ディアッカ・エルスマン",
+      "franchise": "機動戦士ガンダムSEED",
+      "birthday_mmdd": "03-29",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": []
+    },
+    {
+      "character_id": "C106",
+      "character_name": "綾波レイ",
+      "franchise": "エヴァンゲリオン",
+      "birthday_mmdd": "03-30",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M076",
+          "machine_name": "LBパチスロ ヱヴァンゲリヲン ～約束の扉～",
+          "relation": "major",
+          "priority": 2
+        },
+        {
+          "machine_id": "M092",
+          "machine_name": "Lパチスロ シン・エヴァンゲリオン",
+          "relation": "major",
+          "priority": 2
+        }
+      ]
+    },
+    {
+      "character_id": "C110",
+      "character_name": "真希波・マリ・イラストリアス",
+      "franchise": "エヴァンゲリオン",
+      "birthday_mmdd": "03-31",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": []
+    },
+    {
+      "character_id": "C082",
+      "character_name": "ナツキ・スバル",
+      "franchise": "Re:ゼロから始める異世界生活",
+      "birthday_mmdd": "04-01",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主人公",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M049",
+          "machine_name": "A-SLOT+ 異世界かるてっとBT",
+          "relation": "major",
+          "priority": 1
+        },
+        {
+          "machine_id": "M100",
+          "machine_name": "スマスロ Re:ゼロから始める異世界生活 season2",
+          "relation": "protagonist",
+          "priority": 1
+        }
+      ]
+    },
+    {
+      "character_id": "C038",
+      "character_name": "早坂愛",
+      "franchise": "かぐや様は告らせたい",
+      "birthday_mmdd": "04-02",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": []
+    },
+    {
+      "character_id": "C094",
+      "character_name": "まどか",
+      "franchise": "南国育ち",
+      "birthday_mmdd": "04-05",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": []
+    },
+    {
+      "character_id": "C090",
+      "character_name": "ダクネス",
+      "franchise": "この素晴らしい世界に祝福を！",
+      "birthday_mmdd": "04-06",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": []
+    },
+    {
+      "character_id": "C048",
+      "character_name": "アイリス",
+      "franchise": "炎炎ノ消防隊",
+      "birthday_mmdd": "04-10",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": []
+    },
+    {
+      "character_id": "C026",
+      "character_name": "指南ショーコ",
+      "franchise": "革命機ヴァルヴレイヴ",
+      "birthday_mmdd": "04-11",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": []
+    },
+    {
+      "character_id": "C073",
+      "character_name": "ベガ",
+      "franchise": "ストリートファイター",
+      "birthday_mmdd": "04-17",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": []
+    },
+    {
+      "character_id": "C049",
+      "character_name": "ヴァルカン・ジョゼフ",
+      "franchise": "炎炎ノ消防隊",
+      "birthday_mmdd": "04-18",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": []
+    },
+    {
+      "character_id": "C063",
+      "character_name": "リーファ",
+      "franchise": "ソードアート・オンライン",
+      "birthday_mmdd": "04-19",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M029",
+          "machine_name": "スロット ソードアート・オンラインII",
+          "relation": "major",
+          "priority": 3
+        }
+      ]
+    },
+    {
+      "character_id": "C120",
+      "character_name": "赤城",
+      "franchise": "アズールレーン",
+      "birthday_mmdd": "04-22",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M079",
+          "machine_name": "L アズールレーン THE ANIMATION",
+          "relation": "major",
+          "priority": 2
+        }
+      ]
+    },
+    {
+      "character_id": "C109",
+      "character_name": "碇ゲンドウ",
+      "franchise": "エヴァンゲリオン",
+      "birthday_mmdd": "04-29",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": []
+    },
+    {
+      "character_id": "C057",
+      "character_name": "御坂美琴",
+      "franchise": "とある魔術の禁書目録",
+      "birthday_mmdd": "05-02",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M027",
+          "machine_name": "スマスロ とある魔術の禁書目録2",
+          "relation": "major",
+          "priority": 3
+        }
+      ]
+    },
+    {
+      "character_id": "C058",
+      "character_name": "御坂美琴",
+      "franchise": "とある科学の超電磁砲",
+      "birthday_mmdd": "05-02",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主人公",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M085",
+          "machine_name": "スマスロ とある科学の超電磁砲2",
+          "relation": "protagonist",
+          "priority": 1
+        }
+      ]
+    },
+    {
+      "character_id": "C039",
+      "character_name": "伊井野ミコ",
+      "franchise": "かぐや様は告らせたい",
+      "birthday_mmdd": "05-05",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": []
+    },
+    {
+      "character_id": "C117",
+      "character_name": "龍宮寺堅",
+      "franchise": "東京リベンジャーズ",
+      "birthday_mmdd": "05-10",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M081",
+          "machine_name": "スマスロ 東京リベンジャーズ",
+          "relation": "major",
+          "priority": 3
+        }
+      ]
+    },
+    {
+      "character_id": "C101",
+      "character_name": "カガリ・ユラ・アスハ",
+      "franchise": "機動戦士ガンダムSEED",
+      "birthday_mmdd": "05-18",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": []
+    },
+    {
+      "character_id": "C098",
+      "character_name": "キラ・ヤマト",
+      "franchise": "機動戦士ガンダムSEED",
+      "birthday_mmdd": "05-18",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主人公",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M071",
+          "machine_name": "Lパチスロ 機動戦士ガンダムSEED",
+          "relation": "protagonist",
+          "priority": 1
+        }
+      ]
+    },
+    {
+      "character_id": "C064",
+      "character_name": "リズベット",
+      "franchise": "ソードアート・オンライン",
+      "birthday_mmdd": "05-18",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": []
+    },
+    {
+      "character_id": "C027",
+      "character_name": "エルエルフ",
+      "franchise": "革命機ヴァルヴレイヴ",
+      "birthday_mmdd": "05-25",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M013",
+          "machine_name": "Lパチスロ 革命機ヴァルヴレイヴ2",
+          "relation": "major",
+          "priority": 3
+        },
+        {
+          "machine_id": "M097",
+          "machine_name": "スマスロ 革命機ヴァルヴレイヴ",
+          "relation": "major",
+          "priority": 3
+        }
+      ]
+    },
+    {
+      "character_id": "C071",
+      "character_name": "ザンギエフ",
+      "franchise": "ストリートファイター",
+      "birthday_mmdd": "06-01",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": []
+    },
+    {
+      "character_id": "C054",
+      "character_name": "千石撫子",
+      "franchise": "〈物語〉シリーズ",
+      "birthday_mmdd": "06-03",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M025",
+          "machine_name": "スマスロ 化物語",
+          "relation": "major",
+          "priority": 3
+        }
+      ]
+    },
+    {
+      "character_id": "C105",
+      "character_name": "碇シンジ",
+      "franchise": "エヴァンゲリオン",
+      "birthday_mmdd": "06-06",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主人公",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M076",
+          "machine_name": "LBパチスロ ヱヴァンゲリヲン ～約束の扉～",
+          "relation": "protagonist",
+          "priority": 1
+        },
+        {
+          "machine_id": "M092",
+          "machine_name": "Lパチスロ シン・エヴァンゲリオン",
+          "relation": "protagonist",
+          "priority": 1
+        }
+      ]
+    },
+    {
+      "character_id": "C015",
+      "character_name": "菖蒲",
+      "franchise": "甲鉄城のカバネリ",
+      "birthday_mmdd": "06-06",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M004",
+          "machine_name": "スマスロ 甲鉄城のカバネリ 海門決戦",
+          "relation": "major",
+          "priority": 3
+        }
+      ]
+    },
+    {
+      "character_id": "C087",
+      "character_name": "カズマ",
+      "franchise": "この素晴らしい世界に祝福を！",
+      "birthday_mmdd": "06-07",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主人公",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M049",
+          "machine_name": "A-SLOT+ 異世界かるてっとBT",
+          "relation": "major",
+          "priority": 2
+        }
+      ]
+    },
+    {
+      "character_id": "C034",
+      "character_name": "橘サクヤ",
+      "franchise": "ゴッドイーター",
+      "birthday_mmdd": "06-10",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": []
+    },
+    {
+      "character_id": "C035",
+      "character_name": "藤木コウタ",
+      "franchise": "ゴッドイーター",
+      "birthday_mmdd": "06-20",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": []
+    },
+    {
+      "character_id": "C115",
+      "character_name": "花垣武道",
+      "franchise": "東京リベンジャーズ",
+      "birthday_mmdd": "06-25",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主人公",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M081",
+          "machine_name": "スマスロ 東京リベンジャーズ",
+          "relation": "protagonist",
+          "priority": 1
+        }
+      ]
+    },
+    {
+      "character_id": "C010",
+      "character_name": "春日未来",
+      "franchise": "アイドルマスター ミリオンライブ！",
+      "birthday_mmdd": "06-28",
+      "birthday_status": "verified_primary",
+      "source_id": "SRC009",
+      "verified_at": "2026-08-23",
+      "notes": "中心アイドル",
+      "source": {
+        "source_id": "SRC009",
+        "title": "アイドルマスター ミリオンライブ！ 春日未来 バースデー",
+        "publisher": "Bandai Namco",
+        "source_tier": "primary",
+        "url": "https://am.bandainamco-am.co.jp/documents/news/2021/06/20210628_17-P-023.pdf",
+        "accessed_at": "2026-08-23",
+        "notes": "春日未来6/28の一次確認用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M065",
+          "machine_name": "スマスロ アイドルマスター ミリオンライブ！ ネクストプロローグ",
+          "relation": "central",
+          "priority": 1
+        }
+      ]
+    },
+    {
+      "character_id": "C053",
+      "character_name": "戦場ヶ原ひたぎ",
+      "franchise": "〈物語〉シリーズ",
+      "birthday_mmdd": "07-07",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M025",
+          "machine_name": "スマスロ 化物語",
+          "relation": "major",
+          "priority": 2
+        }
+      ]
+    },
+    {
+      "character_id": "C050",
+      "character_name": "アーサー・ボイル",
+      "franchise": "炎炎ノ消防隊",
+      "birthday_mmdd": "07-10",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M020",
+          "machine_name": "Lパチスロ 炎炎ノ消防隊2",
+          "relation": "major",
+          "priority": 2
+        }
+      ]
+    },
+    {
+      "character_id": "C028",
+      "character_name": "リーゼロッテ",
+      "franchise": "革命機ヴァルヴレイヴ",
+      "birthday_mmdd": "07-11",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": []
+    },
+    {
+      "character_id": "C079",
+      "character_name": "吉宗",
+      "franchise": "吉宗",
+      "birthday_mmdd": "07-11",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主人公",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M067",
+          "machine_name": "吉宗",
+          "relation": "protagonist",
+          "priority": 1
+        },
+        {
+          "machine_id": "M036",
+          "machine_name": "真打 吉宗",
+          "relation": "protagonist",
+          "priority": 1
+        }
+      ]
+    },
+    {
+      "character_id": "C097",
+      "character_name": "ジョディ",
+      "franchise": "南国育ち",
+      "birthday_mmdd": "07-21",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": []
+    },
+    {
+      "character_id": "C067",
+      "character_name": "リュウ",
+      "franchise": "ストリートファイター",
+      "birthday_mmdd": "07-21",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "代表キャラクター",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M033",
+          "machine_name": "スマスロ ストリートファイター6",
+          "relation": "representative",
+          "priority": 1
+        }
+      ]
+    },
+    {
+      "character_id": "C019",
+      "character_name": "波多野憲二",
+      "franchise": "モンキーターン",
+      "birthday_mmdd": "07-25",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主人公",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M007",
+          "machine_name": "スマスロモンキーターンV",
+          "relation": "protagonist",
+          "priority": 1
+        }
+      ]
+    },
+    {
+      "character_id": "C088",
+      "character_name": "アクア",
+      "franchise": "この素晴らしい世界に祝福を！",
+      "birthday_mmdd": "08-01",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": []
+    },
+    {
+      "character_id": "C091",
+      "character_name": "ナツ",
+      "franchise": "南国育ち",
+      "birthday_mmdd": "08-01",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M055",
+          "machine_name": "L南国育ち SPECIAL",
+          "relation": "major",
+          "priority": 1
+        }
+      ]
+    },
+    {
+      "character_id": "C065",
+      "character_name": "ユイ",
+      "franchise": "ソードアート・オンライン",
+      "birthday_mmdd": "08-01",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": []
+    },
+    {
+      "character_id": "C009",
+      "character_name": "モモ・ベリア・デビルーク",
+      "franchise": "To LOVEる -とらぶる-",
+      "birthday_mmdd": "08-08",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC008",
+      "verified_at": "2026-08-23",
+      "notes": "ダークネス主要人物",
+      "source": {
+        "source_id": "SRC008",
+        "title": "To LOVEる キャラクター誕生日",
+        "publisher": "キャラ誕",
+        "source_tier": "secondary",
+        "url": "https://schara.sunrockgo.com/media?m=8bkr7f",
+        "accessed_at": "2026-08-23",
+        "notes": "結城梨斗10/16・モモ8/8等の照合用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M098",
+          "machine_name": "L ToLOVEるダークネス",
+          "relation": "major",
+          "priority": 2
+        },
+        {
+          "machine_id": "M037",
+          "machine_name": "L ToLOVEるダークネス TRANCE ver.8.7",
+          "relation": "major",
+          "priority": 2
+        }
+      ]
+    },
+    {
+      "character_id": "C051",
+      "character_name": "南野カナ",
+      "franchise": "沖ドキ！",
+      "birthday_mmdd": "08-14",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "代表キャラクター",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M087",
+          "machine_name": "スマスロ 沖ドキ！DUO アンコール",
+          "relation": "representative",
+          "priority": 1
+        },
+        {
+          "machine_id": "M019",
+          "machine_name": "沖ドキ！BLACK",
+          "relation": "representative",
+          "priority": 1
+        },
+        {
+          "machine_id": "M023",
+          "machine_name": "沖ドキ！GOLD-30",
+          "relation": "representative",
+          "priority": 1
+        }
+      ]
+    },
+    {
+      "character_id": "C056",
+      "character_name": "諌山黄泉",
+      "franchise": "喰霊-零-",
+      "birthday_mmdd": "08-17",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "共同主人公",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M026",
+          "machine_name": "Lパチスロ 喰霊-零-Re",
+          "relation": "co_protagonist",
+          "priority": 2
+        }
+      ]
+    },
+    {
+      "character_id": "C016",
+      "character_name": "鰍",
+      "franchise": "甲鉄城のカバネリ",
+      "birthday_mmdd": "08-18",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M004",
+          "machine_name": "スマスロ 甲鉄城のカバネリ 海門決戦",
+          "relation": "major",
+          "priority": 4
+        }
+      ]
+    },
+    {
+      "character_id": "C116",
+      "character_name": "佐野万次郎",
+      "franchise": "東京リベンジャーズ",
+      "birthday_mmdd": "08-20",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M081",
+          "machine_name": "スマスロ 東京リベンジャーズ",
+          "relation": "major",
+          "priority": 2
+        }
+      ]
+    },
+    {
+      "character_id": "C031",
+      "character_name": "ソーマ・シックザール",
+      "franchise": "ゴッドイーター",
+      "birthday_mmdd": "08-28",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M016",
+          "machine_name": "スマスロ ゴッドイーター リザレクション",
+          "relation": "major",
+          "priority": 1
+        }
+      ]
+    },
+    {
+      "character_id": "C021",
+      "character_name": "洞口雄大",
+      "franchise": "モンキーターン",
+      "birthday_mmdd": "09-01",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M007",
+          "machine_name": "スマスロモンキーターンV",
+          "relation": "major",
+          "priority": 3
+        }
+      ]
+    },
+    {
+      "character_id": "C118",
+      "character_name": "クレア",
+      "franchise": "秘宝伝",
+      "birthday_mmdd": "09-02",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "代表キャラクター",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M082",
+          "machine_name": "クレアの秘宝伝 ～はじまりの扉と太陽の石～ ボーナストリガーver.",
+          "relation": "representative",
+          "priority": 1
+        },
+        {
+          "machine_id": "M089",
+          "machine_name": "スマスロ 秘宝伝",
+          "relation": "representative",
+          "priority": 1
+        }
+      ]
+    },
+    {
+      "character_id": "C075",
+      "character_name": "M.バイソン",
+      "franchise": "ストリートファイター",
+      "birthday_mmdd": "09-04",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": []
+    },
+    {
+      "character_id": "C022",
+      "character_name": "流木野サキ",
+      "franchise": "革命機ヴァルヴレイヴ",
+      "birthday_mmdd": "09-04",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M013",
+          "machine_name": "Lパチスロ 革命機ヴァルヴレイヴ2",
+          "relation": "major",
+          "priority": 2
+        },
+        {
+          "machine_id": "M097",
+          "machine_name": "スマスロ 革命機ヴァルヴレイヴ",
+          "relation": "major",
+          "priority": 2
+        }
+      ]
+    },
+    {
+      "character_id": "C006",
+      "character_name": "白銀御行",
+      "franchise": "かぐや様は告らせたい",
+      "birthday_mmdd": "09-09",
+      "birthday_status": "verified_primary",
+      "source_id": "SRC006",
+      "verified_at": "2026-08-23",
+      "notes": "共同主人公",
+      "source": {
+        "source_id": "SRC006",
+        "title": "かぐや様は告らせたい CHARACTER",
+        "publisher": "アニメ『かぐや様は告らせたい』公式",
+        "source_tier": "primary",
+        "url": "https://kaguya.love/2nd/character/",
+        "accessed_at": "2026-08-23",
+        "notes": "四宮かぐや・白銀御行等の公式プロフィール確認用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M018",
+          "machine_name": "パチスロ かぐや様は告らせたい",
+          "relation": "co_protagonist",
+          "priority": 2
+        }
+      ]
+    },
+    {
+      "character_id": "C111",
+      "character_name": "渚カヲル",
+      "franchise": "エヴァンゲリオン",
+      "birthday_mmdd": "09-13",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": []
+    },
+    {
+      "character_id": "C041",
+      "character_name": "マキ・オゼ",
+      "franchise": "炎炎ノ消防隊",
+      "birthday_mmdd": "09-16",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": []
+    },
+    {
+      "character_id": "C114",
+      "character_name": "片岡優希",
+      "franchise": "咲-Saki-",
+      "birthday_mmdd": "09-16",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M077",
+          "machine_name": "L咲-Saki- 頂上決戦",
+          "relation": "major",
+          "priority": 3
+        }
+      ]
+    },
+    {
+      "character_id": "C083",
+      "character_name": "エミリア",
+      "franchise": "Re:ゼロから始める異世界生活",
+      "birthday_mmdd": "09-23",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M100",
+          "machine_name": "スマスロ Re:ゼロから始める異世界生活 season2",
+          "relation": "major",
+          "priority": 2
+        }
+      ]
+    },
+    {
+      "character_id": "C042",
+      "character_name": "武久火縄",
+      "franchise": "炎炎ノ消防隊",
+      "birthday_mmdd": "09-23",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": []
+    },
+    {
+      "character_id": "C092",
+      "character_name": "しゅり",
+      "franchise": "南国育ち",
+      "birthday_mmdd": "09-26",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M055",
+          "machine_name": "L南国育ち SPECIAL",
+          "relation": "major",
+          "priority": 2
+        }
+      ]
+    },
+    {
+      "character_id": "C059",
+      "character_name": "アスナ",
+      "franchise": "ソードアート・オンライン",
+      "birthday_mmdd": "09-30",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M029",
+          "machine_name": "スロット ソードアート・オンラインII",
+          "relation": "major",
+          "priority": 2
+        }
+      ]
+    },
+    {
+      "character_id": "C060",
+      "character_name": "シリカ",
+      "franchise": "ソードアート・オンライン",
+      "birthday_mmdd": "10-04",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": []
+    },
+    {
+      "character_id": "C113",
+      "character_name": "原村和",
+      "franchise": "咲-Saki-",
+      "birthday_mmdd": "10-04",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M077",
+          "machine_name": "L咲-Saki- 頂上決戦",
+          "relation": "major",
+          "priority": 2
+        }
+      ]
+    },
+    {
+      "character_id": "C002",
+      "character_name": "キリト（桐ヶ谷和人）",
+      "franchise": "ソードアート・オンライン",
+      "birthday_mmdd": "10-07",
+      "birthday_status": "verified_primary",
+      "source_id": "SRC003",
+      "verified_at": "2026-08-23",
+      "notes": "主人公",
+      "source": {
+        "source_id": "SRC003",
+        "title": "キリト バースデーオンラインくじ 2025",
+        "publisher": "KADOKAWA",
+        "source_tier": "primary",
+        "url": "https://group.kadokawa.co.jp/information/promotional_topics/article-13231.html",
+        "accessed_at": "2026-08-23",
+        "notes": "キリトの誕生日が10月7日であることを確認。"
+      },
+      "machines": [
+        {
+          "machine_id": "M029",
+          "machine_name": "スロット ソードアート・オンラインII",
+          "relation": "protagonist",
+          "priority": 1
+        }
+      ]
+    },
+    {
+      "character_id": "C081",
+      "character_name": "Rio",
+      "franchise": "Rio",
+      "birthday_mmdd": "10-11",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主人公",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M057",
+          "machine_name": "スマスロスーパーブラックジャック",
+          "relation": "protagonist",
+          "priority": 1
+        },
+        {
+          "machine_id": "M039",
+          "machine_name": "スマスロスーパーリオエース2",
+          "relation": "protagonist",
+          "priority": 1
+        }
+      ]
+    },
+    {
+      "character_id": "C102",
+      "character_name": "マリュー・ラミアス",
+      "franchise": "機動戦士ガンダムSEED",
+      "birthday_mmdd": "10-12",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": []
+    },
+    {
+      "character_id": "C033",
+      "character_name": "雨宮リンドウ",
+      "franchise": "ゴッドイーター",
+      "birthday_mmdd": "10-12",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M016",
+          "machine_name": "スマスロ ゴッドイーター リザレクション",
+          "relation": "major",
+          "priority": 3
+        }
+      ]
+    },
+    {
+      "character_id": "C004",
+      "character_name": "時縞ハルト",
+      "franchise": "革命機ヴァルヴレイヴ",
+      "birthday_mmdd": "10-15",
+      "birthday_status": "verified_primary",
+      "source_id": "SRC005",
+      "verified_at": "2026-08-23",
+      "notes": "主人公",
+      "source": {
+        "source_id": "SRC005",
+        "title": "革命機ヴァルヴレイヴ キャラクター誕生日",
+        "publisher": "SANKYO",
+        "source_tier": "primary",
+        "url": "https://www.secret-story.sankyo-fever.jp/article/ssp-secret_122",
+        "accessed_at": "2026-08-23",
+        "notes": "時縞ハルトなど主要キャラクターの誕生日を確認。"
+      },
+      "machines": [
+        {
+          "machine_id": "M013",
+          "machine_name": "Lパチスロ 革命機ヴァルヴレイヴ2",
+          "relation": "protagonist",
+          "priority": 1
+        },
+        {
+          "machine_id": "M097",
+          "machine_name": "スマスロ 革命機ヴァルヴレイヴ",
+          "relation": "protagonist",
+          "priority": 1
+        }
+      ]
+    },
+    {
+      "character_id": "C008",
+      "character_name": "結城梨斗",
+      "franchise": "To LOVEる -とらぶる-",
+      "birthday_mmdd": "10-16",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC008",
+      "verified_at": "2026-08-23",
+      "notes": "主人公",
+      "source": {
+        "source_id": "SRC008",
+        "title": "To LOVEる キャラクター誕生日",
+        "publisher": "キャラ誕",
+        "source_tier": "secondary",
+        "url": "https://schara.sunrockgo.com/media?m=8bkr7f",
+        "accessed_at": "2026-08-23",
+        "notes": "結城梨斗10/16・モモ8/8等の照合用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M098",
+          "machine_name": "L ToLOVEるダークネス",
+          "relation": "protagonist",
+          "priority": 1
+        },
+        {
+          "machine_id": "M037",
+          "machine_name": "L ToLOVEるダークネス TRANCE ver.8.7",
+          "relation": "protagonist",
+          "priority": 1
+        }
+      ]
+    },
+    {
+      "character_id": "C003",
+      "character_name": "無名",
+      "franchise": "甲鉄城のカバネリ",
+      "birthday_mmdd": "10-20",
+      "birthday_status": "verified_primary",
+      "source_id": "SRC004",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC004",
+        "title": "甲鉄城のカバネリ 公式ニュース",
+        "publisher": "カバネリ製作委員会",
+        "source_tier": "primary",
+        "url": "https://kabaneri.com/news/?id=48792",
+        "accessed_at": "2026-08-23",
+        "notes": "無名の誕生日情報の一次確認用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M004",
+          "machine_name": "スマスロ 甲鉄城のカバネリ 海門決戦",
+          "relation": "co_lead",
+          "priority": 2
+        }
+      ]
+    },
+    {
+      "character_id": "C012",
+      "character_name": "綾小路清隆",
+      "franchise": "ようこそ実力至上主義の教室へ",
+      "birthday_mmdd": "10-20",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC011",
+      "verified_at": "2026-08-23",
+      "notes": "主人公",
+      "source": {
+        "source_id": "SRC011",
+        "title": "ようこそ実力至上主義の教室へ キャラクター関連資料",
+        "publisher": "KADOKAWA系公式商品資料 / PR TIMES",
+        "source_tier": "secondary",
+        "url": "https://prtimes.jp/a/?c=16064&f=d16064-6187-18e2087ac7d5bc5d0fc06b7cb1d66c6f.pdf&r=6187",
+        "accessed_at": "2026-08-23",
+        "notes": "綾小路清隆10/20等のプロフィール照合用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M070",
+          "machine_name": "スマスロ ようこそ実力至上主義の教室へ",
+          "relation": "protagonist",
+          "priority": 1
+        }
+      ]
+    },
+    {
+      "character_id": "C112",
+      "character_name": "宮永咲",
+      "franchise": "咲-Saki-",
+      "birthday_mmdd": "10-27",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主人公",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M077",
+          "machine_name": "L咲-Saki- 頂上決戦",
+          "relation": "protagonist",
+          "priority": 1
+        }
+      ]
+    },
+    {
+      "character_id": "C099",
+      "character_name": "アスラン・ザラ",
+      "franchise": "機動戦士ガンダムSEED",
+      "birthday_mmdd": "10-29",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M071",
+          "machine_name": "Lパチスロ 機動戦士ガンダムSEED",
+          "relation": "major",
+          "priority": 2
+        }
+      ]
+    },
+    {
+      "character_id": "C040",
+      "character_name": "森羅日下部",
+      "franchise": "炎炎ノ消防隊",
+      "birthday_mmdd": "10-29",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主人公",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M020",
+          "machine_name": "Lパチスロ 炎炎ノ消防隊2",
+          "relation": "protagonist",
+          "priority": 1
+        }
+      ]
+    },
+    {
+      "character_id": "C076",
+      "character_name": "エドモンド本田",
+      "franchise": "ストリートファイター",
+      "birthday_mmdd": "11-03",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": []
+    },
+    {
+      "character_id": "C077",
+      "character_name": "ダルシム",
+      "franchise": "ストリートファイター",
+      "birthday_mmdd": "11-22",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": []
+    },
+    {
+      "character_id": "C066",
+      "character_name": "クライン",
+      "franchise": "ソードアート・オンライン",
+      "birthday_mmdd": "11-28",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": []
+    },
+    {
+      "character_id": "C104",
+      "character_name": "ムウ・ラ・フラガ",
+      "franchise": "機動戦士ガンダムSEED",
+      "birthday_mmdd": "11-29",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": []
+    },
+    {
+      "character_id": "C089",
+      "character_name": "めぐみん",
+      "franchise": "この素晴らしい世界に祝福を！",
+      "birthday_mmdd": "12-04",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": []
+    },
+    {
+      "character_id": "C095",
+      "character_name": "キキ",
+      "franchise": "南国育ち",
+      "birthday_mmdd": "12-04",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": []
+    },
+    {
+      "character_id": "C107",
+      "character_name": "式波・アスカ・ラングレー",
+      "franchise": "エヴァンゲリオン",
+      "birthday_mmdd": "12-04",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M076",
+          "machine_name": "LBパチスロ ヱヴァンゲリヲン ～約束の扉～",
+          "relation": "major",
+          "priority": 3
+        },
+        {
+          "machine_id": "M092",
+          "machine_name": "Lパチスロ シン・エヴァンゲリオン",
+          "relation": "major",
+          "priority": 3
+        }
+      ]
+    },
+    {
+      "character_id": "C018",
+      "character_name": "美馬",
+      "franchise": "甲鉄城のカバネリ",
+      "birthday_mmdd": "12-06",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": []
+    },
+    {
+      "character_id": "C108",
+      "character_name": "葛城ミサト",
+      "franchise": "エヴァンゲリオン",
+      "birthday_mmdd": "12-08",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": []
+    },
+    {
+      "character_id": "C029",
+      "character_name": "山田ライゾウ",
+      "franchise": "革命機ヴァルヴレイヴ",
+      "birthday_mmdd": "12-10",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": []
+    },
+    {
+      "character_id": "C096",
+      "character_name": "いずみ",
+      "franchise": "南国育ち",
+      "birthday_mmdd": "12-14",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": []
+    },
+    {
+      "character_id": "C001",
+      "character_name": "金木研",
+      "franchise": "東京喰種",
+      "birthday_mmdd": "12-20",
+      "birthday_status": "verified_primary",
+      "source_id": "SRC002",
+      "verified_at": "2026-08-23",
+      "notes": "主人公",
+      "source": {
+        "source_id": "SRC002",
+        "title": "TVアニメ『東京喰種トーキョーグール』公式 CHARACTER",
+        "publisher": "Marvelous / 東京喰種製作委員会",
+        "source_tier": "primary",
+        "url": "https://www.marv.jp/special/tokyoghoul/first/chara.html",
+        "accessed_at": "2026-08-23",
+        "notes": "金木研 12月20日生を確認。"
+      },
+      "machines": [
+        {
+          "machine_id": "M003",
+          "machine_name": "L 東京喰種",
+          "relation": "protagonist",
+          "priority": 1
+        }
+      ]
+    },
+    {
+      "character_id": "C078",
+      "character_name": "ガイル",
+      "franchise": "ストリートファイター",
+      "birthday_mmdd": "12-23",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": []
+    },
+    {
+      "character_id": "C007",
+      "character_name": "金色の闇",
+      "franchise": "To LOVEる -とらぶる-",
+      "birthday_mmdd": "12-24",
+      "birthday_status": "verified_primary",
+      "source_id": "SRC007",
+      "verified_at": "2026-08-23",
+      "notes": "ダークネス主要人物",
+      "source": {
+        "source_id": "SRC007",
+        "title": "To LOVEる ダークネス ヤミちゃん誕生日イベント",
+        "publisher": "gloops / PR TIMES",
+        "source_tier": "primary",
+        "url": "https://prtimes.jp/main/html/rd/p/000000154.000007342.html",
+        "accessed_at": "2026-08-23",
+        "notes": "12月24日が金色の闇の誕生日と明記。"
+      },
+      "machines": [
+        {
+          "machine_id": "M098",
+          "machine_name": "L ToLOVEるダークネス",
+          "relation": "major",
+          "priority": 3
+        },
+        {
+          "machine_id": "M037",
+          "machine_name": "L ToLOVEるダークネス TRANCE ver.8.7",
+          "relation": "major",
+          "priority": 3
+        }
+      ]
+    },
+    {
+      "character_id": "C119",
+      "character_name": "伊勢島綾",
+      "franchise": "絶対衝激",
+      "birthday_mmdd": "12-25",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M086",
+          "machine_name": "L 絶対衝激IV",
+          "relation": "major",
+          "priority": 1
+        }
+      ]
+    },
+    {
+      "character_id": "C043",
+      "character_name": "象日下部",
+      "franchise": "炎炎ノ消防隊",
+      "birthday_mmdd": "12-25",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC001",
+      "verified_at": "2026-08-23",
+      "notes": "主要人物",
+      "source": {
+        "source_id": "SRC001",
+        "title": "パチンコパチスロキャラ誕生日・記念日カレンダー",
+        "publisher": "パチマガスロマガ",
+        "source_tier": "secondary",
+        "url": "https://psmaga.com/ads/b_calendar/index.php",
+        "accessed_at": "2026-08-23",
+        "notes": "スロット/パチンコ登場キャラの誕生日照合用。公式設定の二次確認に使用。"
+      },
+      "machines": []
+    },
+    {
+      "character_id": "C013",
+      "character_name": "アフロマン",
+      "franchise": "ディスクアップ",
+      "birthday_mmdd": "12-28",
+      "birthday_status": "verified_secondary",
+      "source_id": "SRC012",
+      "verified_at": "2026-08-23",
+      "notes": "代表キャラクター",
+      "source": {
+        "source_id": "SRC012",
+        "title": "ディスクアップ関連キャラクター誕生日 12月28日",
+        "publisher": "スロカレ",
+        "source_tier": "secondary",
+        "url": "https://sulocale.sulopachinews.com/archives/%E3%82%A4%E3%83%99%E3%83%B3%E3%83%88/1228",
+        "accessed_at": "2026-08-23",
+        "notes": "アフロマン12/28の照合用。"
+      },
+      "machines": [
+        {
+          "machine_id": "M035",
+          "machine_name": "A-SLOT+ ディスクアップ ULTRAREMIX",
+          "relation": "representative",
+          "priority": 1
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,124 @@
+# Verified Slot Character Birthdays
+
+> Generated file. Edit CSVs, then run `python3 scripts/export_context.py`.
+
+- **01-01** ジュリ — ストリートファイター — スマスロ ストリートファイター6 — `verified_secondary`
+- **01-01** 四宮かぐや — かぐや様は告らせたい — パチスロ かぐや様は告らせたい — `verified_primary`
+- **01-08** 神楽ひかり — 少女☆歌劇 レヴュースタァライト — L少女☆歌劇 レヴュースタァライト -The SLOT- — `verified_primary`
+- **01-09** 犬塚キューマ — 革命機ヴァルヴレイヴ — 対応機種未登録 — `verified_secondary`
+- **01-19** レイコ — 南国育ち — L南国育ち SPECIAL — `verified_secondary`
+- **01-24** エキドナ — Re:ゼロから始める異世界生活 — 対応機種未登録 — `verified_secondary`
+- **01-26** 侑那 — 甲鉄城のカバネリ — 対応機種未登録 — `verified_secondary`
+- **01-27** バルログ — ストリートファイター — 対応機種未登録 — `verified_secondary`
+- **01-27** 南野ハナ — 沖ドキ！ — スマスロ 沖ドキ！DUO アンコール, 沖ドキ！BLACK, 沖ドキ！GOLD-30 — `verified_secondary`
+- **02-01** 姫 — 吉宗 — 吉宗, 真打 吉宗 — `verified_secondary`
+- **02-02** ラム — Re:ゼロから始める異世界生活 — スマスロ Re:ゼロから始める異世界生活 season2 — `verified_secondary`
+- **02-02** レム — Re:ゼロから始める異世界生活 — スマスロ Re:ゼロから始める異世界生活 season2 — `verified_secondary`
+- **02-02** 連坊小路アキラ — 革命機ヴァルヴレイヴ — 対応機種未登録 — `verified_secondary`
+- **02-05** ラクス・クライン — 機動戦士ガンダムSEED — Lパチスロ 機動戦士ガンダムSEED — `verified_secondary`
+- **02-11** サチ — ソードアート・オンライン — 対応機種未登録 — `verified_secondary`
+- **02-12** ブランカ — ストリートファイター — 対応機種未登録 — `verified_secondary`
+- **02-14** ケン — ストリートファイター — スマスロ ストリートファイター6 — `verified_secondary`
+- **02-20** 新門紅丸 — 炎炎ノ消防隊 — Lパチスロ 炎炎ノ消防隊2 — `verified_secondary`
+- **02-22** 環古達 — 炎炎ノ消防隊 — Lパチスロ 炎炎ノ消防隊2 — `verified_secondary`
+- **02-27** 野火マリエ — 革命機ヴァルヴレイヴ — 対応機種未登録 — `verified_secondary`
+- **02-28** 生駒 — 甲鉄城のカバネリ — スマスロ 甲鉄城のカバネリ 海門決戦 — `verified_secondary`
+- **02-29** カイン — 革命機ヴァルヴレイヴ — 対応機種未登録 — `verified_secondary`
+- **03-01** 春麗 — ストリートファイター — スマスロ ストリートファイター6 — `verified_secondary`
+- **03-03** 石上優 — かぐや様は告らせたい — パチスロ かぐや様は告らせたい — `verified_secondary`
+- **03-03** 藤原千花 — かぐや様は告らせたい — パチスロ かぐや様は告らせたい — `verified_secondary`
+- **03-07** 青島優子 — モンキーターン — スマスロモンキーターンV — `verified_secondary`
+- **03-09** エギル — ソードアート・オンライン — 対応機種未登録 — `verified_secondary`
+- **03-14** ヴィクトル・リヒト — 炎炎ノ消防隊 — 対応機種未登録 — `verified_secondary`
+- **03-22** 土宮神楽 — 喰霊-零- — Lパチスロ 喰霊-零-Re — `verified_secondary`
+- **03-25** アリサ・イリーニチナ・アミエーラ — ゴッドイーター — スマスロ ゴッドイーター リザレクション — `verified_secondary`
+- **03-27** 秋樽桜備 — 炎炎ノ消防隊 — 対応機種未登録 — `verified_secondary`
+- **03-29** ディアッカ・エルスマン — 機動戦士ガンダムSEED — 対応機種未登録 — `verified_secondary`
+- **03-30** 綾波レイ — エヴァンゲリオン — LBパチスロ ヱヴァンゲリヲン ～約束の扉～, Lパチスロ シン・エヴァンゲリオン — `verified_secondary`
+- **03-31** 真希波・マリ・イラストリアス — エヴァンゲリオン — 対応機種未登録 — `verified_secondary`
+- **04-01** ナツキ・スバル — Re:ゼロから始める異世界生活 — A-SLOT+ 異世界かるてっとBT, スマスロ Re:ゼロから始める異世界生活 season2 — `verified_secondary`
+- **04-02** 早坂愛 — かぐや様は告らせたい — 対応機種未登録 — `verified_secondary`
+- **04-05** まどか — 南国育ち — 対応機種未登録 — `verified_secondary`
+- **04-06** ダクネス — この素晴らしい世界に祝福を！ — 対応機種未登録 — `verified_secondary`
+- **04-10** アイリス — 炎炎ノ消防隊 — 対応機種未登録 — `verified_secondary`
+- **04-11** 指南ショーコ — 革命機ヴァルヴレイヴ — 対応機種未登録 — `verified_secondary`
+- **04-17** ベガ — ストリートファイター — 対応機種未登録 — `verified_secondary`
+- **04-18** ヴァルカン・ジョゼフ — 炎炎ノ消防隊 — 対応機種未登録 — `verified_secondary`
+- **04-19** リーファ — ソードアート・オンライン — スロット ソードアート・オンラインII — `verified_secondary`
+- **04-22** 赤城 — アズールレーン — L アズールレーン THE ANIMATION — `verified_secondary`
+- **04-29** 碇ゲンドウ — エヴァンゲリオン — 対応機種未登録 — `verified_secondary`
+- **05-02** 御坂美琴 — とある魔術の禁書目録 — スマスロ とある魔術の禁書目録2 — `verified_secondary`
+- **05-02** 御坂美琴 — とある科学の超電磁砲 — スマスロ とある科学の超電磁砲2 — `verified_secondary`
+- **05-05** 伊井野ミコ — かぐや様は告らせたい — 対応機種未登録 — `verified_secondary`
+- **05-10** 龍宮寺堅 — 東京リベンジャーズ — スマスロ 東京リベンジャーズ — `verified_secondary`
+- **05-18** カガリ・ユラ・アスハ — 機動戦士ガンダムSEED — 対応機種未登録 — `verified_secondary`
+- **05-18** キラ・ヤマト — 機動戦士ガンダムSEED — Lパチスロ 機動戦士ガンダムSEED — `verified_secondary`
+- **05-18** リズベット — ソードアート・オンライン — 対応機種未登録 — `verified_secondary`
+- **05-25** エルエルフ — 革命機ヴァルヴレイヴ — Lパチスロ 革命機ヴァルヴレイヴ2, スマスロ 革命機ヴァルヴレイヴ — `verified_secondary`
+- **06-01** ザンギエフ — ストリートファイター — 対応機種未登録 — `verified_secondary`
+- **06-03** 千石撫子 — 〈物語〉シリーズ — スマスロ 化物語 — `verified_secondary`
+- **06-06** 碇シンジ — エヴァンゲリオン — LBパチスロ ヱヴァンゲリヲン ～約束の扉～, Lパチスロ シン・エヴァンゲリオン — `verified_secondary`
+- **06-06** 菖蒲 — 甲鉄城のカバネリ — スマスロ 甲鉄城のカバネリ 海門決戦 — `verified_secondary`
+- **06-07** カズマ — この素晴らしい世界に祝福を！ — A-SLOT+ 異世界かるてっとBT — `verified_secondary`
+- **06-10** 橘サクヤ — ゴッドイーター — 対応機種未登録 — `verified_secondary`
+- **06-20** 藤木コウタ — ゴッドイーター — 対応機種未登録 — `verified_secondary`
+- **06-25** 花垣武道 — 東京リベンジャーズ — スマスロ 東京リベンジャーズ — `verified_secondary`
+- **06-28** 春日未来 — アイドルマスター ミリオンライブ！ — スマスロ アイドルマスター ミリオンライブ！ ネクストプロローグ — `verified_primary`
+- **07-07** 戦場ヶ原ひたぎ — 〈物語〉シリーズ — スマスロ 化物語 — `verified_secondary`
+- **07-10** アーサー・ボイル — 炎炎ノ消防隊 — Lパチスロ 炎炎ノ消防隊2 — `verified_secondary`
+- **07-11** リーゼロッテ — 革命機ヴァルヴレイヴ — 対応機種未登録 — `verified_secondary`
+- **07-11** 吉宗 — 吉宗 — 吉宗, 真打 吉宗 — `verified_secondary`
+- **07-21** ジョディ — 南国育ち — 対応機種未登録 — `verified_secondary`
+- **07-21** リュウ — ストリートファイター — スマスロ ストリートファイター6 — `verified_secondary`
+- **07-25** 波多野憲二 — モンキーターン — スマスロモンキーターンV — `verified_secondary`
+- **08-01** アクア — この素晴らしい世界に祝福を！ — 対応機種未登録 — `verified_secondary`
+- **08-01** ナツ — 南国育ち — L南国育ち SPECIAL — `verified_secondary`
+- **08-01** ユイ — ソードアート・オンライン — 対応機種未登録 — `verified_secondary`
+- **08-08** モモ・ベリア・デビルーク — To LOVEる -とらぶる- — L ToLOVEるダークネス, L ToLOVEるダークネス TRANCE ver.8.7 — `verified_secondary`
+- **08-14** 南野カナ — 沖ドキ！ — スマスロ 沖ドキ！DUO アンコール, 沖ドキ！BLACK, 沖ドキ！GOLD-30 — `verified_secondary`
+- **08-17** 諌山黄泉 — 喰霊-零- — Lパチスロ 喰霊-零-Re — `verified_secondary`
+- **08-18** 鰍 — 甲鉄城のカバネリ — スマスロ 甲鉄城のカバネリ 海門決戦 — `verified_secondary`
+- **08-20** 佐野万次郎 — 東京リベンジャーズ — スマスロ 東京リベンジャーズ — `verified_secondary`
+- **08-28** ソーマ・シックザール — ゴッドイーター — スマスロ ゴッドイーター リザレクション — `verified_secondary`
+- **09-01** 洞口雄大 — モンキーターン — スマスロモンキーターンV — `verified_secondary`
+- **09-02** クレア — 秘宝伝 — クレアの秘宝伝 ～はじまりの扉と太陽の石～ ボーナストリガーver., スマスロ 秘宝伝 — `verified_secondary`
+- **09-04** M.バイソン — ストリートファイター — 対応機種未登録 — `verified_secondary`
+- **09-04** 流木野サキ — 革命機ヴァルヴレイヴ — Lパチスロ 革命機ヴァルヴレイヴ2, スマスロ 革命機ヴァルヴレイヴ — `verified_secondary`
+- **09-09** 白銀御行 — かぐや様は告らせたい — パチスロ かぐや様は告らせたい — `verified_primary`
+- **09-13** 渚カヲル — エヴァンゲリオン — 対応機種未登録 — `verified_secondary`
+- **09-16** マキ・オゼ — 炎炎ノ消防隊 — 対応機種未登録 — `verified_secondary`
+- **09-16** 片岡優希 — 咲-Saki- — L咲-Saki- 頂上決戦 — `verified_secondary`
+- **09-23** エミリア — Re:ゼロから始める異世界生活 — スマスロ Re:ゼロから始める異世界生活 season2 — `verified_secondary`
+- **09-23** 武久火縄 — 炎炎ノ消防隊 — 対応機種未登録 — `verified_secondary`
+- **09-26** しゅり — 南国育ち — L南国育ち SPECIAL — `verified_secondary`
+- **09-30** アスナ — ソードアート・オンライン — スロット ソードアート・オンラインII — `verified_secondary`
+- **10-04** シリカ — ソードアート・オンライン — 対応機種未登録 — `verified_secondary`
+- **10-04** 原村和 — 咲-Saki- — L咲-Saki- 頂上決戦 — `verified_secondary`
+- **10-07** キリト（桐ヶ谷和人） — ソードアート・オンライン — スロット ソードアート・オンラインII — `verified_primary`
+- **10-11** Rio — Rio — スマスロスーパーブラックジャック, スマスロスーパーリオエース2 — `verified_secondary`
+- **10-12** マリュー・ラミアス — 機動戦士ガンダムSEED — 対応機種未登録 — `verified_secondary`
+- **10-12** 雨宮リンドウ — ゴッドイーター — スマスロ ゴッドイーター リザレクション — `verified_secondary`
+- **10-15** 時縞ハルト — 革命機ヴァルヴレイヴ — Lパチスロ 革命機ヴァルヴレイヴ2, スマスロ 革命機ヴァルヴレイヴ — `verified_primary`
+- **10-16** 結城梨斗 — To LOVEる -とらぶる- — L ToLOVEるダークネス, L ToLOVEるダークネス TRANCE ver.8.7 — `verified_secondary`
+- **10-20** 無名 — 甲鉄城のカバネリ — スマスロ 甲鉄城のカバネリ 海門決戦 — `verified_primary`
+- **10-20** 綾小路清隆 — ようこそ実力至上主義の教室へ — スマスロ ようこそ実力至上主義の教室へ — `verified_secondary`
+- **10-27** 宮永咲 — 咲-Saki- — L咲-Saki- 頂上決戦 — `verified_secondary`
+- **10-29** アスラン・ザラ — 機動戦士ガンダムSEED — Lパチスロ 機動戦士ガンダムSEED — `verified_secondary`
+- **10-29** 森羅日下部 — 炎炎ノ消防隊 — Lパチスロ 炎炎ノ消防隊2 — `verified_secondary`
+- **11-03** エドモンド本田 — ストリートファイター — 対応機種未登録 — `verified_secondary`
+- **11-22** ダルシム — ストリートファイター — 対応機種未登録 — `verified_secondary`
+- **11-28** クライン — ソードアート・オンライン — 対応機種未登録 — `verified_secondary`
+- **11-29** ムウ・ラ・フラガ — 機動戦士ガンダムSEED — 対応機種未登録 — `verified_secondary`
+- **12-04** めぐみん — この素晴らしい世界に祝福を！ — 対応機種未登録 — `verified_secondary`
+- **12-04** キキ — 南国育ち — 対応機種未登録 — `verified_secondary`
+- **12-04** 式波・アスカ・ラングレー — エヴァンゲリオン — LBパチスロ ヱヴァンゲリヲン ～約束の扉～, Lパチスロ シン・エヴァンゲリオン — `verified_secondary`
+- **12-06** 美馬 — 甲鉄城のカバネリ — 対応機種未登録 — `verified_secondary`
+- **12-08** 葛城ミサト — エヴァンゲリオン — 対応機種未登録 — `verified_secondary`
+- **12-10** 山田ライゾウ — 革命機ヴァルヴレイヴ — 対応機種未登録 — `verified_secondary`
+- **12-14** いずみ — 南国育ち — 対応機種未登録 — `verified_secondary`
+- **12-20** 金木研 — 東京喰種 — L 東京喰種 — `verified_primary`
+- **12-23** ガイル — ストリートファイター — 対応機種未登録 — `verified_secondary`
+- **12-24** 金色の闇 — To LOVEる -とらぶる- — L ToLOVEるダークネス, L ToLOVEるダークネス TRANCE ver.8.7 — `verified_primary`
+- **12-25** 伊勢島綾 — 絶対衝激 — L 絶対衝激IV — `verified_secondary`
+- **12-25** 象日下部 — 炎炎ノ消防隊 — 対応機種未登録 — `verified_secondary`
+- **12-28** アフロマン — ディスクアップ — A-SLOT+ ディスクアップ ULTRAREMIX — `verified_secondary`

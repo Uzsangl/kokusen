@@ -1,0 +1,3 @@
+﻿event_id,event_mmdd,event_name,franchise,event_type,source_id,verified_at,notes
+E001,05-05,ジャグラーの日,ジャグラー,brand_anniversary,SRC001,2026-08-23,キャラクター誕生日ではない。デフォルト誕生日検索から除外。
+E002,03-31,Sammyの日,北斗の拳,brand_anniversary,SRC001,2026-08-23,キャラクター誕生日ではない。デフォルト誕生日検索から除外。
