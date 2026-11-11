@@ -212,6 +212,11 @@
   #fx { position: fixed; inset: 0; pointer-events: none; z-index: 10; overflow: hidden; }
   #particles { position: absolute; inset: 0; width: 100%; height: 100%; }
   #flash { position: absolute; inset: 0; opacity: 0; }
+  /* BREAK:画面のガラスにひびが入って割れる */
+  #crack { position: absolute; inset: 0; width: 100%; height: 100%; display: none; filter: drop-shadow(0 0 3px #fff) drop-shadow(0 0 8px #9fd8ff); }
+  #crack.on { display: block; }
+  #crack polyline { fill: none; stroke: #fff; stroke-width: 1.6; stroke-linejoin: bevel; }
+  #crack.violet { filter: drop-shadow(0 0 3px #fff) drop-shadow(0 0 8px #a78bff); }
   /* プチュン:倒す瞬間に画面が一瞬で真っ暗になる */
   #blackout { position: absolute; inset: 0; background: #000; display: none; }
   #blackout.on { display: block; }
@@ -327,6 +332,7 @@
 <div id="fx" aria-hidden="true">
   <canvas id="particles"></canvas>
   <div id="flash"></div>
+  <svg id="crack"></svg>
   <div id="blackout"></div>
   <div id="burn"></div>
   <div id="white"></div>
@@ -1027,6 +1033,23 @@ const Sound = (() => {
     // 背景で鳴り続ける時計
     tick(n) { tone(n % 2 ? 1500 : 1900, 0.025, { type: 'square', vol: 0.022 }); },
     click() { tone(1400, 0.03, { type: 'square', vol: 0.05 }); },
+    // ガラスにひびが入る「ピシッ」
+    crack() {
+      noise(0.02, { type: 'highpass', freq: 5000, vol: 0.5 });
+      tone(5200, 0.05, { type: 'triangle', vol: 0.18, to: 2400 });
+      tone(3100, 0.07, { type: 'triangle', vol: 0.08, to: 1900, at: 0.02 });
+    },
+    // ガラスが砕け散る:破裂 → 高い破片の音が散らばる → 床に落ちる細かい音
+    glass() {
+      noise(0.3, { type: 'highpass', freq: 3800, vol: 0.6 });
+      noise(0.18, { type: 'bandpass', freq: 2400, vol: 0.4 });
+      tone(120, 0.25, { vol: 0.55, to: 45 });
+      for (let i = 0; i < 26; i++) {
+        const at = Math.random() * Math.random() * 0.75;
+        tone(2600 + Math.random() * 5200, 0.04 + Math.random() * 0.1, { type: Math.random() < 0.5 ? 'sine' : 'triangle', vol: 0.05 + Math.random() * 0.07, at });
+      }
+      for (let i = 0; i < 10; i++) noise(0.015, { type: 'highpass', freq: 6500, vol: 0.12, at: 0.35 + Math.random() * 0.5 });
+    },
     // プチュン:「プ」(破裂音)「チュ」(一気に落ちる音)「ン」(低い余韻)。そのあと無音になる
     puchun() {
       noise(0.012, { type: 'highpass', freq: 2500, vol: 0.45 });
@@ -1200,6 +1223,8 @@ const COLORS = {
   violet: ['#8b6cff', '#c9b8ff', '#4f3bd1'],
   rainbow: ['#ff4d5e', '#f5c451', '#4ade80', '#38bdf8', '#8b6cff', '#ffffff'],
   sand: ['#d8c9a3', '#bfae86', '#8f8160'],
+  glass: ['rgba(255,255,255,.55)', 'rgba(190,230,255,.5)', 'rgba(255,255,255,.3)', 'rgba(245,196,81,.45)'],
+  glassViolet: ['rgba(255,255,255,.5)', 'rgba(170,140,255,.55)', 'rgba(120,90,230,.4)'],
 };
 const Particles = (() => {
   let list = [], running = false, cv, g;
@@ -1213,7 +1238,12 @@ const Particles = (() => {
       p.x += p.vx; p.y += p.vy; p.vy += p.g; p.life--;
       g.globalAlpha = Math.min(1, p.life / 20);
       g.fillStyle = p.c;
-      g.fillRect(p.x, p.y, p.s, p.s);
+      if (p.tri) {
+        // ガラスの破片:回りながら落ちる三角形
+        g.save(); g.translate(p.x, p.y); g.rotate(p.r += p.vr);
+        g.beginPath(); g.moveTo(0, -p.s); g.lineTo(p.s * 0.8, p.s * 0.6); g.lineTo(-p.s * 0.6, p.s * 0.4); g.closePath();
+        g.fill(); g.strokeStyle = '#ffffff'; g.lineWidth = 0.7; g.stroke(); g.restore();
+      } else g.fillRect(p.x, p.y, p.s, p.s);
     }
     g.globalAlpha = 1;
     if (list.length) requestAnimationFrame(loop); else running = false;
@@ -1226,6 +1256,14 @@ const Particles = (() => {
   }
   const pick = (a) => a[Math.floor(Math.random() * a.length)];
   return {
+    // 画面全体のガラスが割れて、破片が中心から外へ飛び散って落ちる
+    shards(cx, cy, colors, n = 70) {
+      for (let i = 0; i < n; i++) {
+        const x = Math.random() * innerWidth, y = Math.random() * innerHeight;
+        const a = Math.atan2(y - cy, x - cx), v = 2 + Math.random() * 7;
+        add({ tri: true, x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 2, g: 0.45, life: 45 + Math.random() * 35, s: 7 + Math.random() * 20, r: Math.random() * 6, vr: (Math.random() - 0.5) * 0.4, c: pick(colors) });
+      }
+    },
     // 一点から飛び散る
     burst(x, y, n, colors, power = 6) {
       for (let i = 0; i < n; i++) {
@@ -1441,6 +1479,38 @@ function pickHeat(side, o, gotBreak) {
 }
 
 // リールが回り、予兆が出て、相手の手が止まるまで
+// BREAKの瞬間:画面のガラスにひびが走り、もう一度ひびが伸びてから、砕け散る
+async function shatter(violet) {
+  const o = center($('stage')), svg = $('crack');
+  const rays = [];
+  const N = 13;
+  for (let i = 0; i < N; i++) {
+    let a = (i / N) * Math.PI * 2 + (Math.random() - 0.5) * 0.3, x = o.x, y = o.y;
+    const pts = [[x, y]];
+    for (let k = 0; k < 7; k++) {
+      a += (Math.random() - 0.5) * 0.7;
+      const len = 30 + Math.random() * 80;
+      x += Math.cos(a) * len; y += Math.sin(a) * len;
+      pts.push([x, y]);
+    }
+    rays.push(pts);
+  }
+  const line = (pts) => `<polyline points="${pts.map((p) => p.map((v) => v.toFixed(1)).join(',')).join(' ')}"/>`;
+  // 隣り合うひびを横につなぐ線(クモの巣状にする)
+  const web = (k) => rays.map((r, i) => line([r[k], rays[(i + 1) % N][k]])).join('');
+  svg.setAttribute('class', 'on' + (violet ? ' violet' : ''));
+  if (!REDUCE) svg.innerHTML = rays.map((r) => line(r.slice(0, 3))).join('');
+  Sound.crack(); shake(false);
+  await sleep(280);
+  if (!REDUCE) svg.innerHTML = rays.map(line).join('') + web(2) + web(4);
+  Sound.crack(); shake(false);
+  await sleep(330);
+  svg.setAttribute('class', ''); svg.innerHTML = '';
+  Sound.glass(); flash('#ffffff'); shake(true);
+  Particles.shards(o.x, o.y, violet ? COLORS.glassViolet : COLORS.glass);
+  await sleep(380);
+}
+
 // プチュン:相手を倒す一撃が決まる瞬間の確定演出。
 // 音が途切れて暗転 → 無音 → 低いうなりと火種 → 中心から画面が焼けて白く飛ぶ。このあと技の命中と「撃破!」に続く
 async function puchun() {
@@ -1637,6 +1707,7 @@ async function normalRally(hand) {
   if (S.over) return finale();
 
   if (S.teams[0].breakReady) {
+    await shatter(false);
     freeze(true);
     Sound.breakIn();
     await cutin(BREAK_NAME, '時が止まる。好きな手が確定で通る', 'rainbow', 1200);
@@ -1666,6 +1737,7 @@ async function playerBreak(hand) {
 }
 
 async function cpuBreak() {
+  await shatter(true);
   freeze(true);
   Sound.breakIn();
   await cutin(BREAK_NAME, '相手の時間だけが動く', 'violet', 1000);
