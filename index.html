@@ -109,6 +109,10 @@
   }
   .stage.spinning #slotCpu { animation: reel .16s linear infinite; }
   @keyframes reel { 0% { transform: translateY(-6px); opacity: .6; } 50% { transform: translateY(6px); opacity: 1; } 100% { transform: translateY(-6px); opacity: .6; } }
+  .shp { min-width: 0; font-size: .78rem; color: var(--sub); text-align: center; }
+  .shp .who { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text); font-weight: 700; }
+  .shp b { font-size: 1.15rem; color: var(--text); font-variant-numeric: tabular-nums; }
+  .shp .bar { height: 10px; margin: 3px 0 0; }
   .vs { font-weight: 900; color: var(--sub); letter-spacing: .1em; }
   .cue { grid-column: 1 / -1; text-align: center; min-height: 1.6em; font-weight: 900; font-size: 1.05rem; }
   .dmgline { grid-column: 1 / -1; text-align: center; min-height: 2.9em; font-weight: 900; font-size: 1rem; line-height: 1.3; }
@@ -205,6 +209,9 @@
         <div class="slot" id="slotYou">?</div>
         <div class="vs">VS</div>
         <div class="slot" id="slotCpu">?</div>
+        <div class="shp" id="hpYou"></div>
+        <div></div>
+        <div class="shp" id="hpCpu"></div>
         <div class="cue" id="cue"></div>
         <div class="dmgline" id="dmgLine"></div>
       </div>
@@ -923,7 +930,17 @@ function renderTeam(el, t, foeTeam) {
     <ul class="actions">${actionList(f, 'li', '', active(foeTeam), t.breakReady)}</ul>`;
 }
 
+// 勝負の枠の中に出す、場のカードの名前・HP・ゲージ
+function stageHp(el, t) {
+  const f = active(t), bar = (f.hp / f.ch.hp) * 100;
+  el.innerHTML = `<div class="who">${nameOf(f)}</div>
+    <div>HP <b>${f.hp}</b> / ${f.ch.hp}</div>
+    <div class="bar"><div class="${bar <= 34 ? 'low' : ''}" style="width:${bar}%"></div></div>`;
+}
+
 function render() {
+  stageHp($('hpYou'), S.teams[0]);
+  stageHp($('hpCpu'), S.teams[1]);
   const n = S.boutRally + 1, decay = n > DECAY_FROM;
   $('boutInfo').textContent = S.over ? '' : `${S.teams[0].idx + 1}番手戦　${n}ラリー目` + (decay ? '　刻の抜け落ち!' : n === DECAY_FROM ? '　次から刻の抜け落ち' : '');
   $('boutInfo').className = 'boutinfo' + (decay ? ' warn' : '');
