@@ -1815,7 +1815,8 @@ function pvpStatus(text) { $('netStatus').textContent = text; }
 // つながらないときの手がかりとして、通信の状態をそのまま表示する
 function pvpDebug() {
   if (!PVP.on) return;
-  if (!PVP.room) { $('netDebug').textContent = '通信の状態:使えません(通信機能が、この画面に渡されていません)'; return; }
+  if (!PVP.room) { $('netDebug').textContent = '通信の状態:使えません'; return; }
+  if (PVP.room.direct) { $('netDebug').textContent = PVP.code ? `通信の状態:${PVP.room.status() || '待機中'}` : ''; return; }
   let ps = [];
   try { ps = PVP.room.peers(); } catch (e) { /* 読めなければ0人として扱う */ }
   const others = ps.filter((p) => !(p.isMe && p.sameTab));
@@ -1825,9 +1826,71 @@ function pvpDebug() {
     + (others.length ? ` / その人たちの合言葉:${codes}` : '') + (PVP.code ? ` / 同じ合言葉の人:${same.length}人` : '');
 }
 
+// 端末どうしを直接つなぐ通信(PeerJS)。ログインなしで、リンクを開いただけの人どうしで使える。
+// 合言葉から部屋のIDを作り、先に入った側が部屋を開き、あとから入った側がそこへ接続する。
+// 中継サーバーは接続の仲立ちだけをし、対戦の内容は端末どうしで直接やりとりする。
+function makePeerRoom() {
+  let peer = null, conn = null, mine = {}, foe = null, up = false, note = '';
+  const handlers = [];
+  const fire = () => handlers.forEach((h) => { try { h(); } catch (e) { /* 表示の更新に失敗しても通信は続ける */ } });
+  const send = () => { if (conn && conn.open) conn.send({ p: mine }); };
+  function attach(c) {
+    conn = c;
+    c.on('open', () => { up = true; note = '相手とつながりました'; send(); fire(); });
+    c.on('data', (d) => { if (d && typeof d === 'object' && d.p && typeof d.p === 'object') { foe = d.p; fire(); } });
+    c.on('close', () => { if (conn === c) { conn = null; foe = null; up = false; note = '相手との接続が切れました'; fire(); } });
+    c.on('error', () => { note = '相手との通信でエラーが起きました'; fire(); });
+  }
+  function leave() {
+    try { if (peer) peer.destroy(); } catch (e) { /* すでに閉じている */ }
+    peer = null; conn = null; foe = null; up = false; note = '';
+  }
+  function join(code) {
+    leave();
+    const hostId = 'kokusen-room-' + code.toLowerCase();
+    note = '接続しています…';
+    const host = peer = new window.Peer(hostId);
+    host.on('open', () => { note = '部屋を開きました。相手を待っています'; fire(); });
+    host.on('connection', (c) => { if (conn && conn.open) { c.close(); return; } attach(c); });   // 3人目は入れない
+    host.on('error', (e) => {
+      if (peer !== host) return;
+      if (e.type !== 'unavailable-id') { note = `接続できませんでした(${e.type})`; fire(); return; }
+      // その合言葉の部屋はもう開いている → 参加する側になる
+      host.destroy();
+      const guest = peer = new window.Peer();
+      guest.on('open', () => { note = '部屋に参加しています…'; attach(guest.connect(hostId, { reliable: true, serialization: 'json' })); fire(); });
+      guest.on('error', (e2) => { if (peer === guest) { note = `接続できませんでした(${e2.type})`; fire(); } });
+    });
+    fire();
+  }
+  return {
+    direct: true, join, leave,
+    status: () => note,
+    presence(patch) {
+      for (const k of Object.keys(patch)) { if (patch[k] === null) delete mine[k]; else mine[k] = patch[k]; }
+      send();
+      return Promise.resolve();
+    },
+    peers() {
+      const me = { isMe: true, sameTab: true, presence: mine };
+      return foe ? [me, { isMe: false, sameTab: false, presence: foe }] : [me];
+    },
+    onPeers(h) { handlers.push(h); return () => {}; },
+    connected: () => up,
+  };
+}
+const loadScript = (src) => new Promise((ok) => {
+  const el = document.createElement('script');
+  el.src = src; el.onload = () => ok(true); el.onerror = () => ok(false);
+  document.head.appendChild(el);
+});
+
+// 通信の窓口を用意する。Claudeの公開ページの中で、通信機能が渡されていればそれを使う。
+// それ以外(普通のウェブページとして開いたとき)は、端末どうしを直接つなぐ方式を使う
 async function pvpInit() {
   try { PVP.room = window.claude && window.claude.use ? await window.claude.use('room') : null; } catch (e) { PVP.room = null; }
-  if (!PVP.room) return;
+  if (!PVP.room && !(window.claude && window.claude.use) && (window.Peer || await loadScript('vendor/peerjs.min.js')) && window.Peer) PVP.room = makePeerRoom();
+  if (!PVP.room) { renderMode(); return; }
   PVP.room.onPeers(() => pvpStep(), () => { PVP.room = null; renderMode(); });
   renderMode();
 }
@@ -1836,6 +1899,7 @@ async function pvpInit() {
 function pvpJoin() {
   const code = $('roomCode').value.trim();
   if (!/^[0-9a-zA-Z]{2,12}$/.test(code)) { pvpStatus('合言葉は、英数字2〜12文字で入れてください。'); return; }
+  if (PVP.room && PVP.room.join && (PVP.code !== code || !PVP.room.connected())) PVP.room.join(code);   // 直接つなぐ方式では、ここで部屋を開く・参加する
   PVP.code = code; PVP.phase = 'lobby'; PVP.n = 0; PVP.foeTeamSeal = null; PVP.foeSeal = {};
   pvpPublish({ g: code, ts: null, t: null, n: null, c: null, r: null, b: null, last: null });
   pvpStep();
@@ -1851,6 +1915,7 @@ function pvpReady() {
 function pvpLeave() {
   PVP.phase = 'idle'; PVP.code = ''; PVP.applying = false;
   pvpPublish({ g: null, ts: null, t: null, n: null, c: null, r: null, b: null, last: null });
+  if (PVP.room && PVP.room.leave) PVP.room.leave();
   renderSelect();
 }
 
@@ -1950,7 +2015,7 @@ function renderMode() {
   [...$('modes').children].forEach((b, i) => b.classList.toggle('picked', (i === 1) === PVP.on));
   $('cpuOpts').classList.toggle('hidden', PVP.on);
   $('netOpts').classList.toggle('hidden', !PVP.on);
-  if (PVP.on && !PVP.room) pvpStatus('この画面では、オンライン対人は使えません。このページを相手に共有し、お互いにClaudeへログインした状態で開いてください。');
+  if (PVP.on && !PVP.room) pvpStatus('この画面では、オンライン対人は使えません。公開サイト版(https://uzsangl.github.io/test/)を、二人とも開いてください。');
   else if (PVP.on && PVP.phase === 'idle') pvpStatus('相手と決めた合言葉を入れて、「部屋に入る」を押してください。');
   $('roomCode').disabled = $('joinRoom').disabled = !PVP.room || PVP.phase !== 'idle';
   $('leaveRoom').classList.toggle('hidden', PVP.phase === 'idle');
