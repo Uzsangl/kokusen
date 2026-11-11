@@ -1496,7 +1496,7 @@ async function shatter(violet) {
 
 // プチュン:相手を倒す一撃が決まる瞬間の確定演出。
 // 流れ:じゃんけんに勝つ → 技名のカットイン → ダメージ表示 → HPゲージが空になる → ここ → 「撃破!」
-// 音が途切れて暗転(白い線はHPゲージの高さ)→ 無音のまま2秒 → 明ける
+// 音が途切れて暗転(白い線はHPゲージの高さ)→ 無音のまま0.8秒 → 明ける
 async function puchun() {
   // 短縮モードでも、何が起きたか分かる長さは残す
   const wait = (ms) => new Promise((r) => setTimeout(r, Math.max(ms * 0.5, ms * FX.speed)));
@@ -1507,7 +1507,7 @@ async function puchun() {
   $('blackout').style.setProperty('--line-y', (bar.top + bar.height / 2) + 'px');
   $('blackout').classList.add('on');
   Sound.puchun();
-  await wait(2000);                       // 真っ暗で無音
+  await wait(800);                        // 真っ暗で無音
   $('blackout').classList.remove('on');
   flash('#ffffff');                       // 明けた瞬間に一度だけ光る
   Bgm.duck(false);
