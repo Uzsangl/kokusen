@@ -250,6 +250,7 @@
     <div class="clock"><i></i></div>
     <h1>刻戦</h1>
     <div class="opts">
+      <button id="optBgm" class="hidden">曲 ON</button>
       <button id="optSound">音 ON</button>
       <button id="optShort">演出 フル</button>
     </div>
@@ -906,7 +907,7 @@ let busy = false;      // 演出中は入力を受け付けない
 let frozen = false;    // BREAKで時間が止まっている間
 
 // ----- 設定(音・演出の長さ) -----
-const FX = { speed: 1, sound: true, short: false, level: 2 };
+const FX = { speed: 1, sound: true, short: false, level: 2, bgm: true };
 const REDUCE = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 function loadOpt(key, def) {
   try { const v = localStorage.getItem(key); return v === null ? def : v === '1'; } catch (e) { return def; }
@@ -919,7 +920,10 @@ function applyOpts() {
   $('optSound').classList.toggle('off', !FX.sound);
   $('optShort').textContent = FX.short ? '演出 短縮' : '演出 フル';
   $('optShort').classList.toggle('off', FX.short);
+  $('optBgm').textContent = FX.bgm ? '曲 ON' : '曲 OFF';
+  $('optBgm').classList.toggle('off', !FX.bgm);
   Sound.setOn(FX.sound);
+  Bgm.setOn(FX.bgm);
 }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms * FX.speed));
 
@@ -995,6 +999,39 @@ const Sound = (() => {
       [523, 659, 784, 1047].forEach((f) => tone(f, 1.2, { type: 'sawtooth', vol: 0.08, at: 0.95 }));
     },
     defeat() { seq([392, 349, 311, 262, 196], 0.2, { type: 'triangle', vol: 0.18, dur: 0.35 }); },
+  };
+})();
+
+// ----- BGM -----
+// index.html と同じ場所に置いた曲ファイルを、対戦中にループ再生する。
+// ファイルが無ければ何もせず、「曲」ボタンも出さない。
+const BGM_FILES = ['bgm.mp3', 'bgm.ogg', 'bgm.wav'];   // 上から順に探して、最初に読めたものを使う
+const BGM_VOLUME = 0.35;
+const Bgm = (() => {
+  const el = new Audio();
+  el.loop = true; el.preload = 'auto'; el.volume = BGM_VOLUME;
+  let idx = 0, ready = false, on = true, want = false, fade = null;
+  el.addEventListener('canplay', () => {
+    ready = true;
+    $('optBgm').classList.remove('hidden');
+    if (want && on) el.play().catch(() => {});
+  });
+  el.addEventListener('error', () => { if (!ready && ++idx < BGM_FILES.length) el.src = BGM_FILES[idx]; });
+  function to(v, ms) {
+    clearInterval(fade);
+    const from = el.volume, t0 = Date.now();
+    fade = setInterval(() => {
+      const k = Math.min(1, (Date.now() - t0) / ms);
+      el.volume = from + (v - from) * k;
+      if (k >= 1) clearInterval(fade);
+    }, 30);
+  }
+  return {
+    init() { el.src = BGM_FILES[0]; },
+    setOn(v) { on = v; if (!ready) return; if (v && want) el.play().catch(() => {}); else el.pause(); },
+    play() { want = true; if (ready && on) { el.volume = BGM_VOLUME; el.play().catch(() => {}); } },
+    stop() { want = false; el.pause(); },
+    duck(v) { if (ready) to(v ? 0.04 : BGM_VOLUME, 250); },   // BREAKで時間が止まる間は小さくする
   };
 })();
 
@@ -1091,6 +1128,7 @@ async function cutin(big, small, cls, ms) {
 }
 function freeze(v) {
   frozen = v;
+  Bgm.duck(v);
   document.body.classList.toggle('frozen', v);
 }
 function setStage(cls, cue) {
@@ -1514,6 +1552,7 @@ async function start() {
   busy = true;
   render();
   Sound.wake();
+  Bgm.play();
   Sound.cue(2);
   await cutin('開戦', `${active(S.teams[0]).ch.name} vs ${active(S.teams[1]).ch.name}`, 'gold', 900);
   busy = false;
@@ -1531,6 +1570,7 @@ function init() {
   $('start').onclick = start;
   $('retry').onclick = () => {
     clearTimeout(tickTimer);
+    Bgm.stop();
     $('battle').classList.add('hidden');
     $('select').classList.remove('hidden');
     document.body.classList.remove('in-battle');
@@ -1541,6 +1581,9 @@ function init() {
   };
   FX.sound = loadOpt('kokusen.sound', true);
   FX.short = loadOpt('kokusen.short', false);
+  FX.bgm = loadOpt('kokusen.bgm', true);
+  $('optBgm').onclick = () => { FX.bgm = !FX.bgm; saveOpt('kokusen.bgm', FX.bgm); applyOpts(); };
+  Bgm.init();
   $('optSound').onclick = () => { FX.sound = !FX.sound; saveOpt('kokusen.sound', FX.sound); applyOpts(); if (FX.sound) Sound.wake(); };
   try { FX.level = Number(localStorage.getItem('kokusen.level')) || 2; } catch (e) { FX.level = 2; }
   Object.keys(AI_LEVELS).forEach((k) => {
