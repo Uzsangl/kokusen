@@ -111,6 +111,13 @@
   #battle .shp b { font-size: 1.1rem; }
   #battle .shp .bar { height: 8px; margin: 2px 0; }
   #battle .shp .stats { font-size: .7rem; }
+  .gauges { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .gauge { min-width: 0; }
+  .mini { position: relative; height: 5px; background: #0b0d1c; border: 1px solid var(--line); border-radius: 3px; overflow: hidden; }
+  .mini i { display: block; height: 100%; background: var(--gold); transition: width .35s; }
+  .gauge.up .mini i { background: #7dd3fc; }
+  .gauge.down .mini i { background: #e879f9; }
+  .mini u { position: absolute; top: 0; bottom: 0; width: 1px; background: #fff; opacity: .7; }
   #battle .shp .status { font-size: .64rem; height: 2.5em; overflow: hidden; line-height: 1.25; }
   #battle .cue { height: 1.4em; overflow: hidden; white-space: nowrap; font-size: .92rem; }
   #battle .dmgline { height: 3.7em; overflow: hidden; font-size: .82rem; }
@@ -1143,6 +1150,15 @@ function teamHead(el, t) {
     <div class="chips">${chips}</div>`;
 }
 
+// ATK・DFS の小さなゲージ。素の値より上がっていれば水色、下がっていれば紫。白い線は素の値の位置
+const ATK_GAUGE_MAX = 3000;   // ATKゲージの右端(DFSゲージの右端は上限の DFS_MAX)
+function statGauge(label, now, base, max) {
+  const cls = now > base ? 'up' : now < base ? 'down' : '';
+  const w = Math.min(100, now / max * 100), mark = Math.min(100, base / max * 100);
+  return `<div class="gauge ${cls}"><div class="stats">${statNow(label, now, base)}</div>
+    <div class="mini"><i style="width:${w}%"></i><u style="left:${mark}%"></u></div></div>`;
+}
+
 // 勝負の枠の中:場のカードの名前・HP・ゲージ・能力値・状態
 function stageSide(el, t) {
   const f = active(t), bar = (f.hp / f.ch.hp) * 100;
@@ -1157,7 +1173,7 @@ function stageSide(el, t) {
   el.innerHTML = `<div class="who">${nameOf(f)}<span class="turn">場${f.turn + 1}ラリー目</span></div>
     <div>HP <b>${f.hp}</b> / ${f.ch.hp}</div>
     <div class="bar"><div class="${bar <= 34 ? 'low' : ''}" style="width:${bar}%"></div></div>
-    <div class="stats">${statNow('ATK', baseAtk(f), f.atk)}　${statNow('DFS', baseDfs(f), f.dfs)}</div>
+    <div class="gauges">${statGauge('ATK', baseAtk(f), f.atk, ATK_GAUGE_MAX)}${statGauge('DFS', baseDfs(f), f.dfs, DFS_MAX)}</div>
     <div class="status">${st.join(' / ')}</div>`;
 }
 
