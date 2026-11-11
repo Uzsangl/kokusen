@@ -49,6 +49,8 @@
   }
   button:hover:not(:disabled) { border-color: var(--accent); }
   button:disabled { opacity: .45; cursor: default; }
+  .levels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 4px; }
+  .levels button.picked { border-color: var(--accent); border-width: 2px; box-shadow: 0 0 12px #f5c45144; font-weight: 700; }
   .chars { display: grid; gap: 8px; }
   .chars button { text-align: left; }
   .name { font-weight: 700; }
@@ -252,6 +254,10 @@
     <p class="sub">グーは停止、チョキは跳躍、パーは遡行の技です。ダメージはATKと技の威力で決まり、相手のDFSで軽減されます(DFS1000で10%カット、上限9000)。じゃんけんに3連勝すると BREAK が発生し、次は好きな手のアクションが確定で通ります(あいこでは連勝は途切れません)。BREAK中の攻撃は相手のDFSを無視します。</p>
     <p class="sub">キャラごとに「特性」があります。技にはATKやDFSを数ラリーの間だけ上げ下げするものがあります。極大ダメージは条件を満たしたときだけ出ます(条件を満たした技は赤く光ります)。交代がないまま12ラリー続くと「刻の抜け落ち」が始まり、両者のHPが毎ラリー削れていきます。</p>
     <p class="sub">予兆の色:青 → 緑 → <span style="color:var(--red);font-weight:700">赤(勝ち確定)</span> → <span class="rainbow" style="font-weight:700">虹(撃破かBREAK確定)</span></p>
+    <h2>CPUの強さ</h2>
+    <div class="levels" id="levels"></div>
+    <p class="sub" id="levelNote"></p>
+    <h2>キャラ</h2>
     <div id="charList" class="chars"></div>
     <button id="start" style="width:100%;margin-top:8px"></button>
   </section>
@@ -494,7 +500,7 @@ function newMatch(charsA, charsB) {
   return {
     teams: [newTeam('あなた', charsA), newTeam('CPU', charsB)],
     rally: 0, boutRally: 0, bouts: 0, over: false, winner: null, hit: null, ticks: [], events: [],
-    seen: [],   // プレイヤーがこれまでに出した手(CPUの読みに使う)
+    hist: [],   // これまでの手の記録 [あなたの手, CPUの手](CPUの読みに使う)
   };
 }
 const active = (team) => team.cards[team.idx];
@@ -672,6 +678,7 @@ function endRally(S, log, winSide) {
 
 // 通常のラリー(じゃんけん1回)。戻り値は side0 から見た勝敗 1 / 0 / -1
 function rally(S, hand0, hand1, log) {
+  S.hist.push([hand0, hand1]);
   log(`— ラリー${S.rally + 1}:あなた ${HANDS[hand0].label} / CPU ${HANDS[hand1].label} —`);
   beginRally(S, log);
   const r = judge(hand0, hand1);
@@ -728,17 +735,152 @@ function pickBreakHand(S, side) {
 }
 const randomHand = () => HAND_KEYS[Math.floor(Math.random() * HAND_KEYS.length)];
 
-// CPUの手。プレイヤーが最近よく出している手を読み、その手に勝つ手を出しやすくする。
-// 同じ手を出し続けると読まれて負けやすくなる。ばらして出していれば、ほぼランダムと変わらない。
-// 見ているのは過去の手だけで、今回の手は見ていない。
-const CPU_READ = 0.35;    // 読みに頼る確率
-const CPU_MEMORY = 6;     // 何手前まで見るか
-function pickCpuHand(S) {
-  const recent = S.seen.slice(-CPU_MEMORY);
-  if (recent.length < 3 || Math.random() >= CPU_READ) return randomHand();
-  const guess = recent[Math.floor(Math.random() * recent.length)];   // よく出す手ほど選ばれやすい
-  return HAND_KEYS.find((h) => HANDS[h].beats === guess);
+
+// ===== CPUの思考 =====
+// 難易度ごとに「どこまで先を考えるか」が違う。どの難易度も、今の盤面で9通りの手の組み合わせを
+// 実際に1ラリー進めてみて、その結果の良し悪し(evalState)を比べている。見ているのは過去の手だけ。
+const AI_LEVELS = {
+  1: { name: 'やさしい',   depth: '自分の技の得だけを見る' },
+  2: { name: 'ふつう',     depth: '相手の出方を予測して、それに勝つ手を選ぶ' },
+  3: { name: 'むずかしい', depth: '読まれることまで考えて、読み合いの均衡と相手の癖を両方使う' },
+};
+const beaterOf = (h) => HAND_KEYS.find((k) => HANDS[k].beats === h);   // h に勝つ手
+
+// 盤面のコピー(試しに1ラリー進めるため)。キャラのデータは共有し、変わる部分だけ複製する
+function cloneState(S) {
+  return {
+    ...S, hit: null, ticks: [], events: [], hist: [],
+    teams: S.teams.map((t) => ({ ...t, cards: t.cards.map((c) => ({ ...c, mods: c.mods.map((m) => ({ ...m })) })) })),
+  };
 }
+
+// 片方のチームの「良さ」。残っているカードとHPが主で、強化・弱体・時蝕・連勝を少し加味する
+function teamValue(t) {
+  let v = 0;
+  t.cards.forEach((c) => { if (c.result !== 'lose' && c.hp > 0) v += 0.5 + 0.5 * c.hp / c.ch.hp; });
+  const f = active(t);
+  if (f.hp > 0) {
+    v += (modSum(f, 'atk') + f.atkBonus) / f.atk * 0.15 + f.atkUp / f.atk * 0.1;
+    v += (modSum(f, 'dfs') + f.dfsBonus + f.dfsGain) / 10000 * 0.3 + f.dfsUp / 10000 * 0.15;
+    v -= Math.min(f.hp, f.poison * f.poisonDmg) / f.ch.hp * 0.4;
+  }
+  v += t.breakReady ? 0.35 : t.streak * 0.08;
+  v += (t.keep ? 0.04 : 0) - (t.sealed ? 0.04 : 0);
+  return v;
+}
+function evalState(S, side) {
+  const end = S.over ? (S.winner === side ? 10 : S.winner === 1 - side ? -10 : 0) : 0;
+  return end + teamValue(S.teams[side]) - teamValue(S.teams[1 - side]);
+}
+
+// 損得の表:M[自分の手][相手の手] = その組み合わせで1ラリー進めたとき、自分にとってどれだけ得か
+function payoffMatrix(S, side) {
+  const base = evalState(S, side), M = {}, kill = {};
+  for (const a of HAND_KEYS) {
+    M[a] = {};
+    for (const b of HAND_KEYS) {
+      const T = cloneState(S);
+      rally(T, side === 0 ? a : b, side === 0 ? b : a, () => {});
+      M[a][b] = evalState(T, side) - base;
+      // その手で勝てば相手のカードを倒せるか(理由の説明に使う)
+      if (b === HANDS[a].beats) kill[a] = T.teams[side].wins > S.teams[side].wins;
+    }
+  }
+  M.kill = kill;
+  return M;
+}
+const expect = (M, a, q) => HAND_KEYS.reduce((s, b) => s + q[b] * M[a][b], 0);
+const argmax = (f) => HAND_KEYS.reduce((best, h) => (f(h) > f(best) ? h : best), HAND_KEYS[0]);
+const share = (q) => HAND_KEYS.map((h) => `${HANDS[h].label}${Math.round(q[h] * 100)}%`).join('・');
+
+// 相手が「勝てば一番得」と考えて出しそうな手(深さ1の考え方を相手に当てはめる)
+const naiveFoe = (M) => argmax((b) => -M[HAND_KEYS.find((x) => HANDS[b].beats === x)][b]);
+
+// 相手の過去の手の割合。cond を渡すと、直前のラリーが同じ結果(勝ち・負け・あいこ)だった場面だけを数える
+function foeHabit(S, side, last, cond) {
+  const foe = 1 - side, cnt = { rock: 0, scissors: 0, paper: 0 };
+  let n = 0;
+  const H = S.hist;
+  for (let i = Math.max(cond ? 1 : 0, H.length - last); i < H.length; i++) {
+    if (cond) {
+      const p = H[i - 1], r = judge(p[foe], p[side]);
+      if (r !== cond.r) continue;
+    }
+    cnt[H[i][foe]]++; n++;
+  }
+  const q = {};
+  HAND_KEYS.forEach((h) => { q[h] = n ? cnt[h] / n : 1 / 3; });
+  return { q, n };
+}
+
+// 読み合いの均衡:お互いが相手の傾向に最善で応じ続けたときに落ち着く、手の出し方の割合
+function equilibrium(M) {
+  const mine = { rock: 1, scissors: 1, paper: 1 }, foe = { rock: 1, scissors: 1, paper: 1 };
+  for (let i = 0; i < 300; i++) {
+    const tm = mine.rock + mine.scissors + mine.paper, tf = foe.rock + foe.scissors + foe.paper;
+    const a = argmax((h) => HAND_KEYS.reduce((s, b) => s + foe[b] / tf * M[h][b], 0));
+    const b = argmax((h) => -HAND_KEYS.reduce((s, x) => s + mine[x] / tm * M[x][h], 0));
+    mine[a]++; foe[b]++;
+  }
+  const t = mine.rock + mine.scissors + mine.paper, p = {};
+  HAND_KEYS.forEach((h) => { p[h] = mine[h] / t; });
+  return p;
+}
+
+// CPUの手と、その理由。side はCPUの側、level は難易度
+function aiHand(S, side, level) {
+  const M = payoffMatrix(S, side), me = active(S.teams[side]);
+  const act = (h) => `${HANDS[h].power}「${me.actions[h].name}」` + (M.kill[h] ? '(通れば倒せる)' : '');
+
+  if (level <= 1) {
+    // 深さ1:勝ったときに一番得な自分の技を出す。相手のことは考えない
+    const hand = argmax((a) => M[a][HANDS[a].beats]);
+    return { hand, why: `通れば一番得な${act(hand)}を出した` };
+  }
+
+  const naive = naiveFoe(M);
+  if (level === 2) {
+    // 深さ2:相手の手を予測する(最近の癖+相手が一番出したそうな手)。その予測に対して一番得な手を出す
+    const hab = foeHabit(S, side, 8), w = hab.n >= 3 ? 0.5 : 0, q = {};
+    HAND_KEYS.forEach((h) => { q[h] = w * hab.q[h] + (h === naive ? 0.3 : 0) + (0.7 - w) / 3; });
+    const hand = argmax((a) => expect(M, a, q));
+    const top = argmax((h) => q[h]);
+    return { hand, why: `相手は${HANDS[top].label}が多そう(${share(q)})と読み、${act(hand)}を出した` };
+  }
+
+  // 深さ3:読まれても損をしにくい割合(均衡)を土台にして、相手の癖がはっきりしているほどそこを突く
+  const eq = equilibrium(M);
+  const prev = S.hist[S.hist.length - 1];
+  const all = foeHabit(S, side, 12);
+  const cond = prev ? foeHabit(S, side, 40, { r: judge(prev[1 - side], prev[side]) }) : { q: all.q, n: 0 };
+  const q = {};
+  const wc = Math.min(1, cond.n / 6), wa = Math.min(1, all.n / 8);
+  HAND_KEYS.forEach((h) => { q[h] = 0.45 * wc * cond.q[h] + 0.3 * wa * all.q[h] + (h === naive ? 0.1 : 0) + (0.9 - 0.45 * wc - 0.3 * wa) / 3; });
+  // 予測をどれだけ信じるか:相手の手を多く見たほど信じる。ただし最近こちらが読み負けているなら、
+  // 逆に読まれていると考えて、読まれても損をしにくい均衡の割合に戻す
+  const recent = S.hist.slice(-8).map((p) => judge(p[side], p[1 - side])).filter((r) => r !== 0);
+  const lost = recent.length ? recent.filter((r) => r < 0).length / recent.length : 0;
+  const outread = recent.length >= 5 && lost >= 0.7 ? 0.25 : 1;
+  const trust = Math.min(0.8, all.n / 10 * 0.8) * outread;
+  const best = argmax((a) => expect(M, a, q));
+  const mix = {};
+  HAND_KEYS.forEach((h) => { mix[h] = (1 - trust) * eq[h] + (h === best ? trust : 0); });
+  let r = Math.random(), hand = HAND_KEYS[HAND_KEYS.length - 1];
+  for (const h of HAND_KEYS) { r -= mix[h]; if (r < 0) { hand = h; break; } }
+  const after = prev ? ['負けた', 'あいこの', '勝った'][judge(prev[1 - side], prev[side]) + 1] + '後' : '最初';
+  const note = outread < 1 ? '最近は読み負けているので均衡寄りに戻し、' : '';
+  return { hand, why: `読まれても損をしにくい割合は${share(eq)}。相手は${after}に${HANDS[argmax((h) => q[h])].label}が多い(${share(q)})と読んだ。${note}${share(mix)}の割合から${act(hand)}を出した` };
+}
+
+// ブレイク時の手:3通りを実際に試して、一番良い盤面になる手を選ぶ
+function aiBreakHand(S, side) {
+  return argmax((h) => {
+    const T = cloneState(S);
+    breakRally(T, side, h, () => {});
+    return evalState(T, side);
+  });
+}
+
 function shuffled(arr) {
   const a = arr.slice();
   for (let i = a.length - 1; i > 0; i--) {
@@ -757,7 +899,7 @@ let busy = false;      // 演出中は入力を受け付けない
 let frozen = false;    // BREAKで時間が止まっている間
 
 // ----- 設定(音・演出の長さ) -----
-const FX = { speed: 1, sound: true, short: false };
+const FX = { speed: 1, sound: true, short: false, level: 2 };
 const REDUCE = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 function loadOpt(key, def) {
   try { const v = localStorage.getItem(key); return v === null ? def : v === '1'; } catch (e) { return def; }
@@ -996,7 +1138,7 @@ function teamHead(el, t) {
   const streak = t.breakReady
     ? `<span class="break">${BREAK_NAME}!</span>`
     : '●'.repeat(t.streak) + '○'.repeat(Math.max(0, BREAK_STREAK - t.streak)) + (reach ? ' リーチ!' : '');
-  el.innerHTML = `<div class="head"><span>${t.label} <span class="score">撃破${t.wins}</span></span>
+  el.innerHTML = `<div class="head"><span>${t.label}${t === S.teams[1] ? `(${AI_LEVELS[FX.level].name})` : ''} <span class="score">撃破${t.wins}</span></span>
     <span class="streak${reach ? ' reach' : ''}">${streak}</span></div>
     <div class="chips">${chips}</div>`;
 }
@@ -1222,9 +1364,10 @@ async function finale() {
 
 async function normalRally(hand) {
   const b = before();
-  const cpuHand = pickCpuHand(S);
-  S.seen.push(hand);   // CPUが手を決めたあとで記録する
+  const ai = aiHand(S, 1, FX.level);   // CPUは、あなたの今回の手を見ずに決める
+  const cpuHand = ai.hand;
   const r = rally(S, hand, cpuHand, logLater);
+  logLater(`　CPUの考え(${AI_LEVELS[FX.level].name}):${ai.why}`);
   const o = outcome(b);
   const side = r === 0 ? -1 : r > 0 ? 0 : 1;
   const reach = b.streak[0] >= BREAK_STREAK - 1 ? 0 : b.streak[1] >= BREAK_STREAK - 1 ? 1 : -1;
@@ -1279,7 +1422,7 @@ async function cpuBreak() {
   Sound.breakIn();
   await cutin(BREAK_NAME, '相手の時間だけが動く', 'violet', 1000);
   const b = before();
-  const h = pickBreakHand(S, 1);
+  const h = FX.level >= 2 ? aiBreakHand(S, 1) : pickBreakHand(S, 1);
   breakRally(S, 1, h, logLater);
   const o = outcome(b);
   await transformFx(o);
@@ -1304,6 +1447,12 @@ async function play(hand) {
     render();
     tickLoop();
   }
+}
+
+// ----- 難易度 -----
+function renderLevels() {
+  [...$('levels').children].forEach((b, i) => b.classList.toggle('picked', i + 1 === FX.level));
+  $('levelNote').textContent = `${AI_LEVELS[FX.level].name}:${AI_LEVELS[FX.level].depth}。CPUが何を考えてその手を出したかは、対戦中のログで見られます。`;
 }
 
 // ----- キャラ選択 -----
@@ -1377,6 +1526,14 @@ function init() {
   FX.sound = loadOpt('kokusen.sound', true);
   FX.short = loadOpt('kokusen.short', false);
   $('optSound').onclick = () => { FX.sound = !FX.sound; saveOpt('kokusen.sound', FX.sound); applyOpts(); if (FX.sound) Sound.wake(); };
+  try { FX.level = Number(localStorage.getItem('kokusen.level')) || 2; } catch (e) { FX.level = 2; }
+  Object.keys(AI_LEVELS).forEach((k) => {
+    const b = document.createElement('button');
+    b.textContent = AI_LEVELS[k].name;
+    b.onclick = () => { FX.level = Number(k); try { localStorage.setItem('kokusen.level', k); } catch (e) { /* 保存できなくても動く */ } renderLevels(); };
+    $('levels').appendChild(b);
+  });
+  renderLevels();
   $('optShort').onclick = () => { FX.short = !FX.short; saveOpt('kokusen.short', FX.short); applyOpts(); };
   applyOpts();
   renderSelect();
