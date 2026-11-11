@@ -73,7 +73,6 @@
   .hands { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
   .hands button { font-size: 1.8rem; padding: 12px 4px; transition: transform .08s; }
   .hands button:active:not(:disabled) { transform: scale(.94); }
-  .hands button span { display: block; font-size: .8rem; color: var(--sub); }
   .result { text-align: center; font-weight: 700; min-height: 1.5em; margin: 8px 0; }
   #log { max-height: 220px; overflow-y: auto; font-size: .85rem; color: var(--sub); }
   #log div { padding: 3px 0; border-bottom: 1px solid var(--line); }
@@ -87,6 +86,53 @@
   .score { color: var(--text); font-weight: 700; }
   .break { font-weight: 900; }
   .hidden { display: none; }
+
+  /* 対戦画面:スクロールなしで全部見えるように詰める */
+  body.in-battle { padding: 6px 8px; }
+  body.in-battle header { margin-bottom: 5px; }
+  body.in-battle h1 { font-size: 1.05rem; }
+  body.in-battle .clock { width: 20px; height: 20px; }
+  body.in-battle .clock i { height: 7px; }
+  body.in-battle .opts button { padding: 2px 8px; font-size: .68rem; }
+  #battle { font-size: .74rem; line-height: 1.3; }
+  #battle > * { margin-bottom: 5px; }
+  .teams, .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; transition: filter calc(.3s * var(--spd)); }
+  .team { border: 1px solid var(--line); border-radius: 8px; padding: 3px 6px; background: var(--panel); min-width: 0; }
+  #you { border-color: #6b5a2a; } #cpu { border-color: #453a86; }
+  .team .head { display: flex; justify-content: space-between; gap: 4px; color: var(--sub); white-space: nowrap; }
+  .team .chips { margin: 2px 0 0; gap: 2px; }
+  .team .chip { font-size: .6rem; padding: 0 3px; border-radius: 6px; }
+  #battle .stage { padding: 6px 8px; gap: 3px 8px; }
+  #battle .slot { font-size: 1.9rem; height: 46px; line-height: 46px; }
+  #battle .boutinfo { font-size: .7rem; }
+  #battle .shp { font-size: .7rem; }
+  #battle .shp b { font-size: 1.1rem; }
+  #battle .shp .bar { height: 8px; margin: 2px 0; }
+  #battle .shp .stats { font-size: .7rem; }
+  #battle .shp .status { font-size: .64rem; min-height: 2.5em; line-height: 1.25; }
+  #battle .cue { min-height: 1.4em; font-size: .92rem; }
+  #battle .dmgline { min-height: 2.5em; font-size: .82rem; }
+  #battle .dmgline b { font-size: 1.6rem; }
+  #battle .dmgline .heal b, #battle .dmgline .tick b { font-size: 1.05rem; }
+  #battle .dmgline .tick { font-size: .7rem; }
+  #battle .result { margin: 0 0 5px; min-height: 1.3em; font-size: .8rem; }
+  .col { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+  .col .trait { font-size: .66rem; margin: 0; min-height: 3.9em; line-height: 1.3; }
+  #battle .hands { display: flex; flex-direction: column; gap: 4px; }
+  #battle .hands button, .act {
+    display: flex; align-items: center; gap: 6px; text-align: left; width: 100%;
+    padding: 4px 6px; border-radius: 8px; font-size: .68rem; line-height: 1.3; min-height: 3.6rem;
+  }
+  .act { border: 1px dashed var(--line); background: #0f1228; color: var(--sub); }
+  .ico { font-size: 1.5rem; flex: none; }
+  .txt { min-width: 0; color: var(--sub); }
+  .txt b { display: block; color: var(--text); font-size: .72rem; }
+  .hot .txt, .hot .txt b { color: var(--red); font-weight: 700; }
+  #battle .hands button.hot { border-color: var(--red); box-shadow: 0 0 10px #ff4d5e66; }
+  .foot { display: flex; gap: 6px; }
+  .foot button { flex: 1; padding: 5px; font-size: .72rem; }
+  #logPanel { padding: 8px; }
+  #log { max-height: 40vh; }
 
   /* 虹色の文字(BREAK・確定) */
   .rainbow, .break {
@@ -141,7 +187,7 @@
   .hands.breaking button { border-color: #fff; border-width: 2px; box-shadow: 0 0 18px #fff8, 0 0 30px #8b6cff88; animation: pulse .5s ease-in-out infinite alternate; }
 
   /* 静止(BREAK中):色が抜ける */
-  body.frozen .fighters, body.frozen #logPanel { filter: grayscale(1) brightness(.55); }
+  body.frozen .teams, body.frozen .cols { filter: grayscale(1) brightness(.55); }
 
   /* 揺れ */
   .shake { animation: shake calc(.3s * var(--spd)) linear; }
@@ -159,7 +205,8 @@
     position: absolute; font-weight: 900; font-size: 2rem; white-space: nowrap; transform: translate(-50%, -50%);
     text-shadow: 0 2px 0 #000, 0 0 12px currentColor; animation: pop 1.7s ease-out forwards;
   }
-  .pop.buff { color: #7dd3fc; font-size: 1.3rem; } .pop.debuff { color: #e879f9; font-size: 1.3rem; }
+  .pop.buff { color: #7dd3fc; font-size: 1.05rem; } .pop.debuff { color: #e879f9; font-size: 1.05rem; }
+  .pop.small { font-size: 1.15rem; }
   .pop.dmg { color: #ff9aa5; } .pop.heal { color: #6ee7a0; } .pop.big { font-size: 3rem; }
   .pop.t-white { color: #ffffff; } .pop.t-red { color: #ff3b4e; } .pop.t-gold { color: #ffd24a; }
   .pop.rainbow { text-shadow: none; filter: drop-shadow(0 2px 0 #000) drop-shadow(0 0 10px #fff); font-size: 3.2rem; animation: pop 1.7s ease-out forwards, hue 1.2s linear infinite; }
@@ -205,27 +252,37 @@
   </section>
 
   <section id="battle" class="hidden">
-    <div class="fighters">
-      <div class="panel" id="you"></div>
-      <div class="panel" id="cpu"></div>
+    <div class="teams">
+      <div class="team" id="you"></div>
+      <div class="team" id="cpu"></div>
     </div>
-    <div class="panel">
-      <div class="stage" id="stage">
-        <div class="boutinfo" id="boutInfo"></div>
-        <div class="slot" id="slotYou">?</div>
-        <div class="vs">VS</div>
-        <div class="slot" id="slotCpu">?</div>
-        <div class="shp" id="hpYou"></div>
-        <div></div>
-        <div class="shp" id="hpCpu"></div>
-        <div class="cue" id="cue"></div>
-        <div class="dmgline" id="dmgLine"></div>
+    <div class="stage" id="stage">
+      <div class="boutinfo" id="boutInfo"></div>
+      <div class="slot" id="slotYou">?</div>
+      <div class="vs">VS</div>
+      <div class="slot" id="slotCpu">?</div>
+      <div class="shp" id="hpYou"></div>
+      <div></div>
+      <div class="shp" id="hpCpu"></div>
+      <div class="cue" id="cue"></div>
+      <div class="dmgline" id="dmgLine"></div>
+    </div>
+    <div class="result" id="result">手を選んでください</div>
+    <div class="cols">
+      <div class="col">
+        <div class="trait" id="traitYou"></div>
+        <div class="hands" id="hands"></div>
       </div>
-      <div class="result" id="result">手を選んでください</div>
-      <div class="hands" id="hands"></div>
-      <button id="retry" class="hidden" style="width:100%;margin-top:8px">キャラ選択に戻る</button>
+      <div class="col">
+        <div class="trait" id="traitCpu"></div>
+        <div class="hands" id="cpuActs"></div>
+      </div>
     </div>
-    <div class="panel" id="logPanel"><h2>ログ</h2><div id="log"></div></div>
+    <div class="foot">
+      <button id="logBtn">ログを見る</button>
+      <button id="retry" class="hidden">キャラ選択に戻る</button>
+    </div>
+    <div class="panel hidden" id="logPanel"><div id="log"></div></div>
   </section>
 </main>
 
@@ -389,25 +446,29 @@ function damage(S, att, def, rate, isBreak) {
   return Math.round(atk * rate * att.ch.phys * (1 - dfsOf(def, isBreak) / 10000));
 }
 
-const modText = (m) => `${m.to === 'self' ? '自分' : '相手'}の${m.stat === 'atk' ? 'ATK' : 'DFS'}${m.v > 0 ? '+' : '−'}${Math.abs(m.v)}(${m.t}ラリー)`;
+const modText = (m, short) => (short
+  ? `${m.to === 'self' ? '自' : '敵'}${m.stat === 'atk' ? 'ATK' : 'DFS'}${m.v > 0 ? '+' : '−'}${Math.abs(m.v)}(${m.t})`
+  : `${m.to === 'self' ? '自分' : '相手'}の${m.stat === 'atk' ? 'ATK' : 'DFS'}${m.v > 0 ? '+' : '−'}${Math.abs(m.v)}(${m.t}ラリー)`);
+const RATE_SHORT = { 1: '通常', 1.25: '大', 1.5: '特大', 2: '極大' };
 
-// 技の説明。rate を渡すと、いま実際に出るダメージ段階で表示する
-function describe(a, rate) {
+// 技の説明。rate を渡すと、いま実際に出るダメージ段階で表示する。short は対戦画面用の短い書き方
+function describe(a, rate, short) {
   const parts = [];
-  if (a.rate) parts.push(RATE_LABEL[rate || a.rate] + (a.up ? `(${a.up.text})` : ''));   // 係数の数値は裏データなので出さない
+  // 係数の数値は裏データなので出さない
+  if (a.rate) parts.push(short ? RATE_SHORT[rate || a.rate] + (a.up && !rate ? `(${a.up.text})` : '') : RATE_LABEL[rate || a.rate] + (a.up ? `(${a.up.text})` : ''));
   if (a.heal) parts.push(`HP${a.heal}回復`);
-  if (a.atkUp) parts.push(`次の攻撃ATK+${a.atkUp}`);
-  if (a.dfsUp) parts.push(`次の被弾DFS+${a.dfsUp}`);
-  (a.mods || []).forEach((m) => parts.push(modText(m)));
-  if (a.poison) parts.push(`時蝕${a.poison}ラリー`);
-  if (a.cleanse) parts.push('自分のデバフと時蝕を消す');
-  if (a.cure) parts.push('自分の時蝕を消す');
-  if (a.streak) parts.push(`自分の連勝+${a.streak}`);
-  if (a.seal) parts.push('相手の次の勝ちを連勝に数えない');
-  if (a.keep) parts.push('次に負けても連勝が途切れない');
-  if (a.nextAtkUp) parts.push(`次の番手の最初の攻撃ATK+${a.nextAtkUp}`);
-  if (a.nextDfsUp) parts.push(`次の番手の最初の被弾DFS+${a.nextDfsUp}`);
-  return parts.join('、');
+  if (a.atkUp) parts.push(short ? `次撃ATK+${a.atkUp}` : `次の攻撃ATK+${a.atkUp}`);
+  if (a.dfsUp) parts.push(short ? `次被弾DFS+${a.dfsUp}` : `次の被弾DFS+${a.dfsUp}`);
+  (a.mods || []).forEach((m) => parts.push(modText(m, short)));
+  if (a.poison) parts.push(short ? `時蝕${a.poison}` : `時蝕${a.poison}ラリー`);
+  if (a.cleanse) parts.push(short ? 'デバフ・時蝕解除' : '自分のデバフと時蝕を消す');
+  if (a.cure) parts.push(short ? '時蝕解除' : '自分の時蝕を消す');
+  if (a.streak) parts.push(short ? `連勝+${a.streak}` : `自分の連勝+${a.streak}`);
+  if (a.seal) parts.push(short ? '連勝封じ' : '相手の次の勝ちを連勝に数えない(連勝封じ)');
+  if (a.keep) parts.push(short ? '連勝保護' : '次に負けても連勝が途切れない(連勝保護)');
+  if (a.nextAtkUp) parts.push(short ? `次番手ATK+${a.nextAtkUp}` : `次の番手の最初の攻撃ATK+${a.nextAtkUp}`);
+  if (a.nextDfsUp) parts.push(short ? `次番手DFS+${a.nextDfsUp}` : `次の番手の最初の被弾DFS+${a.nextDfsUp}`);
+  return parts.join(short ? '・' : '、');
 }
 
 function newTeam(label, chars) {
@@ -826,10 +887,11 @@ const Particles = (() => {
 })();
 
 // ----- 画面効果 -----
-const panelOf = (side) => $(side === 0 ? 'you' : 'cpu');
+// 数字や粒を出す位置:勝負の枠の中の、手の表示のところ
+const panelOf = (side) => $(side === 0 ? 'slotYou' : 'slotCpu');
 function center(el) {
   const r = el.getBoundingClientRect();
-  return { x: r.left + r.width / 2, y: r.top + r.height / 3 };
+  return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
 }
 function flash(color) {
   if (REDUCE) return;
@@ -892,71 +954,85 @@ const logLater = (t) => logBuf.push(t);
 function flushLog() { logBuf.forEach(log); logBuf = []; }
 
 // ----- 描画 -----
-function actionList(ch, tag, cls, foe, isBreak) {
+function actionList(ch, tag, cls) {
   return HAND_KEYS.map((h) => {
     const a = ch.actions[h];
-    const hot = foe && upActive(a, ch, foe, S.boutRally + 1, isBreak);
-    return `<${tag} class="${cls}${hot ? ' hot' : ''}">${HANDS[h].icon} ${HANDS[h].power}「${a.name}」:${describe(a, hot ? a.up.rate : 0)}</${tag}>`;
+    return `<${tag} class="${cls}">${HANDS[h].icon} ${HANDS[h].power}「${a.name}」:${describe(a)}</${tag}>`;
   }).join('');
 }
 // 能力値を、素の値より上がっていれば↑、下がっていれば↓を付けて表示する
 const statNow = (label, now, base) => `${label} <span class="${now > base ? 'up' : now < base ? 'down' : ''}">${now}${now > base ? '↑' : now < base ? '↓' : ''}</span>`;
-
 // フィジカル係数(phys)は裏データなので画面には出さない
 const statLine = (ch) => `ATK ${ch.atk}　DFS ${ch.dfs}`;
 const traitLine = (ch) => `特性「${ch.trait.name}」:${ch.trait.desc}`;
 
-function renderTeam(el, t, foeTeam) {
+// --- 対戦画面は、スクロールしなくても全部見えるように1画面に詰める ---
+
+// 上段:本数・連勝・5枚の並び
+function teamHead(el, t) {
   const mark = { win: '○', lose: '×', draw: '△' };
   const chips = t.cards.map((c, i) => {
     const cls = c.result === 'lose' ? 'chip ko' : i === t.idx && !c.result ? 'chip on' : 'chip';
-    return `<span class="${cls}">${i + 1}.${c.ch.name}${c.result ? mark[c.result] : ''}</span>`;
+    return `<span class="${cls}">${c.ch.name}${c.result ? mark[c.result] : ''}</span>`;
   }).join('');
   const reach = !t.breakReady && t.streak >= BREAK_STREAK - 1;
   const streak = t.breakReady
     ? `<span class="break">${BREAK_NAME}!</span>`
-    : '連勝 ' + '●'.repeat(t.streak) + '○'.repeat(Math.max(0, BREAK_STREAK - t.streak)) + (reach ? ' リーチ!' : '');
-  const f = active(t);
-  const bar = (f.hp / f.ch.hp) * 100;
+    : '●'.repeat(t.streak) + '○'.repeat(Math.max(0, BREAK_STREAK - t.streak)) + (reach ? ' リーチ!' : '');
+  el.innerHTML = `<div class="head"><span>${t.label} <span class="score">${t.wins}本</span></span>
+    <span class="streak${reach ? ' reach' : ''}">${streak}</span></div>
+    <div class="chips">${chips}</div>`;
+}
+
+// 勝負の枠の中:場のカードの名前・HP・ゲージ・能力値・状態
+function stageSide(el, t) {
+  const f = active(t), bar = (f.hp / f.ch.hp) * 100;
   const st = [];
   f.mods.forEach((m) => st.push(`${m.stat === 'atk' ? 'ATK' : 'DFS'}${m.v > 0 ? '+' : '−'}${Math.abs(m.v)}(残${m.t})`));
-  if (f.atkBonus) st.push(`記録 ATK+${f.atkBonus}`);
-  if (f.atkUp) st.push(`次ATK+${f.atkUp}`);
-  if (f.dfsUp) st.push(`次DFS+${f.dfsUp}`);
+  if (f.atkBonus) st.push(`記録ATK+${f.atkBonus}`);
+  if (f.atkUp) st.push(`次撃ATK+${f.atkUp}`);
+  if (f.dfsUp) st.push(`次被弾DFS+${f.dfsUp}`);
   if (f.poison) st.push(`時蝕${f.poison}(${f.poisonDmg})`);
   if (t.keep) st.push('連勝保護');
   if (t.sealed) st.push('連勝封じ');
-  el.innerHTML = `
-    <div class="sub">${t.label}　<span class="score">${t.wins}本</span>/${WINS_NEEDED}本先取</div>
-    <div class="sub"><span class="streak${reach ? ' reach' : ''}">${streak}</span></div>
-    <div class="chips">${chips}</div>
-    <div class="name">${t.idx + 1}番手 ${nameOf(f)}</div>
-    <div class="hp">HP <b>${f.hp}</b> / ${f.ch.hp}</div>
+  el.innerHTML = `<div class="who">${t.idx + 1}番手 ${nameOf(f)}</div>
+    <div>HP <b>${f.hp}</b> / ${f.ch.hp}</div>
     <div class="bar"><div class="${bar <= 34 ? 'low' : ''}" style="width:${bar}%"></div></div>
     <div class="stats">${statNow('ATK', baseAtk(f), f.atk)}　${statNow('DFS', baseDfs(f), f.dfs)}</div>
-    <div class="trait">${traitLine(f.ch)}</div>
-    <div class="status">${st.join(' / ')}</div>
-    <ul class="actions">${actionList(f, 'li', '', active(foeTeam), t.breakReady)}</ul>`;
+    <div class="status">${st.join(' / ')}</div>`;
 }
 
-// 勝負の枠の中に出す、場のカードの名前・HP・ゲージ
-function stageHp(el, t) {
-  const f = active(t), bar = (f.hp / f.ch.hp) * 100;
-  el.innerHTML = `<div class="who">${nameOf(f)}</div>
-    <div>HP <b>${f.hp}</b> / ${f.ch.hp}</div>
-    <div class="bar"><div class="${bar <= 34 ? 'low' : ''}" style="width:${bar}%"></div></div>`;
+// 技1つぶんの中身。条件を満たして格上げ中の技は hot
+function actHtml(card, foe, h, isBreak) {
+  const a = card.actions[h];
+  const hot = upActive(a, card, foe, S.boutRally + 1, isBreak);
+  return { hot, html: `<span class="ico">${HANDS[h].icon}</span><span class="txt"><b>${HANDS[h].power}「${a.name}」</b>${describe(a, hot ? a.up.rate : 0, true)}</span>` };
 }
 
 function render() {
-  stageHp($('hpYou'), S.teams[0]);
-  stageHp($('hpCpu'), S.teams[1]);
+  const [you, cpu] = S.teams, me = active(you), foe = active(cpu);
+  teamHead($('you'), you);
+  teamHead($('cpu'), cpu);
+  stageSide($('hpYou'), you);
+  stageSide($('hpCpu'), cpu);
   const n = S.boutRally + 1, decay = n > DECAY_FROM;
-  $('boutInfo').textContent = S.over ? '' : `${S.teams[0].idx + 1}番手戦　${n}ラリー目` + (decay ? '　刻の抜け落ち!' : n === DECAY_FROM ? '　次から刻の抜け落ち' : '');
+  $('boutInfo').textContent = S.over ? '' : `${you.idx + 1}番手戦　${n}ラリー目` + (decay ? '　刻の抜け落ち!' : n === DECAY_FROM ? '　次から刻の抜け落ち' : '');
   $('boutInfo').className = 'boutinfo' + (decay ? ' warn' : '');
-  renderTeam($('you'), S.teams[0], S.teams[1]);
-  renderTeam($('cpu'), S.teams[1], S.teams[0]);
-  $('hands').classList.toggle('breaking', S.teams[0].breakReady && !busy);
-  document.querySelectorAll('#hands button').forEach((b) => { b.disabled = S.over || busy; });
+
+  // 下段:左が自分(技がそのまま手のボタン)、右が相手の技
+  $('traitYou').textContent = traitLine(me.ch);
+  $('traitCpu').textContent = traitLine(foe.ch);
+  document.querySelectorAll('#hands button').forEach((b) => {
+    const r = actHtml(me, foe, b.dataset.hand, you.breakReady);
+    b.innerHTML = r.html;
+    b.classList.toggle('hot', r.hot);
+    b.disabled = S.over || busy;
+  });
+  $('cpuActs').innerHTML = HAND_KEYS.map((h) => {
+    const r = actHtml(foe, me, h, cpu.breakReady);
+    return `<div class="act${r.hot ? ' hot' : ''}">${r.html}</div>`;
+  }).join('');
+  $('hands').classList.toggle('breaking', you.breakReady && !busy);
   $('retry').classList.toggle('hidden', !S.over);
 }
 const setResult = (t) => { $('result').textContent = t; };
@@ -1057,16 +1133,16 @@ function pops(o, big) {
   }
   o.ticks.forEach((t) => {
     if (t.heal) {
-      setTimeout(() => pop(t.side, '+' + t.heal, 'heal'), 350 * FX.speed);
+      setTimeout(() => pop(t.side, '+' + t.heal, 'heal small', 40), 350 * FX.speed);
       lines.push(`<div class="heal tick">${o.names[t.side]}は処置で<b data-n="${t.heal}">0</b>回復</div>`);
     } else {
-      setTimeout(() => pop(t.side, '-' + t.dmg, 'dmg'), 350 * FX.speed);
+      setTimeout(() => pop(t.side, '-' + t.dmg, 'dmg small', 40), 350 * FX.speed);
       lines.push(`<div class="dmg tick${t.side === 1 ? ' mine' : ''}">${o.names[t.side]}は${t.decay ? '刻の抜け落ち' : '時蝕'}で<b data-n="${t.dmg}">0</b>ダメージ</div>`);
     }
   });
   // バフ・デバフが付いた・消えたことを、キャラの上に文字で出す
   o.events.filter((e) => e.type === 'mod').forEach((e, i) => {
-    setTimeout(() => pop(e.side, e.text, e.good ? 'buff' : 'debuff', 46 + i * 30), (500 + i * 180) * FX.speed);
+    setTimeout(() => pop(e.side, e.text, e.good ? 'buff' : 'debuff', -34 - i * 20), (300 + i * 180) * FX.speed);
   });
   $('dmgLine').innerHTML = lines.join('');
   $('dmgLine').querySelectorAll('b').forEach(countUp);
@@ -1245,6 +1321,10 @@ async function start() {
   setResult('手を選んでください');
   $('select').classList.add('hidden');
   $('battle').classList.remove('hidden');
+  $('logPanel').classList.add('hidden');
+  $('logBtn').textContent = 'ログを見る';
+  document.body.classList.add('in-battle');
+  window.scrollTo(0, 0);
   busy = true;
   render();
   Sound.wake();
@@ -1258,7 +1338,7 @@ async function start() {
 function init() {
   HAND_KEYS.forEach((h) => {
     const b = document.createElement('button');
-    b.innerHTML = `${HANDS[h].icon}<span>${HANDS[h].label}・${HANDS[h].power}</span>`;
+    b.dataset.hand = h;
     b.onclick = () => play(h);
     $('hands').appendChild(b);
   });
@@ -1267,6 +1347,11 @@ function init() {
     clearTimeout(tickTimer);
     $('battle').classList.add('hidden');
     $('select').classList.remove('hidden');
+    document.body.classList.remove('in-battle');
+  };
+  $('logBtn').onclick = () => {
+    const hid = $('logPanel').classList.toggle('hidden');
+    $('logBtn').textContent = hid ? 'ログを見る' : 'ログを閉じる';
   };
   FX.sound = loadOpt('kokusen.sound', true);
   FX.short = loadOpt('kokusen.short', false);
