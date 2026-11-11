@@ -172,7 +172,7 @@
 
   <section id="select" class="panel">
     <h2>出す順に5枚選ぶ</h2>
-    <p class="sub">同じ番手のカード同士が1対1で戦い、相手を倒すと1本です。決着したら両者とも次の番手に交代し、先に3本取った側の勝ちです。グーは停止、チョキは跳躍、パーは遡行の技です。ダメージは「ATK × ダメージ係数 × フィジカル係数(体)」を相手のDFSで軽減した値です(DFS1000で10%カット、上限9000)。じゃんけんに3連勝すると BREAK が発生し、次は好きな手のアクションが確定で通ります(あいこでは連勝は途切れません)。</p>
+    <p class="sub">同じ番手のカード同士が1対1で戦い、相手を倒すと1本です。決着したら両者とも次の番手に交代し、先に3本取った側の勝ちです。グーは停止、チョキは跳躍、パーは遡行の技です。ダメージは「ATK × ダメージ係数」を相手のDFSで軽減した値です(DFS1000で10%カット、上限9000)。じゃんけんに3連勝すると BREAK が発生し、次は好きな手のアクションが確定で通ります(あいこでは連勝は途切れません)。</p>
     <p class="sub">予兆の色:青 → 緑 → <span style="color:var(--red);font-weight:700">赤(勝ち確定)</span> → <span class="rainbow" style="font-weight:700">虹(撃破かBREAK確定)</span></p>
     <div id="charList" class="chars"></div>
     <button id="start" style="width:100%;margin-top:8px"></button>
@@ -211,7 +211,7 @@
 // 能力値:
 //   hp   体力        atk  攻撃力
 //   dfs  防御力。1000で被ダメージ10%カット、9000で90%カット(上限 DFS_MAX)
-//   phys フィジカル係数。キャラごとの体格・地力による与ダメージの倍率
+//   phys フィジカル係数。キャラごとの体格・地力による与ダメージの倍率(裏データ。画面には出さない)
 // ダメージ = ATK × ダメージ係数 × フィジカル係数 ×(1 − 相手のDFS ÷ 10000)
 //
 // アクションの効果:
@@ -686,7 +686,8 @@ function actionList(ch, tag, cls) {
   }).join('');
 }
 
-const statLine = (ch) => `ATK ${ch.atk}　DFS ${ch.dfs}　体 ×${ch.phys}`;
+// フィジカル係数(phys)は裏データなので画面には出さない
+const statLine = (ch) => `ATK ${ch.atk}　DFS ${ch.dfs}`;
 
 function renderTeam(el, t) {
   const mark = { win: '○', lose: '×', draw: '△' };
