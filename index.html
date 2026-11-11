@@ -59,7 +59,7 @@
   #you { border-color: #6b5a2a; }
   #cpu { border-color: #453a86; }
   .bar { height: 12px; background: #0b0d1c; border-radius: 6px; overflow: hidden; margin: 4px 0; }
-  .bar > div { height: 100%; background: linear-gradient(90deg, #22c55e, var(--hp)); transition: width .35s; }
+  .bar > div { height: 100%; background: linear-gradient(90deg, #22c55e, var(--hp)); transition: width .7s ease-out; }
   .bar > div.low { background: linear-gradient(90deg, #b91c1c, var(--hp-low)); }
   .hp { font-size: .85rem; color: var(--sub); font-variant-numeric: tabular-nums; }
   .hp b { font-size: 1.25rem; color: var(--text); }
@@ -1395,8 +1395,11 @@ function statGauge(label, now, base, max) {
 }
 
 // 勝負の枠の中:場のカードの名前・HP・ゲージ・能力値・状態
-function stageSide(el, t) {
-  const f = active(t), bar = (f.hp / f.ch.hp) * 100;
+function stageSide(el, t, f) {
+  const bar = (f.hp / f.ch.hp) * 100;
+  // 同じカードなら、前の長さから今の長さへゲージを動かす(減っていく様子が見える)
+  const from = el.dataset.card === f.ch.id ? Number(el.dataset.bar) : bar;
+  el.dataset.card = f.ch.id; el.dataset.bar = bar;
   const st = [];
   f.mods.forEach((m) => st.push(`${m.stat === 'atk' ? 'ATK' : 'DFS'}${m.v > 0 ? '+' : '−'}${Math.abs(m.v)}(残${m.t})`));
   if (f.atkBonus) st.push(`記録ATK+${f.atkBonus}`);
@@ -1407,9 +1410,10 @@ function stageSide(el, t) {
   if (t.sealed) st.push('連勝封じ');
   el.innerHTML = `<div class="who">${nameOf(f)}<span class="turn">場${f.turn + 1}ラリー目</span></div>
     <div>HP <b>${f.hp}</b> / ${f.ch.hp}</div>
-    <div class="bar"><div class="${bar <= 34 ? 'low' : ''}" style="width:${bar}%"></div></div>
+    <div class="bar"><div class="hpbar ${bar <= 34 ? 'low' : ''}" style="width:${from}%"></div></div>
     <div class="gauges">${statGauge('ATK', baseAtk(f), f.atk, ATK_GAUGE_MAX)}${statGauge('DFS', baseDfs(f), f.dfs, DFS_MAX)}</div>
     <div class="status">${st.join(' / ')}</div>`;
+  if (from !== bar) { const hb = el.querySelector('.hpbar'); void hb.offsetWidth; hb.style.width = bar + '%'; }
 }
 
 // 技1つぶんの中身。条件を満たして格上げ中の技は hot
@@ -1419,12 +1423,13 @@ function actHtml(card, foe, h, isBreak) {
   return { hot, html: `<span class="ico">${HANDS[h].icon}</span><span class="txt"><b>${HANDS[h].power}「${a.name}」</b>${describe(a, hot ? a.up.rate : 0, true)}</span>` };
 }
 
-function render() {
-  const [you, cpu] = S.teams, me = active(you), foe = active(cpu);
+// view を渡すと、場のカードの代わりにそのカードを表示する(倒れた直後に、倒れたカードを見せ続けるため)
+function render(view) {
+  const [you, cpu] = S.teams, me = view ? view[0] : active(you), foe = view ? view[1] : active(cpu);
   teamHead($('you'), you);
   teamHead($('cpu'), cpu);
-  stageSide($('hpYou'), you);
-  stageSide($('hpCpu'), cpu);
+  stageSide($('hpYou'), you, me);
+  stageSide($('hpCpu'), cpu, foe);
   const n = S.boutRally + 1, decay = n > DECAY_FROM;
   $('boutInfo').textContent = S.over ? '' : `交代から${n}ラリー目` + (decay ? '　刻の抜け落ち!' : n === DECAY_FROM ? '　次から刻の抜け落ち' : '');
   $('boutInfo').className = 'boutinfo' + (decay ? ' warn' : '');
@@ -1462,6 +1467,7 @@ function outcome(b) {
     ko: S.bouts > b.bouts,
     boutWin: dead[1] && !dead[0] ? 0 : dead[0] && !dead[1] ? 1 : -1,   // 倒した側(相打ちは -1)
     names: b.cards.map(nameOf), no: b.no, events: S.events.slice(),
+    cards: b.cards,   // このラリーを戦ったカード(倒れたあとも表示に使う)
     hit: S.hit, ticks: S.ticks.slice(),   // 実際に与えた数値(とどめの一撃でも減らさない)
   };
 }
@@ -1512,7 +1518,8 @@ async function shatter(violet) {
 }
 
 // プチュン:相手を倒す一撃が決まる瞬間の確定演出。
-// 音が途切れて暗転 → 無音 → 低いうなりと火種 → 中心から画面が焼けて白く飛ぶ。このあと技の命中と「撃破!」に続く
+// 流れ:じゃんけんに勝つ → 技名のカットイン → ダメージ表示 → HPゲージが空になる → ここ → 「撃破!」
+// 音が途切れて暗転 → 無音 → 低いうなりと火種 → 中心から画面が焼けて白く飛ぶ
 async function puchun() {
   // 短縮モードでも、何が起きたか分かる長さは残す
   const wait = (ms) => new Promise((r) => setTimeout(r, Math.max(ms * 0.5, ms * FX.speed)));
@@ -1520,10 +1527,10 @@ async function puchun() {
   Bgm.duck(true);
   $('blackout').classList.add('on');
   Sound.puchun();
-  await wait(1300);                       // 真っ暗で無音
+  await wait(2000);                       // 真っ暗で無音
   if (!REDUCE) $('burn').className = 'ember';
-  Sound.rumble(1.0);
-  await wait(1000);                       // 火種がくすぶる
+  Sound.rumble(1.5);
+  await wait(1500);                       // 火種がくすぶる
   Sound.burn();
   if (!REDUCE) { $('burn').className = 'on'; shake(true); }
   await wait(850);                        // 焼け広がる
@@ -1536,7 +1543,7 @@ async function puchun() {
   Bgm.duck(false);
 }
 
-async function spin(hand, cpuHand, heat, reach, kill) {
+async function spin(hand, cpuHand, heat, reach) {
   $('slotYou').textContent = HANDS[hand].icon;
   setResult('…');
   $('dmgLine').innerHTML = '';
@@ -1561,13 +1568,6 @@ async function spin(hand, cpuHand, heat, reach, kill) {
     await cutin('確定', '刻が、重なる', 'rainbow', 750);
   }
   clearInterval(iv);
-  if (kill) {
-    // リールが止まる前に暗転し、明けたときには手が決まっている
-    await puchun();
-    $('slotCpu').textContent = HANDS[cpuHand].icon;
-    $('stage').classList.remove('spinning');
-    return;
-  }
   $('slotCpu').textContent = HANDS[cpuHand].icon;
   Sound.stop();
   $('stage').classList.remove('spinning');
@@ -1581,7 +1581,10 @@ async function strike(side, hand, a, o, isBreak) {
   const hits = (o.hit ? o.hit.rate : 0) * 2.5;   // 演出の強さ(極大で5)
   const rate = o.hit ? o.hit.rate : 0;   // 実際に出たダメージ段階(条件つきの格上げ込み)
   const big = isBreak || rate >= RATE.huge;
+  const kill = mine && o.ko && o.boutWin === 0;   // 自分の一撃で相手を倒した
+  // 技名のカットイン:極大のときと、倒す一撃のとき
   if (rate >= RATE.max) { Sound.cue(3); await cutin(a.name, RATE_LABEL[rate], 'red', 650); }
+  else if (kill) { Sound.cue(2); await cutin(a.name, `${HANDS[hand].power}の一撃`, 'gold', 700); }
   setStage(mine ? 'win' : 'lose', `${HANDS[hand].power}「${a.name}」`);
   flash(isBreak ? '#ffffff' : mine ? '#f5c451' : '#8b6cff');
   shake(big);
@@ -1589,9 +1592,16 @@ async function strike(side, hand, a, o, isBreak) {
   if ((o.hit && o.hit.heal) || (!dealt && (a.heal || a.atkUp || a.dfsUp))) Sound.heal();
   const c = center(panelOf(1 - side));
   if (dealt > 0 || isBreak) Particles.burst(c.x, c.y, isBreak ? 120 : 20 + hits * 12, isBreak ? COLORS.rainbow : mine ? COLORS.gold : COLORS.violet, isBreak ? 12 : 5 + hits);
-  render(); flushLog(); pops(o, big);
-  await sleep(isBreak ? 1100 : 800);
+  // このラリーを戦ったカードのまま描く。倒れたカードは、HPゲージが空になっていくところを見せる
+  render(o.cards); flushLog(); pops(o, big);
+  if (kill) {
+    await new Promise((r) => setTimeout(r, Math.max(1000, 1500 * FX.speed)));   // ダメージとゲージを見せる間
+    await puchun();
+  } else {
+    await sleep(isBreak ? 1100 : 800);
+  }
 }
+
 // 与えたダメージ・回復を、数字が浮かぶ演出と、舞台の下に残る一文の両方で見せる
 function pops(o, big) {
   const lines = [];
@@ -1656,7 +1666,8 @@ async function aftermath(o) {
   if (w >= 0) Particles.crumble(panelOf(1 - w).getBoundingClientRect(), COLORS.sand);
   Sound.ko(o.boutWin === 0);
   const sub = w === 0 ? `${o.names[1]}を倒した` : w === 1 ? `${o.names[0]}が倒れた` : `${o.names[0]}と${o.names[1]}が同時に倒れた`;
-  await cutin(w === 0 ? '撃破!' : w === 1 ? '一本取られた' : '相打ち', sub, w === 0 ? 'rainbow' : w === 1 ? 'violet' : 'plain', 950);
+  await cutin(w === 0 ? '撃破!' : w === 1 ? '一本取られた' : '相打ち', sub, w === 0 ? 'rainbow' : w === 1 ? 'violet' : 'plain', w === 0 ? 1300 : 950);
+  render();   // ここで次のカードに切り替える
 }
 
 // 試合の決着
@@ -1691,7 +1702,7 @@ async function normalRally(hand) {
   const vs = `${HANDS[hand].icon} vs ${HANDS[cpuHand].icon}　`;
 
   await transformFx(o);
-  await spin(hand, cpuHand, pickHeat(side, o, S.teams[0].breakReady), reach, o.ko && o.boutWin === 0 && side === 0);
+  await spin(hand, cpuHand, pickHeat(side, o, S.teams[0].breakReady), reach);
 
   if (side < 0) {
     setStage('', 'あいこ');
@@ -1729,7 +1740,6 @@ async function playerBreak(hand) {
   await transformFx(o);
   await sleep(300);
   freeze(false);
-  if (o.ko && o.boutWin === 0) await puchun();
   setResult(`${BREAK_NAME}! ${HANDS[hand].icon} が確定で通った`);
   await strike(0, hand, b.cards[0].actions[hand], o, true);
   await aftermath(o);
