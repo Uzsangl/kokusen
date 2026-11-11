@@ -145,6 +145,8 @@
   .txt b { display: block; color: var(--text); font-size: .72rem; }
   .hot .txt, .hot .txt b { color: var(--red); font-weight: 700; }
   #battle .hands button.hot { border-color: var(--red); box-shadow: 0 0 10px #ff4d5e66; }
+  .credit { font-size: .62rem; color: var(--sub); text-align: center; margin: 0; }
+  .credit a { color: var(--sub); }
   .foot { display: flex; gap: 6px; }
   .foot button { flex: 1; padding: 5px; font-size: .72rem; }
   #logPanel { padding: 8px; }
@@ -334,6 +336,7 @@
       <button id="retry" class="hidden">キャラ選択に戻る</button>
     </div>
     <div class="panel hidden" id="logPanel"><div id="log"></div></div>
+    <p class="credit hidden" id="bgmCredit">音楽:<a href="https://nagumorizu.com/" target="_blank" rel="noopener">なぐもりずの音楽室</a>(南雲莉翠)</p>
   </section>
 </main>
 
@@ -1179,37 +1182,77 @@ const Sound = (() => {
 })();
 
 // ----- BGM -----
-// index.html と同じ場所に置いた曲ファイルを、対戦中にループ再生する。
-// ファイルが無ければ何もせず、「曲」ボタンも出さない。
-const BGM_FILES = ['bgm.mp3', 'bgm.ogg', 'bgm.wav'];   // 上から順に探して、最初に読めたものを使う
+// 曲は「なぐもりずの音楽室」(https://nagumorizu.com/)の楽曲。利用条件と表記は bgm/CREDIT.txt にある。
+// main は対戦中の曲、climax は決着が近いときの曲。ファイルが読めなければ何もせず、「曲」ボタンも出さない。
+const BGM_TRACKS = { main: 'bgm/The-Battle-of-Beliefs.mp3', climax: 'bgm/No-Fear-Anymore.mp3' };
 const BGM_VOLUME = 0.35;
 const Bgm = (() => {
-  const el = new Audio();
-  el.loop = true; el.preload = 'auto'; el.volume = BGM_VOLUME;
-  let idx = 0, ready = false, on = true, want = false, fade = null;
-  el.addEventListener('canplay', () => {
-    ready = true;
-    $('optBgm').classList.remove('hidden');
-    if (want && on) el.play().catch(() => {});
-  });
-  el.addEventListener('error', () => { if (!ready && ++idx < BGM_FILES.length) el.src = BGM_FILES[idx]; });
-  function to(v, ms) {
-    clearInterval(fade);
+  const els = {}, ready = {}, fades = {};
+  let on = true, want = false, now = 'main', ducked = false;
+  const target = () => (ducked ? 0.04 : BGM_VOLUME);
+  function fade(name, v, ms, then) {
+    const el = els[name];
+    clearInterval(fades[name]);
     const from = el.volume, t0 = Date.now();
-    fade = setInterval(() => {
+    fades[name] = setInterval(() => {
       const k = Math.min(1, (Date.now() - t0) / ms);
-      el.volume = from + (v - from) * k;
-      if (k >= 1) clearInterval(fade);
+      el.volume = Math.max(0, Math.min(1, from + (v - from) * k));
+      if (k >= 1) { clearInterval(fades[name]); if (then) then(); }
     }, 30);
   }
+  function startNow() {
+    const el = els[now];
+    if (!want || !on || !ready[now]) return;
+    el.volume = target();
+    el.play().catch(() => {});
+  }
   return {
-    init() { el.src = BGM_FILES[0]; },
-    setOn(v) { on = v; if (!ready) return; if (v && want) el.play().catch(() => {}); else el.pause(); },
-    play() { want = true; if (ready && on) { el.volume = BGM_VOLUME; el.play().catch(() => {}); } },
-    stop() { want = false; el.pause(); },
-    duck(v) { if (ready) to(v ? 0.04 : BGM_VOLUME, 250); },   // BREAKで時間が止まる間は小さくする
+    init() {
+      Object.keys(BGM_TRACKS).forEach((name) => {
+        const el = els[name] = new Audio();
+        el.loop = true; el.preload = 'auto'; el.volume = BGM_VOLUME;
+        el.addEventListener('canplay', () => {
+          ready[name] = true;
+          if (name === 'main') { $('optBgm').classList.remove('hidden'); $('bgmCredit').classList.remove('hidden'); }
+          if (name === now) startNow();
+        });
+        el.src = BGM_TRACKS[name];
+      });
+    },
+    setOn(v) { on = v; if (v) startNow(); else Object.values(els).forEach((el) => el.pause()); },
+    // 対戦開始:最初の曲を頭から流す
+    play() {
+      want = true; now = 'main'; ducked = false;
+      Object.values(els).forEach((el) => { el.pause(); try { el.currentTime = 0; } catch (e) { /* まだ読み込み中 */ } });
+      startNow();
+    },
+    stop() { want = false; Object.values(els).forEach((el) => el.pause()); },
+    // 曲を切り替える(前の曲を小さくしながら、次の曲を頭から流す)。次の曲が読めていなければ切り替えない
+    switchTo(name) {
+      if (name === now || !ready[name]) return;
+      const old = now; now = name;
+      if (!want || !on) return;
+      fade(old, 0, 600, () => els[old].pause());
+      try { els[name].currentTime = 0; } catch (e) { /* 頭出しできなくても流す */ }
+      els[name].volume = 0;
+      els[name].play().catch(() => {});
+      fade(name, target(), 600);
+    },
+    current: () => now,
+    duck(v) { ducked = v; if (ready[now]) fade(now, target(), 250); },   // 時間が止まる間は小さくする
   };
 })();
+
+// 決着が近いときの曲に切り替える条件。
+// 対人戦:相手の残りが1枚になったとき。CPU戦:相手チーム全体の残りHPが25%以下になったとき
+// (ストーリーモードはまだないので、CPU戦をその代わりにしている)
+function bgmCheck() {
+  if (!S || S.over || Bgm.current() === 'climax') return;
+  const cards = S.teams[1].cards;
+  const left = cards.filter((c) => c.hp > 0 && c.result !== 'lose');
+  const hp = left.reduce((s, c) => s + c.hp, 0), max = cards.reduce((s, c) => s + c.ch.hp, 0);
+  if (PVP.on ? left.length <= 1 : hp <= max * 0.25) Bgm.switchTo('climax');
+}
 
 // ----- 粒(刻のかけら) -----
 const COLORS = {
@@ -1427,6 +1470,7 @@ function render(view) {
   const n = S.boutRally + 1, decay = n > DECAY_FROM;
   $('boutInfo').textContent = S.over ? '' : `交代から${n}ラリー目` + (decay ? '　刻の抜け落ち!' : n === DECAY_FROM ? '　次から刻の抜け落ち' : '');
   $('boutInfo').className = 'boutinfo' + (decay ? ' warn' : '');
+  bgmCheck();
 
   // 下段:左が自分(技がそのまま手のボタン)、右が相手の技
   $('traitYou').textContent = traitLine(me.ch);
