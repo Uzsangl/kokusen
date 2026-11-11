@@ -6,36 +6,46 @@
 <title>刻戦</title>
 <style>
   :root {
-    --bg: #f4f1ea; --panel: #ffffff; --text: #22201c; --sub: #6b665c;
-    --line: #d9d3c5; --accent: #c2410c; --hp: #2f9e44; --hp-low: #e03131;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      --bg: #1b1a17; --panel: #262420; --text: #ece8df; --sub: #a39d90;
-      --line: #3b3832; --accent: #fb923c; --hp: #51cf66; --hp-low: #ff6b6b;
-    }
-  }
-  :root[data-theme="dark"] {
-    --bg: #1b1a17; --panel: #262420; --text: #ece8df; --sub: #a39d90;
-    --line: #3b3832; --accent: #fb923c; --hp: #51cf66; --hp-low: #ff6b6b;
+    --bg: #090b16; --panel: #141830; --text: #eef0ff; --sub: #9aa0c3;
+    --line: #2b3157; --accent: #f5c451; --hp: #4ade80; --hp-low: #ff4d5e;
+    --gold: #f5c451; --violet: #8b6cff; --red: #ff4d5e; --spd: 1; --tick: 8s;
   }
   * { box-sizing: border-box; }
   body {
-    margin: 0; padding: 16px; background: var(--bg); color: var(--text);
+    margin: 0; padding: 16px; color: var(--text);
+    background: radial-gradient(1200px 600px at 50% -10%, #1c2250 0%, var(--bg) 60%) fixed var(--bg);
     font-family: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
-    line-height: 1.5;
+    line-height: 1.5; overflow-x: hidden;
   }
   main { max-width: 640px; margin: 0 auto; }
-  h1 { font-size: 1.3rem; margin: 0 0 12px; }
+  header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  h1 {
+    font-size: 1.6rem; margin: 0; letter-spacing: .2em; font-weight: 900;
+    background: linear-gradient(180deg, #fff3c4, var(--gold) 55%, #b9791a);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
   h2 { font-size: 1rem; margin: 0 0 8px; }
+  .clock {
+    width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--gold);
+    position: relative; flex: none; box-shadow: 0 0 10px #f5c45166;
+  }
+  .clock i {
+    position: absolute; left: 50%; bottom: 50%; width: 2px; height: 11px; margin-left: -1px;
+    background: var(--gold); transform-origin: 50% 100%;
+    animation: spin var(--tick) linear infinite;
+  }
+  body.frozen .clock i { animation-play-state: paused; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .opts { margin-left: auto; display: flex; gap: 6px; }
+  .opts button { padding: 4px 10px; font-size: .78rem; border-radius: 16px; }
+  .opts button.off { opacity: .5; }
   .panel {
-    background: var(--panel); border: 1px solid var(--line);
-    border-radius: 10px; padding: 12px; margin-bottom: 12px;
+    background: linear-gradient(180deg, #181d3a, var(--panel)); border: 1px solid var(--line);
+    border-radius: 12px; padding: 12px; margin-bottom: 12px; position: relative;
   }
   button {
-    font: inherit; color: var(--text); background: var(--panel);
-    border: 1px solid var(--line); border-radius: 10px; padding: 10px;
-    cursor: pointer;
+    font: inherit; color: var(--text); background: #1b2042;
+    border: 1px solid var(--line); border-radius: 10px; padding: 10px; cursor: pointer;
   }
   button:hover:not(:disabled) { border-color: var(--accent); }
   button:disabled { opacity: .45; cursor: default; }
@@ -43,38 +53,124 @@
   .chars button { text-align: left; }
   .name { font-weight: 700; }
   .sub { color: var(--sub); font-size: .85rem; }
-  .fighters { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .bar { height: 12px; background: var(--line); border-radius: 6px; overflow: hidden; margin: 4px 0; }
-  .bar > div { height: 100%; background: var(--hp); transition: width .25s; }
-  .bar > div.low { background: var(--hp-low); }
+  .fighters { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; transition: filter calc(.3s * var(--spd)); }
+  #you { border-color: #6b5a2a; }
+  #cpu { border-color: #453a86; }
+  .bar { height: 12px; background: #0b0d1c; border-radius: 6px; overflow: hidden; margin: 4px 0; }
+  .bar > div { height: 100%; background: linear-gradient(90deg, #22c55e, var(--hp)); transition: width .35s; }
+  .bar > div.low { background: linear-gradient(90deg, #b91c1c, var(--hp-low)); }
   .status { min-height: 1.3em; font-size: .85rem; color: var(--accent); }
-  ul.actions { list-style: none; padding: 0; margin: 6px 0 0; font-size: .85rem; }
+  ul.actions { list-style: none; padding: 0; margin: 6px 0 0; font-size: .82rem; }
   ul.actions li { padding: 2px 0; border-top: 1px dashed var(--line); }
   .hands { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-  .hands button { font-size: 1.6rem; padding: 12px 4px; }
+  .hands button { font-size: 1.8rem; padding: 12px 4px; transition: transform .08s; }
+  .hands button:active:not(:disabled) { transform: scale(.94); }
   .hands button span { display: block; font-size: .8rem; color: var(--sub); }
-  .result { text-align: center; font-weight: 700; min-height: 1.5em; margin-bottom: 8px; }
-  #log { max-height: 220px; overflow-y: auto; font-size: .88rem; }
+  .result { text-align: center; font-weight: 700; min-height: 1.5em; margin: 8px 0; }
+  #log { max-height: 220px; overflow-y: auto; font-size: .85rem; color: var(--sub); }
   #log div { padding: 3px 0; border-bottom: 1px solid var(--line); }
-  .chars button.picked { border-color: var(--accent); border-width: 2px; }
+  .chars button.picked { border-color: var(--accent); border-width: 2px; box-shadow: 0 0 12px #f5c45144; }
   .chips { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0 6px; }
   .chip { font-size: .72rem; padding: 1px 6px; border: 1px solid var(--line); border-radius: 8px; color: var(--sub); }
   .chip.on { border-color: var(--accent); color: var(--text); font-weight: 700; }
   .chip.ko { text-decoration: line-through; opacity: .5; }
   .streak { white-space: nowrap; }
+  .streak.reach { color: var(--red); font-weight: 900; animation: pulse calc(.5s * var(--spd)) ease-in-out infinite alternate; }
   .score { color: var(--text); font-weight: 700; }
-  .break { color: var(--accent); font-weight: 700; }
-  .hands.breaking button { border-color: var(--accent); border-width: 2px; }
+  .break { font-weight: 900; }
   .hidden { display: none; }
+
+  /* 虹色の文字(BREAK・確定) */
+  .rainbow, .break {
+    background: linear-gradient(90deg, #ff4d5e, #f5c451, #4ade80, #38bdf8, #8b6cff, #ff4d5e);
+    background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent;
+    animation: hue 1.2s linear infinite;
+  }
+  @keyframes hue { to { background-position: 200% 0; } }
+  @keyframes pulse { from { opacity: .55; } to { opacity: 1; } }
+
+  /* 勝負の舞台(手の表示とリール) */
+  .stage {
+    display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px;
+    border: 2px solid var(--line); border-radius: 12px; padding: 10px; background: #0b0d1c;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .slot {
+    font-size: 2.6rem; text-align: center; height: 72px; line-height: 72px;
+    border-radius: 10px; background: #12152b; border: 1px solid var(--line);
+  }
+  .stage.spinning #slotCpu { animation: reel .16s linear infinite; }
+  @keyframes reel { 0% { transform: translateY(-6px); opacity: .6; } 50% { transform: translateY(6px); opacity: 1; } 100% { transform: translateY(-6px); opacity: .6; } }
+  .vs { font-weight: 900; color: var(--sub); letter-spacing: .1em; }
+  .cue { grid-column: 1 / -1; text-align: center; min-height: 1.6em; font-weight: 900; font-size: 1.05rem; }
+  .stage.heat1 { border-color: #38bdf8; box-shadow: 0 0 14px #38bdf877; }
+  .stage.heat2 { border-color: #4ade80; box-shadow: 0 0 18px #4ade8088; }
+  .stage.heat3 { border-color: var(--red); box-shadow: 0 0 26px #ff4d5ecc; animation: pulse calc(.35s * var(--spd)) ease-in-out infinite alternate; }
+  .stage.heat3 .cue { color: var(--red); font-size: 1.3rem; }
+  .stage.heat4 { border-color: #fff; box-shadow: 0 0 34px #fff, 0 0 60px #8b6cff; background: linear-gradient(90deg, #3a0d16, #3a300d, #0d3a1c, #0d2a3a, #1c0d3a); background-size: 300% 100%; animation: hue 1s linear infinite; }
+  .stage.heat4 .cue { font-size: 1.5rem; }
+  .stage.win { border-color: var(--gold); box-shadow: 0 0 24px #f5c451aa; }
+  .stage.win .cue { color: var(--gold); }
+  .stage.lose { border-color: var(--violet); box-shadow: 0 0 24px #8b6cffaa; }
+  .stage.lose .cue { color: #c9b8ff; }
+  .hands.breaking button { border-color: #fff; border-width: 2px; box-shadow: 0 0 18px #fff8, 0 0 30px #8b6cff88; animation: pulse .5s ease-in-out infinite alternate; }
+
+  /* 静止(BREAK中):色が抜ける */
+  body.frozen .fighters, body.frozen #logPanel { filter: grayscale(1) brightness(.55); }
+
+  /* 揺れ */
+  .shake { animation: shake calc(.3s * var(--spd)) linear; }
+  .shake-big { animation: shakeBig calc(.5s * var(--spd)) linear; }
+  @keyframes shake { 0%,100% { transform: none; } 20% { transform: translate(-5px, 2px); } 40% { transform: translate(5px, -2px); } 60% { transform: translate(-3px, 1px); } 80% { transform: translate(3px, -1px); } }
+  @keyframes shakeBig { 0%,100% { transform: none; } 10% { transform: translate(-12px, 5px) rotate(-.6deg); } 25% { transform: translate(11px, -6px) rotate(.6deg); } 40% { transform: translate(-9px, 4px); } 55% { transform: translate(8px, -3px); } 70% { transform: translate(-5px, 2px); } 85% { transform: translate(3px, -1px); } }
+
+  /* 画面全体にかぶせる演出の層 */
+  #fx { position: fixed; inset: 0; pointer-events: none; z-index: 10; overflow: hidden; }
+  #particles { position: absolute; inset: 0; width: 100%; height: 100%; }
+  #flash { position: absolute; inset: 0; opacity: 0; }
+  #flash.on { animation: flash calc(.45s * var(--spd)) ease-out; }
+  @keyframes flash { from { opacity: .55; } to { opacity: 0; } }
+  .pop {
+    position: absolute; font-weight: 900; font-size: 2.2rem; transform: translate(-50%, -50%);
+    text-shadow: 0 2px 0 #000, 0 0 12px currentColor; animation: pop .9s ease-out forwards;
+  }
+  .pop.dmg { color: #ff6b78; } .pop.heal { color: #6ee7a0; } .pop.big { font-size: 3.4rem; color: var(--gold); }
+  @keyframes pop { 0% { opacity: 0; transform: translate(-50%, -20%) scale(.4); } 20% { opacity: 1; transform: translate(-50%, -60%) scale(1.3); } 100% { opacity: 0; transform: translate(-50%, -160%) scale(1); } }
+  #cutin { position: absolute; left: 0; right: 0; top: 34%; display: none; }
+  #cutin.show { display: block; }
+  #cutin .band {
+    padding: 14px 8px; text-align: center; transform: skewY(-4deg);
+    background: linear-gradient(90deg, transparent, #000d 15%, #000d 85%, transparent);
+    border-top: 3px solid var(--c, var(--gold)); border-bottom: 3px solid var(--c, var(--gold));
+    animation: band calc(.25s * var(--spd)) ease-out;
+  }
+  #cutin .big { font-size: clamp(2.6rem, 13vw, 5rem); font-weight: 900; letter-spacing: .12em; line-height: 1.1; color: var(--c, var(--gold)); text-shadow: 0 0 24px var(--c, var(--gold)); animation: slam calc(.3s * var(--spd)) cubic-bezier(.2, 1.6, .4, 1); }
+  #cutin .small { font-size: .95rem; color: #fff; letter-spacing: .08em; }
+  #cutin.gold { --c: #f5c451; } #cutin.violet { --c: #a78bff; } #cutin.plain { --c: #cfd3ee; } #cutin.red { --c: #ff4d5e; }
+  #cutin.rainbow .band { border-color: #fff; }
+  #cutin.rainbow .big { text-shadow: none; filter: drop-shadow(0 0 14px #fff); }
+  @keyframes band { from { transform: skewY(-4deg) scaleY(0); } to { transform: skewY(-4deg) scaleY(1); } }
+  @keyframes slam { from { transform: scale(3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) {
+    .shake, .shake-big, #flash.on, .stage.heat3, .stage.heat4, .streak.reach { animation: none; }
+  }
 </style>
 </head>
 <body>
-<main>
-  <h1>刻戦</h1>
+<main id="main">
+  <header>
+    <div class="clock"><i></i></div>
+    <h1>刻戦</h1>
+    <div class="opts">
+      <button id="optSound">音 ON</button>
+      <button id="optShort">演出 フル</button>
+    </div>
+  </header>
 
   <section id="select" class="panel">
     <h2>出す順に5枚選ぶ</h2>
     <p class="sub">同じ番手のカード同士が1対1で戦い、相手を倒すと1本です。決着したら両者とも次の番手に交代し、先に3本取った側の勝ちです。グーは停止、チョキは跳躍、パーは遡行の技です。じゃんけんに3連勝すると BREAK が発生し、次は好きな手のアクションが確定で通ります(あいこでは連勝は途切れません)。</p>
+    <p class="sub">予兆の色:青 → 緑 → <span style="color:var(--red);font-weight:700">赤(勝ち確定)</span> → <span class="rainbow" style="font-weight:700">虹(撃破かBREAK確定)</span></p>
     <div id="charList" class="chars"></div>
     <button id="start" style="width:100%;margin-top:8px"></button>
   </section>
@@ -85,13 +181,25 @@
       <div class="panel" id="cpu"></div>
     </div>
     <div class="panel">
+      <div class="stage" id="stage">
+        <div class="slot" id="slotYou">?</div>
+        <div class="vs">VS</div>
+        <div class="slot" id="slotCpu">?</div>
+        <div class="cue" id="cue"></div>
+      </div>
       <div class="result" id="result">手を選んでください</div>
       <div class="hands" id="hands"></div>
       <button id="retry" class="hidden" style="width:100%;margin-top:8px">キャラ選択に戻る</button>
     </div>
-    <div class="panel"><h2>ログ</h2><div id="log"></div></div>
+    <div class="panel" id="logPanel"><h2>ログ</h2><div id="log"></div></div>
   </section>
 </main>
+
+<div id="fx" aria-hidden="true">
+  <canvas id="particles"></canvas>
+  <div id="flash"></div>
+  <div id="cutin"><div class="band"><div class="big" id="cutBig"></div><div class="small" id="cutSmall"></div></div></div>
+</div>
 
 <script>
 // sim.js と共有するルール部分(DOMに触らない)
@@ -328,13 +436,222 @@ function shuffled(arr) {
 const $ = (id) => document.getElementById(id);
 let S = null;
 let picked = [];
+let busy = false;      // 演出中は入力を受け付けない
+let frozen = false;    // BREAKで時間が止まっている間
 
+// ----- 設定(音・演出の長さ) -----
+const FX = { speed: 1, sound: true, short: false };
+const REDUCE = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+function loadOpt(key, def) {
+  try { const v = localStorage.getItem(key); return v === null ? def : v === '1'; } catch (e) { return def; }
+}
+function saveOpt(key, v) { try { localStorage.setItem(key, v ? '1' : '0'); } catch (e) { /* 保存できなくても動く */ } }
+function applyOpts() {
+  FX.speed = FX.short || REDUCE ? 0.35 : 1;
+  document.documentElement.style.setProperty('--spd', FX.speed);
+  $('optSound').textContent = FX.sound ? '音 ON' : '音 OFF';
+  $('optSound').classList.toggle('off', !FX.sound);
+  $('optShort').textContent = FX.short ? '演出 短縮' : '演出 フル';
+  $('optShort').classList.toggle('off', FX.short);
+  Sound.setOn(FX.sound);
+}
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms * FX.speed));
+
+// ----- 音(WebAudioで合成。音声ファイルは使わない) -----
+const Sound = (() => {
+  let ctx = null, master = null, on = true;
+  function ac() {
+    if (!ctx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      ctx = new AC();
+      master = ctx.createGain();
+      master.gain.value = on ? 0.5 : 0;
+      master.connect(ctx.destination);
+    }
+    if (ctx.state === 'suspended') ctx.resume();
+    return ctx;
+  }
+  function tone(f, dur, o = {}) {
+    const c = ac(); if (!c || !on) return;
+    const t = c.currentTime + (o.at || 0);
+    const osc = c.createOscillator(), g = c.createGain();
+    osc.type = o.type || 'sine';
+    osc.frequency.setValueAtTime(f, t);
+    if (o.to) osc.frequency.exponentialRampToValueAtTime(o.to, t + dur);
+    g.gain.setValueAtTime(o.vol || 0.2, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    osc.connect(g); g.connect(master);
+    osc.start(t); osc.stop(t + dur + 0.02);
+  }
+  function noise(dur, o = {}) {
+    const c = ac(); if (!c || !on) return;
+    const t = c.currentTime + (o.at || 0);
+    const buf = c.createBuffer(1, Math.ceil(c.sampleRate * dur), c.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    const src = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
+    src.buffer = buf; f.type = 'lowpass'; f.frequency.value = o.freq || 1200;
+    g.gain.setValueAtTime(o.vol || 0.3, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    src.connect(f); f.connect(g); g.connect(master);
+    src.start(t);
+  }
+  const seq = (notes, step, o) => notes.forEach((f, i) => tone(f, o.dur || 0.12, { ...o, at: i * step }));
+  return {
+    setOn(v) { on = v; if (master) master.gain.value = v ? 0.5 : 0; },
+    wake: ac,
+    tick(n) { tone(n % 2 ? 1500 : 1900, 0.03, { type: 'square', vol: 0.035 }); },
+    reel() { tone(520 + Math.random() * 260, 0.03, { type: 'square', vol: 0.04 }); },
+    stop() { tone(190, 0.14, { type: 'triangle', vol: 0.35, to: 85 }); noise(0.05, { vol: 0.2 }); },
+    heart() { tone(62, 0.14, { vol: 0.7 }); tone(62, 0.14, { vol: 0.5, at: 0.2 }); },
+    cue(lv) {
+      const base = [0, 523, 659, 784, 1047][lv];
+      if (lv >= 4) seq([784, 988, 1175, 1568, 1976, 2349, 3136], 0.06, { type: 'square', vol: 0.12, dur: 0.14 });
+      else seq(Array.from({ length: lv + 1 }, (_, i) => base * Math.pow(1.26, i)), 0.07, { type: 'square', vol: 0.1 });
+    },
+    hit(power) {
+      noise(0.22 + power * 0.03, { vol: 0.45, freq: 900 });
+      tone(130, 0.3, { vol: 0.6, to: 42 });
+      if (power >= 4) tone(880, 0.25, { type: 'sawtooth', vol: 0.12, to: 220 });
+    },
+    heal() { seq([660, 880, 1320], 0.08, { vol: 0.15, dur: 0.2 }); },
+    tie() { tone(950, 0.08, { type: 'triangle', vol: 0.25 }); tone(1270, 0.1, { type: 'triangle', vol: 0.2, at: 0.05 }); },
+    lose() { tone(320, 0.4, { type: 'sawtooth', vol: 0.16, to: 80 }); },
+    breakIn() { tone(180, 0.8, { type: 'sawtooth', vol: 0.14, to: 1700 }); noise(0.8, { vol: 0.12, freq: 3000 }); },
+    breakHit() {
+      [130.8, 196, 261.6, 392, 523.3].forEach((f) => tone(f, 0.9, { type: 'sawtooth', vol: 0.11 }));
+      noise(0.6, { vol: 0.55, freq: 1400 }); tone(160, 0.7, { vol: 0.8, to: 30 });
+    },
+    ko() { tone(420, 0.6, { type: 'triangle', vol: 0.3, to: 48 }); noise(0.7, { vol: 0.25, freq: 500 }); },
+    fanfare() {
+      seq([523, 659, 784, 1047, 784, 1047, 1319], 0.13, { type: 'square', vol: 0.14, dur: 0.2 });
+      [523, 659, 784, 1047].forEach((f) => tone(f, 1.2, { type: 'sawtooth', vol: 0.08, at: 0.95 }));
+    },
+    defeat() { seq([392, 349, 311, 262, 196], 0.2, { type: 'triangle', vol: 0.18, dur: 0.35 }); },
+  };
+})();
+
+// ----- 粒(刻のかけら) -----
+const COLORS = {
+  gold: ['#f5c451', '#ffe9a8', '#ff9d2e'],
+  violet: ['#8b6cff', '#c9b8ff', '#4f3bd1'],
+  rainbow: ['#ff4d5e', '#f5c451', '#4ade80', '#38bdf8', '#8b6cff', '#ffffff'],
+  sand: ['#d8c9a3', '#bfae86', '#8f8160'],
+};
+const Particles = (() => {
+  let list = [], running = false, cv, g;
+  function fit() {
+    cv.width = innerWidth; cv.height = innerHeight;
+  }
+  function loop() {
+    g.clearRect(0, 0, cv.width, cv.height);
+    list = list.filter((p) => p.life > 0);
+    for (const p of list) {
+      p.x += p.vx; p.y += p.vy; p.vy += p.g; p.life--;
+      g.globalAlpha = Math.min(1, p.life / 20);
+      g.fillStyle = p.c;
+      g.fillRect(p.x, p.y, p.s, p.s);
+    }
+    g.globalAlpha = 1;
+    if (list.length) requestAnimationFrame(loop); else running = false;
+  }
+  function add(p) {
+    if (REDUCE) return;
+    if (!cv) { cv = $('particles'); g = cv.getContext('2d'); fit(); addEventListener('resize', fit); }
+    list.push(p);
+    if (!running) { running = true; requestAnimationFrame(loop); }
+  }
+  const pick = (a) => a[Math.floor(Math.random() * a.length)];
+  return {
+    // 一点から飛び散る
+    burst(x, y, n, colors, power = 6) {
+      for (let i = 0; i < n; i++) {
+        const a = Math.random() * Math.PI * 2, v = Math.random() * power + 1;
+        add({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 1.5, g: 0.18, life: 30 + Math.random() * 30, s: 2 + Math.random() * 4, c: pick(colors) });
+      }
+    },
+    // 砂のように崩れ落ちる
+    crumble(rect, colors) {
+      for (let i = 0; i < 90; i++) {
+        add({ x: rect.left + Math.random() * rect.width, y: rect.top + Math.random() * rect.height, vx: (Math.random() - 0.5) * 1.2, vy: Math.random() * 1.5, g: 0.22, life: 50 + Math.random() * 40, s: 2 + Math.random() * 3, c: pick(colors) });
+      }
+    },
+    // 画面上から降り注ぐ
+    shower(colors, n = 160) {
+      for (let i = 0; i < n; i++) {
+        add({ x: Math.random() * innerWidth, y: -20 - Math.random() * 300, vx: (Math.random() - 0.5) * 2, vy: 2 + Math.random() * 4, g: 0.05, life: 120 + Math.random() * 80, s: 3 + Math.random() * 5, c: pick(colors) });
+      }
+    },
+  };
+})();
+
+// ----- 画面効果 -----
+const panelOf = (side) => $(side === 0 ? 'you' : 'cpu');
+function center(el) {
+  const r = el.getBoundingClientRect();
+  return { x: r.left + r.width / 2, y: r.top + r.height / 3 };
+}
+function flash(color) {
+  if (REDUCE) return;
+  const f = $('flash');
+  f.style.background = color;
+  f.classList.remove('on'); void f.offsetWidth; f.classList.add('on');
+}
+function shake(big) {
+  const m = $('main');
+  m.classList.remove('shake', 'shake-big'); void m.offsetWidth;
+  m.classList.add(big ? 'shake-big' : 'shake');
+}
+function pop(side, text, cls) {
+  const c = center(panelOf(side));
+  const d = document.createElement('div');
+  d.className = 'pop ' + cls;
+  d.textContent = text;
+  d.style.left = c.x + 'px'; d.style.top = c.y + 'px';
+  $('fx').appendChild(d);
+  setTimeout(() => d.remove(), 950);
+}
+async function cutin(big, small, cls, ms) {
+  const el = $('cutin');
+  $('cutBig').textContent = big;
+  $('cutBig').className = 'big' + (cls === 'rainbow' ? ' rainbow' : '');
+  $('cutSmall').textContent = small || '';
+  el.className = 'show ' + cls;
+  await sleep(ms);
+  el.className = '';
+}
+function freeze(v) {
+  frozen = v;
+  document.body.classList.toggle('frozen', v);
+}
+function setStage(cls, cue) {
+  $('stage').className = 'stage' + (cls ? ' ' + cls : '');
+  if (cue !== undefined) $('cue').textContent = cue;
+}
+
+// ----- 時計の音:連勝が進むほど速くなる -----
+let tickTimer = null, tickN = 0;
+function tickLoop() {
+  clearTimeout(tickTimer);
+  if (!S || S.over || $('battle').classList.contains('hidden')) return;
+  const heat = Math.min(BREAK_STREAK - 1, Math.max(S.teams[0].streak, S.teams[1].streak));
+  if (!frozen) Sound.tick(tickN++);
+  document.documentElement.style.setProperty('--tick', [8, 4, 1.6][heat] + 's');
+  tickTimer = setTimeout(tickLoop, [900, 600, 360][heat]);
+}
+
+// ----- ログ(演出が終わるまで溜めておく) -----
 function log(text) {
   const d = document.createElement('div');
   d.textContent = text;
   $('log').prepend(d);
 }
+let logBuf = [];
+const logLater = (t) => logBuf.push(t);
+function flushLog() { logBuf.forEach(log); logBuf = []; }
 
+// ----- 描画 -----
 function actionList(ch, tag, cls) {
   return HAND_KEYS.map((h) => {
     const a = ch.actions[h];
@@ -348,9 +665,10 @@ function renderTeam(el, t) {
     const cls = c.result === 'lose' ? 'chip ko' : i === t.idx && !c.result ? 'chip on' : 'chip';
     return `<span class="${cls}">${i + 1}.${c.ch.name}${c.result ? mark[c.result] : ''}</span>`;
   }).join('');
+  const reach = !t.breakReady && t.streak >= BREAK_STREAK - 1;
   const streak = t.breakReady
     ? `<span class="break">${BREAK_NAME}!</span>`
-    : '連勝 ' + '●'.repeat(t.streak) + '○'.repeat(Math.max(0, BREAK_STREAK - t.streak));
+    : '連勝 ' + '●'.repeat(t.streak) + '○'.repeat(Math.max(0, BREAK_STREAK - t.streak)) + (reach ? ' リーチ!' : '');
   const f = active(t);
   const pct = (f.hp / f.ch.hp) * 100;
   const st = [];
@@ -360,7 +678,8 @@ function renderTeam(el, t) {
   if (t.keep) st.push('連勝保護');
   if (t.sealed) st.push('連勝封じ');
   el.innerHTML = `
-    <div class="sub">${t.label}　<span class="score">${t.wins}本</span>/${WINS_NEEDED}本先取　<span class="streak">${streak}</span></div>
+    <div class="sub">${t.label}　<span class="score">${t.wins}本</span>/${WINS_NEEDED}本先取</div>
+    <div class="sub"><span class="streak${reach ? ' reach' : ''}">${streak}</span></div>
     <div class="chips">${chips}</div>
     <div class="name">${t.idx + 1}番手 ${f.ch.name}　HP ${f.hp}/${f.ch.hp}</div>
     <div class="bar"><div class="${pct <= 34 ? 'low' : ''}" style="width:${pct}%"></div></div>
@@ -371,39 +690,208 @@ function renderTeam(el, t) {
 function render() {
   renderTeam($('you'), S.teams[0]);
   renderTeam($('cpu'), S.teams[1]);
-  const brk = S.teams[0].breakReady;
-  $('hands').classList.toggle('breaking', brk);
-  document.querySelectorAll('#hands button').forEach((b) => { b.disabled = S.over; });
+  $('hands').classList.toggle('breaking', S.teams[0].breakReady && !busy);
+  document.querySelectorAll('#hands button').forEach((b) => { b.disabled = S.over || busy; });
   $('retry').classList.toggle('hidden', !S.over);
 }
+const setResult = (t) => { $('result').textContent = t; };
 
-function play(hand) {
-  if (S.over) return;
-  let msg;
-  if (S.teams[0].breakReady) {
-    breakRally(S, 0, hand, log);
-    msg = `${BREAK_NAME}! ${HANDS[hand].icon} が確定で通った`;
-  } else {
-    const cpuHand = randomHand();
-    const r = rally(S, hand, cpuHand, log);
-    msg = `${HANDS[hand].icon} vs ${HANDS[cpuHand].icon}　` + (r === 0 ? 'あいこ' : r > 0 ? '勝ち!' : '負け…');
-    if (S.teams[1].breakReady) {
-      const h = pickBreakHand(S, 1);
-      breakRally(S, 1, h, log);
-      msg += `　→ CPUの${BREAK_NAME}! ${HANDS[h].icon}`;
-    }
-  }
-  if (S.over) {
-    msg = S.winner === -1 ? '引き分け' : S.winner === 0 ? 'あなたの勝利!' : 'あなたの敗北…';
-    msg += `(${S.teams[0].wins}-${S.teams[1].wins})`;
-    log(`=== ${msg} ${S.rally}ラリー ===`);
-  } else if (S.teams[0].breakReady) {
-    msg += `　→ ${BREAK_NAME}! 好きな手が確定で通る`;
-  }
-  $('result').textContent = msg;
-  render();
+// ----- 1ラリーの進行と演出 -----
+// ルールの処理(rally / breakRally)は先に済ませ、その結果を見てから演出を流す。
+function before() {
+  return {
+    cards: S.teams.map(active), hp: S.teams.map((t) => active(t).hp),
+    streak: S.teams.map((t) => t.streak), bouts: S.bouts, no: S.teams[0].idx + 1,
+  };
+}
+function outcome(b) {
+  const res = b.cards.map((c) => c.result);
+  return {
+    d: b.cards.map((c, i) => c.hp - b.hp[i]),   // HPの増減(マイナスがダメージ)
+    ko: S.bouts > b.bouts,
+    boutWin: res[0] === 'win' ? 0 : res[1] === 'win' ? 1 : -1,
+    names: b.cards.map((c) => c.ch.name), no: b.no,
+  };
 }
 
+// 予兆の強さ 0〜4。3(赤)以上は勝ち確定、4(虹)は撃破かBREAK確定。
+// 負け・あいこでも弱い予兆は出る(外れる予兆)。
+function pickHeat(side, o, gotBreak) {
+  const r = Math.random();
+  if (side === 0) {
+    if ((o.ko && o.boutWin === 0) || gotBreak) return r < 0.3 ? 4 : r < 0.75 ? 3 : 2;
+    return r < 0.25 ? 3 : r < 0.6 ? 2 : r < 0.85 ? 1 : 0;
+  }
+  if (side < 0) return r < 0.15 ? 2 : r < 0.4 ? 1 : 0;
+  return r < 0.05 ? 2 : r < 0.25 ? 1 : 0;
+}
+
+// リールが回り、予兆が出て、相手の手が止まるまで
+async function spin(hand, cpuHand, heat, reach) {
+  $('slotYou').textContent = HANDS[hand].icon;
+  setResult('…');
+  setStage('spinning', reach === 0 ? `${BREAK_NAME} リーチ!` : reach === 1 ? '危険! 相手がリーチ' : '');
+  let i = 0;
+  const iv = setInterval(() => {
+    $('slotCpu').textContent = HANDS[HAND_KEYS[i++ % HAND_KEYS.length]].icon;
+    Sound.reel();
+  }, 80);
+  if (reach >= 0) Sound.heart();
+  await sleep(300);
+  if (heat) {
+    $('stage').classList.add('heat' + heat);
+    Sound.cue(heat);
+    if (heat >= 3) $('cue').innerHTML = heat === 4 ? '<span class="rainbow">確定!!</span>' : '激熱!';
+    else if (reach < 0) $('cue').textContent = heat === 2 ? '好機…' : '…';
+  }
+  if (reach >= 0) { await sleep(350); Sound.heart(); }
+  await sleep(300 + heat * 220 + (reach >= 0 ? 250 : 0));
+  if (heat === 4) {
+    Particles.shower(COLORS.rainbow, 60);
+    await cutin('確定', '刻が、重なる', 'rainbow', 750);
+  }
+  clearInterval(iv);
+  $('slotCpu').textContent = HANDS[cpuHand].icon;
+  Sound.stop();
+  $('stage').classList.remove('spinning');
+  await sleep(180);
+}
+
+// 技が通った瞬間
+async function strike(side, hand, a, o, isBreak) {
+  const mine = side === 0;
+  const dealt = -o.d[1 - side];
+  const big = isBreak || dealt >= 4;
+  setStage(mine ? 'win' : 'lose', `${HANDS[hand].power}「${a.name}」`);
+  flash(isBreak ? '#ffffff' : mine ? '#f5c451' : '#8b6cff');
+  shake(big);
+  if (isBreak) Sound.breakHit(); else if (dealt > 0) Sound.hit(dealt); else if (!mine) Sound.lose();
+  if (o.d[side] > 0 || (!dealt && (a.heal || a.power || a.guard))) Sound.heal();
+  const c = center(panelOf(1 - side));
+  if (dealt > 0 || isBreak) Particles.burst(c.x, c.y, isBreak ? 120 : 20 + dealt * 12, isBreak ? COLORS.rainbow : mine ? COLORS.gold : COLORS.violet, isBreak ? 12 : 5 + dealt);
+  render(); flushLog(); pops(o, big);
+  await sleep(isBreak ? 750 : 480);
+}
+function pops(o, big) {
+  o.d.forEach((d, i) => {
+    if (d < 0) pop(i, String(d), 'dmg' + (big ? ' big' : ''));
+    if (d > 0) pop(i, '+' + d, 'heal');
+  });
+}
+
+// 番手戦の決着
+async function aftermath(o) {
+  if (!o.ko) return;
+  await sleep(150);
+  const w = o.boutWin;
+  if (w >= 0) Particles.crumble(panelOf(1 - w).getBoundingClientRect(), COLORS.sand);
+  Sound.ko();
+  const sub = `${o.no}番手戦　${o.names[0]} vs ${o.names[1]}`;
+  await cutin(w === 0 ? '一本!' : w === 1 ? '一本取られた' : '相打ち', sub, w === 0 ? 'gold' : w === 1 ? 'violet' : 'plain', 950);
+}
+
+// 試合の決着
+async function finale() {
+  clearTimeout(tickTimer);
+  freeze(false);
+  const score = `(${S.teams[0].wins}-${S.teams[1].wins})`;
+  const msg = (S.winner === -1 ? '引き分け' : S.winner === 0 ? 'あなたの勝利!' : 'あなたの敗北…') + score;
+  log(`=== ${msg} ${S.rally}ラリー ===`);
+  setResult(msg);
+  render();
+  if (S.winner === 0) {
+    Sound.fanfare(); Particles.shower(COLORS.rainbow, 220); flash('#ffffff');
+    await cutin('勝利', `刻は、あなたの側に確定した ${score}`, 'rainbow', 1900);
+  } else if (S.winner === 1) {
+    Sound.defeat(); Particles.shower(COLORS.violet, 80);
+    await cutin('敗北', `刻は、相手の側に確定した ${score}`, 'violet', 1600);
+  } else {
+    await cutin('引き分け', score, 'plain', 1200);
+  }
+}
+
+async function normalRally(hand) {
+  const b = before();
+  const cpuHand = randomHand();
+  const r = rally(S, hand, cpuHand, logLater);
+  const o = outcome(b);
+  const side = r === 0 ? -1 : r > 0 ? 0 : 1;
+  const reach = b.streak[0] >= BREAK_STREAK - 1 ? 0 : b.streak[1] >= BREAK_STREAK - 1 ? 1 : -1;
+  const vs = `${HANDS[hand].icon} vs ${HANDS[cpuHand].icon}　`;
+
+  await spin(hand, cpuHand, pickHeat(side, o, S.teams[0].breakReady), reach);
+
+  if (side < 0) {
+    setStage('', 'あいこ');
+    Sound.tie();
+    setResult(vs + 'あいこ');
+    render(); flushLog(); pops(o, false);
+    await sleep(350);
+  } else {
+    setResult(vs + (side === 0 ? '勝ち!' : '負け…'));
+    await strike(side, side === 0 ? hand : cpuHand, b.cards[side].ch.actions[side === 0 ? hand : cpuHand], o, false);
+  }
+  await aftermath(o);
+  if (S.over) return finale();
+
+  if (S.teams[0].breakReady) {
+    freeze(true);
+    Sound.breakIn();
+    await cutin(BREAK_NAME, '時が止まる。好きな手が確定で通る', 'rainbow', 1200);
+    setStage('heat4', '');
+    $('cue').innerHTML = `<span class="rainbow">${BREAK_NAME}! 好きな手を選べ</span>`;
+    setResult(`${BREAK_NAME}! 好きな手が確定で通る`);
+  } else if (S.teams[1].breakReady) {
+    await cpuBreak();
+  }
+}
+
+async function playerBreak(hand) {
+  const b = before();
+  breakRally(S, 0, hand, logLater);
+  const o = outcome(b);
+  $('slotYou').textContent = HANDS[hand].icon;
+  $('slotCpu').textContent = '…';
+  await sleep(300);
+  freeze(false);
+  setResult(`${BREAK_NAME}! ${HANDS[hand].icon} が確定で通った`);
+  await strike(0, hand, b.cards[0].ch.actions[hand], o, true);
+  await aftermath(o);
+  if (S.over) return finale();
+}
+
+async function cpuBreak() {
+  freeze(true);
+  Sound.breakIn();
+  await cutin(BREAK_NAME, '相手の時間だけが動く', 'violet', 1000);
+  const b = before();
+  const h = pickBreakHand(S, 1);
+  breakRally(S, 1, h, logLater);
+  const o = outcome(b);
+  $('slotCpu').textContent = HANDS[h].icon;
+  freeze(false);
+  setResult(`CPUの${BREAK_NAME}! ${HANDS[h].icon} が確定で通った`);
+  await strike(1, h, b.cards[1].ch.actions[h], o, true);
+  await aftermath(o);
+  if (S.over) return finale();
+}
+
+async function play(hand) {
+  if (busy || !S || S.over) return;
+  busy = true;
+  render();
+  try {
+    if (S.teams[0].breakReady) await playerBreak(hand);
+    else await normalRally(hand);
+  } finally {
+    busy = false;
+    flushLog();
+    render();
+    tickLoop();
+  }
+}
+
+// ----- キャラ選択 -----
 function renderSelect() {
   $('charList').innerHTML = '';
   CHARACTERS.forEach((ch) => {
@@ -415,6 +903,7 @@ function renderSelect() {
       actionList(ch, 'div', 'sub');
     b.onclick = () => {
       if (order >= 0) picked.splice(order, 1); else picked.push(ch.id);
+      Sound.reel();
       renderSelect();
     };
     $('charList').appendChild(b);
@@ -424,14 +913,25 @@ function renderSelect() {
     ? 'この順番で対戦開始' : `あと${TEAM_SIZE - picked.length}枚選ぶ`;
 }
 
-function start() {
+async function start() {
   const mine = picked.map((id) => CHARACTERS.find((c) => c.id === id));
   S = newMatch(mine, shuffled(CHARACTERS).slice(0, TEAM_SIZE));
   $('log').innerHTML = '';
-  $('result').textContent = '手を選んでください';
+  logBuf = [];
+  freeze(false);
+  $('slotYou').textContent = $('slotCpu').textContent = '?';
+  setStage('', '');
+  setResult('手を選んでください');
   $('select').classList.add('hidden');
   $('battle').classList.remove('hidden');
+  busy = true;
   render();
+  Sound.wake();
+  Sound.cue(2);
+  await cutin('開戦', `1番手戦　${active(S.teams[0]).ch.name} vs ${active(S.teams[1]).ch.name}`, 'gold', 900);
+  busy = false;
+  render();
+  tickLoop();
 }
 
 function init() {
@@ -443,9 +943,15 @@ function init() {
   });
   $('start').onclick = start;
   $('retry').onclick = () => {
+    clearTimeout(tickTimer);
     $('battle').classList.add('hidden');
     $('select').classList.remove('hidden');
   };
+  FX.sound = loadOpt('kokusen.sound', true);
+  FX.short = loadOpt('kokusen.short', false);
+  $('optSound').onclick = () => { FX.sound = !FX.sound; saveOpt('kokusen.sound', FX.sound); applyOpts(); if (FX.sound) Sound.wake(); };
+  $('optShort').onclick = () => { FX.short = !FX.short; saveOpt('kokusen.short', FX.short); applyOpts(); };
+  applyOpts();
   renderSelect();
 }
 init();
