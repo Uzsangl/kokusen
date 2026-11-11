@@ -74,7 +74,7 @@
 
   <section id="select" class="panel">
     <h2>出す順に5枚選ぶ</h2>
-    <p class="sub">同じ番手のカード同士が1対1で戦い、相手を倒すと1本です。決着したら両者とも次の番手に交代し、先に3本取った側の勝ちです。じゃんけんに3連勝すると BREAK が発生し、次は好きな手のアクションが確定で通ります(あいこでは連勝は途切れません)。</p>
+    <p class="sub">同じ番手のカード同士が1対1で戦い、相手を倒すと1本です。決着したら両者とも次の番手に交代し、先に3本取った側の勝ちです。グーは停止、チョキは跳躍、パーは遡行の技です。じゃんけんに3連勝すると BREAK が発生し、次は好きな手のアクションが確定で通ります(あいこでは連勝は途切れません)。</p>
     <div id="charList" class="chars"></div>
     <button id="start" style="width:100%;margin-top:8px"></button>
   </section>
@@ -101,44 +101,58 @@
 //   dmg    相手にダメージ      heal   自分を回復
 //   guard  次に受けるダメージを軽減(1回で消える)
 //   power  次に与えるダメージを増加(1回で消える)
-//   poison 相手に毒(ラリー終了時に1ダメージ、指定ラリー数)
+//   poison 相手に時蝕(ラリー終了時に1ダメージ、指定ラリー数)
+//   streak 自分の連勝を追加で増やす
+//   seal   相手が次にじゃんけんに勝っても連勝に数えない(1回で消える)
+//   keep   自分が次にじゃんけんに負けても連勝が途切れない(1回で消える)
+//   nextPower / nextGuard  次の番手の味方に、与ダメージ増加 / 被ダメージ軽減を渡す
+// 手と時間の力の対応(停止 > 跳躍 > 遡行 > 停止):グー=停止、チョキ=跳躍、パー=遡行
 const TEAM_SIZE = 5;
 const WINS_NEEDED = 3;       // 先にこの本数を取った側の勝ち
 const BREAK_STREAK = 3;      // この回数じゃんけんに連勝するとブレイク
 const BREAK_NAME = 'BREAK';
 
 const HANDS = {
-  rock:     { label: 'グー',   icon: '✊', beats: 'scissors' },
-  scissors: { label: 'チョキ', icon: '✌️', beats: 'paper' },
-  paper:    { label: 'パー',   icon: '🖐️', beats: 'rock' },
+  rock:     { label: 'グー',   power: '停止', icon: '✊', beats: 'scissors' },
+  scissors: { label: 'チョキ', power: '跳躍', icon: '✌️', beats: 'paper' },
+  paper:    { label: 'パー',   power: '遡行', icon: '🖐️', beats: 'rock' },
 };
 const HAND_KEYS = Object.keys(HANDS);
 
+// 陣営ごとに得意な力がある:錨=停止、零=遡行、矢=跳躍(設定は WORLD.md)
 const CHARACTERS = [
-  { id: 'warrior', name: '戦士', hp: 8, actions: {
-      rock:     { name: '強打',   dmg: 4 },
-      scissors: { name: '斬撃',   dmg: 2, power: 2 },
-      paper:    { name: '盾構え', dmg: 1, guard: 2 } } },
-  { id: 'priest', name: '僧侶', hp: 12, actions: {
-      rock:     { name: 'メイス', dmg: 2 },
-      scissors: { name: '聖光',   dmg: 3 },
-      paper:    { name: '祈り',   heal: 3 } } },
-  { id: 'thief', name: '盗賊', hp: 9, actions: {
-      rock:     { name: '不意打ち', dmg: 2 },
-      scissors: { name: '連撃',     dmg: 3 },
-      paper:    { name: '毒刃',     dmg: 1, poison: 3 } } },
-  { id: 'mage', name: '魔法使い', hp: 9, actions: {
-      rock:     { name: '瞑想', power: 3 },
-      scissors: { name: '雷撃', dmg: 3 },
-      paper:    { name: '火球', dmg: 4 } } },
-  { id: 'knight', name: '騎士', hp: 11, actions: {
-      rock:     { name: '突撃', dmg: 3 },
-      scissors: { name: '剣技', dmg: 2 },
-      paper:    { name: '鉄壁', dmg: 1, guard: 3 } } },
-  { id: 'hunter', name: '狩人', hp: 9, actions: {
-      rock:     { name: '罠',   dmg: 1, poison: 2 },
-      scissors: { name: '射撃', dmg: 3 },
-      paper:    { name: '狙い', dmg: 1, power: 2 } } },
+  { id: 'kaji', name: 'カジ', faction: '錨', hp: 8, actions: {
+      rock:     { name: '堰切り',   dmg: 5 },
+      scissors: { name: '踏み越し', dmg: 1, power: 2 },
+      paper:    { name: '構え直し', power: 3 } } },
+  { id: 'tomari', name: 'トマリ', faction: '錨', hp: 10, actions: {
+      rock:     { name: '凪',   dmg: 2, guard: 2 },
+      scissors: { name: '先着', dmg: 3 },
+      paper:    { name: '繕い', heal: 2 } } },
+  { id: 'mio', name: 'ミオ', faction: '錨', hp: 10, actions: {
+      rock:     { name: '留め置き', dmg: 3, nextPower: 2 },
+      scissors: { name: '水先',     dmg: 2, power: 2 },
+      paper:    { name: '澪標',     heal: 2, nextGuard: 2 } } },
+  { id: 'rei', name: 'レイ', faction: '零', hp: 9, actions: {
+      rock:     { name: '白紙',         dmg: 3 },
+      scissors: { name: '先消し',       dmg: 3, seal: 1 },
+      paper:    { name: '無かったこと', heal: 2, keep: 1 } } },
+  { id: 'hajime', name: 'ハジメ', faction: '零', hp: 10, actions: {
+      rock:     { name: '止血', dmg: 3 },
+      scissors: { name: '先診', dmg: 2, guard: 2 },
+      paper:    { name: '無傷', heal: 3 } } },
+  { id: 'uro', name: 'ウロ', faction: '零', hp: 8, actions: {
+      rock:     { name: '疼き',     dmg: 3 },
+      scissors: { name: '膿み先',   dmg: 1, poison: 2 },
+      paper:    { name: '古傷返し', poison: 3 } } },
+  { id: 'tsuru', name: 'ツル', faction: '矢', hp: 8, actions: {
+      rock:     { name: '張り詰め', dmg: 3 },
+      scissors: { name: '先読み',   dmg: 2, streak: 1 },
+      paper:    { name: '引き絞り', dmg: 1, power: 2 } } },
+  { id: 'haya', name: 'ハヤ', faction: '矢', hp: 7, actions: {
+      rock:     { name: '射止め', dmg: 4 },
+      scissors: { name: '二の矢', dmg: 3, power: 1 },
+      paper:    { name: '矢返し', dmg: 2, power: 1 } } },
 ];
 
 // ===== ルール =====
@@ -148,13 +162,18 @@ function describe(a) {
   if (a.heal) parts.push(`${a.heal}回復`);
   if (a.power) parts.push(`次の与ダメージ+${a.power}`);
   if (a.guard) parts.push(`次の被ダメージ-${a.guard}`);
-  if (a.poison) parts.push(`毒${a.poison}ラリー`);
+  if (a.poison) parts.push(`時蝕${a.poison}ラリー`);
+  if (a.streak) parts.push(`自分の連勝+${a.streak}`);
+  if (a.seal) parts.push('相手の次の勝ちを連勝に数えない');
+  if (a.keep) parts.push('次に負けても連勝が途切れない');
+  if (a.nextPower) parts.push(`次の番手の与ダメージ+${a.nextPower}`);
+  if (a.nextGuard) parts.push(`次の番手の被ダメージ-${a.nextGuard}`);
   return parts.join('、');
 }
 
 function newTeam(label, chars) {
   return {
-    label, idx: 0, wins: 0, streak: 0, breakReady: false,
+    label, idx: 0, wins: 0, streak: 0, breakReady: false, sealed: false, keep: false,
     cards: chars.map((ch) => ({ ch, hp: ch.hp, guard: 0, power: 0, poison: 0, result: null })),
   };
 }
@@ -190,7 +209,13 @@ function act(S, side, hand, log) {
   }
   if (a.power) w.power = a.power;
   if (a.guard) w.guard = a.guard;
-  if (a.poison) { l.poison = a.poison; log(`　${l.ch.name}は毒を受けた`); }
+  if (a.poison) { l.poison = a.poison; log(`　${l.ch.name}は時蝕を受けた`); }
+  if (a.streak) wt.streak += a.streak;
+  if (a.seal) lt.sealed = true;
+  if (a.keep) wt.keep = true;
+  const next = wt.cards[wt.idx + 1];
+  if (next && a.nextPower) next.power = Math.max(next.power, a.nextPower);
+  if (next && a.nextGuard) next.guard = Math.max(next.guard, a.nextGuard);
 }
 
 // ラリーの締め:毒 → 番手戦の決着 → 次の番手へ交代 or 試合終了
@@ -201,7 +226,7 @@ function endRally(S, log, winSide) {
     if (f.poison > 0 && f.hp > 0) {
       f.poison--;
       f.hp = Math.max(0, f.hp - 1);
-      log(`　${t.label}の${f.ch.name}は毒で1ダメージ`);
+      log(`　${t.label}の${f.ch.name}は時蝕で1ダメージ`);
     }
   }
   const [a, b] = S.teams;
@@ -245,10 +270,13 @@ function rally(S, hand0, hand1, log) {
     log('あいこ');
   } else {
     const side = r > 0 ? 0 : 1;
-    const wt = S.teams[side];
-    S.teams[1 - side].streak = 0;
+    const wt = S.teams[side], lt = S.teams[1 - side];
+    if (lt.keep) { lt.keep = false; log(`　${lt.label}の連勝は途切れなかった`); }
+    else lt.streak = 0;
     act(S, side, side === 0 ? hand0 : hand1, log);
-    if (++wt.streak >= BREAK_STREAK) {
+    if (wt.sealed) { wt.sealed = false; log(`　${wt.label}のこの勝ちは連勝に数えない`); }
+    else wt.streak++;
+    if (wt.streak >= BREAK_STREAK) {
       wt.streak = 0;
       wt.breakReady = true;
       log(`　${wt.label}が${BREAK_STREAK}連勝 → ${BREAK_NAME}!`);
@@ -279,6 +307,8 @@ function pickBreakHand(S, side) {
     if (a.poison) s += Math.min(a.poison, foe.hp);
     if (a.power) s += a.power * 0.6;
     if (a.guard) s += a.guard * 0.6;
+    s += (a.streak || 0) * 1.5 + (a.seal || 0) + (a.keep || 0)
+      + ((a.nextPower || 0) + (a.nextGuard || 0)) * 0.5;
     if (s > bestScore) { bestScore = s; best = h; }
   }
   return best;
@@ -308,7 +338,7 @@ function log(text) {
 function actionList(ch, tag, cls) {
   return HAND_KEYS.map((h) => {
     const a = ch.actions[h];
-    return `<${tag} class="${cls}">${HANDS[h].icon} ${a.name}:${describe(a)}</${tag}>`;
+    return `<${tag} class="${cls}">${HANDS[h].icon} ${HANDS[h].power}「${a.name}」:${describe(a)}</${tag}>`;
   }).join('');
 }
 
@@ -320,13 +350,15 @@ function renderTeam(el, t) {
   }).join('');
   const streak = t.breakReady
     ? `<span class="break">${BREAK_NAME}!</span>`
-    : '連勝 ' + '●'.repeat(t.streak) + '○'.repeat(BREAK_STREAK - t.streak);
+    : '連勝 ' + '●'.repeat(t.streak) + '○'.repeat(Math.max(0, BREAK_STREAK - t.streak));
   const f = active(t);
   const pct = (f.hp / f.ch.hp) * 100;
   const st = [];
   if (f.power) st.push(`攻+${f.power}`);
   if (f.guard) st.push(`守${f.guard}`);
-  if (f.poison) st.push(`毒${f.poison}`);
+  if (f.poison) st.push(`時蝕${f.poison}`);
+  if (t.keep) st.push('連勝保護');
+  if (t.sealed) st.push('連勝封じ');
   el.innerHTML = `
     <div class="sub">${t.label}　<span class="score">${t.wins}本</span>/${WINS_NEEDED}本先取　<span class="streak">${streak}</span></div>
     <div class="chips">${chips}</div>
@@ -379,7 +411,7 @@ function renderSelect() {
     const b = document.createElement('button');
     if (order >= 0) b.classList.add('picked');
     b.disabled = order < 0 && picked.length >= TEAM_SIZE;
-    b.innerHTML = `<div class="name">${order >= 0 ? `【${order + 1}番手】` : ''}${ch.name}　HP ${ch.hp}</div>` +
+    b.innerHTML = `<div class="name">${order >= 0 ? `【${order + 1}番手】` : ''}${ch.name}(${ch.faction})　HP ${ch.hp}</div>` +
       actionList(ch, 'div', 'sub');
     b.onclick = () => {
       if (order >= 0) picked.splice(order, 1); else picked.push(ch.id);
@@ -405,7 +437,7 @@ function start() {
 function init() {
   HAND_KEYS.forEach((h) => {
     const b = document.createElement('button');
-    b.innerHTML = `${HANDS[h].icon}<span>${HANDS[h].label}</span>`;
+    b.innerHTML = `${HANDS[h].icon}<span>${HANDS[h].label}・${HANDS[h].power}</span>`;
     b.onclick = () => play(h);
     $('hands').appendChild(b);
   });
