@@ -1187,8 +1187,8 @@ const Sound = (() => {
 const BGM_TRACKS = { main: 'bgm/The-Battle-of-Beliefs.mp3', climax: 'bgm/No-Fear-Anymore.mp3' };
 const BGM_VOLUME = 0.35;
 const Bgm = (() => {
-  const els = {}, ready = {}, fades = {};
-  let on = true, want = false, now = 'main', ducked = false;
+  const els = {}, missing = {}, fades = {};
+  let on = true, want = false, now = 'main', ducked = false, unlocked = false;
   const target = () => (ducked ? 0.04 : BGM_VOLUME);
   function fade(name, v, ms, then) {
     const el = els[name];
@@ -1200,23 +1200,39 @@ const Bgm = (() => {
       if (k >= 1) { clearInterval(fades[name]); if (then) then(); }
     }, 30);
   }
+  // 曲は、読み込み完了を待たずに再生を指示する。
+  // iPhoneでは、再生を指示するまで曲を読み込まないので、読み込み完了を待つといつまでも鳴らない
   function startNow() {
+    if (!want || !on || missing[now]) return;
     const el = els[now];
-    if (!want || !on || !ready[now]) return;
+    el.muted = false;
     el.volume = target();
     el.play().catch(() => {});
   }
+  function showButton() { $('optBgm').classList.remove('hidden'); $('bgmCredit').classList.remove('hidden'); }
   return {
     init() {
       Object.keys(BGM_TRACKS).forEach((name) => {
         const el = els[name] = new Audio();
         el.loop = true; el.preload = 'auto'; el.volume = BGM_VOLUME;
-        el.addEventListener('canplay', () => {
-          ready[name] = true;
-          if (name === 'main') { $('optBgm').classList.remove('hidden'); $('bgmCredit').classList.remove('hidden'); }
-          if (name === now) startNow();
-        });
+        el.addEventListener('error', () => { missing[name] = true; });
+        el.addEventListener('loadedmetadata', () => { if (name === 'main') showButton(); });
         el.src = BGM_TRACKS[name];
+      });
+      // 曲のファイルがあるかどうかだけを先に確かめて、「曲」ボタンを出す(iPhoneでは上の読み込みが始まらないため)
+      fetch(BGM_TRACKS.main, { method: 'HEAD' }).then((r) => { if (r.ok) showButton(); else missing.main = true; }).catch(() => {});
+    },
+    // 最初に画面を触ったときに、全部の曲を一瞬だけ無音で再生して止める。
+    // こうしておくと、あとで操作なしに曲を始めたり切り替えたりできる(対人戦の開始や、決着前の切り替え)
+    unlock() {
+      if (unlocked) return;
+      unlocked = true;
+      Object.keys(els).forEach((name) => {
+        const el = els[name];
+        if (want && name === now) return;   // すでに流している曲には触らない
+        el.muted = true;
+        const p = el.play();
+        if (p && p.then) p.then(() => { if (!(want && name === now)) { el.pause(); try { el.currentTime = 0; } catch (e) { /* 頭出しできなくてもよい */ } } el.muted = false; }).catch(() => { el.muted = false; });
       });
     },
     setOn(v) { on = v; if (v) startNow(); else Object.values(els).forEach((el) => el.pause()); },
@@ -1227,19 +1243,21 @@ const Bgm = (() => {
       startNow();
     },
     stop() { want = false; Object.values(els).forEach((el) => el.pause()); },
-    // 曲を切り替える(前の曲を小さくしながら、次の曲を頭から流す)。次の曲が読めていなければ切り替えない
+    // 曲を切り替える(前の曲を小さくしながら、次の曲を頭から流す)。次の曲が無ければ切り替えない
     switchTo(name) {
-      if (name === now || !ready[name]) return;
+      if (name === now || missing[name]) return;
       const old = now; now = name;
       if (!want || !on) return;
       fade(old, 0, 600, () => els[old].pause());
       try { els[name].currentTime = 0; } catch (e) { /* 頭出しできなくても流す */ }
+      els[name].muted = false;
       els[name].volume = 0;
       els[name].play().catch(() => {});
       fade(name, target(), 600);
     },
     current: () => now,
-    duck(v) { ducked = v; if (ready[now]) fade(now, target(), 250); },   // 時間が止まる間は小さくする
+    state: () => ({ track: now, time: els[now].currentTime, paused: els[now].paused, volume: els[now].volume }),   // 動作確認用
+    duck(v) { ducked = v; if (want && on) fade(now, target(), 250); },   // 時間が止まる間は小さくする
   };
 })();
 
@@ -2166,6 +2184,10 @@ function init() {
   FX.bgm = loadOpt('kokusen.bgm', true);
   $('optBgm').onclick = () => { FX.bgm = !FX.bgm; saveOpt('kokusen.bgm', FX.bgm); applyOpts(); };
   Bgm.init();
+  // 最初の操作で、曲と効果音を鳴らせる状態にする
+  const firstTouch = () => { Bgm.unlock(); Sound.wake(); };
+  document.addEventListener('pointerdown', firstTouch, { once: true });
+  document.addEventListener('keydown', firstTouch, { once: true });
   $('optSound').onclick = () => { FX.sound = !FX.sound; saveOpt('kokusen.sound', FX.sound); applyOpts(); if (FX.sound) Sound.wake(); };
   try { FX.level = Number(localStorage.getItem('kokusen.level')) || 2; } catch (e) { FX.level = 2; }
   Object.keys(AI_LEVELS).forEach((k) => {
