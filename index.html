@@ -295,6 +295,7 @@
         <button id="leaveRoom" class="hidden">出る</button>
       </div>
       <p class="sub" id="netStatus"></p>
+      <p class="sub" id="netDebug"></p>
     </div>
     <h2>キャラ</h2>
     <div id="charList" class="chars"></div>
@@ -1811,6 +1812,18 @@ function pvpFoe() {
   return PVP.room.peers().find((p) => !(p.isMe && p.sameTab) && p.presence && p.presence.g === PVP.code) || null;
 }
 function pvpStatus(text) { $('netStatus').textContent = text; }
+// つながらないときの手がかりとして、通信の状態をそのまま表示する
+function pvpDebug() {
+  if (!PVP.on) return;
+  if (!PVP.room) { $('netDebug').textContent = '通信の状態:使えません(通信機能が、この画面に渡されていません)'; return; }
+  let ps = [];
+  try { ps = PVP.room.peers(); } catch (e) { /* 読めなければ0人として扱う */ }
+  const others = ps.filter((p) => !(p.isMe && p.sameTab));
+  const same = others.filter((p) => p.presence && PVP.code && p.presence.g === PVP.code);
+  const codes = others.map((p) => (p.presence && p.presence.g ? `「${p.presence.g}」` : '未入力')).join('、');
+  $('netDebug').textContent = `通信の状態:${PVP.room.connected() ? '接続中' : '未接続'} / このページを開いている人(自分以外):${others.length}人`
+    + (others.length ? ` / その人たちの合言葉:${codes}` : '') + (PVP.code ? ` / 同じ合言葉の人:${same.length}人` : '');
+}
 
 async function pvpInit() {
   try { PVP.room = window.claude && window.claude.use ? await window.claude.use('room') : null; } catch (e) { PVP.room = null; }
@@ -2057,6 +2070,7 @@ function init() {
   applyOpts();
   renderMode();
   pvpInit();
+  setInterval(pvpDebug, 1000);
 }
 init();
 </script>
