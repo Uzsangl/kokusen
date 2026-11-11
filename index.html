@@ -929,31 +929,43 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms * FX.speed));
 
 // ----- 音(WebAudioで合成。音声ファイルは使わない) -----
 const Sound = (() => {
+  // 効果音はすべてWebAudioで合成する(音声ファイルは使わない)。
+  // パチスロの「レバー → リール回転 → 停止 → 予告音 → 告知音 → ファンファーレ」という流れを意識した、この作品用の音。
   let ctx = null, master = null, on = true;
+  const LEVEL = 0.55;
   function ac() {
     if (!ctx) {
       const AC = window.AudioContext || window.webkitAudioContext;
       if (!AC) return null;
       ctx = new AC();
+      const comp = ctx.createDynamicsCompressor();   // 音を重ねても割れないように抑える
       master = ctx.createGain();
-      master.gain.value = on ? 0.5 : 0;
-      master.connect(ctx.destination);
+      master.gain.value = on ? LEVEL : 0;
+      master.connect(comp); comp.connect(ctx.destination);
     }
     if (ctx.state === 'suspended') ctx.resume();
     return ctx;
   }
+  // 音程のある音。to で終わりの高さ、vib で揺れ、attack で立ち上がりを指定できる
   function tone(f, dur, o = {}) {
     const c = ac(); if (!c || !on) return;
-    const t = c.currentTime + (o.at || 0);
+    const t = c.currentTime + (o.at || 0), vol = o.vol || 0.2, a = o.attack || 0.004;
     const osc = c.createOscillator(), g = c.createGain();
     osc.type = o.type || 'sine';
     osc.frequency.setValueAtTime(f, t);
     if (o.to) osc.frequency.exponentialRampToValueAtTime(o.to, t + dur);
-    g.gain.setValueAtTime(o.vol || 0.2, t);
+    if (o.vib) {
+      const l = c.createOscillator(), lg = c.createGain();
+      l.frequency.value = o.vib; lg.gain.value = f * 0.03;
+      l.connect(lg); lg.connect(osc.frequency); l.start(t); l.stop(t + dur + 0.05);
+    }
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(vol, t + a);
     g.gain.exponentialRampToValueAtTime(0.001, t + dur);
     osc.connect(g); g.connect(master);
-    osc.start(t); osc.stop(t + dur + 0.02);
+    osc.start(t); osc.stop(t + dur + 0.05);
   }
+  // 雑音。freq から to へフィルターを動かせる(シンバル、爆発、風切り音など)
   function noise(dur, o = {}) {
     const c = ac(); if (!c || !on) return;
     const t = c.currentTime + (o.at || 0);
@@ -961,44 +973,150 @@ const Sound = (() => {
     const d = buf.getChannelData(0);
     for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
     const src = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
-    src.buffer = buf; f.type = 'lowpass'; f.frequency.value = o.freq || 1200;
-    g.gain.setValueAtTime(o.vol || 0.3, t);
+    src.buffer = buf; f.type = o.type || 'lowpass';
+    f.frequency.setValueAtTime(o.freq || 1200, t);
+    if (o.to) f.frequency.exponentialRampToValueAtTime(o.to, t + dur);
+    g.gain.setValueAtTime(o.rise ? 0.0001 : (o.vol || 0.3), t);
+    if (o.rise) g.gain.exponentialRampToValueAtTime(o.vol || 0.3, t + dur * 0.9);
     g.gain.exponentialRampToValueAtTime(0.001, t + dur);
     src.connect(f); f.connect(g); g.connect(master);
     src.start(t);
   }
-  const seq = (notes, step, o) => notes.forEach((f, i) => tone(f, o.dur || 0.12, { ...o, at: i * step }));
+  const seq = (notes, step, o = {}) => notes.forEach((f, i) => tone(f, o.dur || 0.12, { ...o, at: (o.at || 0) + i * step }));
+  const chord = (notes, dur, o = {}) => notes.forEach((f) => tone(f, dur, o));
+
+  // 告知音:高く跳ね上がる音を連続で鳴らす
+  function kyuin(n, at = 0, vol = 0.13) {
+    for (let i = 0; i < n; i++) {
+      tone(900, 0.1, { type: 'square', vol, to: 2700, at: at + i * 0.115 });
+      tone(1800, 0.1, { type: 'sine', vol: vol * 0.5, to: 5400, at: at + i * 0.115 });
+    }
+  }
+  // メダルが払い出されるような、細かい金属音の連続
+  function coins(n, at = 0) {
+    for (let i = 0; i < n; i++) tone(3200 + Math.random() * 2200, 0.05, { type: 'triangle', vol: 0.06, at: at + i * 0.045 });
+  }
+  const cymbal = (at = 0, vol = 0.16, dur = 0.7) => noise(dur, { type: 'highpass', freq: 6000, vol, at });
+  const boom = (at = 0, vol = 0.8, dur = 0.5) => { tone(150, dur, { vol, to: 32, at }); noise(dur * 0.7, { vol: vol * 0.5, freq: 2600, to: 200, at }); };
+
   return {
-    setOn(v) { on = v; if (master) master.gain.value = v ? 0.5 : 0; },
+    setOn(v) { on = v; if (master) master.gain.value = v ? LEVEL : 0; },
     wake: ac,
-    tick(n) { tone(n % 2 ? 1500 : 1900, 0.03, { type: 'square', vol: 0.035 }); },
-    reel() { tone(520 + Math.random() * 260, 0.03, { type: 'square', vol: 0.04 }); },
-    stop() { tone(190, 0.14, { type: 'triangle', vol: 0.35, to: 85 }); noise(0.05, { vol: 0.2 }); },
-    heart() { tone(62, 0.14, { vol: 0.7 }); tone(62, 0.14, { vol: 0.5, at: 0.2 }); },
+    // 背景で鳴り続ける時計
+    tick(n) { tone(n % 2 ? 1500 : 1900, 0.025, { type: 'square', vol: 0.022 }); },
+    click() { tone(1400, 0.03, { type: 'square', vol: 0.05 }); },
+    // レバーを叩く
+    lever() {
+      noise(0.05, { type: 'bandpass', freq: 1800, vol: 0.4 });
+      tone(150, 0.1, { type: 'square', vol: 0.28, to: 70 });
+      tone(320, 0.16, { type: 'sawtooth', vol: 0.07, to: 1100, at: 0.03 });
+    },
+    // リールが回っている間の音(短い間隔で呼ばれる)
+    reel() {
+      tone(230 + Math.random() * 20, 0.05, { type: 'sawtooth', vol: 0.045, to: 190 });
+      noise(0.025, { type: 'highpass', freq: 4000, vol: 0.03 });
+    },
+    // リールが止まる
+    stop() {
+      tone(115, 0.18, { vol: 0.75, to: 52 });
+      noise(0.045, { vol: 0.35, freq: 2600 });
+      tone(700, 0.05, { type: 'square', vol: 0.08 });
+    },
+    // リーチ中の鼓動
+    heart() { tone(58, 0.16, { vol: 0.85, to: 46 }); tone(58, 0.16, { vol: 0.6, to: 46, at: 0.2 }); },
+    // 予告音。1=青(静かな単音)、2=緑(軽い上昇音)、3=赤(サイレン)、4=虹(告知音の連打)
     cue(lv) {
-      const base = [0, 523, 659, 784, 1047][lv];
-      if (lv >= 4) seq([784, 988, 1175, 1568, 1976, 2349, 3136], 0.06, { type: 'square', vol: 0.12, dur: 0.14 });
-      else seq(Array.from({ length: lv + 1 }, (_, i) => base * Math.pow(1.26, i)), 0.07, { type: 'square', vol: 0.1 });
+      if (lv === 1) { tone(880, 0.3, { vol: 0.13 }); tone(1320, 0.35, { vol: 0.07, at: 0.05 }); }
+      else if (lv === 2) seq([988, 1319, 1568, 1976], 0.06, { type: 'square', vol: 0.09, dur: 0.11 });
+      else if (lv === 3) {
+        tone(480, 0.3, { type: 'sawtooth', vol: 0.14, to: 1500 });
+        tone(480, 0.3, { type: 'sawtooth', vol: 0.14, to: 1500, at: 0.3 });
+        tone(70, 0.6, { vol: 0.4 });
+        kyuin(1, 0.6);
+      } else {
+        boom(0, 0.6, 0.4);
+        kyuin(4, 0.05, 0.15);
+        seq([1568, 1976, 2349, 2637, 3136, 3951, 4186], 0.05, { vol: 0.07, dur: 0.14, at: 0.5 });
+        cymbal(0.45, 0.12);
+      }
     },
+    // 技が当たる。power は2.5(通常)〜5(極大)
     hit(power) {
-      noise(0.22 + power * 0.03, { vol: 0.45, freq: 900 });
-      tone(130, 0.3, { vol: 0.6, to: 42 });
-      if (power >= 4) tone(880, 0.25, { type: 'sawtooth', vol: 0.12, to: 220 });
+      boom(0, 0.5 + power * 0.07, 0.25 + power * 0.04);
+      if (power >= 3) chord([196, 247, 294], 0.22, { type: 'sawtooth', vol: 0.06 });
+      if (power >= 3.7) { cymbal(0, 0.14, 0.5); chord([131, 196, 262, 392], 0.4, { type: 'sawtooth', vol: 0.07 }); }
+      if (power >= 5) { kyuin(2, 0.08); coins(8, 0.25); }
     },
-    heal() { seq([660, 880, 1320], 0.08, { vol: 0.15, dur: 0.2 }); },
-    tie() { tone(950, 0.08, { type: 'triangle', vol: 0.25 }); tone(1270, 0.1, { type: 'triangle', vol: 0.2, at: 0.05 }); },
-    lose() { tone(320, 0.4, { type: 'sawtooth', vol: 0.16, to: 80 }); },
-    breakIn() { tone(180, 0.8, { type: 'sawtooth', vol: 0.14, to: 1700 }); noise(0.8, { vol: 0.12, freq: 3000 }); },
+    // ダメージの数字が回る音。最後に止まる音が鳴る
+    count(ms) {
+      const n = Math.max(4, Math.min(14, Math.round(ms / 35)));
+      for (let i = 0; i < n; i++) tone(900 + i * 80, 0.03, { type: 'square', vol: 0.045, at: (ms / 1000) * (i / n) });
+      tone(2093, 0.12, { type: 'triangle', vol: 0.12, at: ms / 1000 });
+    },
+    // 大きなダメージの追加音。赤・金・虹で段階が上がる
+    tier(t, at = 0.45) {
+      if (t === 't-red') { chord([220, 277, 330, 440], 0.35, { type: 'sawtooth', vol: 0.08, at }); cymbal(at, 0.1, 0.4); }
+      else if (t === 't-gold') { seq([784, 988, 1175, 1568], 0.07, { type: 'square', vol: 0.11, dur: 0.16, at }); coins(12, at + 0.2); cymbal(at, 0.12); }
+      else if (t === 'rainbow') {
+        kyuin(3, at, 0.14);
+        seq([1047, 1319, 1568, 2093, 2637], 0.07, { type: 'square', vol: 0.1, dur: 0.2, at: at + 0.35 });
+        coins(16, at + 0.4); cymbal(at + 0.35, 0.14);
+      }
+    },
+    heal() { tone(520, 0.35, { vol: 0.12, to: 1560 }); seq([1319, 1568, 2093], 0.07, { vol: 0.07, dur: 0.18, at: 0.12 }); },
+    // バフ・デバフが付いた
+    buff(good, at = 0) {
+      if (good) seq([660, 990], 0.07, { type: 'triangle', vol: 0.12, dur: 0.12, at });
+      else seq([520, 330], 0.08, { type: 'sawtooth', vol: 0.07, dur: 0.14, at });
+    },
+    tie() { chord([1200, 1265], 0.14, { type: 'square', vol: 0.09 }); noise(0.06, { type: 'highpass', freq: 5000, vol: 0.15 }); },
+    lose() { chord([196, 185], 0.4, { type: 'sawtooth', vol: 0.09, to: 70 }); },
+    // 変身
+    transform() {
+      tone(80, 0.9, { type: 'sawtooth', vol: 0.16, to: 640 });
+      noise(0.9, { type: 'bandpass', freq: 300, to: 5000, vol: 0.2, rise: true });
+      boom(0.9, 0.9, 0.6); cymbal(0.9, 0.16); kyuin(2, 0.95);
+    },
+    // BREAK突入:いったん沈み込み、告知音で跳ね上がる
+    breakIn() {
+      tone(130, 1.1, { vol: 0.85, to: 26 });
+      noise(0.85, { type: 'highpass', freq: 500, to: 9000, vol: 0.16, rise: true });
+      kyuin(3, 0.85, 0.15);
+      chord([262, 330, 392, 523], 0.7, { type: 'sawtooth', vol: 0.06, at: 0.9 });
+      cymbal(0.88, 0.14);
+    },
+    // BREAKの一撃
     breakHit() {
-      [130.8, 196, 261.6, 392, 523.3].forEach((f) => tone(f, 0.9, { type: 'sawtooth', vol: 0.11 }));
-      noise(0.6, { vol: 0.55, freq: 1400 }); tone(160, 0.7, { vol: 0.8, to: 30 });
+      boom(0, 1, 0.9);
+      noise(0.9, { vol: 0.5, freq: 5000, to: 150 });
+      chord([65.4, 130.8, 196, 261.6, 329.6, 392, 523.3], 1.1, { type: 'sawtooth', vol: 0.07 });
+      seq([523, 659, 784, 1047, 1319, 1568, 2093, 2637], 0.045, { type: 'square', vol: 0.09, dur: 0.14, at: 0.1 });
+      cymbal(0, 0.2, 1.0); coins(14, 0.4);
     },
-    ko() { tone(420, 0.6, { type: 'triangle', vol: 0.3, to: 48 }); noise(0.7, { vol: 0.25, freq: 500 }); },
+    // カードが倒れた。win は自分が倒した側かどうか
+    ko(win) {
+      if (win) {
+        seq([784, 1047, 1319, 1568], 0.075, { type: 'square', vol: 0.13, dur: 0.14 });
+        chord([523, 659, 784, 1047], 0.7, { type: 'sawtooth', vol: 0.07, at: 0.3 });
+        cymbal(0.3, 0.15); coins(10, 0.35); boom(0.3, 0.5, 0.3);
+      } else {
+        boom(0, 0.8, 0.6);
+        seq([330, 262, 196], 0.12, { type: 'sawtooth', vol: 0.09, dur: 0.25, at: 0.1 });
+      }
+    },
+    // 勝利:告知音 → 駆け上がるファンファーレ → 和音とメダルの音
     fanfare() {
-      seq([523, 659, 784, 1047, 784, 1047, 1319], 0.13, { type: 'square', vol: 0.14, dur: 0.2 });
-      [523, 659, 784, 1047].forEach((f) => tone(f, 1.2, { type: 'sawtooth', vol: 0.08, at: 0.95 }));
+      kyuin(3, 0, 0.15);
+      seq([523, 659, 784, 1047, 784, 1047, 1319, 1568], 0.085, { type: 'square', vol: 0.13, dur: 0.16, at: 0.4 });
+      seq([1319, 1568, 1319, 1568, 1319, 1568, 2093], 0.07, { type: 'square', vol: 0.1, dur: 0.12, at: 1.1 });
+      chord([262, 330, 392, 523, 659, 784, 1047], 1.6, { type: 'sawtooth', vol: 0.06, at: 1.6 });
+      cymbal(0.4, 0.14); cymbal(1.6, 0.2, 1.4); boom(1.6, 0.7, 0.5);
+      coins(34, 1.0);
     },
-    defeat() { seq([392, 349, 311, 262, 196], 0.2, { type: 'triangle', vol: 0.18, dur: 0.35 }); },
+    defeat() {
+      seq([392, 349, 311, 262, 196], 0.22, { type: 'sawtooth', vol: 0.09, dur: 0.4 });
+      tone(49, 1.6, { vol: 0.5, at: 0.3 });
+    },
   };
 })();
 
@@ -1338,6 +1456,8 @@ function pops(o, big) {
   if (h && h.dmg) {
     const tier = h.half ? 'rainbow' : h.dmg >= 5000 ? 't-gold' : h.dmg >= 3000 ? 't-red' : 't-white';
     pop(1 - h.side, '-' + h.dmg, 'dmg ' + tier + (big ? ' big' : ''));
+    Sound.count(450 * FX.speed);
+    Sound.tier(tier, 0.45 * FX.speed + 0.05);
     lines.push(`<div class="dmg">${o.names[1 - h.side]}に<b class="${tier}" data-n="${h.dmg}">0</b>ダメージ!</div>`);
   }
   // 毎ラリーの増減(時蝕・処置・抜け落ち)は、高さが変わらないように1行にまとめる
@@ -1358,7 +1478,7 @@ function pops(o, big) {
   if (small.length) lines.push(`<div class="minor">${small.join('　')}</div>`);
   // バフ・デバフが付いた・消えたことを、キャラの上に文字で出す
   o.events.filter((e) => e.type === 'mod').forEach((e, i) => {
-    setTimeout(() => pop(e.side, e.text, e.good ? 'buff' : 'debuff', -34 - i * 20), (300 + i * 180) * FX.speed);
+    setTimeout(() => { pop(e.side, e.text, e.good ? 'buff' : 'debuff', -34 - i * 20); Sound.buff(e.good); }, (300 + i * 180) * FX.speed);
   });
   $('dmgLine').innerHTML = lines.join('');
   $('dmgLine').querySelectorAll('b').forEach(countUp);
@@ -1379,7 +1499,7 @@ async function transformFx(o) {
   for (const e of o.events) {
     if (e.type !== 'transform') continue;
     const c = center(panelOf(e.side));
-    flash('#8b6cff'); shake(true); Sound.breakIn();
+    flash('#8b6cff'); shake(true); Sound.transform();
     Particles.burst(c.x, c.y, 90, COLORS.violet, 10);
     await cutin('変身', `${S.teams[e.side].label}の${o.names[e.side]}　仮面が割れる`, 'violet', 1100);
   }
@@ -1391,7 +1511,7 @@ async function aftermath(o) {
   await sleep(150);
   const w = o.boutWin;
   if (w >= 0) Particles.crumble(panelOf(1 - w).getBoundingClientRect(), COLORS.sand);
-  Sound.ko();
+  Sound.ko(o.boutWin === 0);
   const sub = w === 0 ? `${o.names[1]}を撃破` : w === 1 ? `${o.names[0]}が倒れた` : `${o.names[0]}と${o.names[1]}が同時に倒れた`;
   await cutin(w === 0 ? '一本!' : w === 1 ? '一本取られた' : '相打ち', sub, w === 0 ? 'rainbow' : w === 1 ? 'violet' : 'plain', 950);
 }
@@ -1491,6 +1611,7 @@ async function cpuBreak() {
 async function play(hand) {
   if (busy || !S || S.over) return;
   busy = true;
+  Sound.lever();
   render();
   try {
     if (S.teams[0].breakReady) await playerBreak(hand);
@@ -1523,7 +1644,7 @@ function renderSelect() {
       actionList(ch, 'div', 'sub');
     b.onclick = () => {
       if (order >= 0) picked.splice(order, 1); else picked.push(ch.id);
-      Sound.reel();
+      Sound.click();
       renderSelect();
     };
     $('charList').appendChild(b);
