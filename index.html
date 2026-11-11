@@ -351,53 +351,53 @@ const foeAtk = (v, t) => ({ to: 'foe', stat: 'atk', v: -v, t });
 const foeDfs = (v, t) => ({ to: 'foe', stat: 'dfs', v: -v, t });
 
 const CHARACTERS = [
-  { id: 'kaji', name: 'カジ', faction: '錨', hp: 2730, atk: 1300, dfs: 1100, phys: 1.0,
+  { id: 'kaji', name: 'カジ', faction: '錨', hp: 2890, atk: 1300, dfs: 1100, phys: 1.0,
     trait: { key: 'backwater', name: '背水', desc: '残りHPが半分以下でATK+500', below: 0.5, add: 500 },
     actions: {
       rock:     { name: '堰切り',   rate: RATE.huge, up: { rate: RATE.max, when: 'hpBelow', v: 0.5, text: '残りHP半分以下で極大' } },
       scissors: { name: '踏み越し', rate: RATE.normal, mods: [selfAtk(400, 3)] },
-      paper:    { name: '構え直し', atkUp: 1300, mods: [foeDfs(1000, 2)] } } },
-  { id: 'tomari', name: 'トマリ', faction: '錨', hp: 6310, atk: 650, dfs: 2000, phys: 1.1,
+      paper:    { name: '構え直し', rate: RATE.normal, atkUp: 900, mods: [foeDfs(1000, 2)] } } },
+  { id: 'tomari', name: 'トマリ', faction: '錨', hp: 6120, atk: 650, dfs: 2000, phys: 1.1,
     trait: { key: 'immovable', name: '不動', desc: '攻撃を受けるたびにDFS+500(場にいる間、最大+3000)', gain: 500, cap: 3000 },
     actions: {
       rock:     { name: '凪',   rate: RATE.normal, mods: [selfDfs(3000, 2)] },
       scissors: { name: '先着', rate: RATE.big, mods: [foeAtk(250, 3)], up: { rate: RATE.huge, when: 'gainMax', v: 3000, text: '不動が最大のとき特大' } },
-      paper:    { name: '繕い', heal: 1300 } } },
-  { id: 'mio', name: 'ミオ', faction: '錨', hp: 3700, atk: 1000, dfs: 1400, phys: 0.95,
+      paper:    { name: '繕い', rate: RATE.normal, heal: 600 } } },
+  { id: 'mio', name: 'ミオ', faction: '錨', hp: 3640, atk: 1000, dfs: 1400, phys: 0.95,
     trait: { key: 'record', name: '記録', desc: '倒れたとき、次の番手にATK+400とDFS+1500を渡す(場にいる間ずっと)', atk: 400, dfs: 1500 },
     actions: {
       rock:     { name: '留め置き', rate: RATE.big, nextAtkUp: 600 },
       scissors: { name: '水先',     rate: RATE.normal, mods: [foeDfs(1000, 3), foeAtk(200, 3)] },
-      paper:    { name: '澪標',     heal: 700, nextDfsUp: 3000 } } },
-  { id: 'rei', name: 'レイ', faction: '零', hp: 2540, atk: 800, dfs: 1200, phys: 1.0,
+      paper:    { name: '澪標',     rate: RATE.normal, heal: 350, nextDfsUp: 3000 } } },
+  { id: 'rei', name: 'レイ', faction: '零', hp: 2940, atk: 800, dfs: 1200, phys: 1.0,
     trait: { key: 'transform', name: '仮面割れ', desc: '場に出て5ラリー目に変身し、ATK1500・DFS2500になって技も強くなる',
       at: 5, formName: 'レイ・解放', atk: 1500, dfs: 2500, actions: {
         rock:     { name: '白紙',         rate: RATE.huge, up: { rate: RATE.max, when: 'rallyFrom', v: 9, text: '9ラリー目以降は極大' } },
         scissors: { name: '先消し',       rate: RATE.big, seal: 1, mods: [foeAtk(400, 2)] },
-        paper:    { name: '無かったこと', heal: 750, keep: 1, cleanse: 1 } } },
+        paper:    { name: '無かったこと', rate: RATE.normal, heal: 400, keep: 1, cleanse: 1 } } },
     actions: {
       rock:     { name: '白紙',         rate: RATE.big },
       scissors: { name: '先消し',       rate: RATE.normal, seal: 1, mods: [foeAtk(250, 2)] },
-      paper:    { name: '無かったこと', heal: 450, keep: 1, cleanse: 1 } } },
-  { id: 'hajime', name: 'ハジメ', faction: '零', hp: 4350, atk: 700, dfs: 1600, phys: 1.0,
+      paper:    { name: '無かったこと', rate: RATE.normal, heal: 250, keep: 1, cleanse: 1 } } },
+  { id: 'hajime', name: 'ハジメ', faction: '零', hp: 4680, atk: 700, dfs: 1600, phys: 1.0,
     trait: { key: 'regen', name: '処置', desc: 'ラリーが終わるたびにHPを170回復', heal: 170 },
     actions: {
       rock:     { name: '止血', rate: RATE.big, mods: [foeAtk(250, 2)] },
       scissors: { name: '先診', rate: RATE.normal, mods: [selfDfs(2000, 3)] },
-      paper:    { name: '無傷', heal: 1700, cure: 1 } } },
-  { id: 'uro', name: 'ウロ', faction: '零', hp: 3380, atk: 900, dfs: 1300, phys: 0.95,
+      paper:    { name: '無傷', rate: RATE.normal, heal: 900, cure: 1 } } },
+  { id: 'uro', name: 'ウロ', faction: '零', hp: 4040, atk: 900, dfs: 1300, phys: 0.95,
     trait: { key: 'oldwound', name: '古傷', desc: '時蝕は重ねがけで毎ラリーのダメージが加算。時蝕中の相手を攻撃するときATK+300', add: 300 },
     actions: {
       rock:     { name: '疼き',     rate: RATE.huge, up: { rate: RATE.max, when: 'foeStacks', v: 2, text: '時蝕を2回以上重ねた相手には極大' } },
       scissors: { name: '膿み先',   rate: RATE.normal, poison: 3 },
-      paper:    { name: '古傷返し', poison: 5, mods: [foeDfs(1500, 3)] } } },
-  { id: 'tsuru', name: 'ツル', faction: '矢', hp: 3070, atk: 950, dfs: 1100, phys: 0.95,
+      paper:    { name: '古傷返し', rate: RATE.normal, poison: 4, mods: [foeDfs(1000, 3)] } } },
+  { id: 'tsuru', name: 'ツル', faction: '矢', hp: 4240, atk: 950, dfs: 1100, phys: 0.95,
     trait: { key: 'foresight', name: '先見', desc: `${BREAK_NAME}の一撃はATK+500`, add: 500 },
     actions: {
       rock:     { name: '張り詰め', rate: RATE.big, up: { rate: RATE.max, when: 'inBreak', text: `${BREAK_NAME}中は極大` } },
       scissors: { name: '先読み',   rate: RATE.normal, streak: 1 },
       paper:    { name: '引き絞り', rate: RATE.normal, mods: [selfAtk(450, 3)] } } },
-  { id: 'haya', name: 'ハヤ', faction: '矢', hp: 1670, atk: 1500, dfs: 1000, phys: 1.05,
+  { id: 'haya', name: 'ハヤ', faction: '矢', hp: 2620, atk: 1500, dfs: 1000, phys: 1.05,
     trait: { key: 'rush', name: '先駆け', desc: '場に出て1〜3ラリー目はATK+750、7ラリー目以降はATK−450', until: 3, early: 750, from: 7, late: -450 },
     actions: {
       rock:     { name: '射止め', rate: RATE.huge, up: { rate: RATE.max, when: 'rallyUntil', v: 3, text: '3ラリー目までは極大' } },
@@ -494,6 +494,7 @@ function newMatch(charsA, charsB) {
   return {
     teams: [newTeam('あなた', charsA), newTeam('CPU', charsB)],
     rally: 0, boutRally: 0, bouts: 0, over: false, winner: null, hit: null, ticks: [], events: [],
+    seen: [],   // プレイヤーがこれまでに出した手(CPUの読みに使う)
   };
 }
 const active = (team) => team.cards[team.idx];
@@ -726,6 +727,18 @@ function pickBreakHand(S, side) {
   return best;
 }
 const randomHand = () => HAND_KEYS[Math.floor(Math.random() * HAND_KEYS.length)];
+
+// CPUの手。プレイヤーが最近よく出している手を読み、その手に勝つ手を出しやすくする。
+// 同じ手を出し続けると読まれて負けやすくなる。ばらして出していれば、ほぼランダムと変わらない。
+// 見ているのは過去の手だけで、今回の手は見ていない。
+const CPU_READ = 0.35;    // 読みに頼る確率
+const CPU_MEMORY = 6;     // 何手前まで見るか
+function pickCpuHand(S) {
+  const recent = S.seen.slice(-CPU_MEMORY);
+  if (recent.length < 3 || Math.random() >= CPU_READ) return randomHand();
+  const guess = recent[Math.floor(Math.random() * recent.length)];   // よく出す手ほど選ばれやすい
+  return HAND_KEYS.find((h) => HANDS[h].beats === guess);
+}
 function shuffled(arr) {
   const a = arr.slice();
   for (let i = a.length - 1; i > 0; i--) {
@@ -1209,7 +1222,8 @@ async function finale() {
 
 async function normalRally(hand) {
   const b = before();
-  const cpuHand = randomHand();
+  const cpuHand = pickCpuHand(S);
+  S.seen.push(hand);   // CPUが手を決めたあとで記録する
   const r = rally(S, hand, cpuHand, logLater);
   const o = outcome(b);
   const side = r === 0 ? -1 : r > 0 ? 0 : 1;
