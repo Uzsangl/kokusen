@@ -194,7 +194,8 @@ function act(S, side, hand, log) {
 }
 
 // ラリーの締め:毒 → 番手戦の決着 → 次の番手へ交代 or 試合終了
-function endRally(S, log) {
+// winSide: このラリーのじゃんけんに勝った側(あいこは -1)
+function endRally(S, log, winSide) {
   for (const t of S.teams) {
     const f = active(t);
     if (f.poison > 0 && f.hp > 0) {
@@ -209,11 +210,15 @@ function endRally(S, log) {
 
   S.bouts++;
   const no = a.idx + 1;
-  if (ko[0] && ko[1]) {
+  if (ko[0] && ko[1] && winSide < 0) {
     active(a).result = active(b).result = 'draw';
     log(`　${no}番手戦は相打ち(どちらにも本数は入らない)`);
   } else {
-    const w = ko[0] ? b : a, l = ko[0] ? a : b;
+    // 両者が倒れた場合は、このラリーのじゃんけんに勝った側の勝ち
+    const both = ko[0] && ko[1];
+    const w = both ? S.teams[winSide] : ko[0] ? b : a;
+    const l = w === a ? b : a;
+    if (both) log(`　両者とも倒れた → じゃんけんに勝った${w.label}の勝ち`);
     active(w).result = 'win';
     active(l).result = 'lose';
     w.wins++;
@@ -235,6 +240,7 @@ function rally(S, hand0, hand1, log) {
   S.rally++;
   log(`— ラリー${S.rally}:あなた ${HANDS[hand0].label} / CPU ${HANDS[hand1].label} —`);
   const r = judge(hand0, hand1);
+  const winSide = r === 0 ? -1 : r > 0 ? 0 : 1;
   if (r === 0) {
     log('あいこ');
   } else {
@@ -248,7 +254,7 @@ function rally(S, hand0, hand1, log) {
       log(`　${wt.label}が${BREAK_STREAK}連勝 → ${BREAK_NAME}!`);
     }
   }
-  endRally(S, log);
+  endRally(S, log, winSide);
   return r;
 }
 
@@ -258,7 +264,7 @@ function breakRally(S, side, hand, log) {
   S.teams[side].breakReady = false;
   log(`— ラリー${S.rally}:${S.teams[side].label}の${BREAK_NAME} —`);
   act(S, side, hand, log);
-  endRally(S, log);
+  endRally(S, log, side);
 }
 
 // ブレイク時にCPUが選ぶ手:倒せるなら倒す、そうでなければ一番得な手
