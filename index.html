@@ -62,6 +62,7 @@
   .chip.on { border-color: var(--accent); color: var(--text); font-weight: 700; }
   .chip.ko { text-decoration: line-through; opacity: .5; }
   .streak { white-space: nowrap; }
+  .score { color: var(--text); font-weight: 700; }
   .break { color: var(--accent); font-weight: 700; }
   .hands.breaking button { border-color: var(--accent); border-width: 2px; }
   .hidden { display: none; }
@@ -73,7 +74,7 @@
 
   <section id="select" class="panel">
     <h2>出す順に5枚選ぶ</h2>
-    <p class="sub">1番手から順に戦い、倒れたら次のカードが出ます。先に5枚とも倒れた側の負けです。じゃんけんに3連勝すると BREAK が発生し、次は好きな手のアクションが確定で通ります(あいこでは連勝は途切れません)。</p>
+    <p class="sub">同じ番手のカード同士が1対1で戦い、相手を倒すと1本です。決着したら両者とも次の番手に交代し、先に3本取った側の勝ちです。じゃんけんに3連勝すると BREAK が発生し、次は好きな手のアクションが確定で通ります(あいこでは連勝は途切れません)。</p>
     <div id="charList" class="chars"></div>
     <button id="start" style="width:100%;margin-top:8px"></button>
   </section>
@@ -102,6 +103,7 @@
 //   power  次に与えるダメージを増加(1回で消える)
 //   poison 相手に毒(ラリー終了時に1ダメージ、指定ラリー数)
 const TEAM_SIZE = 5;
+const WINS_NEEDED = 3;       // 先にこの本数を取った側の勝ち
 const BREAK_STREAK = 3;      // この回数じゃんけんに連勝するとブレイク
 const BREAK_NAME = 'BREAK';
 
@@ -113,27 +115,27 @@ const HANDS = {
 const HAND_KEYS = Object.keys(HANDS);
 
 const CHARACTERS = [
-  { id: 'warrior', name: '戦士', hp: 10, actions: {
+  { id: 'warrior', name: '戦士', hp: 8, actions: {
       rock:     { name: '強打',   dmg: 4 },
       scissors: { name: '斬撃',   dmg: 2, power: 2 },
       paper:    { name: '盾構え', dmg: 1, guard: 2 } } },
-  { id: 'priest', name: '僧侶', hp: 14, actions: {
+  { id: 'priest', name: '僧侶', hp: 12, actions: {
       rock:     { name: 'メイス', dmg: 2 },
       scissors: { name: '聖光',   dmg: 3 },
       paper:    { name: '祈り',   heal: 3 } } },
-  { id: 'thief', name: '盗賊', hp: 12, actions: {
+  { id: 'thief', name: '盗賊', hp: 9, actions: {
       rock:     { name: '不意打ち', dmg: 2 },
       scissors: { name: '連撃',     dmg: 3 },
       paper:    { name: '毒刃',     dmg: 1, poison: 3 } } },
-  { id: 'mage', name: '魔法使い', hp: 12, actions: {
+  { id: 'mage', name: '魔法使い', hp: 9, actions: {
       rock:     { name: '瞑想', power: 3 },
       scissors: { name: '雷撃', dmg: 3 },
       paper:    { name: '火球', dmg: 4 } } },
-  { id: 'knight', name: '騎士', hp: 14, actions: {
+  { id: 'knight', name: '騎士', hp: 11, actions: {
       rock:     { name: '突撃', dmg: 3 },
       scissors: { name: '剣技', dmg: 2 },
       paper:    { name: '鉄壁', dmg: 1, guard: 3 } } },
-  { id: 'hunter', name: '狩人', hp: 12, actions: {
+  { id: 'hunter', name: '狩人', hp: 9, actions: {
       rock:     { name: '罠',   dmg: 1, poison: 2 },
       scissors: { name: '射撃', dmg: 3 },
       paper:    { name: '狙い', dmg: 1, power: 2 } } },
@@ -152,15 +154,14 @@ function describe(a) {
 
 function newTeam(label, chars) {
   return {
-    label, idx: 0, streak: 0, breakReady: false,
-    cards: chars.map((ch) => ({ ch, hp: ch.hp, guard: 0, power: 0, poison: 0 })),
+    label, idx: 0, wins: 0, streak: 0, breakReady: false,
+    cards: chars.map((ch) => ({ ch, hp: ch.hp, guard: 0, power: 0, poison: 0, result: null })),
   };
 }
 function newMatch(charsA, charsB) {
-  return { teams: [newTeam('あなた', charsA), newTeam('CPU', charsB)], rally: 0, over: false, winner: null };
+  return { teams: [newTeam('あなた', charsA), newTeam('CPU', charsB)], rally: 0, bouts: 0, over: false, winner: null };
 }
 const active = (team) => team.cards[team.idx];
-const alive = (team) => team.cards.length - team.idx;
 
 function judge(a, b) {
   if (a === b) return 0;
@@ -192,7 +193,7 @@ function act(S, side, hand, log) {
   if (a.poison) { l.poison = a.poison; log(`　${l.ch.name}は毒を受けた`); }
 }
 
-// ラリーの締め:毒 → 倒れたカードの交代 → 決着判定
+// ラリーの締め:毒 → 番手戦の決着 → 次の番手へ交代 or 試合終了
 function endRally(S, log) {
   for (const t of S.teams) {
     const f = active(t);
@@ -202,18 +203,30 @@ function endRally(S, log) {
       log(`　${t.label}の${f.ch.name}は毒で1ダメージ`);
     }
   }
-  for (const t of S.teams) {
-    if (active(t).hp <= 0) {
-      log(`　${t.label}の${active(t).ch.name}は倒れた`);
-      t.idx++;
-      if (alive(t) > 0) log(`　${t.label}は${active(t).ch.name}を出した`);
-    }
+  const [a, b] = S.teams;
+  const ko = S.teams.map((t) => active(t).hp <= 0);
+  if (!ko[0] && !ko[1]) return;
+
+  S.bouts++;
+  const no = a.idx + 1;
+  if (ko[0] && ko[1]) {
+    active(a).result = active(b).result = 'draw';
+    log(`　${no}番手戦は相打ち(どちらにも本数は入らない)`);
+  } else {
+    const w = ko[0] ? b : a, l = ko[0] ? a : b;
+    active(w).result = 'win';
+    active(l).result = 'lose';
+    w.wins++;
+    log(`　${l.label}の${active(l).ch.name}は倒れた → ${no}番手戦は${w.label}の勝ち(${a.wins}-${b.wins})`);
   }
-  const out = S.teams.map((t) => alive(t) <= 0);
-  if (out[0] || out[1]) {
+
+  if (a.wins >= WINS_NEEDED || b.wins >= WINS_NEEDED || no >= TEAM_SIZE) {
     S.over = true;
-    S.winner = out[0] && out[1] ? -1 : out[0] ? 1 : 0;
+    S.winner = a.wins === b.wins ? -1 : a.wins > b.wins ? 0 : 1;
     S.teams.forEach((t) => { t.breakReady = false; });
+  } else {
+    S.teams.forEach((t) => { t.idx++; });
+    log(`— ${no + 1}番手戦:${active(a).ch.name} vs ${active(b).ch.name} —`);
   }
 }
 
@@ -294,30 +307,27 @@ function actionList(ch, tag, cls) {
 }
 
 function renderTeam(el, t) {
+  const mark = { win: '○', lose: '×', draw: '△' };
   const chips = t.cards.map((c, i) => {
-    const cls = i < t.idx ? 'chip ko' : i === t.idx ? 'chip on' : 'chip';
-    return `<span class="${cls}">${c.ch.name}</span>`;
+    const cls = c.result === 'lose' ? 'chip ko' : i === t.idx && !c.result ? 'chip on' : 'chip';
+    return `<span class="${cls}">${i + 1}.${c.ch.name}${c.result ? mark[c.result] : ''}</span>`;
   }).join('');
   const streak = t.breakReady
     ? `<span class="break">${BREAK_NAME}!</span>`
     : '連勝 ' + '●'.repeat(t.streak) + '○'.repeat(BREAK_STREAK - t.streak);
-  let body = '<div class="name">全滅</div>';
-  if (alive(t) > 0) {
-    const f = active(t);
-    const pct = (f.hp / f.ch.hp) * 100;
-    const st = [];
-    if (f.power) st.push(`攻+${f.power}`);
-    if (f.guard) st.push(`守${f.guard}`);
-    if (f.poison) st.push(`毒${f.poison}`);
-    body = `
-      <div class="name">${f.ch.name}　HP ${f.hp}/${f.ch.hp}</div>
-      <div class="bar"><div class="${pct <= 34 ? 'low' : ''}" style="width:${pct}%"></div></div>
-      <div class="status">${st.join(' / ')}</div>
-      <ul class="actions">${actionList(f.ch, 'li', '')}</ul>`;
-  }
+  const f = active(t);
+  const pct = (f.hp / f.ch.hp) * 100;
+  const st = [];
+  if (f.power) st.push(`攻+${f.power}`);
+  if (f.guard) st.push(`守${f.guard}`);
+  if (f.poison) st.push(`毒${f.poison}`);
   el.innerHTML = `
-    <div class="sub">${t.label}　残り${alive(t)}/${TEAM_SIZE}　<span class="streak">${streak}</span></div>
-    <div class="chips">${chips}</div>${body}`;
+    <div class="sub">${t.label}　<span class="score">${t.wins}本</span>/${WINS_NEEDED}本先取　<span class="streak">${streak}</span></div>
+    <div class="chips">${chips}</div>
+    <div class="name">${t.idx + 1}番手 ${f.ch.name}　HP ${f.hp}/${f.ch.hp}</div>
+    <div class="bar"><div class="${pct <= 34 ? 'low' : ''}" style="width:${pct}%"></div></div>
+    <div class="status">${st.join(' / ')}</div>
+    <ul class="actions">${actionList(f.ch, 'li', '')}</ul>`;
 }
 
 function render() {
@@ -347,7 +357,8 @@ function play(hand) {
   }
   if (S.over) {
     msg = S.winner === -1 ? '引き分け' : S.winner === 0 ? 'あなたの勝利!' : 'あなたの敗北…';
-    log(`=== ${msg}(${S.rally}ラリー) ===`);
+    msg += `(${S.teams[0].wins}-${S.teams[1].wins})`;
+    log(`=== ${msg} ${S.rally}ラリー ===`);
   } else if (S.teams[0].breakReady) {
     msg += `　→ ${BREAK_NAME}! 好きな手が確定で通る`;
   }
