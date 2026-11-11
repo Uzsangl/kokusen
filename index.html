@@ -212,6 +212,14 @@
   #fx { position: fixed; inset: 0; pointer-events: none; z-index: 10; overflow: hidden; }
   #particles { position: absolute; inset: 0; width: 100%; height: 100%; }
   #flash { position: absolute; inset: 0; opacity: 0; }
+  /* プチュン:倒す瞬間に画面が一瞬で真っ暗になる */
+  #blackout { position: absolute; inset: 0; background: #000; display: none; }
+  #blackout.on { display: block; }
+  #blackout.on::after {
+    content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 2px; margin: 0 auto;
+    background: #fff; box-shadow: 0 0 12px #fff; animation: crt .22s ease-in forwards;
+  }
+  @keyframes crt { from { width: 100%; opacity: 1; } to { width: 0; opacity: 0; } }
   #flash.on { animation: flash calc(.45s * var(--spd)) ease-out; }
   @keyframes flash { from { opacity: .55; } to { opacity: 0; } }
   .pop {
@@ -308,6 +316,7 @@
 <div id="fx" aria-hidden="true">
   <canvas id="particles"></canvas>
   <div id="flash"></div>
+  <div id="blackout"></div>
   <div id="cutin"><div class="band"><div class="big" id="cutBig"></div><div class="small" id="cutSmall"></div></div></div>
 </div>
 
@@ -1005,6 +1014,12 @@ const Sound = (() => {
     // 背景で鳴り続ける時計
     tick(n) { tone(n % 2 ? 1500 : 1900, 0.025, { type: 'square', vol: 0.022 }); },
     click() { tone(1400, 0.03, { type: 'square', vol: 0.05 }); },
+    // プチュン:電源が落ちるような、一瞬で沈む短い音
+    puchun() {
+      tone(2400, 0.085, { type: 'square', vol: 0.4, to: 55 });
+      noise(0.018, { type: 'highpass', freq: 3000, vol: 0.35 });
+      tone(55, 0.14, { vol: 0.5, at: 0.07 });
+    },
     // レバーを叩く
     lever() {
       noise(0.05, { type: 'bandpass', freq: 1800, vol: 0.4 });
@@ -1400,7 +1415,18 @@ function pickHeat(side, o, gotBreak) {
 }
 
 // リールが回り、予兆が出て、相手の手が止まるまで
-async function spin(hand, cpuHand, heat, reach) {
+// プチュン:相手を倒す一撃が決まる瞬間、音が途切れて画面が真っ暗になる。倒せることの確定演出
+async function puchun() {
+  clearTimeout(tickTimer);
+  Bgm.duck(true);
+  $('blackout').classList.add('on');
+  Sound.puchun();
+  await new Promise((r) => setTimeout(r, Math.max(450, 900 * FX.speed)));   // 短縮モードでも暗転は分かる長さにする
+  $('blackout').classList.remove('on');
+  Bgm.duck(false);
+}
+
+async function spin(hand, cpuHand, heat, reach, kill) {
   $('slotYou').textContent = HANDS[hand].icon;
   setResult('…');
   $('dmgLine').innerHTML = '';
@@ -1425,6 +1451,13 @@ async function spin(hand, cpuHand, heat, reach) {
     await cutin('確定', '刻が、重なる', 'rainbow', 750);
   }
   clearInterval(iv);
+  if (kill) {
+    // リールが止まる前に暗転し、明けたときには手が決まっている
+    await puchun();
+    $('slotCpu').textContent = HANDS[cpuHand].icon;
+    $('stage').classList.remove('spinning');
+    return;
+  }
   $('slotCpu').textContent = HANDS[cpuHand].icon;
   Sound.stop();
   $('stage').classList.remove('spinning');
@@ -1548,7 +1581,7 @@ async function normalRally(hand) {
   const vs = `${HANDS[hand].icon} vs ${HANDS[cpuHand].icon}　`;
 
   await transformFx(o);
-  await spin(hand, cpuHand, pickHeat(side, o, S.teams[0].breakReady), reach);
+  await spin(hand, cpuHand, pickHeat(side, o, S.teams[0].breakReady), reach, o.ko && o.boutWin === 0 && side === 0);
 
   if (side < 0) {
     setStage('', 'あいこ');
@@ -1585,6 +1618,7 @@ async function playerBreak(hand) {
   await transformFx(o);
   await sleep(300);
   freeze(false);
+  if (o.ko && o.boutWin === 0) await puchun();
   setResult(`${BREAK_NAME}! ${HANDS[hand].icon} が確定で通った`);
   await strike(0, hand, b.cards[0].actions[hand], o, true);
   await aftermath(o);
