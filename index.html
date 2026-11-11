@@ -50,6 +50,10 @@
   button:hover:not(:disabled) { border-color: var(--accent); }
   button:disabled { opacity: .45; cursor: default; }
   .levels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 4px; }
+  .levels.two { grid-template-columns: 1fr 1fr; }
+  .roomrow { display: flex; gap: 8px; margin-bottom: 4px; }
+  .roomrow input { flex: 1; min-width: 0; font: inherit; color: var(--text); background: #0b0d1c; border: 1px solid var(--line); border-radius: 10px; padding: 10px; }
+  #netStatus { color: var(--gold); }
   .levels button.picked { border-color: var(--accent); border-width: 2px; box-shadow: 0 0 12px #f5c45144; font-weight: 700; }
   .chars { display: grid; gap: 8px; }
   .chars button { text-align: left; }
@@ -277,9 +281,21 @@
     <p class="sub">グーは停止、チョキは跳躍、パーは遡行の技です。ダメージはATKと技の威力で決まり、相手のDFSで軽減されます(DFS1000で10%カット、上限9000)。じゃんけんに3連勝すると BREAK が発生し、次は好きな手のアクションが確定で通ります(あいこでは連勝は途切れません)。BREAK中の攻撃は相手のDFSを無視します。</p>
     <p class="sub">キャラごとに「特性」があります。技にはATKやDFSを数ラリーの間だけ上げ下げするものがあります。極大ダメージは条件を満たしたときだけ出ます(条件を満たした技は赤く光ります)。交代がないまま12ラリー続くと「刻の抜け落ち」が始まり、両者のHPが毎ラリー削れていきます。</p>
     <p class="sub">予兆の色:青 → 緑 → <span style="color:var(--red);font-weight:700">赤(勝ち確定)</span> → <span class="rainbow" style="font-weight:700">虹(撃破かBREAK確定)</span></p>
-    <h2>CPUの強さ</h2>
-    <div class="levels" id="levels"></div>
-    <p class="sub" id="levelNote"></p>
+    <h2>対戦相手</h2>
+    <div class="levels two" id="modes"></div>
+    <div id="cpuOpts">
+      <h2>CPUの強さ</h2>
+      <div class="levels" id="levels"></div>
+      <p class="sub" id="levelNote"></p>
+    </div>
+    <div id="netOpts" class="hidden">
+      <div class="roomrow">
+        <input id="roomCode" inputmode="numeric" maxlength="12" placeholder="合言葉(例:1234)" autocomplete="off">
+        <button id="joinRoom">部屋に入る</button>
+        <button id="leaveRoom" class="hidden">出る</button>
+      </div>
+      <p class="sub" id="netStatus"></p>
+    </div>
     <h2>キャラ</h2>
     <div id="charList" class="chars"></div>
     <button id="start" style="width:100%;margin-top:8px"></button>
@@ -1357,7 +1373,7 @@ function teamHead(el, t) {
   const streak = t.breakReady
     ? `<span class="break">${BREAK_NAME}!</span>`
     : '●'.repeat(t.streak) + '○'.repeat(Math.max(0, BREAK_STREAK - t.streak)) + (reach ? ' リーチ!' : '');
-  el.innerHTML = `<div class="head"><span>${t.label}${t === S.teams[1] ? `(${AI_LEVELS[FX.level].name})` : ''} <span class="score">撃破${t.wins}</span></span>
+  el.innerHTML = `<div class="head"><span>${t.label}${t === S.teams[1] && !PVP.on ? `(${AI_LEVELS[FX.level].name})` : ''} <span class="score">撃破${t.wins}</span></span>
     <span class="streak${reach ? ' reach' : ''}">${streak}</span></div>
     <div class="chips">${chips}</div>`;
 }
@@ -1418,7 +1434,7 @@ function render(view) {
     const r = actHtml(me, foe, b.dataset.hand, you.breakReady);
     b.innerHTML = r.html;
     b.classList.toggle('hot', r.hot);
-    b.disabled = S.over || busy;
+    b.disabled = S.over || busy || pvpLocked();
   });
   $('cpuActs').innerHTML = HAND_KEYS.map((h) => {
     const r = actHtml(foe, me, h, cpu.breakReady);
@@ -1660,12 +1676,11 @@ async function finale() {
   }
 }
 
-async function normalRally(hand) {
+// hand は自分の手、cpuHand は相手の手。why はCPUがその手を選んだ理由(対人戦では null)
+async function normalRally(hand, cpuHand, why) {
   const b = before();
-  const ai = aiHand(S, 1, FX.level);   // CPUは、あなたの今回の手を見ずに決める
-  const cpuHand = ai.hand;
   const r = rally(S, hand, cpuHand, logLater);
-  logLater(`　CPUの考え(${AI_LEVELS[FX.level].name}):${ai.why}`);
+  if (why) logLater(`　CPUの考え(${AI_LEVELS[FX.level].name}):${why}`);
   const o = outcome(b);
   const side = r === 0 ? -1 : r > 0 ? 0 : 1;
   const reach = b.streak[0] >= BREAK_STREAK - 1 ? 0 : b.streak[1] >= BREAK_STREAK - 1 ? 1 : -1;
@@ -1695,8 +1710,8 @@ async function normalRally(hand) {
     setStage('heat4', '');
     $('cue').innerHTML = `<span class="rainbow">${BREAK_NAME}! 好きな手を選べ</span>`;
     setResult(`${BREAK_NAME}! 好きな手が確定で通る`);
-  } else if (S.teams[1].breakReady) {
-    await cpuBreak();
+  } else if (S.teams[1].breakReady && !PVP.on) {
+    await cpuBreak();   // 対人戦では、相手が手を選ぶのを待つ
   }
 }
 
@@ -1716,38 +1731,217 @@ async function playerBreak(hand) {
   if (S.over) return finale();
 }
 
-async function cpuBreak() {
+// 相手のBREAK。forced は対人戦で相手が選んだ手
+async function cpuBreak(forced) {
   await shatter(true);
   freeze(true);
   Sound.breakIn();
   await cutin(BREAK_NAME, '相手の時間だけが動く', 'violet', 1000);
   const b = before();
-  const h = FX.level >= 2 ? aiBreakHand(S, 1) : pickBreakHand(S, 1);
+  const h = forced || (FX.level >= 2 ? aiBreakHand(S, 1) : pickBreakHand(S, 1));
   breakRally(S, 1, h, logLater);
   const o = outcome(b);
   await transformFx(o);
   $('slotCpu').textContent = HANDS[h].icon;
   freeze(false);
-  setResult(`CPUの${BREAK_NAME}! ${HANDS[h].icon} が確定で通った`);
+  setResult(`${S.teams[1].label}の${BREAK_NAME}! ${HANDS[h].icon} が確定で通った`);
   await strike(1, h, b.cards[1].actions[h], o, true);
   await aftermath(o);
   if (S.over) return finale();
 }
 
 async function play(hand) {
+  if (PVP.on) return pvpPick(hand);
   if (busy || !S || S.over) return;
   busy = true;
   Sound.lever();
   render();
   try {
     if (S.teams[0].breakReady) await playerBreak(hand);
-    else await normalRally(hand);
+    else {
+      const ai = aiHand(S, 1, FX.level);   // CPUは、あなたの今回の手を見ずに決める
+      await normalRally(hand, ai.hand, ai.why);
+    }
   } finally {
     busy = false;
     flushLog();
     render();
     tickLoop();
   }
+}
+
+// ----- オンライン対人 -----
+// 同じページを開いている2人を、同じ合言葉でつなぐ。通信には、ページを開いている人どうしで
+// 「自分の今の状態」を見せ合う仕組み(room の presence)だけを使う。サーバーには何も保存しない。
+//
+// ずるを防ぐために、キャラの並びと毎ラリーの手は「先に封をした印(ハッシュ)を出し、
+// お互いの印がそろってから中身を明かす」手順にしている。相手の手を見てから自分の手を変えることはできない。
+// ルールの計算は両方の端末がそれぞれ行う。ルールに乱数はないので、同じ手の列からは同じ結果になる。
+const PVP = {
+  on: false,        // オンライン対人モードを選んでいるか
+  room: null,       // 通信の窓口(使えない環境では null)
+  code: '',         // 合言葉
+  phase: 'idle',    // idle(未参加)→ lobby(合言葉を入れた)→ ready(キャラを決めた)→ play(対戦中)
+  n: 0,             // 何ラリー目まで終わったか
+  my: {},           // 自分が公開している状態
+  team: null, teamSalt: '',
+  hand: null, salt: '',       // 今のラリーで自分が選んだ手
+  foeTeamSeal: null, foeSeal: {},   // 相手が先に出した印(最初に見たものを覚えておく)
+  applying: false,
+};
+const rnd = () => Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+// 封をするための印。同じ文字列からは必ず同じ値になる
+function seal(text) {
+  let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text.charCodeAt(i);
+    h1 = Math.imul(h1 ^ ch, 2654435761); h2 = Math.imul(h2 ^ ch, 1597334677);
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
+}
+function pvpPublish(patch) {
+  Object.assign(PVP.my, patch);
+  if (PVP.room) PVP.room.presence(patch).catch(() => {});
+}
+// 同じ合言葉の相手(自分のこの画面以外)
+function pvpFoe() {
+  if (!PVP.room || !PVP.code) return null;
+  return PVP.room.peers().find((p) => !(p.isMe && p.sameTab) && p.presence && p.presence.g === PVP.code) || null;
+}
+function pvpStatus(text) { $('netStatus').textContent = text; }
+
+async function pvpInit() {
+  try { PVP.room = window.claude && window.claude.use ? await window.claude.use('room') : null; } catch (e) { PVP.room = null; }
+  if (!PVP.room) return;
+  PVP.room.onPeers(() => pvpStep(), () => { PVP.room = null; renderMode(); });
+  renderMode();
+}
+
+// 合言葉を入れて部屋に入る
+function pvpJoin() {
+  const code = $('roomCode').value.trim();
+  if (!/^[0-9a-zA-Z]{2,12}$/.test(code)) { pvpStatus('合言葉は、英数字2〜12文字で入れてください。'); return; }
+  PVP.code = code; PVP.phase = 'lobby'; PVP.n = 0; PVP.foeTeamSeal = null; PVP.foeSeal = {};
+  pvpPublish({ g: code, ts: null, t: null, n: null, c: null, r: null, b: null, last: null });
+  pvpStep();
+  renderSelect();
+}
+// キャラと順番を決めた。まず印だけを出す
+function pvpReady() {
+  PVP.team = picked.slice(); PVP.teamSalt = rnd(); PVP.phase = 'ready';
+  pvpPublish({ ts: seal(PVP.teamSalt + '|' + PVP.team.join(',')) });
+  pvpStep();
+  renderSelect();
+}
+function pvpLeave() {
+  PVP.phase = 'idle'; PVP.code = ''; PVP.applying = false;
+  pvpPublish({ g: null, ts: null, t: null, n: null, c: null, r: null, b: null, last: null });
+  renderSelect();
+}
+
+// 対戦中、今のラリーが誰の番か。'pick'=お互いに手を選ぶ、'mine'=自分のBREAK、'foe'=相手のBREAK
+function pvpTurn() {
+  if (!S || S.over) return 'over';
+  return S.teams[0].breakReady ? 'mine' : S.teams[1].breakReady ? 'foe' : 'pick';
+}
+// 手のボタンを押せない状態か
+const pvpLocked = () => PVP.on && (PVP.applying || PVP.hand !== null || pvpTurn() === 'foe');
+
+// 状況が変わるたびに呼ばれる。条件がそろっていれば次へ進める(何度呼ばれてもよい)
+async function pvpStep() {
+  if (!PVP.on || !PVP.room || PVP.phase === 'idle') return;
+  const foe = pvpFoe(), fp = foe ? foe.presence : null;
+
+  if (PVP.phase === 'lobby') { pvpStatus(foe ? '相手が部屋にいます。キャラを選んで「準備完了」を押してください。' : `合言葉「${PVP.code}」で相手を待っています。相手にも同じ合言葉を入れてもらってください。`); return; }
+
+  if (PVP.phase === 'ready') {
+    if (!fp) { pvpStatus('相手を待っています…'); return; }
+    // 前の対戦が終わったままの相手(n が進んだまま)の情報は、新しい対戦には使わない
+    if (fp.n) { pvpStatus('相手が前の対戦の画面にいます。相手が「キャラ選択に戻る」を押すのを待っています…'); return; }
+    if (fp.ts && !PVP.foeTeamSeal) PVP.foeTeamSeal = fp.ts;
+    if (!PVP.foeTeamSeal) { pvpStatus('相手がキャラを選んでいます…'); return; }
+    if (!PVP.my.t) pvpPublish({ t: { ids: PVP.team, s: PVP.teamSalt }, n: 0 });   // 相手の印を見たので、自分の中身を明かす
+    const t = fp.t;
+    if (!t || !Array.isArray(t.ids)) { pvpStatus('相手の準備を待っています…'); return; }
+    const chars = t.ids.map((id) => CHARACTERS.find((c) => c.id === id));
+    if (seal(t.s + '|' + t.ids.join(',')) !== PVP.foeTeamSeal || chars.length !== TEAM_SIZE || chars.some((c) => !c) || new Set(t.ids).size !== TEAM_SIZE) {
+      pvpStatus('相手のキャラ情報が正しくありません。部屋を出て、入り直してください。'); return;
+    }
+    PVP.phase = 'play'; PVP.n = 0; PVP.hand = null; PVP.foeSeal = {};
+    await startMatch(PVP.team.map((id) => CHARACTERS.find((c) => c.id === id)), chars, '相手');
+    pvpStep();
+    return;
+  }
+
+  if (PVP.phase !== 'play' || PVP.applying || !S || S.over) return;
+  if (!fp) { setResult('相手との接続が切れました。相手が戻るのを待っています…'); return; }
+  const k = PVP.n, turn = pvpTurn();
+  // 相手がこのラリーについて公開している内容。相手が先に次へ進んでいたら、ひとつ前の記録を見る
+  const fr = fp.n === k ? fp : fp.last && fp.last.n === k ? fp.last : null;
+
+  if (turn === 'foe') {
+    if (!fr || !HANDS[fr.b]) { setResult(`相手の${BREAK_NAME}。相手が手を選んでいます…`); render(); return; }
+    await pvpApply(() => cpuBreak(fr.b), { n: k, b: null });
+    return;
+  }
+  if (turn === 'mine') { if (PVP.hand === null) return; return; }   // 自分のBREAKは pvpPick で処理する
+
+  if (PVP.hand === null) { render(); return; }                        // 自分がまだ選んでいない
+  if (fr && fr.c && !PVP.foeSeal[k]) PVP.foeSeal[k] = fr.c;           // 相手の印を覚える
+  if (!PVP.foeSeal[k]) { setResult('相手が手を選んでいます…'); return; }
+  if (!PVP.my.r) pvpPublish({ r: { h: PVP.hand, s: PVP.salt } });     // 相手の印を見たので、自分の手を明かす
+  const r = fr && fr.r;
+  if (!r || !HANDS[r.h]) { setResult('相手の手を待っています…'); return; }
+  if (seal(r.s + '|' + k + '|' + r.h) !== PVP.foeSeal[k]) { setResult('相手の手の情報が正しくありません。対戦を続けられません。'); return; }
+  const mine = PVP.hand, mySalt = PVP.salt;
+  await pvpApply(() => normalRally(mine, r.h, null), { n: k, r: { h: mine, s: mySalt }, c: PVP.my.c });
+}
+
+// 1ラリーぶんを画面に流し、終わったら次のラリーへ進める
+async function pvpApply(run, last) {
+  PVP.applying = true; busy = true;
+  render();
+  try { await run(); } finally {
+    busy = false; PVP.applying = false;
+    PVP.n++; PVP.hand = null;
+    pvpPublish({ n: PVP.n, c: null, r: null, b: null, last });
+    flushLog(); render(); tickLoop();
+  }
+  if (!S.over && pvpTurn() === 'pick') setResult('手を選んでください');
+  pvpStep();
+}
+
+// 手のボタンを押したとき(オンライン対人)
+async function pvpPick(hand) {
+  if (pvpLocked() || !S || S.over) return;
+  const k = PVP.n;
+  Sound.lever();
+  if (pvpTurn() === 'mine') {
+    PVP.hand = hand;
+    pvpPublish({ b: hand });                                 // BREAKは同時に選ぶものではないので、そのまま知らせる
+    await pvpApply(() => playerBreak(hand), { n: k, b: hand });
+    return;
+  }
+  PVP.hand = hand; PVP.salt = rnd();
+  pvpPublish({ c: seal(PVP.salt + '|' + k + '|' + hand), r: null });
+  $('slotYou').textContent = HANDS[hand].icon;
+  setResult('相手が手を選んでいます…');
+  render();
+  pvpStep();
+}
+
+// ----- 対戦相手の選択(CPU / オンライン対人) -----
+function renderMode() {
+  [...$('modes').children].forEach((b, i) => b.classList.toggle('picked', (i === 1) === PVP.on));
+  $('cpuOpts').classList.toggle('hidden', PVP.on);
+  $('netOpts').classList.toggle('hidden', !PVP.on);
+  if (PVP.on && !PVP.room) pvpStatus('この画面では、オンライン対人は使えません。このページを相手に共有し、お互いにClaudeへログインした状態で開いてください。');
+  else if (PVP.on && PVP.phase === 'idle') pvpStatus('相手と決めた合言葉を入れて、「部屋に入る」を押してください。');
+  $('roomCode').disabled = $('joinRoom').disabled = !PVP.room || PVP.phase !== 'idle';
+  $('leaveRoom').classList.toggle('hidden', PVP.phase === 'idle');
+  renderSelect();
 }
 
 // ----- 難易度 -----
@@ -1763,7 +1957,7 @@ function renderSelect() {
     const order = picked.indexOf(ch.id);
     const b = document.createElement('button');
     if (order >= 0) b.classList.add('picked');
-    b.disabled = order < 0 && picked.length >= TEAM_SIZE;
+    b.disabled = (order < 0 && picked.length >= TEAM_SIZE) || (PVP.on && PVP.phase === 'ready');
     b.innerHTML = `<div class="name">${order >= 0 ? `【${order + 1}番手】` : ''}${ch.name}(${ch.faction})</div>` +
       `<div class="stats">HP ${ch.hp}　${statLine(ch)}</div>` +
       `<div class="trait">${traitLine(ch)}</div>` +
@@ -1775,14 +1969,24 @@ function renderSelect() {
     };
     $('charList').appendChild(b);
   });
-  $('start').disabled = picked.length !== TEAM_SIZE;
-  $('start').textContent = picked.length === TEAM_SIZE
-    ? 'この順番で対戦開始' : `あと${TEAM_SIZE - picked.length}枚選ぶ`;
+  const full = picked.length === TEAM_SIZE;
+  if (!PVP.on) {
+    $('start').disabled = !full;
+    $('start').textContent = full ? 'この順番で対戦開始' : `あと${TEAM_SIZE - picked.length}枚選ぶ`;
+  } else {
+    // オンライン対人:部屋に入ってからキャラを決める。決めたあとは選び直せない
+    $('start').disabled = !full || PVP.phase !== 'lobby';
+    $('start').textContent = PVP.phase === 'idle' ? '先に合言葉で部屋に入る' : PVP.phase === 'ready' ? '準備完了。相手を待っています…' : full ? '準備完了' : `あと${TEAM_SIZE - picked.length}枚選ぶ`;
+  }
 }
 
-async function start() {
-  const mine = picked.map((id) => CHARACTERS.find((c) => c.id === id));
-  S = newMatch(mine, shuffled(CHARACTERS).slice(0, TEAM_SIZE));
+function start() {
+  if (PVP.on) return pvpReady();
+  return startMatch(picked.map((id) => CHARACTERS.find((c) => c.id === id)), shuffled(CHARACTERS).slice(0, TEAM_SIZE), 'CPU');
+}
+async function startMatch(mine, theirs, foeLabel) {
+  S = newMatch(mine, theirs);
+  S.teams[1].label = foeLabel;
   $('log').innerHTML = '';
   logBuf = [];
   freeze(false);
@@ -1821,7 +2025,16 @@ function init() {
     $('battle').classList.add('hidden');
     $('select').classList.remove('hidden');
     document.body.classList.remove('in-battle');
+    if (PVP.on) { PVP.phase = 'idle'; pvpJoin(); renderMode(); }   // 同じ合言葉のまま、もう一度キャラ選びから
   };
+  [['CPUと対戦', false], ['オンライン対人', true]].forEach(([label, v]) => {
+    const b = document.createElement('button');
+    b.textContent = label;
+    b.onclick = () => { if (PVP.on && !v && PVP.phase !== 'idle') pvpLeave(); PVP.on = v; renderMode(); };
+    $('modes').appendChild(b);
+  });
+  $('joinRoom').onclick = () => { pvpJoin(); renderMode(); };
+  $('leaveRoom').onclick = () => { pvpLeave(); renderMode(); };
   $('logBtn').onclick = () => {
     const hid = $('logPanel').classList.toggle('hidden');
     $('logBtn').textContent = hid ? 'ログを見る' : 'ログを閉じる';
@@ -1842,7 +2055,8 @@ function init() {
   renderLevels();
   $('optShort').onclick = () => { FX.short = !FX.short; saveOpt('kokusen.short', FX.short); applyOpts(); };
   applyOpts();
-  renderSelect();
+  renderMode();
+  pvpInit();
 }
 init();
 </script>
