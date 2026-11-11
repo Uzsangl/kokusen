@@ -218,22 +218,30 @@
   #crack polyline { fill: none; stroke: #fff; stroke-width: 1.6; stroke-linejoin: bevel; }
   #crack.violet { filter: drop-shadow(0 0 3px #fff) drop-shadow(0 0 8px #a78bff); }
   /* プチュン:倒す瞬間に画面が一瞬で真っ暗になる */
-  #blackout { position: absolute; inset: 0; background: #000; display: none; }
+  /* 暗転は、浮かんでいるダメージの数字などよりも手前に出す */
+  #blackout { position: absolute; inset: 0; background: #000; display: none; z-index: 3; }
+  #vburn { z-index: 4; }
+  #white { z-index: 5; }
+  #cutin { z-index: 6; }
   #blackout.on { display: block; }
   #blackout.on::after {
-    content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 2px; margin: 0 auto;
+    content: ''; position: absolute; left: 0; right: 0; top: var(--line-y, 50%); height: 2px; margin: -1px auto 0;
     background: #fff; box-shadow: 0 0 12px #fff; animation: crt .22s ease-in forwards;
   }
   @keyframes crt { from { width: 100%; opacity: 1; } to { width: 0; opacity: 0; } }
-  /* 暗転のあと、中心から画面が焼けて白く飛ぶ */
-  #burn {
-    position: absolute; left: 50%; top: 50%; width: 24px; height: 24px; margin: -12px; border-radius: 50%; display: none;
-    background: radial-gradient(circle, #fff 0 36%, #fff3c0 44%, #ffb030 52%, #ff5a00 60%, #8a1a00 68%, transparent 73%);
-  }
-  #burn.ember { display: block; animation: ember .28s ease-in-out infinite alternate; }
-  #burn.on { display: block; animation: burn .85s cubic-bezier(.6, 0, .95, .35) forwards; }
-  @keyframes ember { from { transform: scale(.25); opacity: .55; } to { transform: scale(.6); opacity: 1; } }
-  @keyframes burn { from { transform: scale(.6); } to { transform: scale(150); } }
+  /* 暗転のあと、画面にV字の焼け跡が走り、そこから焼け広がって白く飛ぶ */
+  #vburn { position: absolute; inset: 0; width: 100%; height: 100%; display: none; }
+  #vburn.draw, #vburn.burn { display: block; }
+  #vburn polyline { fill: none; stroke-linecap: round; stroke-linejoin: miter; stroke-dasharray: 1; stroke-dashoffset: 1; }
+  #vburn .g { stroke: #ff4a00; stroke-width: 22px; filter: blur(7px); }
+  #vburn .m { stroke: #ffb030; stroke-width: 9px; }
+  #vburn .c { stroke: #fff; stroke-width: 3px; }
+  #vburn.draw polyline { animation: vdraw var(--vd, 1.5s) cubic-bezier(.5, 0, .8, .6) forwards; }
+  #vburn.burn polyline { stroke-dashoffset: 0; transition: stroke-width .85s cubic-bezier(.6, 0, .95, .35); }
+  #vburn.burn .g { stroke-width: 3400px; }
+  #vburn.burn .m { stroke-width: 3200px; }
+  #vburn.burn .c { stroke-width: 3000px; }
+  @keyframes vdraw { to { stroke-dashoffset: 0; } }
   #white { position: absolute; inset: 0; background: #fff; opacity: 0; }
   #white.fade { transition: opacity .8s ease-out; }
   #flash.on { animation: flash calc(.45s * var(--spd)) ease-out; }
@@ -334,7 +342,7 @@
   <div id="flash"></div>
   <svg id="crack"></svg>
   <div id="blackout"></div>
-  <div id="burn"></div>
+  <svg id="vburn"></svg>
   <div id="white"></div>
   <div id="cutin"><div class="band"><div class="big" id="cutBig"></div><div class="small" id="cutSmall"></div></div></div>
 </div>
@@ -1062,6 +1070,12 @@ const Sound = (() => {
       tone(38, dur, { vol: 0.5, to: 72, attack: dur * 0.6, vib: 9 });
       noise(dur, { freq: 90, to: 400, vol: 0.35, rise: true });
     },
+    // 焼け跡が走る「ジジジ…」
+    fuse(dur) {
+      const n = Math.round(dur * 38);
+      for (let i = 0; i < n; i++) noise(0.022, { type: 'highpass', freq: 4200 + Math.random() * 2500, vol: 0.1 + 0.18 * (i / n), at: (i / n) * dur + Math.random() * 0.01 });
+      tone(900, dur, { type: 'sawtooth', vol: 0.05, to: 2600, attack: dur * 0.7 });
+    },
     // 画面が焼け広がる音 → 最後に爆ぜる
     burn() {
       noise(0.85, { type: 'bandpass', freq: 350, to: 7000, vol: 0.45, rise: true });
@@ -1519,25 +1533,36 @@ async function shatter(violet) {
 
 // プチュン:相手を倒す一撃が決まる瞬間の確定演出。
 // 流れ:じゃんけんに勝つ → 技名のカットイン → ダメージ表示 → HPゲージが空になる → ここ → 「撃破!」
-// 音が途切れて暗転 → 無音 → 低いうなりと火種 → 中心から画面が焼けて白く飛ぶ
+// 音が途切れて暗転(白い線はHPゲージの高さ)→ 無音 → V字の焼け跡が走る → そこから焼け広がって白く飛ぶ
 async function puchun() {
   // 短縮モードでも、何が起きたか分かる長さは残す
   const wait = (ms) => new Promise((r) => setTimeout(r, Math.max(ms * 0.5, ms * FX.speed)));
   clearTimeout(tickTimer);
   Bgm.duck(true);
+  // 白い線は、HPゲージの高さに出す
+  const bar = $('hpYou').querySelector('.bar').getBoundingClientRect();
+  $('blackout').style.setProperty('--line-y', (bar.top + bar.height / 2) + 'px');
   $('blackout').classList.add('on');
   Sound.puchun();
   await wait(2000);                       // 真っ暗で無音
-  if (!REDUCE) $('burn').className = 'ember';
-  Sound.rumble(1.5);
-  await wait(1500);                       // 火種がくすぶる
+  // V字:左上から下の頂点へ、頂点から右上へ、焼け跡が走る
+  const v = $('vburn'), W = innerWidth, H = innerHeight;
+  const pts = `${W * 0.08},${H * 0.06} ${W * 0.5},${H * 0.92} ${W * 0.92},${H * 0.06}`;
+  v.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  v.innerHTML = ['g', 'm', 'c'].map((k) => `<polyline class="${k}" pathLength="1" points="${pts}"/>`).join('');
+  const drawMs = Math.max(750, 1500 * FX.speed);
+  v.style.setProperty('--vd', drawMs + 'ms');
+  if (!REDUCE) v.setAttribute('class', 'draw');
+  Sound.rumble(drawMs / 1000);
+  Sound.fuse(drawMs / 1000);
+  await new Promise((r) => setTimeout(r, drawMs + 150));
   Sound.burn();
-  if (!REDUCE) { $('burn').className = 'on'; shake(true); }
-  await wait(850);                        // 焼け広がる
+  if (!REDUCE) { v.setAttribute('class', 'burn'); shake(true); }
+  await wait(850);                        // V字から焼け広がる
   const w = $('white');
   w.className = ''; w.style.opacity = 1;  // 白く飛ぶ
   $('blackout').classList.remove('on');
-  $('burn').className = '';
+  v.setAttribute('class', ''); v.innerHTML = '';
   void w.offsetWidth;
   w.className = 'fade'; w.style.opacity = 0;
   Bgm.duck(false);
