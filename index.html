@@ -117,8 +117,12 @@
   .cue { grid-column: 1 / -1; text-align: center; min-height: 1.6em; font-weight: 900; font-size: 1.05rem; }
   .dmgline { grid-column: 1 / -1; text-align: center; min-height: 2.9em; font-weight: 900; font-size: 1rem; line-height: 1.3; }
   .dmgline b { font-size: 2.1rem; font-variant-numeric: tabular-nums; margin: 0 .1em; }
-  .dmgline .dmg b { color: #ff6b78; text-shadow: 0 0 14px #ff4d5e99; }
-  .dmgline .dmg.mine b { color: var(--gold); text-shadow: 0 0 14px #f5c45199; }
+  /* ダメージの文字色:通常は白、3000から赤、5000から金、一撃で最大HPの半分以上なら虹 */
+  .t-white { color: #ffffff; }
+  .t-red { color: #ff3b4e; text-shadow: 0 0 14px #ff3b4ecc; }
+  .t-gold { color: #ffd24a; text-shadow: 0 0 16px #ffb300cc; }
+  .dmgline b.rainbow { text-shadow: none; filter: drop-shadow(0 0 8px #fff8); }
+  .dmgline .tick b { color: #ff9aa5; }
   .dmgline .heal b { color: #6ee7a0; }
   .dmgline .heal b, .dmgline .tick b { font-size: 1.4rem; }
   .dmgline .tick { font-size: .88rem; color: var(--sub); }
@@ -156,7 +160,9 @@
     text-shadow: 0 2px 0 #000, 0 0 12px currentColor; animation: pop 1.7s ease-out forwards;
   }
   .pop.buff { color: #7dd3fc; font-size: 1.3rem; } .pop.debuff { color: #e879f9; font-size: 1.3rem; }
-  .pop.dmg { color: #ff6b78; } .pop.heal { color: #6ee7a0; } .pop.big { font-size: 3rem; color: var(--gold); }
+  .pop.dmg { color: #ff9aa5; } .pop.heal { color: #6ee7a0; } .pop.big { font-size: 3rem; }
+  .pop.t-white { color: #ffffff; } .pop.t-red { color: #ff3b4e; } .pop.t-gold { color: #ffd24a; }
+  .pop.rainbow { text-shadow: none; filter: drop-shadow(0 2px 0 #000) drop-shadow(0 0 10px #fff); font-size: 3.2rem; animation: pop 1.7s ease-out forwards, hue 1.2s linear infinite; }
   @keyframes pop { 0% { opacity: 0; transform: translate(-50%, -20%) scale(.4); } 10% { opacity: 1; transform: translate(-50%, -60%) scale(1.4); } 18% { transform: translate(-50%, -60%) scale(1); } 75% { opacity: 1; transform: translate(-50%, -75%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -130%) scale(1); } }
   #cutin { position: absolute; left: 0; right: 0; top: 34%; display: none; }
   #cutin.show { display: block; }
@@ -241,8 +247,8 @@
 //
 // アクションの効果:
 //   rate   攻撃のダメージ係数(RATE の4段階。無ければ攻撃しない技)
-//   heal   自分を回復(最大HPに対する割合)
-//   atkUp  自分の次の攻撃だけ ATK を増やす(割合。1回で消える)
+//   heal   自分を回復(実数)
+//   atkUp  自分の次の攻撃だけ ATK を増やす(実数。1回で消える)
 //   dfsUp  自分が次に受ける攻撃だけ DFS を増やす(1回で消える)
 //   poison 相手に時蝕(指定ラリー数。毎ラリー、かけた側の ATK × POISON_RATE で上の式のダメージ)
 //   streak 自分の連勝を追加で増やす
@@ -284,57 +290,57 @@ const foeAtk = (v, t) => ({ to: 'foe', stat: 'atk', v: -v, t });
 const foeDfs = (v, t) => ({ to: 'foe', stat: 'dfs', v: -v, t });
 
 const CHARACTERS = [
-  { id: 'kaji', name: 'カジ', faction: '錨', hp: 2610, atk: 1300, dfs: 1100, phys: 1.0,
-    trait: { key: 'backwater', name: '背水', desc: '残りHPが半分以下でATK+40%', below: 0.5, mul: 1.4 },
+  { id: 'kaji', name: 'カジ', faction: '錨', hp: 2640, atk: 1300, dfs: 1100, phys: 1.0,
+    trait: { key: 'backwater', name: '背水', desc: '残りHPが半分以下でATK+500', below: 0.5, add: 500 },
     actions: {
       rock:     { name: '堰切り',   rate: RATE.huge, up: { rate: RATE.max, when: 'hpBelow', v: 0.5, text: '残りHP半分以下で極大' } },
-      scissors: { name: '踏み越し', rate: RATE.normal, mods: [selfAtk(0.3, 3)] },
-      paper:    { name: '構え直し', atkUp: 1.0, mods: [foeDfs(1000, 2)] } } },
-  { id: 'tomari', name: 'トマリ', faction: '錨', hp: 6700, atk: 650, dfs: 2000, phys: 1.1,
+      scissors: { name: '踏み越し', rate: RATE.normal, mods: [selfAtk(400, 3)] },
+      paper:    { name: '構え直し', atkUp: 1300, mods: [foeDfs(1000, 2)] } } },
+  { id: 'tomari', name: 'トマリ', faction: '錨', hp: 6570, atk: 650, dfs: 2000, phys: 1.1,
     trait: { key: 'immovable', name: '不動', desc: '攻撃を受けるたびにDFS+500(番手戦の間、最大+3000)', gain: 500, cap: 3000 },
     actions: {
       rock:     { name: '凪',   rate: RATE.normal, mods: [selfDfs(3000, 2)] },
-      scissors: { name: '先着', rate: RATE.big, mods: [foeAtk(0.2, 3)], up: { rate: RATE.huge, when: 'gainMax', v: 3000, text: '不動が最大のとき特大' } },
-      paper:    { name: '繕い', heal: 0.2 } } },
+      scissors: { name: '先着', rate: RATE.big, mods: [foeAtk(250, 3)], up: { rate: RATE.huge, when: 'gainMax', v: 3000, text: '不動が最大のとき特大' } },
+      paper:    { name: '繕い', heal: 1300 } } },
   { id: 'mio', name: 'ミオ', faction: '錨', hp: 4600, atk: 1000, dfs: 1400, phys: 0.95,
-    trait: { key: 'record', name: '記録', desc: '倒れたとき、次の番手にATK+40%とDFS+1500を渡す(番手戦の間ずっと)', atk: 0.4, dfs: 1500 },
+    trait: { key: 'record', name: '記録', desc: '倒れたとき、次の番手にATK+400とDFS+1500を渡す(番手戦の間ずっと)', atk: 400, dfs: 1500 },
     actions: {
-      rock:     { name: '留め置き', rate: RATE.big, nextAtkUp: 0.5 },
-      scissors: { name: '水先',     rate: RATE.normal, mods: [foeDfs(1000, 3), foeAtk(0.15, 3)] },
-      paper:    { name: '澪標',     heal: 0.15, nextDfsUp: 3000 } } },
-  { id: 'rei', name: 'レイ', faction: '零', hp: 3040, atk: 800, dfs: 1200, phys: 1.0,
+      rock:     { name: '留め置き', rate: RATE.big, nextAtkUp: 600 },
+      scissors: { name: '水先',     rate: RATE.normal, mods: [foeDfs(1000, 3), foeAtk(200, 3)] },
+      paper:    { name: '澪標',     heal: 700, nextDfsUp: 3000 } } },
+  { id: 'rei', name: 'レイ', faction: '零', hp: 2990, atk: 800, dfs: 1200, phys: 1.0,
     trait: { key: 'transform', name: '仮面割れ', desc: '番手戦の5ラリー目に変身し、ATK1500・DFS2500になって技も強くなる',
       at: 5, formName: 'レイ・解放', atk: 1500, dfs: 2500, actions: {
         rock:     { name: '白紙',         rate: RATE.huge, up: { rate: RATE.max, when: 'rallyFrom', v: 9, text: '9ラリー目以降は極大' } },
-        scissors: { name: '先消し',       rate: RATE.big, seal: 1, mods: [foeAtk(0.3, 2)] },
-        paper:    { name: '無かったこと', heal: 0.25, keep: 1, cleanse: 1 } } },
+        scissors: { name: '先消し',       rate: RATE.big, seal: 1, mods: [foeAtk(400, 2)] },
+        paper:    { name: '無かったこと', heal: 750, keep: 1, cleanse: 1 } } },
     actions: {
       rock:     { name: '白紙',         rate: RATE.big },
-      scissors: { name: '先消し',       rate: RATE.normal, seal: 1, mods: [foeAtk(0.2, 2)] },
-      paper:    { name: '無かったこと', heal: 0.15, keep: 1, cleanse: 1 } } },
-  { id: 'hajime', name: 'ハジメ', faction: '零', hp: 4390, atk: 700, dfs: 1600, phys: 1.0,
-    trait: { key: 'regen', name: '処置', desc: 'ラリーが終わるたびに最大HPの4%を回復', rate: 0.04 },
+      scissors: { name: '先消し',       rate: RATE.normal, seal: 1, mods: [foeAtk(250, 2)] },
+      paper:    { name: '無かったこと', heal: 450, keep: 1, cleanse: 1 } } },
+  { id: 'hajime', name: 'ハジメ', faction: '零', hp: 4400, atk: 700, dfs: 1600, phys: 1.0,
+    trait: { key: 'regen', name: '処置', desc: 'ラリーが終わるたびにHPを170回復', heal: 170 },
     actions: {
-      rock:     { name: '止血', rate: RATE.big, mods: [foeAtk(0.2, 2)] },
+      rock:     { name: '止血', rate: RATE.big, mods: [foeAtk(250, 2)] },
       scissors: { name: '先診', rate: RATE.normal, mods: [selfDfs(2000, 3)] },
-      paper:    { name: '無傷', heal: 0.4, cure: 1 } } },
+      paper:    { name: '無傷', heal: 1700, cure: 1 } } },
   { id: 'uro', name: 'ウロ', faction: '零', hp: 3330, atk: 900, dfs: 1300, phys: 0.95,
-    trait: { key: 'oldwound', name: '古傷', desc: '時蝕は重ねがけで毎ラリーのダメージが加算。時蝕中の相手への攻撃+30%', mul: 1.3 },
+    trait: { key: 'oldwound', name: '古傷', desc: '時蝕は重ねがけで毎ラリーのダメージが加算。時蝕中の相手を攻撃するときATK+300', add: 300 },
     actions: {
       rock:     { name: '疼き',     rate: RATE.huge, up: { rate: RATE.max, when: 'foeStacks', v: 2, text: '時蝕を2回以上重ねた相手には極大' } },
       scissors: { name: '膿み先',   rate: RATE.normal, poison: 3 },
       paper:    { name: '古傷返し', poison: 5, mods: [foeDfs(1500, 3)] } } },
-  { id: 'tsuru', name: 'ツル', faction: '矢', hp: 3010, atk: 950, dfs: 1100, phys: 0.95,
-    trait: { key: 'foresight', name: '先見', desc: `${BREAK_NAME}の一撃のダメージ+50%`, mul: 1.5 },
+  { id: 'tsuru', name: 'ツル', faction: '矢', hp: 3000, atk: 950, dfs: 1100, phys: 0.95,
+    trait: { key: 'foresight', name: '先見', desc: `${BREAK_NAME}の一撃はATK+500`, add: 500 },
     actions: {
       rock:     { name: '張り詰め', rate: RATE.big, up: { rate: RATE.max, when: 'inBreak', text: `${BREAK_NAME}中は極大` } },
       scissors: { name: '先読み',   rate: RATE.normal, streak: 1 },
-      paper:    { name: '引き絞り', rate: RATE.normal, mods: [selfAtk(0.5, 3)] } } },
-  { id: 'haya', name: 'ハヤ', faction: '矢', hp: 1280, atk: 1500, dfs: 1000, phys: 1.05,
-    trait: { key: 'rush', name: '先駆け', desc: '番手戦の1〜3ラリー目は与ダメージ+50%、7ラリー目以降は−30%', until: 3, early: 1.5, from: 7, late: 0.7 },
+      paper:    { name: '引き絞り', rate: RATE.normal, mods: [selfAtk(450, 3)] } } },
+  { id: 'haya', name: 'ハヤ', faction: '矢', hp: 1310, atk: 1500, dfs: 1000, phys: 1.05,
+    trait: { key: 'rush', name: '先駆け', desc: '番手戦の1〜3ラリー目はATK+750、7ラリー目以降はATK−450', until: 3, early: 750, from: 7, late: -450 },
     actions: {
       rock:     { name: '射止め', rate: RATE.huge, up: { rate: RATE.max, when: 'rallyUntil', v: 3, text: '3ラリー目までは極大' } },
-      scissors: { name: '二の矢', rate: RATE.big, atkUp: 0.3 },
+      scissors: { name: '二の矢', rate: RATE.big, atkUp: 450 },
       paper:    { name: '矢返し', rate: RATE.normal, mods: [foeDfs(1000, 3)] } } },
 ];
 
@@ -342,10 +348,11 @@ const CHARACTERS = [
 const pct = (x) => Math.round(x * 100) + '%';
 const traitOf = (card, key) => (card.ch.trait && card.ch.trait.key === key ? card.ch.trait : null);
 
-// バフ・デバフ(mods)の合計。stat は 'atk'(割合)か 'dfs'(実数)
+// バフ・デバフ(mods)の合計。ATK も DFS も実数の足し引き
 const modSum = (c, stat) => c.mods.reduce((s, m) => s + (m.stat === stat ? m.v : 0), 0);
 // 現在のATK(変身・渡された強化・バフ/デバフ込み。次の攻撃だけの上乗せ atkUp は含めない)
-const baseAtk = (c) => Math.round(c.atk * Math.max(0.1, 1 + c.atkBonus + modSum(c, 'atk')));
+const ATK_MIN = 100;   // デバフでATKがこれより下がることはない
+const baseAtk = (c) => Math.max(ATK_MIN, c.atk + c.atkBonus + modSum(c, 'atk'));
 // 現在のDFS(変身・特性・渡された強化・バフ/デバフ込み。次の被弾だけの上乗せ dfsUp は含めない)
 const baseDfs = (c) => Math.max(0, Math.min(DFS_MAX, c.dfs + c.dfsGain + c.dfsBonus + modSum(c, 'dfs')));
 // 攻撃を受けるときのDFS。BREAK中の攻撃は DFS を 0 として扱う
@@ -365,30 +372,31 @@ function upActive(a, att, def, n, isBreak) {
 }
 const rateOf = (a, att, def, n, isBreak) => (upActive(a, att, def, n, isBreak) ? a.up.rate : a.rate);
 
-// 特性による与ダメージの倍率
-function traitMul(S, att, def, isBreak) {
-  let m = 1, t;
-  if ((t = traitOf(att, 'backwater')) && att.hp <= att.ch.hp * t.below) m *= t.mul;
-  if ((t = traitOf(att, 'oldwound')) && def.poison > 0) m *= t.mul;
-  if ((t = traitOf(att, 'foresight')) && isBreak) m *= t.mul;
-  if ((t = traitOf(att, 'rush'))) m *= S.boutRally <= t.until ? t.early : S.boutRally >= t.from ? t.late : 1;
-  return m;
+// 特性によるATKの増減(実数の足し引き)
+function traitAtk(S, att, def, isBreak) {
+  let v = 0, t;
+  if ((t = traitOf(att, 'backwater')) && att.hp <= att.ch.hp * t.below) v += t.add;
+  if ((t = traitOf(att, 'oldwound')) && def.poison > 0) v += t.add;
+  if ((t = traitOf(att, 'foresight')) && isBreak) v += t.add;
+  if ((t = traitOf(att, 'rush'))) v += S.boutRally <= t.until ? t.early : S.boutRally >= t.from ? t.late : 0;
+  return v;
 }
 
 // 攻撃1回ぶんのダメージ。att / def は場に出ているカード
+// 掛け算するのは「ATK × ダメージ係数 × フィジカル係数 × DFS軽減」だけで、強化・弱体はすべてATKとDFSへの足し引き
 function damage(S, att, def, rate, isBreak) {
-  const atk = baseAtk(att) * (1 + att.atkUp) * traitMul(S, att, def, isBreak);
+  const atk = Math.max(ATK_MIN, baseAtk(att) + att.atkUp + traitAtk(S, att, def, isBreak));
   return Math.round(atk * rate * att.ch.phys * (1 - dfsOf(def, isBreak) / 10000));
 }
 
-const modText = (m) => `${m.to === 'self' ? '自分' : '相手'}の${m.stat === 'atk' ? 'ATK' : 'DFS'}${m.v > 0 ? '+' : '−'}${m.stat === 'atk' ? pct(Math.abs(m.v)) : Math.abs(m.v)}(${m.t}ラリー)`;
+const modText = (m) => `${m.to === 'self' ? '自分' : '相手'}の${m.stat === 'atk' ? 'ATK' : 'DFS'}${m.v > 0 ? '+' : '−'}${Math.abs(m.v)}(${m.t}ラリー)`;
 
 // 技の説明。rate を渡すと、いま実際に出るダメージ段階で表示する
 function describe(a, rate) {
   const parts = [];
   if (a.rate) parts.push(RATE_LABEL[rate || a.rate] + (a.up ? `(${a.up.text})` : ''));   // 係数の数値は裏データなので出さない
-  if (a.heal) parts.push(`最大HPの${pct(a.heal)}回復`);
-  if (a.atkUp) parts.push(`次の攻撃ATK+${pct(a.atkUp)}`);
+  if (a.heal) parts.push(`HP${a.heal}回復`);
+  if (a.atkUp) parts.push(`次の攻撃ATK+${a.atkUp}`);
   if (a.dfsUp) parts.push(`次の被弾DFS+${a.dfsUp}`);
   (a.mods || []).forEach((m) => parts.push(modText(m)));
   if (a.poison) parts.push(`時蝕${a.poison}ラリー`);
@@ -397,7 +405,7 @@ function describe(a, rate) {
   if (a.streak) parts.push(`自分の連勝+${a.streak}`);
   if (a.seal) parts.push('相手の次の勝ちを連勝に数えない');
   if (a.keep) parts.push('次に負けても連勝が途切れない');
-  if (a.nextAtkUp) parts.push(`次の番手の最初の攻撃ATK+${pct(a.nextAtkUp)}`);
+  if (a.nextAtkUp) parts.push(`次の番手の最初の攻撃ATK+${a.nextAtkUp}`);
   if (a.nextDfsUp) parts.push(`次の番手の最初の被弾DFS+${a.nextDfsUp}`);
   return parts.join('、');
 }
@@ -464,7 +472,7 @@ function act(S, side, hand, log, isBreak) {
   const a = w.actions[hand];
   let t;
   log(`${wt.label}の${nameOf(w)}:${HANDS[hand].label} →「${a.name}」`);
-  S.hit = { side, dmg: 0, heal: 0, rate: 0 };   // 画面表示用:このアクションで与えたダメージと回復量
+  S.hit = { side, dmg: 0, heal: 0, rate: 0, half: false };   // 画面表示用:このアクションで与えたダメージと回復量
   if (a.rate) {
     const rate = rateOf(a, w, l, S.boutRally, isBreak);
     const dfs = dfsOf(l, isBreak);
@@ -473,13 +481,14 @@ function act(S, side, hand, log, isBreak) {
     l.dfsUp = 0;
     l.hp = Math.max(0, l.hp - d);
     S.hit.dmg = d; S.hit.rate = rate;
+    S.hit.half = d >= l.ch.hp / 2;   // 一撃で相手の最大HPの半分以上を削ったか
     log(`　${lt.label}の${nameOf(l)}に${d}ダメージ(${RATE_LABEL[rate]}、${isBreak ? `${BREAK_NAME}中はDFS無視` : `DFS${dfs}で${pct(dfs / 10000)}カット`})`);
     // 特性「不動」:攻撃を受けるたびに硬くなる
     if ((t = traitOf(l, 'immovable')) && l.hp > 0) l.dfsGain = Math.min(t.cap, l.dfsGain + t.gain);
   }
   if (a.heal) {
     const before = w.hp;
-    w.hp = Math.min(w.ch.hp, w.hp + Math.round(w.ch.hp * a.heal));
+    w.hp = Math.min(w.ch.hp, w.hp + a.heal);
     S.hit.heal = w.hp - before;
     log(`　${nameOf(w)}は${w.hp - before}回復`);
   }
@@ -500,7 +509,7 @@ function act(S, side, hand, log, isBreak) {
     addMod(target, m);
     const label = `${m.stat === 'atk' ? 'ATK' : 'DFS'}${m.v > 0 ? '↑' : '↓'}`;
     S.events.push({ type: 'mod', side: tside, text: label, good: m.v > 0 });
-    log(`　${nameOf(target)}の${m.stat === 'atk' ? 'ATK' : 'DFS'}${m.v > 0 ? '+' : '−'}${m.stat === 'atk' ? pct(Math.abs(m.v)) : Math.abs(m.v)}(${m.t}ラリー)`);
+    log(`　${nameOf(target)}の${m.stat === 'atk' ? 'ATK' : 'DFS'}${m.v > 0 ? '+' : '−'}${Math.abs(m.v)}(${m.t}ラリー)`);
   });
   if (a.poison) {
     const tick = Math.round(baseAtk(w) * POISON_RATE * w.ch.phys * (1 - (isBreak ? 0 : baseDfs(l)) / 10000));
@@ -535,7 +544,7 @@ function endRally(S, log, winSide) {
     }
     if ((tr = traitOf(f, 'regen')) && f.hp > 0 && f.hp < f.ch.hp) {
       const before = f.hp;
-      f.hp = Math.min(f.ch.hp, f.hp + Math.round(f.ch.hp * tr.rate));
+      f.hp = Math.min(f.ch.hp, f.hp + tr.heal);
       S.ticks.push({ side, heal: f.hp - before });
       log(`　${t.label}の${nameOf(f)}は「${tr.name}」で${f.hp - before}回復`);
     }
@@ -563,7 +572,7 @@ function endRally(S, log, winSide) {
     const f = active(t), tr = traitOf(f, 'record'), next = t.cards[t.idx + 1];
     if (ko[side] && tr && next) {
       next.atkBonus = tr.atk; next.dfsBonus = tr.dfs;
-      log(`　${t.label}の${f.ch.name}の「${tr.name}」→ 次の${next.ch.name}にATK+${pct(tr.atk)}・DFS+${tr.dfs}`);
+      log(`　${t.label}の${f.ch.name}の「${tr.name}」→ 次の${next.ch.name}にATK+${tr.atk}・DFS+${tr.dfs}`);
     }
   });
 
@@ -640,12 +649,12 @@ function pickBreakHand(S, side) {
     const a = me.actions[h];
     const d = a.rate ? damage(S, me, foe, rateOf(a, me, foe, n, true), true) : 0;
     let s = Math.min(d, foe.hp) + (d >= foe.hp ? 1e6 : 0);
-    if (a.heal) s += Math.min(Math.round(me.ch.hp * a.heal), me.ch.hp - me.hp);
+    if (a.heal) s += Math.min(a.heal, me.ch.hp - me.hp);
     if (a.poison) s += Math.min(a.poison * hit * POISON_RATE, foe.hp);
     if ((a.cleanse || a.cure) && me.poison > 0) s += me.poison * me.poisonDmg;
-    s += ((a.atkUp || 0) + (a.nextAtkUp || 0) * 0.8) * hit * 0.6;
+    s += ((a.atkUp || 0) + (a.nextAtkUp || 0) * 0.8) / baseAtk(me) * hit * 0.6;
     s += ((a.dfsUp || 0) + (a.nextDfsUp || 0) * 0.8) / 10000 * hit * 0.6;
-    (a.mods || []).forEach((m) => { s += (m.stat === 'atk' ? Math.abs(m.v) : Math.abs(m.v) / 10000) * hit * m.t * 0.3; });
+    (a.mods || []).forEach((m) => { s += (m.stat === 'atk' ? Math.abs(m.v) / baseAtk(me) : Math.abs(m.v) / 10000) * hit * m.t * 0.3; });
     s += ((a.streak || 0) * 0.5 + (a.seal || 0) * 0.3 + (a.keep || 0) * 0.3) * hit;
     if (s > bestScore) { bestScore = s; best = h; }
   }
@@ -910,9 +919,9 @@ function renderTeam(el, t, foeTeam) {
   const f = active(t);
   const bar = (f.hp / f.ch.hp) * 100;
   const st = [];
-  f.mods.forEach((m) => st.push(`${m.stat === 'atk' ? 'ATK' : 'DFS'}${m.v > 0 ? '+' : '−'}${m.stat === 'atk' ? pct(Math.abs(m.v)) : Math.abs(m.v)}(残${m.t})`));
-  if (f.atkBonus) st.push(`記録 ATK+${pct(f.atkBonus)}`);
-  if (f.atkUp) st.push(`次ATK+${pct(f.atkUp)}`);
+  f.mods.forEach((m) => st.push(`${m.stat === 'atk' ? 'ATK' : 'DFS'}${m.v > 0 ? '+' : '−'}${Math.abs(m.v)}(残${m.t})`));
+  if (f.atkBonus) st.push(`記録 ATK+${f.atkBonus}`);
+  if (f.atkUp) st.push(`次ATK+${f.atkUp}`);
   if (f.dfsUp) st.push(`次DFS+${f.dfsUp}`);
   if (f.poison) st.push(`時蝕${f.poison}(${f.poisonDmg})`);
   if (t.keep) st.push('連勝保護');
@@ -1038,8 +1047,9 @@ function pops(o, big) {
   const lines = [];
   const h = o.hit;
   if (h && h.dmg) {
-    pop(1 - h.side, '-' + h.dmg, 'dmg' + (big ? ' big' : ''));
-    lines.push(`<div class="dmg${h.side === 0 ? ' mine' : ''}">${o.names[1 - h.side]}に<b data-n="${h.dmg}">0</b>ダメージ!</div>`);
+    const tier = h.half ? 'rainbow' : h.dmg >= 5000 ? 't-gold' : h.dmg >= 3000 ? 't-red' : 't-white';
+    pop(1 - h.side, '-' + h.dmg, 'dmg ' + tier + (big ? ' big' : ''));
+    lines.push(`<div class="dmg">${o.names[1 - h.side]}に<b class="${tier}" data-n="${h.dmg}">0</b>ダメージ!</div>`);
   }
   if (h && h.heal) {
     pop(h.side, '+' + h.heal, 'heal');
