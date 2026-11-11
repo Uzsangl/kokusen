@@ -106,6 +106,15 @@
   @keyframes reel { 0% { transform: translateY(-6px); opacity: .6; } 50% { transform: translateY(6px); opacity: 1; } 100% { transform: translateY(-6px); opacity: .6; } }
   .vs { font-weight: 900; color: var(--sub); letter-spacing: .1em; }
   .cue { grid-column: 1 / -1; text-align: center; min-height: 1.6em; font-weight: 900; font-size: 1.05rem; }
+  .dmgline { grid-column: 1 / -1; text-align: center; min-height: 2.9em; font-weight: 900; font-size: 1rem; line-height: 1.3; }
+  .dmgline b { font-size: 2.1rem; font-variant-numeric: tabular-nums; margin: 0 .1em; }
+  .dmgline .dmg b { color: #ff6b78; text-shadow: 0 0 14px #ff4d5e99; }
+  .dmgline .dmg.mine b { color: var(--gold); text-shadow: 0 0 14px #f5c45199; }
+  .dmgline .heal b { color: #6ee7a0; }
+  .dmgline .heal b, .dmgline .tick b { font-size: 1.4rem; }
+  .dmgline .tick { font-size: .88rem; color: var(--sub); }
+  .dmgline div { animation: dmgIn calc(.25s * var(--spd)) cubic-bezier(.2, 1.6, .4, 1); }
+  @keyframes dmgIn { from { transform: scale(1.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
   .stage.heat1 { border-color: #38bdf8; box-shadow: 0 0 14px #38bdf877; }
   .stage.heat2 { border-color: #4ade80; box-shadow: 0 0 18px #4ade8088; }
   .stage.heat3 { border-color: var(--red); box-shadow: 0 0 26px #ff4d5ecc; animation: pulse calc(.35s * var(--spd)) ease-in-out infinite alternate; }
@@ -135,10 +144,10 @@
   @keyframes flash { from { opacity: .55; } to { opacity: 0; } }
   .pop {
     position: absolute; font-weight: 900; font-size: 2rem; white-space: nowrap; transform: translate(-50%, -50%);
-    text-shadow: 0 2px 0 #000, 0 0 12px currentColor; animation: pop .9s ease-out forwards;
+    text-shadow: 0 2px 0 #000, 0 0 12px currentColor; animation: pop 1.7s ease-out forwards;
   }
   .pop.dmg { color: #ff6b78; } .pop.heal { color: #6ee7a0; } .pop.big { font-size: 3rem; color: var(--gold); }
-  @keyframes pop { 0% { opacity: 0; transform: translate(-50%, -20%) scale(.4); } 20% { opacity: 1; transform: translate(-50%, -60%) scale(1.3); } 100% { opacity: 0; transform: translate(-50%, -160%) scale(1); } }
+  @keyframes pop { 0% { opacity: 0; transform: translate(-50%, -20%) scale(.4); } 10% { opacity: 1; transform: translate(-50%, -60%) scale(1.4); } 18% { transform: translate(-50%, -60%) scale(1); } 75% { opacity: 1; transform: translate(-50%, -75%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -130%) scale(1); } }
   #cutin { position: absolute; left: 0; right: 0; top: 34%; display: none; }
   #cutin.show { display: block; }
   #cutin .band {
@@ -172,7 +181,7 @@
 
   <section id="select" class="panel">
     <h2>出す順に5枚選ぶ</h2>
-    <p class="sub">同じ番手のカード同士が1対1で戦い、相手を倒すと1本です。決着したら両者とも次の番手に交代し、先に3本取った側の勝ちです。グーは停止、チョキは跳躍、パーは遡行の技です。ダメージは「ATK × ダメージ係数」を相手のDFSで軽減した値です(DFS1000で10%カット、上限9000)。じゃんけんに3連勝すると BREAK が発生し、次は好きな手のアクションが確定で通ります(あいこでは連勝は途切れません)。</p>
+    <p class="sub">同じ番手のカード同士が1対1で戦い、相手を倒すと1本です。決着したら両者とも次の番手に交代し、先に3本取った側の勝ちです。グーは停止、チョキは跳躍、パーは遡行の技です。ダメージはATKと技の威力で決まり、相手のDFSで軽減されます(DFS1000で10%カット、上限9000)。BREAK中の攻撃は相手のDFSを無視します。じゃんけんに3連勝すると BREAK が発生し、次は好きな手のアクションが確定で通ります(あいこでは連勝は途切れません)。</p>
     <p class="sub">予兆の色:青 → 緑 → <span style="color:var(--red);font-weight:700">赤(勝ち確定)</span> → <span class="rainbow" style="font-weight:700">虹(撃破かBREAK確定)</span></p>
     <div id="charList" class="chars"></div>
     <button id="start" style="width:100%;margin-top:8px"></button>
@@ -189,6 +198,7 @@
         <div class="vs">VS</div>
         <div class="slot" id="slotCpu">?</div>
         <div class="cue" id="cue"></div>
+        <div class="dmgline" id="dmgLine"></div>
       </div>
       <div class="result" id="result">手を選んでください</div>
       <div class="hands" id="hands"></div>
@@ -210,7 +220,7 @@
 // ===== データ(ここを書き換えればバランス調整・キャラ追加ができる) =====
 // 能力値:
 //   hp   体力        atk  攻撃力
-//   dfs  防御力。1000で被ダメージ10%カット、9000で90%カット(上限 DFS_MAX)
+//   dfs  防御力。1000で被ダメージ10%カット、9000で90%カット(上限 DFS_MAX)。BREAK中の攻撃には効かない
 //   phys フィジカル係数。キャラごとの体格・地力による与ダメージの倍率(裏データ。画面には出さない)
 // ダメージ = ATK × ダメージ係数 × フィジカル係数 ×(1 − 相手のDFS ÷ 10000)
 //
@@ -245,35 +255,35 @@ const HAND_KEYS = Object.keys(HANDS);
 
 // 陣営ごとに得意な力がある:錨=停止、零=遡行、矢=跳躍(設定は WORLD.md)
 const CHARACTERS = [
-  { id: 'kaji', name: 'カジ', faction: '錨', hp: 2610, atk: 1050, dfs: 1200, phys: 1.0, actions: {
+  { id: 'kaji', name: 'カジ', faction: '錨', hp: 2670, atk: 1050, dfs: 1200, phys: 1.0, actions: {
       rock:     { name: '堰切り',   rate: RATE.max },
       scissors: { name: '踏み越し', rate: RATE.normal, atkUp: 0.2 },
       paper:    { name: '構え直し', atkUp: 0.5 } } },
-  { id: 'tomari', name: 'トマリ', faction: '錨', hp: 3790, atk: 800, dfs: 2000, phys: 1.1, actions: {
+  { id: 'tomari', name: 'トマリ', faction: '錨', hp: 4010, atk: 800, dfs: 2000, phys: 1.1, actions: {
       rock:     { name: '凪',   rate: RATE.normal, dfsUp: 3000 },
       scissors: { name: '先着', rate: RATE.big },
       paper:    { name: '繕い', heal: 0.2 } } },
-  { id: 'mio', name: 'ミオ', faction: '錨', hp: 3560, atk: 1100, dfs: 1500, phys: 0.95, actions: {
+  { id: 'mio', name: 'ミオ', faction: '錨', hp: 3720, atk: 1100, dfs: 1500, phys: 0.95, actions: {
       rock:     { name: '留め置き', rate: RATE.big, nextAtkUp: 0.3 },
       scissors: { name: '水先',     rate: RATE.normal, atkUp: 0.3 },
       paper:    { name: '澪標',     heal: 0.15, nextDfsUp: 2000 } } },
-  { id: 'rei', name: 'レイ', faction: '零', hp: 3390, atk: 1100, dfs: 1500, phys: 1.0, actions: {
+  { id: 'rei', name: 'レイ', faction: '零', hp: 3450, atk: 1100, dfs: 1500, phys: 1.0, actions: {
       rock:     { name: '白紙',         rate: RATE.big },
       scissors: { name: '先消し',       rate: RATE.normal, seal: 1 },
       paper:    { name: '無かったこと', heal: 0.15, keep: 1 } } },
-  { id: 'hajime', name: 'ハジメ', faction: '零', hp: 3480, atk: 1000, dfs: 1600, phys: 1.0, actions: {
+  { id: 'hajime', name: 'ハジメ', faction: '零', hp: 3650, atk: 1000, dfs: 1600, phys: 1.0, actions: {
       rock:     { name: '止血', rate: RATE.big },
       scissors: { name: '先診', rate: RATE.normal, dfsUp: 2000 },
       paper:    { name: '無傷', heal: 0.3 } } },
-  { id: 'uro', name: 'ウロ', faction: '零', hp: 3050, atk: 1000, dfs: 1300, phys: 0.95, actions: {
+  { id: 'uro', name: 'ウロ', faction: '零', hp: 3110, atk: 1000, dfs: 1300, phys: 0.95, actions: {
       rock:     { name: '疼き',     rate: RATE.huge },
       scissors: { name: '膿み先',   rate: RATE.normal, poison: 2 },
       paper:    { name: '古傷返し', poison: 3 } } },
-  { id: 'tsuru', name: 'ツル', faction: '矢', hp: 2650, atk: 1050, dfs: 1200, phys: 0.95, actions: {
+  { id: 'tsuru', name: 'ツル', faction: '矢', hp: 2660, atk: 1050, dfs: 1200, phys: 0.95, actions: {
       rock:     { name: '張り詰め', rate: RATE.big },
       scissors: { name: '先読み',   rate: RATE.normal, streak: 1 },
       paper:    { name: '引き絞り', rate: RATE.normal, atkUp: 0.4 } } },
-  { id: 'haya', name: 'ハヤ', faction: '矢', hp: 2320, atk: 1050, dfs: 1000, phys: 1.05, actions: {
+  { id: 'haya', name: 'ハヤ', faction: '矢', hp: 2450, atk: 1050, dfs: 1000, phys: 1.05, actions: {
       rock:     { name: '射止め', rate: RATE.huge },
       scissors: { name: '二の矢', rate: RATE.big, atkUp: 0.2 },
       paper:    { name: '矢返し', rate: RATE.normal, atkUp: 0.2 } } },
@@ -282,15 +292,18 @@ const CHARACTERS = [
 // ===== ルール =====
 const pct = (x) => Math.round(x * 100) + '%';
 
+// 相手のDFS。BREAK中の攻撃は DFS を 0 として扱う
+const dfsOf = (def, isBreak) => (isBreak ? 0 : Math.min(DFS_MAX, def.ch.dfs + def.dfsUp));
+
 // 攻撃1回ぶんのダメージ。att / def は場に出ているカード
-function damage(att, def, rate) {
-  const dfs = Math.min(DFS_MAX, def.ch.dfs + def.dfsUp);
+function damage(att, def, rate, isBreak) {
+  const dfs = dfsOf(def, isBreak);
   return Math.round(att.ch.atk * (1 + att.atkUp) * rate * att.ch.phys * (1 - dfs / 10000));
 }
 
 function describe(a) {
   const parts = [];
-  if (a.rate) parts.push(`${RATE_LABEL[a.rate]}(×${a.rate})`);
+  if (a.rate) parts.push(RATE_LABEL[a.rate]);   // 係数の数値は裏データなので出さない
   if (a.heal) parts.push(`最大HPの${pct(a.heal)}回復`);
   if (a.atkUp) parts.push(`次の攻撃ATK+${pct(a.atkUp)}`);
   if (a.dfsUp) parts.push(`次の被弾DFS+${a.dfsUp}`);
@@ -320,29 +333,32 @@ function judge(a, b) {
 }
 
 // 攻撃側の現在のカードが、指定した手に対応するアクションを実行する
-function act(S, side, hand, log) {
+function act(S, side, hand, log, isBreak) {
   const wt = S.teams[side], lt = S.teams[1 - side];
   const w = active(wt), l = active(lt);
   const a = w.ch.actions[hand];
   log(`${wt.label}の${w.ch.name}:${HANDS[hand].label} →「${a.name}」`);
+  S.hit = { side, dmg: 0, heal: 0 };   // 画面表示用:このアクションで与えたダメージと回復量
   if (a.rate) {
-    const dfs = Math.min(DFS_MAX, l.ch.dfs + l.dfsUp);
-    const d = damage(w, l, a.rate);
+    const dfs = dfsOf(l, isBreak);
+    const d = damage(w, l, a.rate, isBreak);
     w.atkUp = 0;
     l.dfsUp = 0;
     l.hp = Math.max(0, l.hp - d);
-    log(`　${lt.label}の${l.ch.name}に${d}ダメージ(${RATE_LABEL[a.rate]}、DFS${dfs}で${pct(dfs / 10000)}カット)`);
+    S.hit.dmg = d;
+    log(`　${lt.label}の${l.ch.name}に${d}ダメージ(${isBreak ? `${BREAK_NAME}中はDFS無視` : `DFS${dfs}で${pct(dfs / 10000)}カット`})`);
   }
   if (a.heal) {
     const before = w.hp;
     w.hp = Math.min(w.ch.hp, w.hp + Math.round(w.ch.hp * a.heal));
+    S.hit.heal = w.hp - before;
     log(`　${w.ch.name}は${w.hp - before}回復`);
   }
   if (a.atkUp) w.atkUp = a.atkUp;
   if (a.dfsUp) w.dfsUp = a.dfsUp;
   if (a.poison) {
     l.poison = a.poison;
-    l.poisonDmg = Math.round(w.ch.atk * POISON_RATE * w.ch.phys * (1 - Math.min(DFS_MAX, l.ch.dfs) / 10000));
+    l.poisonDmg = Math.round(w.ch.atk * POISON_RATE * w.ch.phys * (1 - (isBreak ? 0 : Math.min(DFS_MAX, l.ch.dfs)) / 10000));
     log(`　${l.ch.name}は時蝕を受けた(毎ラリー${l.poisonDmg})`);
   }
   if (a.streak) wt.streak += a.streak;
@@ -361,6 +377,7 @@ function endRally(S, log, winSide) {
     if (f.poison > 0 && f.hp > 0) {
       f.poison--;
       f.hp = Math.max(0, f.hp - f.poisonDmg);
+      S.ticks.push({ side: S.teams.indexOf(t), dmg: f.poisonDmg });
       log(`　${t.label}の${f.ch.name}は時蝕で${f.poisonDmg}ダメージ`);
     }
   }
@@ -398,6 +415,7 @@ function endRally(S, log, winSide) {
 // 通常のラリー(じゃんけん1回)。戻り値は side0 から見た勝敗 1 / 0 / -1
 function rally(S, hand0, hand1, log) {
   S.rally++;
+  S.hit = null; S.ticks = [];
   log(`— ラリー${S.rally}:あなた ${HANDS[hand0].label} / CPU ${HANDS[hand1].label} —`);
   const r = judge(hand0, hand1);
   const winSide = r === 0 ? -1 : r > 0 ? 0 : 1;
@@ -424,20 +442,21 @@ function rally(S, hand0, hand1, log) {
 // ブレイク中のラリー:じゃんけん無しで、選んだ手のアクションが確定で通る
 function breakRally(S, side, hand, log) {
   S.rally++;
+  S.hit = null; S.ticks = [];
   S.teams[side].breakReady = false;
   log(`— ラリー${S.rally}:${S.teams[side].label}の${BREAK_NAME} —`);
-  act(S, side, hand, log);
+  act(S, side, hand, log, true);
   endRally(S, log, side);
 }
 
 // ブレイク時にCPUが選ぶ手:倒せるなら倒す、そうでなければ一番得な手
 function pickBreakHand(S, side) {
   const me = active(S.teams[side]), foe = active(S.teams[1 - side]);
-  const hit = damage(me, foe, 1);   // 今の状態での通常攻撃1回ぶん
+  const hit = damage(me, foe, 1, true);   // 今の状態での通常攻撃1回ぶん(BREAK中なのでDFS無視)
   let best = HAND_KEYS[0], bestScore = -1;
   for (const h of HAND_KEYS) {
     const a = me.ch.actions[h];
-    const d = a.rate ? damage(me, foe, a.rate) : 0;
+    const d = a.rate ? damage(me, foe, a.rate, true) : 0;
     let s = Math.min(d, foe.hp) + (d >= foe.hp ? 1e6 : 0);
     if (a.heal) s += Math.min(Math.round(me.ch.hp * a.heal), me.ch.hp - me.hp);
     if (a.poison) s += Math.min(a.poison * hit * POISON_RATE, foe.hp);
@@ -637,7 +656,7 @@ function pop(side, text, cls) {
   d.textContent = text;
   d.style.left = c.x + 'px'; d.style.top = c.y + 'px';
   $('fx').appendChild(d);
-  setTimeout(() => d.remove(), 950);
+  setTimeout(() => d.remove(), 1750);
 }
 async function cutin(big, small, cls, ms) {
   const el = $('cutin');
@@ -743,6 +762,7 @@ function outcome(b) {
     ko: S.bouts > b.bouts,
     boutWin: res[0] === 'win' ? 0 : res[1] === 'win' ? 1 : -1,
     names: b.cards.map((c) => c.ch.name), no: b.no,
+    hit: S.hit, ticks: S.ticks.slice(),   // 実際に与えた数値(とどめの一撃でも減らさない)
   };
 }
 
@@ -762,6 +782,7 @@ function pickHeat(side, o, gotBreak) {
 async function spin(hand, cpuHand, heat, reach) {
   $('slotYou').textContent = HANDS[hand].icon;
   setResult('…');
+  $('dmgLine').innerHTML = '';
   setStage('spinning', reach === 0 ? `${BREAK_NAME} リーチ!` : reach === 1 ? '危険! 相手がリーチ' : '');
   let i = 0;
   const iv = setInterval(() => {
@@ -792,25 +813,48 @@ async function spin(hand, cpuHand, heat, reach) {
 // 技が通った瞬間
 async function strike(side, hand, a, o, isBreak) {
   const mine = side === 0;
-  const dealt = -o.d[1 - side];
+  const dealt = o.hit ? o.hit.dmg : 0;
   const hits = (a.rate || 0) * 2.5;   // 演出の強さ(極大で5)
   const big = isBreak || (a.rate || 0) >= RATE.huge;
-  if (a.rate >= RATE.max && !isBreak) { Sound.cue(3); await cutin(a.name, `${RATE_LABEL[a.rate]} ×${a.rate}`, 'red', 650); }
+  if (a.rate >= RATE.max && !isBreak) { Sound.cue(3); await cutin(a.name, RATE_LABEL[a.rate], 'red', 650); }
   setStage(mine ? 'win' : 'lose', `${HANDS[hand].power}「${a.name}」`);
   flash(isBreak ? '#ffffff' : mine ? '#f5c451' : '#8b6cff');
   shake(big);
   if (isBreak) Sound.breakHit(); else if (dealt > 0) Sound.hit(hits); else if (!mine) Sound.lose();
-  if (o.d[side] > 0 || (!dealt && (a.heal || a.atkUp || a.dfsUp))) Sound.heal();
+  if ((o.hit && o.hit.heal) || (!dealt && (a.heal || a.atkUp || a.dfsUp))) Sound.heal();
   const c = center(panelOf(1 - side));
   if (dealt > 0 || isBreak) Particles.burst(c.x, c.y, isBreak ? 120 : 20 + hits * 12, isBreak ? COLORS.rainbow : mine ? COLORS.gold : COLORS.violet, isBreak ? 12 : 5 + hits);
   render(); flushLog(); pops(o, big);
-  await sleep(isBreak ? 750 : 480);
+  await sleep(isBreak ? 1100 : 800);
 }
+// 与えたダメージ・回復を、数字が浮かぶ演出と、舞台の下に残る一文の両方で見せる
 function pops(o, big) {
-  o.d.forEach((d, i) => {
-    if (d < 0) pop(i, String(d), 'dmg' + (big ? ' big' : ''));
-    if (d > 0) pop(i, '+' + d, 'heal');
+  const lines = [];
+  const h = o.hit;
+  if (h && h.dmg) {
+    pop(1 - h.side, '-' + h.dmg, 'dmg' + (big ? ' big' : ''));
+    lines.push(`<div class="dmg${h.side === 0 ? ' mine' : ''}">${o.names[1 - h.side]}に<b data-n="${h.dmg}">0</b>ダメージ!</div>`);
+  }
+  if (h && h.heal) {
+    pop(h.side, '+' + h.heal, 'heal');
+    lines.push(`<div class="heal">${o.names[h.side]}は<b data-n="${h.heal}">0</b>回復!</div>`);
+  }
+  o.ticks.forEach((t) => {
+    setTimeout(() => pop(t.side, '-' + t.dmg, 'dmg'), 350 * FX.speed);
+    lines.push(`<div class="dmg tick${t.side === 1 ? ' mine' : ''}">${o.names[t.side]}は時蝕で<b data-n="${t.dmg}">0</b>ダメージ</div>`);
   });
+  $('dmgLine').innerHTML = lines.join('');
+  $('dmgLine').querySelectorAll('b').forEach(countUp);
+}
+// 数字を0から目標値まで一気に回す
+function countUp(el) {
+  const n = Number(el.dataset.n), t0 = performance.now(), dur = 450 * FX.speed;
+  const step = (t) => {
+    const k = Math.min(1, (t - t0) / dur);
+    el.textContent = Math.round(n * k);
+    if (k < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
 }
 
 // 番手戦の決着
@@ -886,6 +930,7 @@ async function playerBreak(hand) {
   const o = outcome(b);
   $('slotYou').textContent = HANDS[hand].icon;
   $('slotCpu').textContent = '…';
+  $('dmgLine').innerHTML = '';
   await sleep(300);
   freeze(false);
   setResult(`${BREAK_NAME}! ${HANDS[hand].icon} が確定で通った`);
@@ -956,6 +1001,7 @@ async function start() {
   freeze(false);
   $('slotYou').textContent = $('slotCpu').textContent = '?';
   setStage('', '');
+  $('dmgLine').innerHTML = '';
   setResult('手を選んでください');
   $('select').classList.add('hidden');
   $('battle').classList.remove('hidden');
