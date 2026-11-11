@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>じゃんけんバトル</title>
+<style>
+  :root {
+    --bg: #f4f1ea; --panel: #ffffff; --text: #22201c; --sub: #6b665c;
+    --line: #d9d3c5; --accent: #c2410c; --hp: #2f9e44; --hp-low: #e03131;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1b1a17; --panel: #262420; --text: #ece8df; --sub: #a39d90;
+      --line: #3b3832; --accent: #fb923c; --hp: #51cf66; --hp-low: #ff6b6b;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 16px; background: var(--bg); color: var(--text);
+    font-family: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
+    line-height: 1.5;
+  }
+  main { max-width: 640px; margin: 0 auto; }
+  h1 { font-size: 1.3rem; margin: 0 0 12px; }
+  h2 { font-size: 1rem; margin: 0 0 8px; }
+  .panel {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 10px; padding: 12px; margin-bottom: 12px;
+  }
+  button {
+    font: inherit; color: var(--text); background: var(--panel);
+    border: 1px solid var(--line); border-radius: 10px; padding: 10px;
+    cursor: pointer;
+  }
+  button:hover:not(:disabled) { border-color: var(--accent); }
+  button:disabled { opacity: .45; cursor: default; }
+  .chars { display: grid; gap: 8px; }
+  .chars button { text-align: left; }
+  .name { font-weight: 700; }
+  .sub { color: var(--sub); font-size: .85rem; }
+  .fighters { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .bar { height: 12px; background: var(--line); border-radius: 6px; overflow: hidden; margin: 4px 0; }
+  .bar > div { height: 100%; background: var(--hp); transition: width .25s; }
+  .bar > div.low { background: var(--hp-low); }
+  .status { min-height: 1.3em; font-size: .85rem; color: var(--accent); }
+  ul.actions { list-style: none; padding: 0; margin: 6px 0 0; font-size: .85rem; }
+  ul.actions li { padding: 2px 0; border-top: 1px dashed var(--line); }
+  .hands { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .hands button { font-size: 1.6rem; padding: 12px 4px; }
+  .hands button span { display: block; font-size: .8rem; color: var(--sub); }
+  .result { text-align: center; font-weight: 700; min-height: 1.5em; margin-bottom: 8px; }
+  #log { max-height: 220px; overflow-y: auto; font-size: .88rem; }
+  #log div { padding: 3px 0; border-bottom: 1px solid var(--line); }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<main>
+  <h1>じゃんけんバトル</h1>
+
+  <section id="select" class="panel">
+    <h2>キャラを選ぶ</h2>
+    <div id="charList" class="chars"></div>
+  </section>
+
+  <section id="battle" class="hidden">
+    <div class="fighters">
+      <div class="panel" id="you"></div>
+      <div class="panel" id="cpu"></div>
+    </div>
+    <div class="panel">
+      <div class="result" id="result">手を選んでください</div>
+      <div class="hands" id="hands"></div>
+      <button id="retry" class="hidden" style="width:100%;margin-top:8px">キャラ選択に戻る</button>
+    </div>
+    <div class="panel"><h2>ログ</h2><div id="log"></div></div>
+  </section>
+</main>
+
+<script>
+// ===== データ(ここを書き換えればバランス調整・キャラ追加ができる) =====
+// アクションの効果:
+//   dmg    相手にダメージ      heal   自分を回復
+//   guard  次に受けるダメージを軽減(1回で消える)
+//   power  次に与えるダメージを増加(1回で消える)
+//   poison 相手に毒(ラウンド終了時に1ダメージ、指定ラウンド数)
+const HANDS = {
+  rock:     { label: 'グー',   icon: '✊', beats: 'scissors' },
+  scissors: { label: 'チョキ', icon: '✌️', beats: 'paper' },
+  paper:    { label: 'パー',   icon: '🖐️', beats: 'rock' },
+};
+
+const CHARACTERS = [
+  {
+    id: 'warrior', name: '戦士', hp: 12,
+    actions: {
+      rock:     { name: '強打',   dmg: 4 },
+      scissors: { name: '斬撃',   dmg: 2, power: 2 },
+      paper:    { name: '盾構え', dmg: 1, guard: 2 },
+    },
+  },
+  {
+    id: 'priest', name: '僧侶', hp: 10,
+    actions: {
+      rock:     { name: 'メイス', dmg: 2 },
+      scissors: { name: '聖光',   dmg: 3 },
+      paper:    { name: '祈り',   heal: 3 },
+    },
+  },
+  {
+    id: 'thief', name: '盗賊', hp: 9,
+    actions: {
+      rock:     { name: '不意打ち', dmg: 2 },
+      scissors: { name: '連撃',     dmg: 3 },
+      paper:    { name: '毒刃',     dmg: 1, poison: 3 },
+    },
+  },
+];
+
+// ===== ルール =====
+function describe(a) {
+  const parts = [];
+  if (a.dmg) parts.push(`${a.dmg}ダメージ`);
+  if (a.heal) parts.push(`${a.heal}回復`);
+  if (a.power) parts.push(`次の与ダメージ+${a.power}`);
+  if (a.guard) parts.push(`次の被ダメージ-${a.guard}`);
+  if (a.poison) parts.push(`毒${a.poison}ラウンド`);
+  return parts.join('、');
+}
+
+function newFighter(ch, label) {
+  return { ch, label, hp: ch.hp, guard: 0, power: 0, poison: 0 };
+}
+
+function judge(a, b) {
+  if (a === b) return 0;
+  return HANDS[a].beats === b ? 1 : -1;
+}
+
+// 勝者が「勝った手」に対応するアクションを実行する
+function act(winner, loser, hand, log) {
+  const a = winner.ch.actions[hand];
+  log(`${winner.label}の${winner.ch.name}:${HANDS[hand].label}で勝ち →「${a.name}」`);
+  if (a.dmg) {
+    let d = a.dmg + winner.power;
+    winner.power = 0;
+    const blocked = Math.min(d, loser.guard);
+    d -= blocked;
+    loser.guard = 0;
+    loser.hp = Math.max(0, loser.hp - d);
+    log(`　${loser.label}に${d}ダメージ${blocked ? `(${blocked}軽減)` : ''}`);
+  }
+  if (a.heal) {
+    const before = winner.hp;
+    winner.hp = Math.min(winner.ch.hp, winner.hp + a.heal);
+    log(`　${winner.label}は${winner.hp - before}回復`);
+  }
+  if (a.power) winner.power = a.power;
+  if (a.guard) winner.guard = a.guard;
+  if (a.poison) { loser.poison = a.poison; log(`　${loser.label}は毒を受けた`); }
+}
+
+function tickPoison(f, log) {
+  if (f.poison > 0 && f.hp > 0) {
+    f.poison--;
+    f.hp = Math.max(0, f.hp - 1);
+    log(`　${f.label}は毒で1ダメージ`);
+  }
+}
+
+// ===== 画面 =====
+const $ = (id) => document.getElementById(id);
+let you, cpu, round, over;
+
+function log(text) {
+  const d = document.createElement('div');
+  d.textContent = text;
+  $('log').prepend(d);
+}
+
+function renderFighter(el, f) {
+  const pct = (f.hp / f.ch.hp) * 100;
+  const st = [];
+  if (f.power) st.push(`攻+${f.power}`);
+  if (f.guard) st.push(`守${f.guard}`);
+  if (f.poison) st.push(`毒${f.poison}`);
+  el.innerHTML = `
+    <div class="sub">${f.label}</div>
+    <div class="name">${f.ch.name}　HP ${f.hp}/${f.ch.hp}</div>
+    <div class="bar"><div class="${pct <= 34 ? 'low' : ''}" style="width:${pct}%"></div></div>
+    <div class="status">${st.join(' / ')}</div>
+    <ul class="actions">${Object.keys(HANDS).map((h) => {
+      const a = f.ch.actions[h];
+      return `<li>${HANDS[h].icon} ${a.name}:${describe(a)}</li>`;
+    }).join('')}</ul>`;
+}
+
+function render() {
+  renderFighter($('you'), you);
+  renderFighter($('cpu'), cpu);
+  document.querySelectorAll('#hands button').forEach((b) => { b.disabled = over; });
+  $('retry').classList.toggle('hidden', !over);
+}
+
+function play(hand) {
+  if (over) return;
+  round++;
+  const keys = Object.keys(HANDS);
+  const cpuHand = keys[Math.floor(Math.random() * keys.length)];
+  const r = judge(hand, cpuHand);
+  const head = `${HANDS[hand].icon} vs ${HANDS[cpuHand].icon}`;
+  log(`— ラウンド${round}:あなた ${HANDS[hand].label} / CPU ${HANDS[cpuHand].label} —`);
+
+  let msg;
+  if (r === 0) { msg = `${head}　あいこ`; log('あいこ'); }
+  else if (r > 0) { msg = `${head}　勝ち!`; act(you, cpu, hand, log); }
+  else { msg = `${head}　負け…`; act(cpu, you, cpuHand, log); }
+
+  tickPoison(you, log);
+  tickPoison(cpu, log);
+
+  if (you.hp <= 0 || cpu.hp <= 0) {
+    over = true;
+    msg = you.hp <= 0 && cpu.hp <= 0 ? '引き分け' : cpu.hp <= 0 ? 'あなたの勝利!' : 'あなたの敗北…';
+    log(`=== ${msg} ===`);
+  }
+  $('result').textContent = msg;
+  render();
+}
+
+function start(ch) {
+  const others = CHARACTERS.filter((c) => c.id !== ch.id);
+  you = newFighter(ch, 'あなた');
+  cpu = newFighter(others[Math.floor(Math.random() * others.length)], 'CPU');
+  round = 0; over = false;
+  $('log').innerHTML = '';
+  $('result').textContent = '手を選んでください';
+  $('select').classList.add('hidden');
+  $('battle').classList.remove('hidden');
+  render();
+}
+
+function init() {
+  CHARACTERS.forEach((ch) => {
+    const b = document.createElement('button');
+    b.innerHTML = `<div class="name">${ch.name}　HP ${ch.hp}</div>` +
+      Object.keys(HANDS).map((h) => {
+        const a = ch.actions[h];
+        return `<div class="sub">${HANDS[h].icon} ${a.name}:${describe(a)}</div>`;
+      }).join('');
+    b.onclick = () => start(ch);
+    $('charList').appendChild(b);
+  });
+  Object.keys(HANDS).forEach((h) => {
+    const b = document.createElement('button');
+    b.innerHTML = `${HANDS[h].icon}<span>${HANDS[h].label}</span>`;
+    b.onclick = () => play(h);
+    $('hands').appendChild(b);
+  });
+  $('retry').onclick = () => {
+    $('battle').classList.add('hidden');
+    $('select').classList.remove('hidden');
+  };
+}
+init();
+</script>
+</body>
+</html>
