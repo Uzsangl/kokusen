@@ -1186,78 +1186,90 @@ const Sound = (() => {
 // main は対戦中の曲、climax は決着が近いときの曲。ファイルが読めなければ何もせず、「曲」ボタンも出さない。
 const BGM_TRACKS = { main: 'bgm/The-Battle-of-Beliefs.mp3', climax: 'bgm/Sign-of-Victory.mp3' };
 const BGM_VOLUME = 0.35;
+// 曲は、効果音と同じ仕組み(WebAudio)で鳴らす。
+// iPhoneでは <audio> での再生がうまくいかないことがあり、効果音だけ鳴って曲が鳴らなかったため。
+// 曲のファイルを読み込んで音のデータに変換し、ループ再生する。メモリを食うので、変換して持つのは今流す曲だけにする
 const Bgm = (() => {
-  const els = {}, missing = {}, fades = {};
-  let on = true, want = false, now = 'main', ducked = false, unlocked = false;
-  const target = () => (ducked ? 0.04 : BGM_VOLUME);
-  function fade(name, v, ms, then) {
-    const el = els[name];
-    clearInterval(fades[name]);
-    const from = el.volume, t0 = Date.now();
-    fades[name] = setInterval(() => {
-      const k = Math.min(1, (Date.now() - t0) / ms);
-      el.volume = Math.max(0, Math.min(1, from + (v - from) * k));
-      if (k >= 1) { clearInterval(fades[name]); if (then) then(); }
-    }, 30);
-  }
-  // 曲は、読み込み完了を待たずに再生を指示する。
-  // iPhoneでは、再生を指示するまで曲を読み込まないので、読み込み完了を待つといつまでも鳴らない
-  function startNow() {
-    if (!want || !on || missing[now]) return;
-    const el = els[now];
-    el.muted = false;
-    el.volume = target();
-    el.play().catch(() => {});
-  }
+  const raw = {}, buf = {}, gain = {}, src = {}, startedAt = {}, decoding = {}, missing = {};
+  let ctx = null, on = true, want = false, now = 'main', ducked = false;
+  const level = () => (ducked ? 0.04 : BGM_VOLUME);
+  const ensure = () => (ctx || (ctx = Sound.wake()));
   function showButton() { $('optBgm').classList.remove('hidden'); $('bgmCredit').classList.remove('hidden'); }
+  // 曲のファイルを音のデータに変換する(1曲あたり1秒前後かかる)
+  function decode(name) {
+    if (buf[name]) return Promise.resolve(buf[name]);
+    if (decoding[name]) return decoding[name];
+    if (!raw[name] || !ensure()) return Promise.resolve(null);
+    decoding[name] = new Promise((ok) => {
+      const done = (b) => { delete decoding[name]; if (b) buf[name] = b; else missing[name] = true; ok(b || null); };
+      try { ctx.decodeAudioData(raw[name].slice(0), done, () => done(null)); } catch (e) { done(null); }
+    });
+    return decoding[name];
+  }
+  function startTrack(name, fadeMs) {
+    if (!want || !on || missing[name] || src[name] || !ensure()) return;
+    if (!buf[name]) { decode(name).then(() => { if (name === now) startTrack(name, fadeMs); }); return; }
+    if (ctx.state === 'suspended') ctx.resume();
+    const t = ctx.currentTime, g = gain[name] = ctx.createGain();
+    g.connect(ctx.destination);
+    g.gain.setValueAtTime(fadeMs ? 0.0001 : level(), t);
+    if (fadeMs) g.gain.linearRampToValueAtTime(level(), t + fadeMs / 1000);
+    const s = src[name] = ctx.createBufferSource();
+    s.buffer = buf[name]; s.loop = true; s.connect(g); s.start();
+    startedAt[name] = t;
+  }
+  function stopTrack(name, fadeMs) {
+    const s = src[name], g = gain[name];
+    if (!s) return;
+    delete src[name]; delete gain[name];
+    const t = ctx.currentTime;
+    if (fadeMs) {
+      g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(g.gain.value, t);
+      g.gain.linearRampToValueAtTime(0.0001, t + fadeMs / 1000);
+      s.stop(t + fadeMs / 1000 + 0.05);
+    } else s.stop();
+  }
   return {
     init() {
       Object.keys(BGM_TRACKS).forEach((name) => {
-        const el = els[name] = new Audio();
-        el.loop = true; el.preload = 'auto'; el.volume = BGM_VOLUME;
-        el.addEventListener('error', () => { missing[name] = true; });
-        el.addEventListener('loadedmetadata', () => { if (name === 'main') showButton(); });
-        el.src = BGM_TRACKS[name];
-      });
-      // 曲のファイルがあるかどうかだけを先に確かめて、「曲」ボタンを出す(iPhoneでは上の読み込みが始まらないため)
-      fetch(BGM_TRACKS.main, { method: 'HEAD' }).then((r) => { if (r.ok) showButton(); else missing.main = true; }).catch(() => {});
-    },
-    // 最初に画面を触ったときに、全部の曲を一瞬だけ無音で再生して止める。
-    // こうしておくと、あとで操作なしに曲を始めたり切り替えたりできる(対人戦の開始や、決着前の切り替え)
-    unlock() {
-      if (unlocked) return;
-      unlocked = true;
-      Object.keys(els).forEach((name) => {
-        const el = els[name];
-        if (want && name === now) return;   // すでに流している曲には触らない
-        el.muted = true;
-        const p = el.play();
-        if (p && p.then) p.then(() => { if (!(want && name === now)) { el.pause(); try { el.currentTime = 0; } catch (e) { /* 頭出しできなくてもよい */ } } el.muted = false; }).catch(() => { el.muted = false; });
+        fetch(BGM_TRACKS[name]).then((r) => (r.ok ? r.arrayBuffer() : null)).then((ab) => {
+          if (!ab) { missing[name] = true; return; }
+          raw[name] = ab;
+          if (name === 'main') { showButton(); if (ctx) decode('main'); }
+          if (name === now) startTrack(name);
+        }).catch(() => { missing[name] = true; });
       });
     },
-    setOn(v) { on = v; if (v) startNow(); else Object.values(els).forEach((el) => el.pause()); },
+    // 最初に画面を触ったとき:音を出せる状態にして、最初の曲の変換を始めておく
+    unlock() { if (ensure()) decode('main'); },
+    setOn(v) { on = v; if (v) startTrack(now, 300); else stopTrack(now); },
     // 対戦開始:最初の曲を頭から流す
     play() {
-      want = true; now = 'main'; ducked = false;
-      Object.values(els).forEach((el) => { el.pause(); try { el.currentTime = 0; } catch (e) { /* まだ読み込み中 */ } });
-      startNow();
+      want = true; ducked = false;
+      Object.keys(src).forEach((n) => stopTrack(n));
+      now = 'main'; buf.climax = null;
+      startTrack('main');
     },
-    stop() { want = false; Object.values(els).forEach((el) => el.pause()); },
-    // 曲を切り替える(前の曲を小さくしながら、次の曲を頭から流す)。次の曲が無ければ切り替えない
+    stop() { want = false; Object.keys(src).forEach((n) => stopTrack(n)); buf.climax = null; },
+    // 曲を切り替える(前の曲を小さくしながら、次の曲を頭から流す)
     switchTo(name) {
       if (name === now || missing[name]) return;
       const old = now; now = name;
       if (!want || !on) return;
-      fade(old, 0, 600, () => els[old].pause());
-      try { els[name].currentTime = 0; } catch (e) { /* 頭出しできなくても流す */ }
-      els[name].muted = false;
-      els[name].volume = 0;
-      els[name].play().catch(() => {});
-      fade(name, target(), 600);
+      stopTrack(old, 600);
+      buf[old] = null;   // 前の曲のデータは手放す(次の対戦の開始時に変換し直す)
+      startTrack(name, 600);
     },
     current: () => now,
-    state: () => ({ track: now, time: els[now].currentTime, paused: els[now].paused, volume: els[now].volume }),   // 動作確認用
-    duck(v) { ducked = v; if (want && on) fade(now, target(), 250); },   // 時間が止まる間は小さくする
+    state: () => ({ track: now, playing: !!src[now], time: src[now] ? +(ctx.currentTime - startedAt[now]).toFixed(2) : 0 }),   // 動作確認用
+    duck(v) {   // 時間が止まる間は小さくする
+      ducked = v;
+      const g = gain[now];
+      if (!g) return;
+      const t = ctx.currentTime;
+      g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(g.gain.value, t);
+      g.gain.linearRampToValueAtTime(level(), t + 0.25);
+    },
   };
 })();
 
@@ -2186,8 +2198,7 @@ function init() {
   Bgm.init();
   // 最初の操作で、曲と効果音を鳴らせる状態にする
   const firstTouch = () => { Bgm.unlock(); Sound.wake(); };
-  document.addEventListener('pointerdown', firstTouch, { once: true });
-  document.addEventListener('keydown', firstTouch, { once: true });
+  ['pointerdown', 'touchend', 'click', 'keydown'].forEach((ev) => document.addEventListener(ev, firstTouch, { once: true }));
   $('optSound').onclick = () => { FX.sound = !FX.sound; saveOpt('kokusen.sound', FX.sound); applyOpts(); if (FX.sound) Sound.wake(); };
   try { FX.level = Number(localStorage.getItem('kokusen.level')) || 2; } catch (e) { FX.level = 2; }
   Object.keys(AI_LEVELS).forEach((k) => {
