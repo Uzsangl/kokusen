@@ -61,6 +61,7 @@
   .bar > div.low { background: linear-gradient(90deg, #b91c1c, var(--hp-low)); }
   .hp { font-size: .85rem; color: var(--sub); font-variant-numeric: tabular-nums; }
   .hp b { font-size: 1.25rem; color: var(--text); }
+  .stats { font-size: .78rem; color: var(--gold); font-variant-numeric: tabular-nums; }
   .status { min-height: 1.3em; font-size: .85rem; color: var(--accent); }
   ul.actions { list-style: none; padding: 0; margin: 6px 0 0; font-size: .82rem; }
   ul.actions li { padding: 2px 0; border-top: 1px dashed var(--line); }
@@ -171,7 +172,7 @@
 
   <section id="select" class="panel">
     <h2>出す順に5枚選ぶ</h2>
-    <p class="sub">同じ番手のカード同士が1対1で戦い、相手を倒すと1本です。決着したら両者とも次の番手に交代し、先に3本取った側の勝ちです。グーは停止、チョキは跳躍、パーは遡行の技です。じゃんけんに3連勝すると BREAK が発生し、次は好きな手のアクションが確定で通ります(あいこでは連勝は途切れません)。</p>
+    <p class="sub">同じ番手のカード同士が1対1で戦い、相手を倒すと1本です。決着したら両者とも次の番手に交代し、先に3本取った側の勝ちです。グーは停止、チョキは跳躍、パーは遡行の技です。ダメージは「ATK × ダメージ係数 × フィジカル係数(体)」を相手のDFSで軽減した値です(DFS1000で10%カット、上限9000)。じゃんけんに3連勝すると BREAK が発生し、次は好きな手のアクションが確定で通ります(あいこでは連勝は途切れません)。</p>
     <p class="sub">予兆の色:青 → 緑 → <span style="color:var(--red);font-weight:700">赤(勝ち確定)</span> → <span class="rainbow" style="font-weight:700">虹(撃破かBREAK確定)</span></p>
     <div id="charList" class="chars"></div>
     <button id="start" style="width:100%;margin-top:8px"></button>
@@ -207,21 +208,33 @@
 // sim.js と共有するルール部分(DOMに触らない)
 // <logic>
 // ===== データ(ここを書き換えればバランス調整・キャラ追加ができる) =====
+// 能力値:
+//   hp   体力        atk  攻撃力
+//   dfs  防御力。1000で被ダメージ10%カット、9000で90%カット(上限 DFS_MAX)
+//   phys フィジカル係数。キャラごとの体格・地力による与ダメージの倍率
+// ダメージ = ATK × ダメージ係数 × フィジカル係数 ×(1 − 相手のDFS ÷ 10000)
+//
 // アクションの効果:
-//   dmg    相手にダメージ      heal   自分を回復
-//   guard  次に受けるダメージを軽減(1回で消える)
-//   power  次に与えるダメージを増加(1回で消える)
-//   poison 相手に時蝕(ラリー終了時に POISON_DMG ダメージ、指定ラリー数)
+//   rate   攻撃のダメージ係数(RATE の4段階。無ければ攻撃しない技)
+//   heal   自分を回復(最大HPに対する割合)
+//   atkUp  自分の次の攻撃だけ ATK を増やす(割合。1回で消える)
+//   dfsUp  自分が次に受ける攻撃だけ DFS を増やす(1回で消える)
+//   poison 相手に時蝕(指定ラリー数。毎ラリー、かけた側の ATK × POISON_RATE で上の式のダメージ)
 //   streak 自分の連勝を追加で増やす
 //   seal   相手が次にじゃんけんに勝っても連勝に数えない(1回で消える)
 //   keep   自分が次にじゃんけんに負けても連勝が途切れない(1回で消える)
-//   nextPower / nextGuard  次の番手の味方に、与ダメージ増加 / 被ダメージ軽減を渡す
+//   nextAtkUp / nextDfsUp  次の番手の味方に atkUp / dfsUp を渡す
 // 手と時間の力の対応(停止 > 跳躍 > 遡行 > 停止):グー=停止、チョキ=跳躍、パー=遡行
 const TEAM_SIZE = 5;
 const WINS_NEEDED = 3;       // 先にこの本数を取った側の勝ち
 const BREAK_STREAK = 3;      // この回数じゃんけんに連勝するとブレイク
 const BREAK_NAME = 'BREAK';
-const POISON_DMG = 200;      // 時蝕1ラリーぶんのダメージ。数値全体の基準(技のダメージはこの1〜5倍)
+const DFS_MAX = 9000;        // DFS の上限(90%カット)
+const POISON_RATE = 0.3;     // 時蝕1ラリーぶんのダメージ係数
+
+// ダメージ係数:通常攻撃と、必殺技の3段階
+const RATE = { normal: 1.0, big: 1.25, huge: 1.5, max: 2.0 };
+const RATE_LABEL = { 1: '通常攻撃', 1.25: '大ダメージ', 1.5: '特大ダメージ', 2: '極大ダメージ' };
 
 const HANDS = {
   rock:     { label: 'グー',   power: '停止', icon: '✊', beats: 'scissors' },
@@ -232,60 +245,68 @@ const HAND_KEYS = Object.keys(HANDS);
 
 // 陣営ごとに得意な力がある:錨=停止、零=遡行、矢=跳躍(設定は WORLD.md)
 const CHARACTERS = [
-  { id: 'kaji', name: 'カジ', faction: '錨', hp: 1580, actions: {
-      rock:     { name: '堰切り',   dmg: 1020 },
-      scissors: { name: '踏み越し', dmg: 220, power: 400 },
-      paper:    { name: '構え直し', power: 600 } } },
-  { id: 'tomari', name: 'トマリ', faction: '錨', hp: 2080, actions: {
-      rock:     { name: '凪',   dmg: 420, guard: 400 },
-      scissors: { name: '先着', dmg: 640 },
-      paper:    { name: '繕い', heal: 420 } } },
-  { id: 'mio', name: 'ミオ', faction: '錨', hp: 1960, actions: {
-      rock:     { name: '留め置き', dmg: 610, nextPower: 400 },
-      scissors: { name: '水先',     dmg: 400, power: 400 },
-      paper:    { name: '澪標',     heal: 400, nextGuard: 400 } } },
-  { id: 'rei', name: 'レイ', faction: '零', hp: 1800, actions: {
-      rock:     { name: '白紙',         dmg: 650 },
-      scissors: { name: '先消し',       dmg: 620, seal: 1 },
-      paper:    { name: '無かったこと', heal: 400, keep: 1 } } },
-  { id: 'hajime', name: 'ハジメ', faction: '零', hp: 2000, actions: {
-      rock:     { name: '止血', dmg: 650 },
-      scissors: { name: '先診', dmg: 400, guard: 400 },
-      paper:    { name: '無傷', heal: 620 } } },
-  { id: 'uro', name: 'ウロ', faction: '零', hp: 1670, actions: {
-      rock:     { name: '疼き',     dmg: 640 },
-      scissors: { name: '膿み先',   dmg: 240, poison: 2 },
+  { id: 'kaji', name: 'カジ', faction: '錨', hp: 2610, atk: 1050, dfs: 1200, phys: 1.0, actions: {
+      rock:     { name: '堰切り',   rate: RATE.max },
+      scissors: { name: '踏み越し', rate: RATE.normal, atkUp: 0.2 },
+      paper:    { name: '構え直し', atkUp: 0.5 } } },
+  { id: 'tomari', name: 'トマリ', faction: '錨', hp: 3790, atk: 800, dfs: 2000, phys: 1.1, actions: {
+      rock:     { name: '凪',   rate: RATE.normal, dfsUp: 3000 },
+      scissors: { name: '先着', rate: RATE.big },
+      paper:    { name: '繕い', heal: 0.2 } } },
+  { id: 'mio', name: 'ミオ', faction: '錨', hp: 3560, atk: 1100, dfs: 1500, phys: 0.95, actions: {
+      rock:     { name: '留め置き', rate: RATE.big, nextAtkUp: 0.3 },
+      scissors: { name: '水先',     rate: RATE.normal, atkUp: 0.3 },
+      paper:    { name: '澪標',     heal: 0.15, nextDfsUp: 2000 } } },
+  { id: 'rei', name: 'レイ', faction: '零', hp: 3390, atk: 1100, dfs: 1500, phys: 1.0, actions: {
+      rock:     { name: '白紙',         rate: RATE.big },
+      scissors: { name: '先消し',       rate: RATE.normal, seal: 1 },
+      paper:    { name: '無かったこと', heal: 0.15, keep: 1 } } },
+  { id: 'hajime', name: 'ハジメ', faction: '零', hp: 3480, atk: 1000, dfs: 1600, phys: 1.0, actions: {
+      rock:     { name: '止血', rate: RATE.big },
+      scissors: { name: '先診', rate: RATE.normal, dfsUp: 2000 },
+      paper:    { name: '無傷', heal: 0.3 } } },
+  { id: 'uro', name: 'ウロ', faction: '零', hp: 3050, atk: 1000, dfs: 1300, phys: 0.95, actions: {
+      rock:     { name: '疼き',     rate: RATE.huge },
+      scissors: { name: '膿み先',   rate: RATE.normal, poison: 2 },
       paper:    { name: '古傷返し', poison: 3 } } },
-  { id: 'tsuru', name: 'ツル', faction: '矢', hp: 1600, actions: {
-      rock:     { name: '張り詰め', dmg: 660 },
-      scissors: { name: '先読み',   dmg: 400, streak: 1 },
-      paper:    { name: '引き絞り', dmg: 200, power: 400 } } },
-  { id: 'haya', name: 'ハヤ', faction: '矢', hp: 1330, actions: {
-      rock:     { name: '射止め', dmg: 820 },
-      scissors: { name: '二の矢', dmg: 600, power: 200 },
-      paper:    { name: '矢返し', dmg: 400, power: 200 } } },
+  { id: 'tsuru', name: 'ツル', faction: '矢', hp: 2650, atk: 1050, dfs: 1200, phys: 0.95, actions: {
+      rock:     { name: '張り詰め', rate: RATE.big },
+      scissors: { name: '先読み',   rate: RATE.normal, streak: 1 },
+      paper:    { name: '引き絞り', rate: RATE.normal, atkUp: 0.4 } } },
+  { id: 'haya', name: 'ハヤ', faction: '矢', hp: 2320, atk: 1050, dfs: 1000, phys: 1.05, actions: {
+      rock:     { name: '射止め', rate: RATE.huge },
+      scissors: { name: '二の矢', rate: RATE.big, atkUp: 0.2 },
+      paper:    { name: '矢返し', rate: RATE.normal, atkUp: 0.2 } } },
 ];
 
 // ===== ルール =====
+const pct = (x) => Math.round(x * 100) + '%';
+
+// 攻撃1回ぶんのダメージ。att / def は場に出ているカード
+function damage(att, def, rate) {
+  const dfs = Math.min(DFS_MAX, def.ch.dfs + def.dfsUp);
+  return Math.round(att.ch.atk * (1 + att.atkUp) * rate * att.ch.phys * (1 - dfs / 10000));
+}
+
 function describe(a) {
   const parts = [];
-  if (a.dmg) parts.push(`${a.dmg}ダメージ`);
-  if (a.heal) parts.push(`${a.heal}回復`);
-  if (a.power) parts.push(`次の与ダメージ+${a.power}`);
-  if (a.guard) parts.push(`次の被ダメージ-${a.guard}`);
-  if (a.poison) parts.push(`時蝕${a.poison}ラリー(毎ラリー${POISON_DMG})`);
+  if (a.rate) parts.push(`${RATE_LABEL[a.rate]}(×${a.rate})`);
+  if (a.heal) parts.push(`最大HPの${pct(a.heal)}回復`);
+  if (a.atkUp) parts.push(`次の攻撃ATK+${pct(a.atkUp)}`);
+  if (a.dfsUp) parts.push(`次の被弾DFS+${a.dfsUp}`);
+  if (a.poison) parts.push(`時蝕${a.poison}ラリー`);
   if (a.streak) parts.push(`自分の連勝+${a.streak}`);
   if (a.seal) parts.push('相手の次の勝ちを連勝に数えない');
   if (a.keep) parts.push('次に負けても連勝が途切れない');
-  if (a.nextPower) parts.push(`次の番手の与ダメージ+${a.nextPower}`);
-  if (a.nextGuard) parts.push(`次の番手の被ダメージ-${a.nextGuard}`);
+  if (a.nextAtkUp) parts.push(`次の番手の攻撃ATK+${pct(a.nextAtkUp)}`);
+  if (a.nextDfsUp) parts.push(`次の番手の被弾DFS+${a.nextDfsUp}`);
   return parts.join('、');
 }
 
 function newTeam(label, chars) {
   return {
     label, idx: 0, wins: 0, streak: 0, breakReady: false, sealed: false, keep: false,
-    cards: chars.map((ch) => ({ ch, hp: ch.hp, guard: 0, power: 0, poison: 0, result: null })),
+    cards: chars.map((ch) => ({ ch, hp: ch.hp, atkUp: 0, dfsUp: 0, poison: 0, poisonDmg: 0, result: null })),
   };
 }
 function newMatch(charsA, charsB) {
@@ -304,40 +325,43 @@ function act(S, side, hand, log) {
   const w = active(wt), l = active(lt);
   const a = w.ch.actions[hand];
   log(`${wt.label}の${w.ch.name}:${HANDS[hand].label} →「${a.name}」`);
-  if (a.dmg) {
-    let d = a.dmg + w.power;
-    w.power = 0;
-    const blocked = Math.min(d, l.guard);
-    d -= blocked;
-    l.guard = 0;
+  if (a.rate) {
+    const dfs = Math.min(DFS_MAX, l.ch.dfs + l.dfsUp);
+    const d = damage(w, l, a.rate);
+    w.atkUp = 0;
+    l.dfsUp = 0;
     l.hp = Math.max(0, l.hp - d);
-    log(`　${lt.label}の${l.ch.name}に${d}ダメージ${blocked ? `(${blocked}軽減)` : ''}`);
+    log(`　${lt.label}の${l.ch.name}に${d}ダメージ(${RATE_LABEL[a.rate]}、DFS${dfs}で${pct(dfs / 10000)}カット)`);
   }
   if (a.heal) {
     const before = w.hp;
-    w.hp = Math.min(w.ch.hp, w.hp + a.heal);
+    w.hp = Math.min(w.ch.hp, w.hp + Math.round(w.ch.hp * a.heal));
     log(`　${w.ch.name}は${w.hp - before}回復`);
   }
-  if (a.power) w.power = a.power;
-  if (a.guard) w.guard = a.guard;
-  if (a.poison) { l.poison = a.poison; log(`　${l.ch.name}は時蝕を受けた`); }
+  if (a.atkUp) w.atkUp = a.atkUp;
+  if (a.dfsUp) w.dfsUp = a.dfsUp;
+  if (a.poison) {
+    l.poison = a.poison;
+    l.poisonDmg = Math.round(w.ch.atk * POISON_RATE * w.ch.phys * (1 - Math.min(DFS_MAX, l.ch.dfs) / 10000));
+    log(`　${l.ch.name}は時蝕を受けた(毎ラリー${l.poisonDmg})`);
+  }
   if (a.streak) wt.streak += a.streak;
   if (a.seal) lt.sealed = true;
   if (a.keep) wt.keep = true;
   const next = wt.cards[wt.idx + 1];
-  if (next && a.nextPower) next.power = Math.max(next.power, a.nextPower);
-  if (next && a.nextGuard) next.guard = Math.max(next.guard, a.nextGuard);
+  if (next && a.nextAtkUp) next.atkUp = Math.max(next.atkUp, a.nextAtkUp);
+  if (next && a.nextDfsUp) next.dfsUp = Math.max(next.dfsUp, a.nextDfsUp);
 }
 
-// ラリーの締め:毒 → 番手戦の決着 → 次の番手へ交代 or 試合終了
+// ラリーの締め:時蝕 → 番手戦の決着 → 次の番手へ交代 or 試合終了
 // winSide: このラリーのじゃんけんに勝った側(あいこは -1)
 function endRally(S, log, winSide) {
   for (const t of S.teams) {
     const f = active(t);
     if (f.poison > 0 && f.hp > 0) {
       f.poison--;
-      f.hp = Math.max(0, f.hp - POISON_DMG);
-      log(`　${t.label}の${f.ch.name}は時蝕で${POISON_DMG}ダメージ`);
+      f.hp = Math.max(0, f.hp - f.poisonDmg);
+      log(`　${t.label}の${f.ch.name}は時蝕で${f.poisonDmg}ダメージ`);
     }
   }
   const [a, b] = S.teams;
@@ -409,18 +433,17 @@ function breakRally(S, side, hand, log) {
 // ブレイク時にCPUが選ぶ手:倒せるなら倒す、そうでなければ一番得な手
 function pickBreakHand(S, side) {
   const me = active(S.teams[side]), foe = active(S.teams[1 - side]);
-  const U = POISON_DMG;
+  const hit = damage(me, foe, 1);   // 今の状態での通常攻撃1回ぶん
   let best = HAND_KEYS[0], bestScore = -1;
   for (const h of HAND_KEYS) {
     const a = me.ch.actions[h];
-    const d = a.dmg ? Math.max(0, a.dmg + me.power - foe.guard) : 0;
+    const d = a.rate ? damage(me, foe, a.rate) : 0;
     let s = Math.min(d, foe.hp) + (d >= foe.hp ? 1e6 : 0);
-    if (a.heal) s += Math.min(a.heal, me.ch.hp - me.hp);
-    if (a.poison) s += Math.min(a.poison * U, foe.hp);
-    if (a.power) s += a.power * 0.6;
-    if (a.guard) s += a.guard * 0.6;
-    s += ((a.streak || 0) * 1.5 + (a.seal || 0) + (a.keep || 0)) * U
-      + ((a.nextPower || 0) + (a.nextGuard || 0)) * 0.5;
+    if (a.heal) s += Math.min(Math.round(me.ch.hp * a.heal), me.ch.hp - me.hp);
+    if (a.poison) s += Math.min(a.poison * hit * POISON_RATE, foe.hp);
+    s += ((a.atkUp || 0) + (a.nextAtkUp || 0) * 0.8) * hit * 0.6;
+    s += ((a.dfsUp || 0) + (a.nextDfsUp || 0) * 0.8) / 10000 * hit * 0.6;
+    s += ((a.streak || 0) * 0.5 + (a.seal || 0) * 0.3 + (a.keep || 0) * 0.3) * hit;
     if (s > bestScore) { bestScore = s; best = h; }
   }
   return best;
@@ -663,6 +686,8 @@ function actionList(ch, tag, cls) {
   }).join('');
 }
 
+const statLine = (ch) => `ATK ${ch.atk}　DFS ${ch.dfs}　体 ×${ch.phys}`;
+
 function renderTeam(el, t) {
   const mark = { win: '○', lose: '×', draw: '△' };
   const chips = t.cards.map((c, i) => {
@@ -674,11 +699,11 @@ function renderTeam(el, t) {
     ? `<span class="break">${BREAK_NAME}!</span>`
     : '連勝 ' + '●'.repeat(t.streak) + '○'.repeat(Math.max(0, BREAK_STREAK - t.streak)) + (reach ? ' リーチ!' : '');
   const f = active(t);
-  const pct = (f.hp / f.ch.hp) * 100;
+  const bar = (f.hp / f.ch.hp) * 100;
   const st = [];
-  if (f.power) st.push(`攻+${f.power}`);
-  if (f.guard) st.push(`守${f.guard}`);
-  if (f.poison) st.push(`時蝕${f.poison}`);
+  if (f.atkUp) st.push(`ATK+${pct(f.atkUp)}`);
+  if (f.dfsUp) st.push(`DFS+${f.dfsUp}`);
+  if (f.poison) st.push(`時蝕${f.poison}(${f.poisonDmg})`);
   if (t.keep) st.push('連勝保護');
   if (t.sealed) st.push('連勝封じ');
   el.innerHTML = `
@@ -687,7 +712,8 @@ function renderTeam(el, t) {
     <div class="chips">${chips}</div>
     <div class="name">${t.idx + 1}番手 ${f.ch.name}</div>
     <div class="hp">HP <b>${f.hp}</b> / ${f.ch.hp}</div>
-    <div class="bar"><div class="${pct <= 34 ? 'low' : ''}" style="width:${pct}%"></div></div>
+    <div class="bar"><div class="${bar <= 34 ? 'low' : ''}" style="width:${bar}%"></div></div>
+    <div class="stats">${statLine(f.ch)}</div>
     <div class="status">${st.join(' / ')}</div>
     <ul class="actions">${actionList(f.ch, 'li', '')}</ul>`;
 }
@@ -766,13 +792,14 @@ async function spin(hand, cpuHand, heat, reach) {
 async function strike(side, hand, a, o, isBreak) {
   const mine = side === 0;
   const dealt = -o.d[1 - side];
-  const hits = dealt / POISON_DMG;   // 基準値の何倍のダメージか
-  const big = isBreak || hits >= 4;
+  const hits = (a.rate || 0) * 2.5;   // 演出の強さ(極大で5)
+  const big = isBreak || (a.rate || 0) >= RATE.huge;
+  if (a.rate >= RATE.max && !isBreak) { Sound.cue(3); await cutin(a.name, `${RATE_LABEL[a.rate]} ×${a.rate}`, 'red', 650); }
   setStage(mine ? 'win' : 'lose', `${HANDS[hand].power}「${a.name}」`);
   flash(isBreak ? '#ffffff' : mine ? '#f5c451' : '#8b6cff');
   shake(big);
   if (isBreak) Sound.breakHit(); else if (dealt > 0) Sound.hit(hits); else if (!mine) Sound.lose();
-  if (o.d[side] > 0 || (!dealt && (a.heal || a.power || a.guard))) Sound.heal();
+  if (o.d[side] > 0 || (!dealt && (a.heal || a.atkUp || a.dfsUp))) Sound.heal();
   const c = center(panelOf(1 - side));
   if (dealt > 0 || isBreak) Particles.burst(c.x, c.y, isBreak ? 120 : 20 + hits * 12, isBreak ? COLORS.rainbow : mine ? COLORS.gold : COLORS.violet, isBreak ? 12 : 5 + hits);
   render(); flushLog(); pops(o, big);
@@ -905,7 +932,8 @@ function renderSelect() {
     const b = document.createElement('button');
     if (order >= 0) b.classList.add('picked');
     b.disabled = order < 0 && picked.length >= TEAM_SIZE;
-    b.innerHTML = `<div class="name">${order >= 0 ? `【${order + 1}番手】` : ''}${ch.name}(${ch.faction})　HP ${ch.hp}</div>` +
+    b.innerHTML = `<div class="name">${order >= 0 ? `【${order + 1}番手】` : ''}${ch.name}(${ch.faction})</div>` +
+      `<div class="stats">HP ${ch.hp}　${statLine(ch)}</div>` +
       actionList(ch, 'div', 'sub');
     b.onclick = () => {
       if (order >= 0) picked.splice(order, 1); else picked.push(ch.id);
