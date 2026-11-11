@@ -109,19 +109,22 @@
   #battle .shp b { font-size: 1.1rem; }
   #battle .shp .bar { height: 8px; margin: 2px 0; }
   #battle .shp .stats { font-size: .7rem; }
-  #battle .shp .status { font-size: .64rem; min-height: 2.5em; line-height: 1.25; }
-  #battle .cue { min-height: 1.4em; font-size: .92rem; }
-  #battle .dmgline { min-height: 2.5em; font-size: .82rem; }
+  #battle .shp .status { font-size: .64rem; height: 2.5em; overflow: hidden; line-height: 1.25; }
+  #battle .cue { height: 1.4em; overflow: hidden; white-space: nowrap; font-size: .92rem; }
+  #battle .dmgline { height: 3.7em; overflow: hidden; font-size: .82rem; }
+  #battle .dmgline .minor { font-size: .7rem; color: var(--sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #battle .dmgline .minor b { font-size: .95rem; margin: 0 1px; }
+  #battle .dmgline .minor .heal b { color: #6ee7a0; } #battle .dmgline .minor .tick b { color: #ff9aa5; }
   #battle .dmgline b { font-size: 1.6rem; }
   #battle .dmgline .heal b, #battle .dmgline .tick b { font-size: 1.05rem; }
   #battle .dmgline .tick { font-size: .7rem; }
   #battle .result { margin: 0 0 5px; min-height: 1.3em; font-size: .8rem; }
   .col { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
-  .col .trait { font-size: .66rem; margin: 0; min-height: 3.9em; line-height: 1.3; }
+  .col .trait { font-size: .66rem; margin: 0; height: 3.9em; overflow: hidden; line-height: 1.3; }
   #battle .hands { display: flex; flex-direction: column; gap: 4px; }
   #battle .hands button, .act {
     display: flex; align-items: center; gap: 6px; text-align: left; width: 100%;
-    padding: 4px 6px; border-radius: 8px; font-size: .68rem; line-height: 1.3; min-height: 3.6rem;
+    padding: 4px 6px; border-radius: 8px; font-size: .68rem; line-height: 1.3; height: 3.7rem; overflow: hidden;
   }
   .act { border: 1px dashed var(--line); background: #0f1228; color: var(--sub); }
   .ico { font-size: 1.5rem; flex: none; }
@@ -157,6 +160,7 @@
   @keyframes reel { 0% { transform: translateY(-6px); opacity: .6; } 50% { transform: translateY(6px); opacity: 1; } 100% { transform: translateY(-6px); opacity: .6; } }
   .shp { min-width: 0; font-size: .78rem; color: var(--sub); text-align: center; }
   .shp .who { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text); font-weight: 700; }
+  .shp .turn { font-weight: 400; color: var(--sub); font-size: .62rem; margin-left: 4px; }
   .shp b { font-size: 1.15rem; color: var(--text); font-variant-numeric: tabular-nums; }
   .shp .bar { height: 10px; margin: 3px 0 0; }
   .vs { font-weight: 900; color: var(--sub); letter-spacing: .1em; }
@@ -243,9 +247,10 @@
   </header>
 
   <section id="select" class="panel">
-    <h2>出す順に5枚選ぶ</h2>
-    <p class="sub">同じ番手のカード同士が1対1で戦い、相手を倒すと1本です。決着したら両者とも次の番手に交代し、先に3本取った側の勝ちです。グーは停止、チョキは跳躍、パーは遡行の技です。ダメージはATKと技の威力で決まり、相手のDFSで軽減されます(DFS1000で10%カット、上限9000)。BREAK中の攻撃は相手のDFSを無視します。じゃんけんに3連勝すると BREAK が発生し、次は好きな手のアクションが確定で通ります(あいこでは連勝は途切れません)。</p>
-    <p class="sub">キャラごとに「特性」があります。技にはATKやDFSを数ラリーの間だけ上げ下げするものがあります。極大ダメージは条件を満たしたときだけ出ます(条件を満たした技は赤く光ります)。番手戦が12ラリーを超えると「刻の抜け落ち」が始まり、両者のHPが毎ラリー削れていきます。</p>
+    <h2>出す順に3枚選ぶ</h2>
+    <p class="sub">3枚1チームの勝ち抜き戦です。場のカード同士が1対1で戦い、倒されたら次のカードに交代します。倒した側はそのままのHPで場に残ります。相手の3枚をすべて倒した側の勝ちです。</p>
+    <p class="sub">グーは停止、チョキは跳躍、パーは遡行の技です。ダメージはATKと技の威力で決まり、相手のDFSで軽減されます(DFS1000で10%カット、上限9000)。じゃんけんに3連勝すると BREAK が発生し、次は好きな手のアクションが確定で通ります(あいこでは連勝は途切れません)。BREAK中の攻撃は相手のDFSを無視します。</p>
+    <p class="sub">キャラごとに「特性」があります。技にはATKやDFSを数ラリーの間だけ上げ下げするものがあります。極大ダメージは条件を満たしたときだけ出ます(条件を満たした技は赤く光ります)。交代がないまま12ラリー続くと「刻の抜け落ち」が始まり、両者のHPが毎ラリー削れていきます。</p>
     <p class="sub">予兆の色:青 → 緑 → <span style="color:var(--red);font-weight:700">赤(勝ち確定)</span> → <span class="rainbow" style="font-weight:700">虹(撃破かBREAK確定)</span></p>
     <div id="charList" class="chars"></div>
     <button id="start" style="width:100%;margin-top:8px"></button>
@@ -317,13 +322,12 @@
 //   cleanse 自分のデバフと時蝕を消す / cure 自分の時蝕を消す
 // 特性(trait):キャラごとに1つ、常に効く固有能力。変身もここに含む
 // 手と時間の力の対応(停止 > 跳躍 > 遡行 > 停止):グー=停止、チョキ=跳躍、パー=遡行
-const TEAM_SIZE = 5;
-const WINS_NEEDED = 3;       // 先にこの本数を取った側の勝ち
+const TEAM_SIZE = 3;         // 1チームの枚数。勝ち抜き戦:倒されるまで場に残り、相手を全員倒した側の勝ち
 const BREAK_STREAK = 3;      // この回数じゃんけんに連勝するとブレイク
 const BREAK_NAME = 'BREAK';
 const DFS_MAX = 9000;        // DFS の上限(90%カット)
 const POISON_RATE = 0.3;     // 時蝕1ラリーぶんのダメージ係数
-// 刻の抜け落ち:番手戦が長引くと、両者のHPが毎ラリー削れていく(決着がつかない組み合わせを防ぐ)
+// 刻の抜け落ち:交代がないまま長引くと、両者のHPが毎ラリー削れていく(決着がつかない組み合わせを防ぐ)
 const DECAY_FROM = 12;       // このラリー数を超えたら始まる
 const DECAY_STEP = 0.03;     // 超過1ラリーごとに、最大HPのこの割合ずつ増える
 
@@ -347,26 +351,26 @@ const foeAtk = (v, t) => ({ to: 'foe', stat: 'atk', v: -v, t });
 const foeDfs = (v, t) => ({ to: 'foe', stat: 'dfs', v: -v, t });
 
 const CHARACTERS = [
-  { id: 'kaji', name: 'カジ', faction: '錨', hp: 2640, atk: 1300, dfs: 1100, phys: 1.0,
+  { id: 'kaji', name: 'カジ', faction: '錨', hp: 2730, atk: 1300, dfs: 1100, phys: 1.0,
     trait: { key: 'backwater', name: '背水', desc: '残りHPが半分以下でATK+500', below: 0.5, add: 500 },
     actions: {
       rock:     { name: '堰切り',   rate: RATE.huge, up: { rate: RATE.max, when: 'hpBelow', v: 0.5, text: '残りHP半分以下で極大' } },
       scissors: { name: '踏み越し', rate: RATE.normal, mods: [selfAtk(400, 3)] },
       paper:    { name: '構え直し', atkUp: 1300, mods: [foeDfs(1000, 2)] } } },
-  { id: 'tomari', name: 'トマリ', faction: '錨', hp: 6570, atk: 650, dfs: 2000, phys: 1.1,
-    trait: { key: 'immovable', name: '不動', desc: '攻撃を受けるたびにDFS+500(番手戦の間、最大+3000)', gain: 500, cap: 3000 },
+  { id: 'tomari', name: 'トマリ', faction: '錨', hp: 6310, atk: 650, dfs: 2000, phys: 1.1,
+    trait: { key: 'immovable', name: '不動', desc: '攻撃を受けるたびにDFS+500(場にいる間、最大+3000)', gain: 500, cap: 3000 },
     actions: {
       rock:     { name: '凪',   rate: RATE.normal, mods: [selfDfs(3000, 2)] },
       scissors: { name: '先着', rate: RATE.big, mods: [foeAtk(250, 3)], up: { rate: RATE.huge, when: 'gainMax', v: 3000, text: '不動が最大のとき特大' } },
       paper:    { name: '繕い', heal: 1300 } } },
-  { id: 'mio', name: 'ミオ', faction: '錨', hp: 4600, atk: 1000, dfs: 1400, phys: 0.95,
-    trait: { key: 'record', name: '記録', desc: '倒れたとき、次の番手にATK+400とDFS+1500を渡す(番手戦の間ずっと)', atk: 400, dfs: 1500 },
+  { id: 'mio', name: 'ミオ', faction: '錨', hp: 3700, atk: 1000, dfs: 1400, phys: 0.95,
+    trait: { key: 'record', name: '記録', desc: '倒れたとき、次の番手にATK+400とDFS+1500を渡す(場にいる間ずっと)', atk: 400, dfs: 1500 },
     actions: {
       rock:     { name: '留め置き', rate: RATE.big, nextAtkUp: 600 },
       scissors: { name: '水先',     rate: RATE.normal, mods: [foeDfs(1000, 3), foeAtk(200, 3)] },
       paper:    { name: '澪標',     heal: 700, nextDfsUp: 3000 } } },
-  { id: 'rei', name: 'レイ', faction: '零', hp: 2990, atk: 800, dfs: 1200, phys: 1.0,
-    trait: { key: 'transform', name: '仮面割れ', desc: '番手戦の5ラリー目に変身し、ATK1500・DFS2500になって技も強くなる',
+  { id: 'rei', name: 'レイ', faction: '零', hp: 2540, atk: 800, dfs: 1200, phys: 1.0,
+    trait: { key: 'transform', name: '仮面割れ', desc: '場に出て5ラリー目に変身し、ATK1500・DFS2500になって技も強くなる',
       at: 5, formName: 'レイ・解放', atk: 1500, dfs: 2500, actions: {
         rock:     { name: '白紙',         rate: RATE.huge, up: { rate: RATE.max, when: 'rallyFrom', v: 9, text: '9ラリー目以降は極大' } },
         scissors: { name: '先消し',       rate: RATE.big, seal: 1, mods: [foeAtk(400, 2)] },
@@ -375,26 +379,26 @@ const CHARACTERS = [
       rock:     { name: '白紙',         rate: RATE.big },
       scissors: { name: '先消し',       rate: RATE.normal, seal: 1, mods: [foeAtk(250, 2)] },
       paper:    { name: '無かったこと', heal: 450, keep: 1, cleanse: 1 } } },
-  { id: 'hajime', name: 'ハジメ', faction: '零', hp: 4400, atk: 700, dfs: 1600, phys: 1.0,
+  { id: 'hajime', name: 'ハジメ', faction: '零', hp: 4350, atk: 700, dfs: 1600, phys: 1.0,
     trait: { key: 'regen', name: '処置', desc: 'ラリーが終わるたびにHPを170回復', heal: 170 },
     actions: {
       rock:     { name: '止血', rate: RATE.big, mods: [foeAtk(250, 2)] },
       scissors: { name: '先診', rate: RATE.normal, mods: [selfDfs(2000, 3)] },
       paper:    { name: '無傷', heal: 1700, cure: 1 } } },
-  { id: 'uro', name: 'ウロ', faction: '零', hp: 3330, atk: 900, dfs: 1300, phys: 0.95,
+  { id: 'uro', name: 'ウロ', faction: '零', hp: 3380, atk: 900, dfs: 1300, phys: 0.95,
     trait: { key: 'oldwound', name: '古傷', desc: '時蝕は重ねがけで毎ラリーのダメージが加算。時蝕中の相手を攻撃するときATK+300', add: 300 },
     actions: {
       rock:     { name: '疼き',     rate: RATE.huge, up: { rate: RATE.max, when: 'foeStacks', v: 2, text: '時蝕を2回以上重ねた相手には極大' } },
       scissors: { name: '膿み先',   rate: RATE.normal, poison: 3 },
       paper:    { name: '古傷返し', poison: 5, mods: [foeDfs(1500, 3)] } } },
-  { id: 'tsuru', name: 'ツル', faction: '矢', hp: 3000, atk: 950, dfs: 1100, phys: 0.95,
+  { id: 'tsuru', name: 'ツル', faction: '矢', hp: 3070, atk: 950, dfs: 1100, phys: 0.95,
     trait: { key: 'foresight', name: '先見', desc: `${BREAK_NAME}の一撃はATK+500`, add: 500 },
     actions: {
       rock:     { name: '張り詰め', rate: RATE.big, up: { rate: RATE.max, when: 'inBreak', text: `${BREAK_NAME}中は極大` } },
       scissors: { name: '先読み',   rate: RATE.normal, streak: 1 },
       paper:    { name: '引き絞り', rate: RATE.normal, mods: [selfAtk(450, 3)] } } },
-  { id: 'haya', name: 'ハヤ', faction: '矢', hp: 1310, atk: 1500, dfs: 1000, phys: 1.05,
-    trait: { key: 'rush', name: '先駆け', desc: '番手戦の1〜3ラリー目はATK+750、7ラリー目以降はATK−450', until: 3, early: 750, from: 7, late: -450 },
+  { id: 'haya', name: 'ハヤ', faction: '矢', hp: 1670, atk: 1500, dfs: 1000, phys: 1.05,
+    trait: { key: 'rush', name: '先駆け', desc: '場に出て1〜3ラリー目はATK+750、7ラリー目以降はATK−450', until: 3, early: 750, from: 7, late: -450 },
     actions: {
       rock:     { name: '射止め', rate: RATE.huge, up: { rate: RATE.max, when: 'rallyUntil', v: 3, text: '3ラリー目までは極大' } },
       scissors: { name: '二の矢', rate: RATE.big, atkUp: 450 },
@@ -415,7 +419,7 @@ const baseDfs = (c) => Math.max(0, Math.min(DFS_MAX, c.dfs + c.dfsGain + c.dfsBo
 // 攻撃を受けるときのDFS。BREAK中の攻撃は DFS を 0 として扱う
 const dfsOf = (def, isBreak) => (isBreak ? 0 : Math.min(DFS_MAX, baseDfs(def) + def.dfsUp));
 
-// 必殺技の格上げ条件(up)を満たしているか。n は番手戦の何ラリー目か
+// 必殺技の格上げ条件(up)を満たしているか。n はそのカードが場に出て何ラリー目か
 function upActive(a, att, def, n, isBreak) {
   const u = a.up;
   if (!u) return false;
@@ -435,7 +439,7 @@ function traitAtk(S, att, def, isBreak) {
   if ((t = traitOf(att, 'backwater')) && att.hp <= att.ch.hp * t.below) v += t.add;
   if ((t = traitOf(att, 'oldwound')) && def.poison > 0) v += t.add;
   if ((t = traitOf(att, 'foresight')) && isBreak) v += t.add;
-  if ((t = traitOf(att, 'rush'))) v += S.boutRally <= t.until ? t.early : S.boutRally >= t.from ? t.late : 0;
+  if ((t = traitOf(att, 'rush'))) v += att.turn <= t.until ? t.early : att.turn >= t.from ? t.late : 0;
   return v;
 }
 
@@ -478,7 +482,8 @@ function newTeam(label, chars) {
     cards: chars.map((ch) => ({
       ch, hp: ch.hp, atk: ch.atk, dfs: ch.dfs, actions: ch.actions, form: 0,
       atkUp: 0, dfsUp: 0,          // 次の1回だけ
-      atkBonus: 0, dfsBonus: 0,    // 番手戦の間ずっと(特性「記録」で渡される)
+      turn: 0, kills: 0,           // 場に出てからのラリー数 / 倒した数
+      atkBonus: 0, dfsBonus: 0,    // 場にいる間ずっと(特性「記録」で渡される)
       dfsGain: 0,                  // 特性「不動」の累積
       mods: [],                    // ラリー数つきのバフ・デバフ { stat, v, t, fresh }
       poison: 0, poisonDmg: 0, poisonStacks: 0, result: null,
@@ -499,14 +504,16 @@ function judge(a, b) {
   return HANDS[a].beats === b ? 1 : -1;
 }
 
-// ラリーの始まり:番手戦のラリー数を進め、特性「仮面割れ」の変身を判定する
+// ラリーの始まり:ラリー数を進め、特性「仮面割れ」の変身を判定する
+// S.boutRally は最後の交代からのラリー数(抜け落ち用)、card.turn はそのカードが場に出てからのラリー数(特性用)
 function beginRally(S, log) {
   S.rally++;
   S.boutRally++;
   S.hit = null; S.ticks = []; S.events = [];
   S.teams.forEach((t, side) => {
     const c = active(t), tr = traitOf(c, 'transform');
-    if (tr && !c.form && S.boutRally >= tr.at) {
+    c.turn++;
+    if (tr && !c.form && c.turn >= tr.at) {
       c.form = 1; c.atk = tr.atk; c.dfs = tr.dfs; c.actions = tr.actions;
       S.events.push({ type: 'transform', side });
       log(`　${t.label}の${c.ch.name}が変身 →「${tr.formName}」(ATK${tr.atk}・DFS${tr.dfs})`);
@@ -535,14 +542,14 @@ function act(S, side, hand, log, isBreak) {
   log(`${wt.label}の${nameOf(w)}:${HANDS[hand].label} →「${a.name}」`);
   S.hit = { side, dmg: 0, heal: 0, rate: 0, half: false };   // 画面表示用:このアクションで与えたダメージと回復量
   if (a.rate) {
-    const rate = rateOf(a, w, l, S.boutRally, isBreak);
+    const rate = rateOf(a, w, l, w.turn, isBreak);
     const dfs = dfsOf(l, isBreak);
     const d = damage(S, w, l, rate, isBreak);
     w.atkUp = 0;
     l.dfsUp = 0;
     l.hp = Math.max(0, l.hp - d);
     S.hit.dmg = d; S.hit.rate = rate;
-    S.hit.half = d >= l.ch.hp / 2;   // 一撃で相手の最大HPの半分以上を削ったか
+    S.hit.half = d >= l.ch.hp / 2 && l.hp === 0;   // 最大HPの半分以上のダメージで倒したか
     log(`　${lt.label}の${nameOf(l)}に${d}ダメージ(${RATE_LABEL[rate]}、${isBreak ? `${BREAK_NAME}中はDFS無視` : `DFS${dfs}で${pct(dfs / 10000)}カット`})`);
     // 特性「不動」:攻撃を受けるたびに硬くなる
     if ((t = traitOf(l, 'immovable')) && l.hp > 0) l.dfsGain = Math.min(t.cap, l.dfsGain + t.gain);
@@ -590,7 +597,7 @@ function act(S, side, hand, log, isBreak) {
   if (next && a.nextDfsUp) next.dfsUp = Math.max(next.dfsUp, a.nextDfsUp);
 }
 
-// ラリーの締め:時蝕 → 特性「処置」 → バフ・デバフの残りラリー数 → 抜け落ち → 番手戦の決着
+// ラリーの締め:時蝕 → 特性「処置」 → バフ・デバフの残りラリー数 → 抜け落ち → 倒れたカードの交代
 // winSide: このラリーのじゃんけんに勝った側(あいこは -1)
 function endRally(S, log, winSide) {
   S.teams.forEach((t, side) => {
@@ -637,31 +644,28 @@ function endRally(S, log, winSide) {
     }
   });
 
+  // 倒れた側だけが次のカードに交代する。倒した側はそのまま場に残る
   S.bouts++;
-  const no = a.idx + 1;
-  if (ko[0] && ko[1] && winSide < 0) {
-    active(a).result = active(b).result = 'draw';
-    log(`　${no}番手戦は相打ち(どちらにも本数は入らない)`);
-  } else {
-    // 両者が倒れた場合は、このラリーのじゃんけんに勝った側の勝ち
-    const both = ko[0] && ko[1];
-    const w = both ? S.teams[winSide] : ko[0] ? b : a;
-    const l = w === a ? b : a;
-    if (both) log(`　両者とも倒れた → じゃんけんに勝った${w.label}の勝ち`);
-    active(w).result = 'win';
-    active(l).result = 'lose';
-    w.wins++;
-    log(`　${l.label}の${nameOf(active(l))}は倒れた → ${no}番手戦は${w.label}の勝ち(${a.wins}-${b.wins})`);
-  }
+  S.teams.forEach((t, side) => {
+    if (!ko[side]) return;
+    active(t).result = 'lose';
+    S.teams[1 - side].wins++;
+    active(S.teams[1 - side]).kills++;
+  });
+  S.teams.forEach((t, side) => {
+    if (ko[side]) log(`　${t.label}の${nameOf(active(t))}は倒れた(撃破数 ${a.wins}-${b.wins})`);
+  });
+  S.teams.forEach((t, side) => { if (ko[side]) t.idx++; });
+  S.boutRally = 0;
 
-  if (a.wins >= WINS_NEEDED || b.wins >= WINS_NEEDED || no >= TEAM_SIZE) {
+  const out = S.teams.map((t) => t.idx >= TEAM_SIZE);
+  if (out[0] || out[1]) {
+    // 全員倒れた側の負け。同時に全滅したら、このラリーのじゃんけんに勝った側の勝ち(あいこなら引き分け)
     S.over = true;
-    S.winner = a.wins === b.wins ? -1 : a.wins > b.wins ? 0 : 1;
-    S.teams.forEach((t) => { t.breakReady = false; });
+    S.winner = out[0] && out[1] ? winSide : out[0] ? 1 : 0;
+    S.teams.forEach((t) => { t.idx = Math.min(t.idx, TEAM_SIZE - 1); t.breakReady = false; });
   } else {
-    S.teams.forEach((t) => { t.idx++; });
-    S.boutRally = 0;
-    log(`— ${no + 1}番手戦:${active(a).ch.name} vs ${active(b).ch.name} —`);
+    log(`— 交代:${nameOf(active(a))} vs ${nameOf(active(b))} —`);
   }
 }
 
@@ -703,7 +707,7 @@ function breakRally(S, side, hand, log) {
 // ブレイク時にCPUが選ぶ手:倒せるなら倒す、そうでなければ一番得な手
 function pickBreakHand(S, side) {
   const me = active(S.teams[side]), foe = active(S.teams[1 - side]);
-  const n = S.boutRally + 1;                 // これから始まるラリーの番号
+  const n = me.turn + 1;                     // これから始まるラリーが、自分のカードにとって何ラリー目か
   const hit = damage(S, me, foe, 1, true);   // 今の状態での通常攻撃1回ぶん(BREAK中なのでDFS無視)
   let best = HAND_KEYS[0], bestScore = -1;
   for (const h of HAND_KEYS) {
@@ -979,7 +983,7 @@ function teamHead(el, t) {
   const streak = t.breakReady
     ? `<span class="break">${BREAK_NAME}!</span>`
     : '●'.repeat(t.streak) + '○'.repeat(Math.max(0, BREAK_STREAK - t.streak)) + (reach ? ' リーチ!' : '');
-  el.innerHTML = `<div class="head"><span>${t.label} <span class="score">${t.wins}本</span></span>
+  el.innerHTML = `<div class="head"><span>${t.label} <span class="score">撃破${t.wins}</span></span>
     <span class="streak${reach ? ' reach' : ''}">${streak}</span></div>
     <div class="chips">${chips}</div>`;
 }
@@ -995,7 +999,7 @@ function stageSide(el, t) {
   if (f.poison) st.push(`時蝕${f.poison}(${f.poisonDmg})`);
   if (t.keep) st.push('連勝保護');
   if (t.sealed) st.push('連勝封じ');
-  el.innerHTML = `<div class="who">${t.idx + 1}番手 ${nameOf(f)}</div>
+  el.innerHTML = `<div class="who">${nameOf(f)}<span class="turn">場${f.turn + 1}ラリー目</span></div>
     <div>HP <b>${f.hp}</b> / ${f.ch.hp}</div>
     <div class="bar"><div class="${bar <= 34 ? 'low' : ''}" style="width:${bar}%"></div></div>
     <div class="stats">${statNow('ATK', baseAtk(f), f.atk)}　${statNow('DFS', baseDfs(f), f.dfs)}</div>
@@ -1005,7 +1009,7 @@ function stageSide(el, t) {
 // 技1つぶんの中身。条件を満たして格上げ中の技は hot
 function actHtml(card, foe, h, isBreak) {
   const a = card.actions[h];
-  const hot = upActive(a, card, foe, S.boutRally + 1, isBreak);
+  const hot = upActive(a, card, foe, card.turn + 1, isBreak);
   return { hot, html: `<span class="ico">${HANDS[h].icon}</span><span class="txt"><b>${HANDS[h].power}「${a.name}」</b>${describe(a, hot ? a.up.rate : 0, true)}</span>` };
 }
 
@@ -1016,7 +1020,7 @@ function render() {
   stageSide($('hpYou'), you);
   stageSide($('hpCpu'), cpu);
   const n = S.boutRally + 1, decay = n > DECAY_FROM;
-  $('boutInfo').textContent = S.over ? '' : `${you.idx + 1}番手戦　${n}ラリー目` + (decay ? '　刻の抜け落ち!' : n === DECAY_FROM ? '　次から刻の抜け落ち' : '');
+  $('boutInfo').textContent = S.over ? '' : `交代から${n}ラリー目` + (decay ? '　刻の抜け落ち!' : n === DECAY_FROM ? '　次から刻の抜け落ち' : '');
   $('boutInfo').className = 'boutinfo' + (decay ? ' warn' : '');
 
   // 下段:左が自分(技がそのまま手のボタン)、右が相手の技
@@ -1046,11 +1050,11 @@ function before() {
   };
 }
 function outcome(b) {
-  const res = b.cards.map((c) => c.result);
+  const dead = b.cards.map((c) => c.hp <= 0);
   return {
     d: b.cards.map((c, i) => c.hp - b.hp[i]),   // HPの増減(マイナスがダメージ)
     ko: S.bouts > b.bouts,
-    boutWin: res[0] === 'win' ? 0 : res[1] === 'win' ? 1 : -1,
+    boutWin: dead[1] && !dead[0] ? 0 : dead[0] && !dead[1] ? 1 : -1,   // 倒した側(相打ちは -1)
     names: b.cards.map(nameOf), no: b.no, events: S.events.slice(),
     hit: S.hit, ticks: S.ticks.slice(),   // 実際に与えた数値(とどめの一撃でも減らさない)
   };
@@ -1127,19 +1131,22 @@ function pops(o, big) {
     pop(1 - h.side, '-' + h.dmg, 'dmg ' + tier + (big ? ' big' : ''));
     lines.push(`<div class="dmg">${o.names[1 - h.side]}に<b class="${tier}" data-n="${h.dmg}">0</b>ダメージ!</div>`);
   }
+  // 毎ラリーの増減(時蝕・処置・抜け落ち)は、高さが変わらないように1行にまとめる
+  const small = [];
   if (h && h.heal) {
     pop(h.side, '+' + h.heal, 'heal');
-    lines.push(`<div class="heal">${o.names[h.side]}は<b data-n="${h.heal}">0</b>回復!</div>`);
+    small.push(`<span class="heal">${o.names[h.side]} <b data-n="${h.heal}">0</b>回復</span>`);
   }
   o.ticks.forEach((t) => {
     if (t.heal) {
       setTimeout(() => pop(t.side, '+' + t.heal, 'heal small', 40), 350 * FX.speed);
-      lines.push(`<div class="heal tick">${o.names[t.side]}は処置で<b data-n="${t.heal}">0</b>回復</div>`);
+      small.push(`<span class="heal">${o.names[t.side]} 処置<b data-n="${t.heal}">0</b></span>`);
     } else {
       setTimeout(() => pop(t.side, '-' + t.dmg, 'dmg small', 40), 350 * FX.speed);
-      lines.push(`<div class="dmg tick${t.side === 1 ? ' mine' : ''}">${o.names[t.side]}は${t.decay ? '刻の抜け落ち' : '時蝕'}で<b data-n="${t.dmg}">0</b>ダメージ</div>`);
+      small.push(`<span class="tick">${o.names[t.side]} ${t.decay ? '抜け落ち' : '時蝕'}<b data-n="${t.dmg}">0</b></span>`);
     }
   });
+  if (small.length) lines.push(`<div class="minor">${small.join('　')}</div>`);
   // バフ・デバフが付いた・消えたことを、キャラの上に文字で出す
   o.events.filter((e) => e.type === 'mod').forEach((e, i) => {
     setTimeout(() => pop(e.side, e.text, e.good ? 'buff' : 'debuff', -34 - i * 20), (300 + i * 180) * FX.speed);
@@ -1169,15 +1176,15 @@ async function transformFx(o) {
   }
 }
 
-// 番手戦の決着
+// カードが倒れたとき
 async function aftermath(o) {
   if (!o.ko) return;
   await sleep(150);
   const w = o.boutWin;
   if (w >= 0) Particles.crumble(panelOf(1 - w).getBoundingClientRect(), COLORS.sand);
   Sound.ko();
-  const sub = `${o.no}番手戦　${o.names[0]} vs ${o.names[1]}`;
-  await cutin(w === 0 ? '一本!' : w === 1 ? '一本取られた' : '相打ち', sub, w === 0 ? 'gold' : w === 1 ? 'violet' : 'plain', 950);
+  const sub = w === 0 ? `${o.names[1]}を撃破` : w === 1 ? `${o.names[0]}が倒れた` : `${o.names[0]}と${o.names[1]}が同時に倒れた`;
+  await cutin(w === 0 ? '一本!' : w === 1 ? '一本取られた' : '相打ち', sub, w === 0 ? 'rainbow' : w === 1 ? 'violet' : 'plain', 950);
 }
 
 // 試合の決着
@@ -1329,7 +1336,7 @@ async function start() {
   render();
   Sound.wake();
   Sound.cue(2);
-  await cutin('開戦', `1番手戦　${active(S.teams[0]).ch.name} vs ${active(S.teams[1]).ch.name}`, 'gold', 900);
+  await cutin('開戦', `${active(S.teams[0]).ch.name} vs ${active(S.teams[1]).ch.name}`, 'gold', 900);
   busy = false;
   render();
   tickLoop();
