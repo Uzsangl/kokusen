@@ -61,6 +61,12 @@
   #netStatus { color: var(--gold); }
   .levels button.picked { border-color: var(--accent); border-width: 2px; box-shadow: 0 0 12px #f5c45144; font-weight: 700; }
   .chars { display: grid; gap: 8px; }
+  .picks { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 8px; }
+  .picks button { padding: 6px 4px; font-size: .78rem; line-height: 1.3; min-height: 3.2em; }
+  .picks button b { display: block; color: var(--gold); font-size: .68rem; }
+  .picks button.empty { border-style: dashed; color: var(--sub); }
+  .role { font-size: .74rem; font-weight: 400; color: #7dd3fc; margin-left: 6px; }
+  #factions button .n { font-size: .7rem; color: var(--gold); margin-left: 4px; }
   .chars button { text-align: left; }
   .name { font-weight: 700; }
   .sub { color: var(--sub); font-size: .85rem; }
@@ -310,6 +316,8 @@
       <p class="sub" id="netDebug"></p>
     </div>
     <h2>キャラ</h2>
+    <div class="picks" id="picks"></div>
+    <div class="levels" id="factions"></div>
     <div id="charList" class="chars"></div>
     <button id="start" style="width:100%;margin-top:8px"></button>
   </section>
@@ -412,25 +420,25 @@ const foeAtk = (v, t) => ({ to: 'foe', stat: 'atk', v: -v, t });
 const foeDfs = (v, t) => ({ to: 'foe', stat: 'dfs', v: -v, t });
 
 const CHARACTERS = [
-  { id: 'kaji', name: 'カジ', faction: '錨', hp: 7250, atk: 3250, dfs: 1100, phys: 1.0,
+  { id: 'kaji', name: 'カジ', faction: '錨', role: '一発逆転', hp: 7250, atk: 3250, dfs: 1100, phys: 1.0,
     trait: { key: 'backwater', name: '背水', desc: '残りHPが半分以下でATK+1250', below: 0.5, add: 1250 },
     actions: {
       rock:     { name: '堰切り',   rate: RATE.huge, up: { rate: RATE.max, when: 'hpBelow', v: 0.5, text: '残りHP半分以下で極大' } },
       scissors: { name: '踏み越し', rate: RATE.normal, mods: [selfAtk(1000, 3)] },
       paper:    { name: '構え直し', rate: RATE.normal, atkUp: 2250, mods: [foeDfs(1000, 2)] } } },
-  { id: 'tomari', name: 'トマリ', faction: '錨', hp: 15300, atk: 1600, dfs: 2000, phys: 1.1,
+  { id: 'tomari', name: 'トマリ', faction: '錨', role: '耐久', hp: 15300, atk: 1600, dfs: 2000, phys: 1.1,
     trait: { key: 'immovable', name: '不動', desc: '攻撃を受けるたびにDFS+500(場にいる間、最大+3000)', gain: 500, cap: 3000 },
     actions: {
       rock:     { name: '凪',   rate: RATE.normal, mods: [selfDfs(3000, 2)] },
       scissors: { name: '先着', rate: RATE.big, mods: [foeAtk(600, 3)], up: { rate: RATE.huge, when: 'gainMax', v: 3000, text: '不動が最大のとき特大' } },
       paper:    { name: '繕い', rate: RATE.normal, heal: 1500 } } },
-  { id: 'mio', name: 'ミオ', faction: '錨', hp: 9100, atk: 2500, dfs: 1400, phys: 0.95,
+  { id: 'mio', name: 'ミオ', faction: '錨', role: '支援・継承', hp: 9100, atk: 2500, dfs: 1400, phys: 0.95,
     trait: { key: 'record', name: '記録', desc: '倒れたとき、次の番手にATK+1000とDFS+1500を渡す(場にいる間ずっと)', atk: 1000, dfs: 1500 },
     actions: {
       rock:     { name: '留め置き', rate: RATE.big, nextAtkUp: 1500 },
       scissors: { name: '水先',     rate: RATE.normal, mods: [foeDfs(1000, 3), foeAtk(500, 3)] },
       paper:    { name: '澪標',     rate: RATE.normal, heal: 900, nextDfsUp: 3000 } } },
-  { id: 'rei', name: 'レイ', faction: '零', hp: 7350, atk: 2000, dfs: 1200, phys: 1.0,
+  { id: 'rei', name: 'レイ', faction: '零', role: '変身', hp: 7350, atk: 2000, dfs: 1200, phys: 1.0,
     trait: { key: 'transform', name: '仮面割れ', desc: '場に出て5ラリー目に変身し、ATK3750・DFS2500になって技も強くなる',
       at: 5, formName: 'レイ・解放', atk: 3750, dfs: 2500, actions: {
         rock:     { name: '白紙',         rate: RATE.huge, up: { rate: RATE.max, when: 'rallyFrom', v: 9, text: '9ラリー目以降は極大' } },
@@ -440,25 +448,25 @@ const CHARACTERS = [
       rock:     { name: '白紙',         rate: RATE.big },
       scissors: { name: '先消し',       rate: RATE.normal, seal: 1, mods: [foeAtk(600, 2)] },
       paper:    { name: '無かったこと', rate: RATE.normal, heal: 600, keep: 1, cleanse: 1 } } },
-  { id: 'hajime', name: 'ハジメ', faction: '零', hp: 11700, atk: 1750, dfs: 1600, phys: 1.0,
+  { id: 'hajime', name: 'ハジメ', faction: '零', role: '回復', hp: 11700, atk: 1750, dfs: 1600, phys: 1.0,
     trait: { key: 'regen', name: '処置', desc: 'ラリーが終わるたびにHPを400回復', heal: 400 },
     actions: {
       rock:     { name: '止血', rate: RATE.big, mods: [foeAtk(600, 2)] },
       scissors: { name: '先診', rate: RATE.normal, mods: [selfDfs(2000, 3)] },
       paper:    { name: '無傷', rate: RATE.normal, heal: 2250, cure: 1 } } },
-  { id: 'uro', name: 'ウロ', faction: '零', hp: 10100, atk: 2250, dfs: 1300, phys: 0.95,
+  { id: 'uro', name: 'ウロ', faction: '零', role: '時蝕', hp: 10100, atk: 2250, dfs: 1300, phys: 0.95,
     trait: { key: 'oldwound', name: '古傷', desc: '時蝕は重ねがけで毎ラリーのダメージが加算。時蝕中の相手を攻撃するときATK+750', add: 750 },
     actions: {
       rock:     { name: '疼き',     rate: RATE.huge, up: { rate: RATE.max, when: 'foeStacks', v: 2, text: '時蝕を2回以上重ねた相手には極大' } },
       scissors: { name: '膿み先',   rate: RATE.normal, poison: 3 },
       paper:    { name: '古傷返し', rate: RATE.normal, poison: 4, mods: [foeDfs(1000, 3)] } } },
-  { id: 'tsuru', name: 'ツル', faction: '矢', hp: 10600, atk: 2400, dfs: 1100, phys: 0.95,
+  { id: 'tsuru', name: 'ツル', faction: '矢', role: 'BREAK特化', hp: 10600, atk: 2400, dfs: 1100, phys: 0.95,
     trait: { key: 'foresight', name: '先見', desc: `${BREAK_NAME}の一撃はATK+1250`, add: 1250 },
     actions: {
       rock:     { name: '張り詰め', rate: RATE.big, up: { rate: RATE.max, when: 'inBreak', text: `${BREAK_NAME}中は極大` } },
       scissors: { name: '先読み',   rate: RATE.normal, streak: 1 },
       paper:    { name: '引き絞り', rate: RATE.normal, mods: [selfAtk(1100, 3)] } } },
-  { id: 'haya', name: 'ハヤ', faction: '矢', hp: 6550, atk: 3750, dfs: 1000, phys: 1.05,
+  { id: 'haya', name: 'ハヤ', faction: '矢', role: '短期決戦', hp: 6550, atk: 3750, dfs: 1000, phys: 1.05,
     trait: { key: 'rush', name: '先駆け', desc: '場に出て1〜3ラリー目はATK+1900、7ラリー目以降はATK−1100', until: 3, early: 1900, from: 7, late: -1100 },
     actions: {
       rock:     { name: '射止め', rate: RATE.huge, up: { rate: RATE.max, when: 'rallyUntil', v: 3, text: '3ラリー目までは極大' } },
@@ -466,42 +474,42 @@ const CHARACTERS = [
       paper:    { name: '矢返し', rate: RATE.normal, mods: [foeDfs(1000, 3)] } } },
 
   // --- ソロ攻略向けの支援キャラ(各陣営2体)。対人・CPU戦でも使える ---
-  { id: 'moyai', name: 'モヤイ', faction: '錨', hp: 15700, atk: 1900, dfs: 1700, phys: 1.0,
+  { id: 'moyai', name: 'モヤイ', faction: '錨', role: 'チーム強化', hp: 15700, atk: 1900, dfs: 1700, phys: 1.0,
     traits: [{ key: 'legacy', name: '舫い', desc: '倒れたとき、控えの味方全員にDFS+1000と最大HP+1500', atk: 0, dfs: 1000, hp: 1500 },
       { key: 'giantSlayer', name: '一点留め', desc: '相手が1体だけのチームのとき、ATK+1200・DFS+800', atk: 1200, dfs: 800 }],
     actions: {
       rock:     { name: '結び留め', rate: RATE.normal, mods: [foeAtk(600, 3)] },
       scissors: { name: '投げ綱',   rate: RATE.big, mods: [foeDfs(800, 3)] },
       paper:    { name: '繋ぎ直し', rate: RATE.normal, team: { stat: 'dfs', v: 300, cap: 1200 } } } },
-  { id: 'shio', name: 'シオ', faction: '錨', hp: 14450, atk: 1800, dfs: 1500, phys: 0.95,
+  { id: 'shio', name: 'シオ', faction: '錨', role: '回復・回復封じ', hp: 14450, atk: 1800, dfs: 1500, phys: 0.95,
     traits: [{ key: 'regen', name: '満ち潮', desc: 'ラリーが終わるたびにHPを350回復', heal: 350 },
       { key: 'giantSlayer', name: '一点留め', desc: '相手が1体だけのチームのとき、ATK+1200・DFS+800', atk: 1200, dfs: 800 }],
     actions: {
       rock:     { name: '凪ぎ払い', rate: RATE.normal, noheal: 3 },
       scissors: { name: '引き潮',   rate: RATE.normal, mods: [foeAtk(500, 2)] },
       paper:    { name: '潮満ち',   rate: RATE.normal, heal: 2200, cleanse: 1 } } },
-  { id: 'moto', name: 'モト', faction: '零', hp: 17250, atk: 2100, dfs: 1400, phys: 1.0,
+  { id: 'moto', name: 'モト', faction: '零', role: 'バフ消し', hp: 17250, atk: 2100, dfs: 1400, phys: 1.0,
     traits: [{ key: 'enterDispel', name: '白紙化', desc: '場に出たとき、相手のバフをすべて消す' },
       { key: 'giantSlayer', name: '巻き戻しの刃', desc: '相手が1体だけのチームのとき、ATK+1200・DFS+800', atk: 1200, dfs: 800 }],
     actions: {
       rock:     { name: '元に戻す', rate: RATE.big, dispel: 1 },
       scissors: { name: '遡り読み', rate: RATE.normal, seal: 1 },
       paper:    { name: '原点回帰', rate: RATE.normal, heal: 1500, cleanse: 1 } } },
-  { id: 'kasumi', name: 'カスミ', faction: '零', hp: 12500, atk: 2200, dfs: 1300, phys: 1.0,
+  { id: 'kasumi', name: 'カスミ', faction: '零', role: '刻印(弱体)', hp: 12500, atk: 2200, dfs: 1300, phys: 1.0,
     traits: [{ key: 'hazeMark', name: '霞の刻', desc: '攻撃が当たるたびに相手のATK−250(刻印。最大−1500)', v: 250, cap: 1500 },
       { key: 'giantSlayer', name: '巻き戻しの刃', desc: '相手が1体だけのチームのとき、ATK+1200・DFS+800', atk: 1200, dfs: 800 }],
     actions: {
       rock:     { name: '霞斬り',   rate: RATE.normal, mark: { stat: 'dfs', v: 600, cap: 3000 } },
       scissors: { name: '朧',       rate: RATE.normal, poison: 3 },
       paper:    { name: '霞隠れ',   rate: RATE.normal, mods: [selfDfs(2500, 2)] } } },
-  { id: 'yajiri', name: 'ヤジリ', faction: '矢', hp: 11850, atk: 2600, dfs: 1100, phys: 1.0,
+  { id: 'yajiri', name: 'ヤジリ', faction: '矢', role: 'DFS貫通', hp: 11850, atk: 2600, dfs: 1100, phys: 1.0,
     traits: [{ key: 'pierce', name: '貫き', desc: '相手のDFSを1000低いものとして攻撃する', v: 1000 },
       { key: 'giantSlayer', name: '大物狙い', desc: '相手が1体だけのチームのとき、ATK+1200・DFS+800', atk: 1200, dfs: 800 }],
     actions: {
       rock:     { name: '穿ち',       rate: RATE.huge },
       scissors: { name: '刻み矢',     rate: RATE.normal, mark: { stat: 'dfs', v: 700, cap: 3000 } },
       paper:    { name: '矢じり研ぎ', rate: RATE.normal, mods: [selfAtk(800, 3)] } } },
-  { id: 'hane', name: 'ハネ', faction: '矢', hp: 9550, atk: 2300, dfs: 1200, phys: 1.0,
+  { id: 'hane', name: 'ハネ', faction: '矢', role: 'チーム強化・連勝', hp: 9550, atk: 2300, dfs: 1200, phys: 1.0,
     traits: [{ key: 'legacy', name: '羽渡し', desc: '倒れたとき、控えの味方全員にATK+800', atk: 800, dfs: 0, hp: 0 },
       { key: 'giantSlayer', name: '大物狙い', desc: '相手が1体だけのチームのとき、ATK+1200・DFS+800', atk: 1200, dfs: 800 }],
     actions: {
@@ -2405,14 +2413,45 @@ function renderLevels() {
 }
 
 // ----- キャラ選択 -----
+// キャラ選択:陣営のボタンで、その陣営のキャラだけを並べる。選んだ3枚は上の枠に出る
+let selFaction = '錨';
+const FACTIONS = ['錨', '零', '矢'];
 function renderSelect() {
+  const locked = PVP.on && PVP.phase === 'ready';
+  // 選んだ3枚(押すと外す)
+  $('picks').innerHTML = '';
+  for (let i = 0; i < TEAM_SIZE; i++) {
+    const ch = CHARACTERS.find((c) => c.id === picked[i]);
+    const b = document.createElement('button');
+    b.className = ch ? '' : 'empty';
+    b.innerHTML = ch ? `<b>${i + 1}番手</b>${ch.name}` : `<b>${i + 1}番手</b>未選択`;
+    b.disabled = !ch || locked;
+    if (ch) b.onclick = () => { picked.splice(i, 1); Sound.click(); renderSelect(); };
+    $('picks').appendChild(b);
+  }
+  // 陣営のボタン(その陣営から選んだ枚数も出す)
+  if (!$('factions').children.length) {
+    FACTIONS.forEach((f) => {
+      const b = document.createElement('button');
+      b.dataset.f = f;
+      b.onclick = () => { selFaction = f; Sound.click(); renderSelect(); };
+      $('factions').appendChild(b);
+    });
+  }
+  [...$('factions').children].forEach((b) => {
+    const n = picked.filter((id) => CHARACTERS.find((c) => c.id === id).faction === b.dataset.f).length;
+    b.innerHTML = `${b.dataset.f}${n ? `<span class="n">${n}枚</span>` : ''}`;
+    b.classList.toggle('picked', b.dataset.f === selFaction);
+  });
+  // その陣営のキャラ
   $('charList').innerHTML = '';
-  CHARACTERS.forEach((ch) => {
+  CHARACTERS.filter((ch) => ch.faction === selFaction).forEach((ch) => {
     const order = picked.indexOf(ch.id);
     const b = document.createElement('button');
+    b.dataset.id = ch.id;
     if (order >= 0) b.classList.add('picked');
-    b.disabled = (order < 0 && picked.length >= TEAM_SIZE) || (PVP.on && PVP.phase === 'ready');
-    b.innerHTML = `<div class="name">${order >= 0 ? `【${order + 1}番手】` : ''}${ch.name}(${ch.faction})</div>` +
+    b.disabled = (order < 0 && picked.length >= TEAM_SIZE) || locked;
+    b.innerHTML = `<div class="name">${order >= 0 ? `【${order + 1}番手】` : ''}${ch.name}<span class="role">${ch.role || ''}</span></div>` +
       `<div class="stats">HP ${ch.hp}　${statLine(ch)}</div>` +
       `<div class="trait">${traitLine(ch)}</div>` +
       actionList(ch, 'div', 'sub');
