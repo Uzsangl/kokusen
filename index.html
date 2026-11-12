@@ -55,7 +55,8 @@
   .stages button b { display: block; color: var(--gold); letter-spacing: .1em; }
   .stages button.s1 b { color: #38bdf8; }
   .stages button.s2 b { color: #4ade80; }
-  .stages button.s4, .stages button.s5 { grid-column: 1 / -1; }
+  .stages button.s4, .stages button.s5, .stages button.s0 { grid-column: 1 / -1; }
+  .stages button.s0 b { color: var(--gold); }
   .stages button.s5 b { color: #ff2a3d; text-shadow: 0 0 10px #ff2a3d99; }
   .stages button.s4 b { color: #b57bff; text-shadow: 0 0 10px #b57bff99; }
   .stages button.picked { border-color: var(--accent); border-width: 2px; box-shadow: 0 0 12px #f5c45144; }
@@ -97,7 +98,10 @@
   .hp { font-size: .85rem; color: var(--sub); font-variant-numeric: tabular-nums; }
   .hp b { font-size: 1.25rem; color: var(--text); }
   .stats { font-size: .78rem; color: var(--gold); font-variant-numeric: tabular-nums; }
-  .stats .up { color: #7dd3fc; font-weight: 700; } .stats .down { color: #e879f9; font-weight: 700; }
+  .stats .up, .stats .down { font-weight: 900; }
+  /* 能力値の色:HP=緑、ATK=赤、DFS=オレンジ */
+  .s-hp, .s-hp b { color: var(--hp); } .s-atk { color: #ff6b78; } .s-dfs { color: #ffa94d; }
+  .gauge.atk .mini i { background: #ff6b78; } .gauge.dfs .mini i { background: #ffa94d; }
   ul.actions li.hot { color: var(--red); font-weight: 700; text-shadow: 0 0 8px #ff4d5e66; }
   .trait { font-size: .78rem; color: #c9b8ff; margin: 2px 0; }
   .boutinfo { grid-column: 1 / -1; text-align: center; font-size: .8rem; color: var(--sub); }
@@ -152,8 +156,6 @@
   .gauge { min-width: 0; }
   .mini { position: relative; height: 5px; background: #0b0d1c; border: 1px solid var(--line); border-radius: 3px; overflow: hidden; }
   .mini i { display: block; height: 100%; background: var(--gold); transition: width .35s; }
-  .gauge.up .mini i { background: #7dd3fc; }
-  .gauge.down .mini i { background: #e879f9; }
   .mini u { position: absolute; top: 0; bottom: 0; width: 1px; background: #fff; opacity: .7; }
   #battle .shp .status { font-size: .64rem; height: 2.5em; overflow: hidden; line-height: 1.25; }
   #battle .cue { height: 1.4em; overflow: hidden; white-space: nowrap; font-size: .92rem; }
@@ -368,6 +370,7 @@
     </div>
     <h2>キャラ</h2>
     <div class="picks" id="picks"></div>
+    <p class="sub" id="bonusNote" style="margin:4px 0 8px"></p>
     <div class="levels" id="factions"></div>
     <div id="charList" class="chars"></div>
     <button id="start" style="width:100%;margin-top:8px"></button>
@@ -719,9 +722,14 @@ const STAGES = [
   { id: 'y3', faction: '矢', stars: 3, name: '天眼の弦',     foes: ['b_tsuru'], level: 4, read: 0.35, hp: 2.6, atk: 1.0 },
   { id: 't4', faction: '刻喰', stars: 4, name: '刻喰らいの淵', foes: ['tokibami'], level: 4, read: 0.35, hp: 1.8, atk: 1.0 },
   { id: 'x5', faction: '始', stars: 5, name: '始まりの前', foes: ['xeno_body', 'xeno_spirit'], level: 4, read: 1.0, hp: 1.0, atk: 1.0, bgm: 'xeno' },
+  // ボスラッシュ:★★★の3体 → ★★★★ → ★★★★★ を続けて戦う。ボスを1体倒すごとに、こちらは全回復する。
+  // rushHp はボスのHPの倍率。「むずかしい」で5連勝できる率が約0.01%になるように決めた
+  { id: 'rush', faction: '連戦', stars: 0, name: 'ボスラッシュ', rush: ['a3', 'z3', 'y3', 't4', 'x5'], rushHp: 0.57, level: 4, read: 0.35, hp: 1.0, atk: 1.0 },
 ];
 // ステージの敵を、倍率を掛けた能力値で作る(元のデータは書き換えない)
 function stageFoes(stage) {
+  // ボスラッシュ:元のステージの強さのまま並べる。read は、そのボスが読みに頼る割合
+  if (stage.rush) return stage.rush.flatMap((sid) => { const sub = STAGES.find((x) => x.id === sid); return stageFoes(sub).map((f) => ({ ...f, rush: true, read: sub.read, hp: Math.round(f.hp * stage.rushHp / 10) * 10 })); });
   return stage.foes.map((id) => {
     const e = ENEMIES[id];
     const r10 = (v) => (stage.hp === 1 && stage.atk === 1 ? v : Math.round(v / 10) * 10);   // 倍率1なら数字そのまま(44444など)
@@ -739,10 +747,10 @@ const traitOf = (card, key) => traitsOf(card.ch).find((t) => t.key === key) || n
 const modSum = (c, stat) => c.mods.reduce((s, m) => s + (m.stat === stat ? m.v : 0), 0);
 // 現在のATK(変身・渡された強化・バフ/デバフ込み。次の攻撃だけの上乗せ atkUp は含めない)
 const ATK_MIN = 250;   // デバフでATKがこれより下がることはない
-const baseAtk = (c) => Math.max(ATK_MIN, c.atk + c.atkBonus + c.teamAtk + c.markAtk + modSum(c, 'atk'));
+const baseAtk = (c) => Math.max(ATK_MIN, c.atk + c.atkBonus + c.teamAtk + c.markAtk + (c.facAtk || 0) + modSum(c, 'atk'));
 // 現在のDFS(変身・特性・渡された強化・バフ/デバフ込み。次の被弾だけの上乗せ dfsUp は含めない)
 const baseDfs = (c) => {
-  const v = c.dfs + c.dfsGain + c.dfsBonus + c.teamDfs + c.markDfs + modSum(c, 'dfs');
+  const v = c.dfs + c.dfsGain + c.dfsBonus + c.teamDfs + c.markDfs + (c.facDfs || 0) + modSum(c, 'dfs');
   // 特性「鋼の刻」:DFSはデバフや刻印で下がらない
   return Math.max(0, Math.min(DFS_MAX, traitOf(c, 'hardshell') ? Math.max(c.dfs, v) : v));
 };
@@ -818,17 +826,31 @@ function describe(a, rate, short) {
   return parts.join(short ? '・' : '、');
 }
 
+// 陣営ボーナス:プレイヤー用のキャラ3枚を同じ陣営でそろえると、全員に効果が付く(ソロの敵には付かない)
+const FACTION_BONUS = {
+  '錨': { dfs: 1000, text: 'DFS+1000' },
+  '零': { hp: 2000, text: '最大HP+2000' },
+  '矢': { atk: 1000, text: 'ATK+1000' },
+};
+function factionBonus(chars) {
+  if (chars.length !== TEAM_SIZE || !chars.every((ch) => ch.faction === chars[0].faction && CHARACTERS.some((c) => c.id === ch.id))) return null;
+  const b = FACTION_BONUS[chars[0].faction];
+  return b ? { ...b, faction: chars[0].faction } : null;
+}
 function newTeam(label, chars) {
+  const fb = factionBonus(chars);
+  const hpUp = fb && fb.hp ? fb.hp : 0;
   return {
     label, idx: 0, wins: 0, streak: 0, breakReady: false, sealed: false, keep: false,
     // atk / dfs / actions は変身で変わるのでカード側に持つ
     cards: chars.map((ch) => ({
-      ch, hp: ch.hp, atk: ch.atk, dfs: ch.dfs, actions: ch.actions, form: 0,
+      ch, hp: ch.hp + hpUp, atk: ch.atk, dfs: ch.dfs, actions: ch.actions, form: 0,
+      facAtk: fb && fb.atk ? fb.atk : 0, facDfs: fb && fb.dfs ? fb.dfs : 0, fac: fb,   // 陣営ボーナス
       atkUp: 0, dfsUp: 0,          // 次の1回だけ
       turn: 0, kills: 0,           // 場に出てからのラリー数 / 倒した数
       atkBonus: 0, dfsBonus: 0,    // 場にいる間ずっと(特性「記録」で渡される)
       dfsGain: 0,                  // 特性「不動」の累積
-      max: ch.hp,                  // 最大HP(特性「舫い」などで増える)
+      max: ch.hp + hpUp,           // 最大HP(特性「舫い」や陣営ボーナスで増える)
       teamAtk: 0, teamDfs: 0,      // 味方全員への強化(消えない)
       markAtk: 0, markDfs: 0,      // 刻印(消えない弱体。マイナスの値)
       noHeal: 0,                   // 回復封じの残りラリー数
@@ -1005,9 +1027,13 @@ function undyingCheck(S, c, isBreak, side, log) {
 // 特性「巻き戻しの儀」:刻を戦いの前に巻き戻す。こちらは全員が元に戻り、肉体のDFSは巻き戻るたびに半分になる
 function rewindMatch(S, log) {
   S.rewinds = (S.rewinds || 0) + 1;
-  const fresh = newMatch(S.teams[0].cards.map((c) => c.ch), S.teams[1].cards.map((c) => c.ch));
-  S.teams.forEach((t, i) => Object.assign(t, { idx: 0, wins: 0, streak: 0, breakReady: false, sealed: false, keep: false, cards: fresh.teams[i].cards }));
-  const body = S.teams[1].cards[0];
+  const me = S.teams[0], foe = S.teams[1];
+  const fresh = newMatch(me.cards.map((c) => c.ch), foe.cards.map((c) => c.ch));
+  const bi = foe.idx - 1;   // 肉体の位置(精神離脱体のひとつ前)
+  Object.assign(me, { idx: 0, wins: bi, streak: 0, breakReady: false, sealed: false, keep: false, cards: fresh.teams[0].cards });
+  foe.cards[bi] = fresh.teams[1].cards[bi]; foe.cards[bi + 1] = fresh.teams[1].cards[bi + 1];
+  Object.assign(foe, { idx: bi, wins: 0, streak: 0, breakReady: false, sealed: false, keep: false });
+  const body = foe.cards[bi];
   body.dfs = Math.round(body.ch.dfs / Math.pow(2, S.rewinds));
   S.boutRally = 0;
   S.events.push({ type: 'rewind', dfs: body.dfs });
@@ -1098,6 +1124,17 @@ function endRally(S, log, winSide) {
   });
   S.teams.forEach((t, side) => { if (ko[side]) t.idx++; });
   S.boutRally = 0;
+  // ボスラッシュ:ボスを1体倒すごとに、こちらは倒れたカードも含めて全回復し、1番手から出直す
+  // (ゼノの肉体と精神離脱体は、2つで1体と数える)
+  const fallen = b.cards[b.idx - 1], nextFoe = b.cards[b.idx];
+  if (ko[1] && fallen && fallen.ch.rush && nextFoe && !nextFoe.ch.hiddenUntilActive) {
+    const giant = a.cards.some((c) => c.giant);
+    a.cards = newTeam(a.label, a.cards.map((c) => c.ch)).cards;
+    a.cards.forEach((c) => { c.giant = giant; });
+    Object.assign(a, { idx: 0, streak: 0, breakReady: false, sealed: false, keep: false });
+    S.events.push({ type: 'rushHeal', n: b.cards.slice(0, b.idx).filter((c) => !c.ch.hiddenUntilActive || true).filter((c) => c.ch.id !== 'xeno_body').length });
+    log(`　${nameOf(fallen)}を倒した。こちらは全回復して、1番手から出直す`);
+  }
 
   const out = S.teams.map((t) => t.idx >= t.cards.length);
   if (out[0] || out[1]) {
@@ -1189,7 +1226,7 @@ const AI_LEVELS = {
   1: { name: 'やさしい',   depth: '自分の技の得だけを見る' },
   2: { name: 'ふつう',     depth: '相手の出方を予測して、それに勝つ手を選ぶ' },
   3: { name: 'むずかしい', depth: '読まれることまで考えて、読み合いの均衡と相手の癖を両方使う' },
-  4: { name: 'ボス', depth: '相手の立場で考え、理屈で選ぶならこの手、という手を読んで返す' },   // ソロの★★★専用
+  4: { name: 'ボス', depth: '相手が実際に出した手の癖を強く読み、癖がなければ均衡の割合で打つ' },   // ソロの★★★専用
 };
 const beaterOf = (h) => HAND_KEYS.find((k) => HANDS[k].beats === h);   // h に勝つ手
 
@@ -1300,7 +1337,7 @@ function aiHand(S, side, level) {
     // 深さ4(ソロのボス):相手が実際に出してきた手の癖だけを、深さ3より強く読む。
     // 「理屈ならこの手」という先読みはしない。理屈で打つ相手が狙い撃ちされて、適当に打つほうが勝てる、ということが起きないようにするため。
     // 癖の無い相手には、読まれても損をしにくい均衡の割合で打つ
-    const { q, best, mix } = deepRead(S, side, M, { naive: 0, trustMax: S.bossRead || BOSS_READ });
+    const { q, best, mix } = deepRead(S, side, M, { naive: 0, trustMax: me.ch.read || S.bossRead || BOSS_READ });
     const hand = pickFrom(mix);
     if (me.ch.id === 'tokibami') return { hand, why: TOKIBAMI_VOICE[Math.floor(Math.random() * TOKIBAMI_VOICE.length)] };
     return { hand, why: `相手の癖は${share(q)}と読み、それに強い${HANDS[best].label}を軸に、${share(mix)}の割合から${act(hand)}を出した` };
@@ -1766,7 +1803,7 @@ const Bgm = (() => {
 // 対人戦:相手の残りが1枚になったとき。CPU戦:相手チーム全体の残りHPが25%以下になったとき
 // (ストーリーモードはまだないので、CPU戦をその代わりにしている)
 function climaxReady() {
-  if (!S || S.over || S.climax || (S.stage && S.stage.id === 'x5')) return false;
+  if (!S || S.over || S.climax || (S.stage && (S.stage.id === 'x5' || S.stage.rush))) return false;
   const cards = S.teams[1].cards;
   const left = cards.filter((c) => c.hp > 0 && c.result !== 'lose');
   const hp = left.reduce((s, c) => s + c.hp, 0), max = cards.reduce((s, c) => s + c.max, 0);
@@ -1927,17 +1964,20 @@ function actionList(ch, tag, cls) {
   }).join('');
 }
 // 能力値を、素の値より上がっていれば↑、下がっていれば↓を付けて表示する
-const statNow = (label, now, base) => `${label} <span class="${now > base ? 'up' : now < base ? 'down' : ''}">${now}${now > base ? '↑' : now < base ? '↓' : ''}</span>`;
+const statNow = (label, now, base) => `<span class="${label === 'ATK' ? 's-atk' : 's-dfs'}">${label} <span class="${now > base ? 'up' : now < base ? 'down' : ''}">${now}${now > base ? '↑' : now < base ? '↓' : ''}</span></span>`;
 // フィジカル係数(phys)は裏データなので画面には出さない
-const statLine = (ch) => `ATK ${ch.atk}　DFS ${ch.dfs}`;
+const statLine = (ch) => `<span class="s-atk">ATK ${ch.atk}</span>　<span class="s-dfs">DFS ${ch.dfs}</span>`;
 const traitLine = (ch) => '特性' + traitsOf(ch).map((t) => `「${t.name}」${t.desc}`).join(' ');
 
 // --- 対戦画面は、スクロールしなくても全部見えるように1画面に詰める ---
 
+// ボスラッシュで倒したボスの数(ゼノの肉体と精神離脱体は、2つで1体)
+const rushCount = (t) => t.cards.filter((c) => c.result === 'lose' && c.ch.id !== 'xeno_body').length;
 // 上段:本数・連勝・5枚の並び
 function teamHead(el, t) {
   const mark = { win: '○', lose: '×', draw: '△' };
-  const chips = t.cards.map((c, i) => {
+  const rush = S.stage && S.stage.rush && t === S.teams[1];
+  const chips = rush ? `<span class="chip on">${dispName(active(t).ch)}</span><span class="chip">${rushCount(t) + (S.over && S.winner === 0 ? 0 : 1)} / ${S.stage.rush.length}体目</span>` : t.cards.map((c, i) => {
     if (c.ch.hiddenUntilActive && i > t.idx) return '';   // ★5の精神離脱体は、出てくるまで隠す
     const cls = c.result === 'lose' ? 'chip ko' : i === t.idx && !c.result ? 'chip on' : 'chip';
     return `<span class="${cls}">${dispName(c.ch)}${c.result ? mark[c.result] : ''}</span>`;
@@ -1946,7 +1986,7 @@ function teamHead(el, t) {
   const streak = t.breakReady
     ? `<span class="break">${BREAK_NAME}!</span>`
     : '●'.repeat(t.streak) + '○'.repeat(Math.max(0, BREAK_STREAK - t.streak)) + (reach ? ' リーチ!' : '');
-  el.innerHTML = `<div class="head"><span>${t.label}${t === S.teams[1] && !PVP.on ? `(${S.stage ? '★'.repeat(S.stage.stars) : AI_LEVELS[S.cpuLevel].name})` : ''} <span class="score">撃破${t.wins}</span></span>
+  el.innerHTML = `<div class="head"><span>${t.label}${t === S.teams[1] && !PVP.on ? `(${S.stage ? (S.stage.rush ? '連戦' : '★'.repeat(S.stage.stars)) : AI_LEVELS[S.cpuLevel].name})` : ''} <span class="score">撃破${t.wins}</span></span>
     <span class="streak${reach ? ' reach' : ''}">${streak}</span></div>
     <div class="chips">${chips}</div>`;
 }
@@ -1956,7 +1996,7 @@ const ATK_GAUGE_MAX = 7500;   // ATKゲージの右端(DFSゲージの右端は�
 function statGauge(label, now, base, max) {
   const cls = now > base ? 'up' : now < base ? 'down' : '';
   const w = Math.min(100, now / max * 100), mark = Math.min(100, base / max * 100);
-  return `<div class="gauge ${cls}"><div class="stats">${statNow(label, now, base)}</div>
+  return `<div class="gauge ${label === 'ATK' ? 'atk' : 'dfs'} ${cls}"><div class="stats">${statNow(label, now, base)}</div>
     <div class="mini"><i style="width:${w}%"></i><u style="left:${mark}%"></u></div></div>`;
 }
 
@@ -1968,6 +2008,7 @@ function stageSide(el, t, f) {
   el.dataset.card = f.ch.id; el.dataset.bar = bar;
   const st = [];
   f.mods.forEach((m) => st.push(`${m.stat === 'atk' ? 'ATK' : 'DFS'}${m.v > 0 ? '+' : '−'}${Math.abs(m.v)}(残${m.t})`));
+  if (f.fac) st.push(`${f.fac.faction}の陣営ボーナス`);
   if (f.atkBonus) st.push(`継承ATK+${f.atkBonus}`);
   if (f.dfsBonus) st.push(`継承DFS+${f.dfsBonus}`);
   if (f.teamAtk) st.push(`全体ATK+${f.teamAtk}`);
@@ -1983,7 +2024,7 @@ function stageSide(el, t, f) {
   if (t.keep) st.push('連勝保護');
   if (t.sealed) st.push('連勝封じ');
   el.innerHTML = `<div class="who">${iconHtml(f.ch, 'sm')}${nameOf(f)}<span class="turn">場${f.turn + 1}ラリー目</span></div>
-    <div>HP <b>${f.hp}</b> / ${f.max}</div>
+    <div class="s-hp">HP <b>${f.hp}</b> / ${f.max}</div>
     <div class="bar"><div class="hpbar ${bar <= 34 ? 'low' : ''}" style="width:${from}%"></div></div>
     <div class="gauges">${statGauge('ATK', baseAtk(f), f.atk, ATK_GAUGE_MAX)}${statGauge('DFS', baseDfs(f), f.dfs, DFS_MAX)}</div>
     <div class="status">${st.join(' / ')}</div>`;
@@ -2229,6 +2270,15 @@ async function transformFx(o) {
 // ★5の場面転換:精神離脱体がHP1になったとき、刻が巻き戻されたとき
 async function stageFx(o) {
   for (const e of o.events) {
+    if (e.type === 'rushHeal') {
+      const next = active(S.teams[1]);
+      flash('#4ade80'); Sound.heal();
+      await cutin(`${e.n}体撃破`, '味方が全回復した', 'gold', 1200);
+      if (next.ch.id === 'xeno_body') { Bgm.switchTo('xeno'); Sound.breakIn(); await cutin(nameOf(next), '始まりの前', 'evil', 1500); }
+      else if (next.ch.id === 'tokibami') { Bgm.switchTo('main'); Sound.breakIn(); await cutin('トキバミ', '止めておいてくれて、ありがとう', 'violet', 1500); }
+      else await cutin(nameOf(next), `${e.n + 1}体目`, 'gold', 1000);
+      render();
+    }
     if (e.type === 'lastBreath' && e.side === 1) {
       Bgm.switchTo('climax');
       flash('#ffd24a'); shake(false); Sound.cue(4);
@@ -2280,6 +2330,12 @@ async function finale() {
   log(`=== ${msg} ${S.rally}ラリー ===`);
   setResult(msg);
   render();
+  // ボスラッシュ:何体倒せたかの最高記録を残す
+  if (S.stage && S.stage.rush) {
+    const n = rushCount(S.teams[1]);
+    if (n > SOLO.rush) { SOLO.rush = n; try { localStorage.setItem('kokusen.rush', String(n)); } catch (e) { /* 保存できなくても動く */ } }
+    log(`ボスラッシュ:${n} / ${S.stage.rush.length}体を倒した(最高記録 ${SOLO.rush}体)`);
+  }
   // オンライン対人のレーティング(1試合に1回だけ)。演出を待たずに、決着した時点で保存を始める
   let rating = null;
   if (MODE === 'pvp' && PVP.foeAcc && !S.rated) {
@@ -2288,7 +2344,7 @@ async function finale() {
   }
   if (S.winner === 0) {
     Sound.fanfare(); Particles.shower(COLORS.rainbow, 220); flash('#ffffff');
-    if (S.stage && S.stage.id === 'x5') {
+    if (S.stage && (S.stage.id === 'x5' || S.stage.rush)) {
       const first = !SOLO.cleared.includes('x5');
       soloClear('x5');
       render();
@@ -2440,6 +2496,9 @@ const PVP = {
   applying: false,
 };
 const rnd = () => Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+// ルールの版。ルール部分の文字列から作るので、ルールを変えると自動で変わる。
+// 対戦の計算は両方の端末がそれぞれ行うため、版が違う相手とは結果が食い違う。つないだときに確かめて、違えば対戦を始めない
+const RULES_SRC = (() => { try { return document.currentScript.textContent.split('// <' + 'logic>')[1].split('// </' + 'logic>')[0]; } catch (e) { return ''; } })();
 // 封をするための印。同じ文字列からは必ず同じ値になる
 function seal(text) {
   let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
@@ -2451,6 +2510,7 @@ function seal(text) {
   h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
   return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
 }
+const RULES_VER = seal(RULES_SRC);
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
@@ -2550,7 +2610,7 @@ function pvpJoin() {
   if (!/^[0-9a-zA-Z]{2,12}$/.test(code)) { pvpStatus('合言葉は、英数字2〜12文字で入れてください。'); return; }
   if (PVP.room && PVP.room.join && (PVP.code !== code || !PVP.room.connected())) PVP.room.join(code);   // 直接つなぐ方式では、ここで部屋を開く・参加する
   PVP.code = code; PVP.phase = 'lobby'; PVP.n = 0; PVP.foeTeamSeal = null; PVP.foeSeal = {};
-  pvpPublish({ g: code, ts: null, t: null, n: null, c: null, r: null, b: null, last: null });
+  pvpPublish({ g: code, v: RULES_VER, ts: null, t: null, n: null, c: null, r: null, b: null, last: null });
   pvpStep();
   renderSelect();
 }
@@ -2582,6 +2642,8 @@ async function pvpStep() {
   if (!PVP.on || !PVP.room || PVP.phase === 'idle') return;
   const foe = pvpFoe(), fp = foe ? foe.presence : null;
 
+  const verNg = fp && fp.v !== RULES_VER;
+  if (verNg && PVP.phase !== 'play') { pvpStatus('相手とゲームの版が違います。お互いに最新のリンクを開き直してください。'); return; }
   if (PVP.phase === 'lobby') { pvpStatus(foe ? '相手が部屋にいます。キャラを選んで「準備完了」を押してください。' : `合言葉「${PVP.code}」で相手を待っています。相手にも同じ合言葉を入れてもらってください。`); return; }
 
   if (PVP.phase === 'ready') {
@@ -2679,7 +2741,7 @@ function renderMode() {
 // ----- ソロモード -----
 const MODES = [['CPUと対戦', 'cpu'], ['ソロ', 'solo'], ['オンライン対人', 'pvp']];
 let MODE = 'cpu';
-const SOLO = { stage: 'a1', cleared: [] };
+const SOLO = { stage: 'a1', cleared: [], rush: 0 };
 function soloClear(id) {
   const fresh = !SOLO.cleared.includes(id);
   if (fresh) SOLO.cleared.push(id);
@@ -2945,7 +3007,9 @@ function renderStages() {
   });
   const st = STAGES.find((x) => x.id === SOLO.stage), foes = stageFoes(st);
   const shown = foes.filter((f) => !f.hiddenUntilActive || xenoKnown());   // ★5は、倒すまで1体に見せる
-  $('stageNote').textContent = `${st.faction} ${'★'.repeat(st.stars)}「${st.name}」 敵:${shown.map(dispName).join('・')}`
+  $('stageNote').textContent = st.rush
+    ? `連戦「${st.name}」 ★★★のボス3体 → ★★★★ → ★★★★★ を、3対1で続けて戦います(ボスのHPは通常の57%)。ボスを1体倒すごとに、こちらは全回復して1番手から出直します。最高記録:${SOLO.rush} / ${st.rush.length}体`
+    : `${st.faction} ${'★'.repeat(st.stars)}「${st.name}」 敵:${shown.map(dispName).join('・')}`
     + (foes.every((f) => f.boss) ? '(ボス1体と3対1)' : '(3対3)') + `。CPUの考え方:${AI_LEVELS[st.level].name}。ソロでは刻の抜け落ちは起きません。`;
   renderSelect();
 }
@@ -2973,6 +3037,11 @@ function renderSelect() {
     if (ch) b.onclick = () => { picked.splice(i, 1); Sound.click(); renderSelect(); };
     $('picks').appendChild(b);
   }
+  // 陣営ボーナスの案内
+  const fb = factionBonus(picked.map((id) => CHARACTERS.find((c) => c.id === id)));
+  $('bonusNote').innerHTML = fb
+    ? `<b style="color:var(--gold)">陣営ボーナス発動:${fb.faction}の3枚で、全員に${fb.text}</b>`
+    : `陣営ボーナス:同じ陣営で3枚そろえると全員に効果(錨 ${FACTION_BONUS['錨'].text} / 零 ${FACTION_BONUS['零'].text} / 矢 ${FACTION_BONUS['矢'].text})`;
   // 陣営のボタン(その陣営から選んだ枚数も出す)
   if (!$('factions').children.length) {
     FACTIONS.forEach((f) => {
@@ -2997,7 +3066,7 @@ function renderSelect() {
     b.disabled = (order < 0 && picked.length >= TEAM_SIZE) || locked;
     b.innerHTML = `<div class="crow">${iconHtml(ch, 'lg')}<div>` +
       `<div class="name">${order >= 0 ? `【${order + 1}番手】` : ''}${ch.name}<span class="role">${ch.role || ''}</span></div>` +
-      `<div class="stats">HP ${ch.hp}　${statLine(ch)}</div>` +
+      `<div class="stats"><span class="s-hp">HP ${ch.hp}</span>　${statLine(ch)}</div>` +
       `<div class="trait">${traitLine(ch)}</div>` +
       actionList(ch, 'div', 'sub') + `</div></div>`;
     b.onclick = () => {
@@ -3089,7 +3158,7 @@ function init() {
     b.onclick = () => { if (PVP.on && m !== 'pvp' && PVP.phase !== 'idle') pvpLeave(); MODE = m; PVP.on = m === 'pvp'; renderMode(); };
     $('modes').appendChild(b);
   });
-  try { SOLO.stage = localStorage.getItem('kokusen.stage') || 'a1'; SOLO.cleared = JSON.parse(localStorage.getItem('kokusen.cleared') || '[]'); } catch (e) { /* 保存できなくても動く */ }
+  try { SOLO.stage = localStorage.getItem('kokusen.stage') || 'a1'; SOLO.cleared = JSON.parse(localStorage.getItem('kokusen.cleared') || '[]'); SOLO.rush = Number(localStorage.getItem('kokusen.rush')) || 0; } catch (e) { /* 保存できなくても動く */ }
   if (!STAGES.some((x) => x.id === SOLO.stage)) SOLO.stage = 'a1';
   STAGES.forEach((st) => {
     const b = document.createElement('button');
