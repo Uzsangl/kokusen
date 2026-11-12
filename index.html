@@ -89,6 +89,10 @@
   .trait { font-size: .78rem; color: #c9b8ff; margin: 2px 0; }
   .boutinfo { grid-column: 1 / -1; text-align: center; font-size: .8rem; color: var(--sub); }
   .boutinfo.warn { color: var(--red); font-weight: 900; }
+  .boutinfo.hint { font-weight: 900; letter-spacing: .05em; background: linear-gradient(90deg, #ff4d5e, #f5c451, #4ade80, #38bdf8, #8b6cff); -webkit-background-clip: text; background-clip: text; color: transparent; animation: hintPulse 1.6s ease-in-out infinite; }
+  #battle .boutinfo.hint { font-size: .85rem; }
+  @keyframes hintPulse { 50% { opacity: .55; } }
+  @media (prefers-reduced-motion: reduce) { .boutinfo.hint { animation: none; } }
   .status { min-height: 1.3em; font-size: .85rem; color: var(--accent); }
   ul.actions { list-style: none; padding: 0; margin: 6px 0 0; font-size: .82rem; }
   ul.actions li { padding: 2px 0; border-top: 1px dashed var(--line); }
@@ -1936,8 +1940,10 @@ function render(view) {
   stageSide($('hpYou'), you, me);
   stageSide($('hpCpu'), cpu, foe);
   const n = S.boutRally + 1, decay = n > DECAY_FROM;
-  $('boutInfo').textContent = S.over ? '' : `交代から${n}ラリー目` + (decay ? '　刻の抜け落ち!' : n === DECAY_FROM ? '　次から刻の抜け落ち' : '');
-  $('boutInfo').className = 'boutinfo' + (decay ? ' warn' : '');
+  // ★5:精神離脱体がHP1になったあとは、やることを常に出しておく
+  const hint = S.breakHint && !S.over && active(S.teams[1]).ch.id === 'xeno_spirit';
+  $('boutInfo').textContent = S.over ? '' : hint ? `${BREAK_NAME}で刻を巻き戻せ!` : `交代から${n}ラリー目` + (decay ? '　刻の抜け落ち!' : n === DECAY_FROM ? '　次から刻の抜け落ち' : '');
+  $('boutInfo').className = 'boutinfo' + (hint ? ' hint' : decay ? ' warn' : '');
 
   // 下段:左が自分(技がそのまま手のボタン)、右が相手の技
   $('traitYou').textContent = traitLine(me.ch);
@@ -2162,9 +2168,12 @@ async function stageFx(o) {
       Bgm.switchTo('climax');
       flash('#ffd24a'); shake(false); Sound.cue(4);
       await cutin(`${BREAK_NAME}で刻を巻き戻せ!`, `とどめは${BREAK_NAME}でしか刺せない`, 'rainbow', 1600);
+      S.breakHint = true;
+      render();
     }
     if (e.type === 'rewind') {
       Bgm.switchTo('xeno');
+      S.breakHint = false;
       freeze(true); flash('#3a0010'); shake(true); Sound.transform();
       await cutin('刻が、巻き戻る', `${nameOf(active(S.teams[1]))}のDFSが${e.dfs}に下がった`, 'evil', 1800);
       freeze(false);
