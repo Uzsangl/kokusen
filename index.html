@@ -84,7 +84,8 @@
   .crow { display: flex; gap: 10px; align-items: flex-start; }
   .crow > div { min-width: 0; flex: 1; }
   .picks button .cico { display: flex; margin: 2px auto; }
-  .stages button .cico { display: flex; margin: 3px auto; }
+  .stages button .foes { display: flex; justify-content: center; gap: 3px; margin: 3px 0; }
+  .stages button .foes .cico { margin: 0; }
   .name { font-weight: 700; }
   .sub { color: var(--sub); font-size: .85rem; }
   .fighters { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; transition: filter calc(.3s * var(--spd)); }
@@ -1341,10 +1342,11 @@ function shuffled(arr) {
 const $ = (id) => document.getElementById(id);
 
 // ----- キャラアイコン(icons/*.webp、192px)-----
-// ソロのボスは元のキャラの絵を使う。絵がまだないキャラ(兵士・ハネ)は名前の頭文字を出す。
+// ソロのボスは元のキャラの絵を使う。絵がまだないキャラ(ハネ)は名前の頭文字を出す。
 // ゼノは名前が明かされるまでシルエットにする。
 const ICON_IDS = new Set(['kaji', 'tomari', 'mio', 'moyai', 'shio', 'rei', 'hajime', 'uro', 'moto', 'kasumi',
-  'tsuru', 'haya', 'yajiri', 'tokibami', 'xeno_body', 'xeno_spirit']);
+  'tsuru', 'haya', 'yajiri', 'tokibami', 'xeno_body', 'xeno_spirit',
+  'a_guard', 'a_chain', 'a_lamp', 'z_mask', 'z_wind', 'z_sand', 'y_runner', 'y_archer', 'y_seer']);
 const ICON_ALIAS = { b_tomari: 'tomari', b_rei: 'rei', b_tsuru: 'tsuru' };
 const ICON_FACTION = { '錨': 'f-anchor', '零': 'f-zero', '矢': 'f-arrow' };
 function iconHtml(ch, size) {
@@ -2631,9 +2633,9 @@ function soloClear(id) {
 }
 function renderStages() {
   [...$('stages').children].forEach((b) => {
-    // ボスのステージ(★3以上)はボスのアイコンも出す。ゼノは名前が明かされるまでシルエット
+    // 敵のアイコンも出す(★1・★2は兵士3体を小さく、★3以上はボス)。ゼノは名前が明かされるまでシルエット
     const s = STAGES.find((x) => x.id === b.dataset.id);
-    const boss = s.stars >= 3 ? stageFoes(s).filter((f) => !f.hiddenUntilActive).map((f) => iconHtml(f, 'md')).join('') : '';
+    const boss = `<span class="foes">${stageFoes(s).filter((f) => !f.hiddenUntilActive).map((f) => iconHtml(f, s.stars >= 3 ? 'md' : 'sm')).join('')}</span>`;
     b.innerHTML = `<b>${s.faction} ${'★'.repeat(s.stars)}</b>${boss}${s.name}`;
     b.classList.toggle('picked', b.dataset.id === SOLO.stage);
     b.classList.toggle('cleared', SOLO.cleared.includes(b.dataset.id));
