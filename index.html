@@ -73,6 +73,18 @@
   .role { font-size: .74rem; font-weight: 400; color: #7dd3fc; margin-left: 6px; }
   #factions button .n { font-size: .7rem; color: var(--gold); margin-left: 4px; }
   .chars button { text-align: left; }
+  /* キャラアイコン。枠の色は陣営(錨=金、零=蒼紫、矢=朱、無所属=灰) */
+  .cico { display: inline-flex; align-items: center; justify-content: center; flex: none; object-fit: cover;
+    border-radius: 8px; border: 2px solid var(--line); background: #12152b; color: var(--sub); font-weight: 900; vertical-align: middle; }
+  .cico.f-anchor { border-color: #d9a53a; } .cico.f-zero { border-color: #8b6cff; } .cico.f-arrow { border-color: #e2553f; } .cico.f-none { border-color: #8a8a96; }
+  .cico.secret { filter: grayscale(1) brightness(.22) blur(1.5px); }
+  .cico.lg { width: 60px; height: 60px; font-size: 1.5rem; }
+  .cico.md { width: 40px; height: 40px; font-size: 1.1rem; border-radius: 7px; }
+  .cico.sm { width: 26px; height: 26px; font-size: .7rem; border-width: 1px; border-radius: 5px; margin-right: 4px; }
+  .crow { display: flex; gap: 10px; align-items: flex-start; }
+  .crow > div { min-width: 0; flex: 1; }
+  .picks button .cico { display: flex; margin: 2px auto; }
+  .stages button .cico { display: flex; margin: 3px auto; }
   .name { font-weight: 700; }
   .sub { color: var(--sub); font-size: .85rem; }
   .fighters { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; transition: filter calc(.3s * var(--spd)); }
@@ -1327,6 +1339,21 @@ function shuffled(arr) {
 
 // ===== 画面 =====
 const $ = (id) => document.getElementById(id);
+
+// ----- キャラアイコン(icons/*.webp、192px)-----
+// ソロのボスは元のキャラの絵を使う。絵がまだないキャラ(兵士・ハネ)は名前の頭文字を出す。
+// ゼノは名前が明かされるまでシルエットにする。
+const ICON_IDS = new Set(['kaji', 'tomari', 'mio', 'moyai', 'shio', 'rei', 'hajime', 'uro', 'moto', 'kasumi',
+  'tsuru', 'haya', 'yajiri', 'tokibami', 'xeno_body', 'xeno_spirit']);
+const ICON_ALIAS = { b_tomari: 'tomari', b_rei: 'rei', b_tsuru: 'tsuru' };
+const ICON_FACTION = { '錨': 'f-anchor', '零': 'f-zero', '矢': 'f-arrow' };
+function iconHtml(ch, size) {
+  const id = ICON_ALIAS[ch.id] || ch.id;
+  const cls = `cico ${size} ${ICON_FACTION[ch.faction] || 'f-none'}`;
+  if (!ICON_IDS.has(id)) return `<span class="${cls} none" aria-hidden="true">${ch.name[0]}</span>`;
+  const secret = ch.secret && !xenoKnown();
+  return `<img class="${cls}${secret ? ' secret' : ''}" src="icons/${id}.webp" alt="" aria-hidden="true" width="192" height="192">`;
+}
 let S = null;
 let picked = [];
 let busy = false;      // 演出中は入力を受け付けない
@@ -1917,7 +1944,7 @@ function stageSide(el, t, f) {
   if (f.poison) st.push(`時蝕${f.poison}(${f.poisonDmg})`);
   if (t.keep) st.push('連勝保護');
   if (t.sealed) st.push('連勝封じ');
-  el.innerHTML = `<div class="who">${nameOf(f)}<span class="turn">場${f.turn + 1}ラリー目</span></div>
+  el.innerHTML = `<div class="who">${iconHtml(f.ch, 'sm')}${nameOf(f)}<span class="turn">場${f.turn + 1}ラリー目</span></div>
     <div>HP <b>${f.hp}</b> / ${f.max}</div>
     <div class="bar"><div class="hpbar ${bar <= 34 ? 'low' : ''}" style="width:${from}%"></div></div>
     <div class="gauges">${statGauge('ATK', baseAtk(f), f.atk, ATK_GAUGE_MAX)}${statGauge('DFS', baseDfs(f), f.dfs, DFS_MAX)}</div>
@@ -2604,6 +2631,10 @@ function soloClear(id) {
 }
 function renderStages() {
   [...$('stages').children].forEach((b) => {
+    // ボスのステージ(★3以上)はボスのアイコンも出す。ゼノは名前が明かされるまでシルエット
+    const s = STAGES.find((x) => x.id === b.dataset.id);
+    const boss = s.stars >= 3 ? stageFoes(s).filter((f) => !f.hiddenUntilActive).map((f) => iconHtml(f, 'md')).join('') : '';
+    b.innerHTML = `<b>${s.faction} ${'★'.repeat(s.stars)}</b>${boss}${s.name}`;
     b.classList.toggle('picked', b.dataset.id === SOLO.stage);
     b.classList.toggle('cleared', SOLO.cleared.includes(b.dataset.id));
   });
@@ -2632,7 +2663,7 @@ function renderSelect() {
     const ch = CHARACTERS.find((c) => c.id === picked[i]);
     const b = document.createElement('button');
     b.className = ch ? '' : 'empty';
-    b.innerHTML = ch ? `<b>${i + 1}番手</b>${ch.name}` : `<b>${i + 1}番手</b>未選択`;
+    b.innerHTML = ch ? `<b>${i + 1}番手</b>${iconHtml(ch, 'md')}${ch.name}` : `<b>${i + 1}番手</b>未選択`;
     b.disabled = !ch || locked;
     if (ch) b.onclick = () => { picked.splice(i, 1); Sound.click(); renderSelect(); };
     $('picks').appendChild(b);
@@ -2659,10 +2690,11 @@ function renderSelect() {
     b.dataset.id = ch.id;
     if (order >= 0) b.classList.add('picked');
     b.disabled = (order < 0 && picked.length >= TEAM_SIZE) || locked;
-    b.innerHTML = `<div class="name">${order >= 0 ? `【${order + 1}番手】` : ''}${ch.name}<span class="role">${ch.role || ''}</span></div>` +
+    b.innerHTML = `<div class="crow">${iconHtml(ch, 'lg')}<div>` +
+      `<div class="name">${order >= 0 ? `【${order + 1}番手】` : ''}${ch.name}<span class="role">${ch.role || ''}</span></div>` +
       `<div class="stats">HP ${ch.hp}　${statLine(ch)}</div>` +
       `<div class="trait">${traitLine(ch)}</div>` +
-      actionList(ch, 'div', 'sub');
+      actionList(ch, 'div', 'sub') + `</div></div>`;
     b.onclick = () => {
       if (order >= 0) picked.splice(order, 1); else picked.push(ch.id);
       Sound.click();
@@ -2758,7 +2790,6 @@ function init() {
     const b = document.createElement('button');
     b.dataset.id = st.id;
     b.classList.add('s' + st.stars);   // ★の数で色を変える
-    b.innerHTML = `<b>${st.faction} ${'★'.repeat(st.stars)}</b>${st.name}`;
     b.onclick = () => { SOLO.stage = st.id; try { localStorage.setItem('kokusen.stage', st.id); } catch (e) { /* 保存できなくても動く */ } renderStages(); };
     $('stages').appendChild(b);
   });
