@@ -50,7 +50,12 @@
   button:hover:not(:disabled) { border-color: var(--accent); }
   button:disabled { opacity: .45; cursor: default; }
   .levels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 4px; }
-  .levels.two { grid-template-columns: 1fr 1fr; }
+  .stages { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 4px; }
+  .stages button { padding: 6px 4px; font-size: .74rem; line-height: 1.3; }
+  .stages button b { display: block; color: var(--gold); letter-spacing: .1em; }
+  .stages button.picked { border-color: var(--accent); border-width: 2px; box-shadow: 0 0 12px #f5c45144; }
+  .stages button.cleared::after { content: ' ✓'; color: #4ade80; font-weight: 700; }
+  .col .trait.multi { font-size: .56rem; line-height: 1.25; height: 4.6em; }
   .roomrow { display: flex; gap: 8px; margin-bottom: 4px; }
   .roomrow input { flex: 1; min-width: 0; font: inherit; color: var(--text); background: #0b0d1c; border: 1px solid var(--line); border-radius: 10px; padding: 10px; }
   #netStatus { color: var(--gold); }
@@ -284,11 +289,16 @@
     <p class="sub">キャラごとに「特性」があります。技にはATKやDFSを数ラリーの間だけ上げ下げするものがあります。極大ダメージは条件を満たしたときだけ出ます(条件を満たした技は赤く光ります)。交代がないまま12ラリー続くと「刻の抜け落ち」が始まり、両者のHPが毎ラリー削れていきます。</p>
     <p class="sub">予兆の色:青 → 緑 → <span style="color:var(--red);font-weight:700">赤(勝ち確定)</span> → <span class="rainbow" style="font-weight:700">虹(撃破かBREAK確定)</span></p>
     <h2>対戦相手</h2>
-    <div class="levels two" id="modes"></div>
+    <div class="levels" id="modes"></div>
     <div id="cpuOpts">
       <h2>CPUの強さ</h2>
       <div class="levels" id="levels"></div>
       <p class="sub" id="levelNote"></p>
+    </div>
+    <div id="soloOpts" class="hidden">
+      <h2>ステージ</h2>
+      <div class="stages" id="stages"></div>
+      <p class="sub" id="stageNote"></p>
     </div>
     <div id="netOpts" class="hidden">
       <div class="roomrow">
@@ -456,9 +466,130 @@ const CHARACTERS = [
       paper:    { name: '矢返し', rate: RATE.normal, mods: [foeDfs(1000, 3)] } } },
 ];
 
+// ===== ソロモードの敵(プレイヤーは選べない、ソロ専用の能力値) =====
+// 各陣営に★・★★・★★★の3ステージ、全9ステージ。★と★★は3対3、★★★は3対1(敵はボス1体、特性3つ)。
+// 敵の能力値はステージごとに決める。hp と atk は、下の STAGES の倍率(hp, atk)を掛けた値になる。
+// 特性の key の処理は、プレイヤーのキャラと共通(「特性」と書いた箇所)。unbreak はボス用。
+const ENEMIES = {
+  // --- 錨:硬くて回復する ---
+  a_guard: { name: '錨の衛士', faction: '錨', hp: 9000, atk: 2100, dfs: 1800, phys: 1.0,
+    trait: { key: 'immovable', name: '不動', desc: '被弾するたびにDFS+400(最大+2000)', gain: 400, cap: 2000 },
+    actions: {
+      rock:     { name: '盾打ち', rate: RATE.normal, mods: [selfDfs(2000, 2)] },
+      scissors: { name: '突き',   rate: RATE.big },
+      paper:    { name: '構え',   rate: RATE.normal, heal: 900 } } },
+  a_chain: { name: '錨の鎖番', faction: '錨', hp: 8000, atk: 2700, dfs: 1400, phys: 1.0,
+    trait: { key: 'backwater', name: '背水', desc: '残りHPが半分以下でATK+900', below: 0.5, add: 900 },
+    actions: {
+      rock:     { name: '鎖打ち', rate: RATE.huge },
+      scissors: { name: '絡め',   rate: RATE.normal, mods: [foeAtk(500, 2)] },
+      paper:    { name: '締め',   rate: RATE.normal, mods: [foeDfs(800, 2)] } } },
+  a_lamp: { name: '錨の灯守', faction: '錨', hp: 8500, atk: 2300, dfs: 1500, phys: 0.95,
+    trait: { key: 'regen', name: '灯り', desc: 'ラリーが終わるたびにHP+300', heal: 300 },
+    actions: {
+      rock:     { name: '灯撃',   rate: RATE.big },
+      scissors: { name: '照らし', rate: RATE.normal, mods: [foeDfs(800, 2)] },
+      paper:    { name: '灯し',   rate: RATE.normal, heal: 1200 } } },
+  // --- 零:時蝕と巻き戻し ---
+  z_mask: { name: '零の仮面兵', faction: '零', hp: 8000, atk: 2500, dfs: 1300, phys: 1.0,
+    trait: { key: 'backwater', name: '欠け', desc: '残りHPが半分以下でATK+800', below: 0.5, add: 800 },
+    actions: {
+      rock:     { name: '断ち',   rate: RATE.big },
+      scissors: { name: '刻削ぎ', rate: RATE.normal, poison: 3 },
+      paper:    { name: '戻し',   rate: RATE.normal, heal: 700, cleanse: 1 } } },
+  z_wind: { name: '零の巻き手', faction: '零', hp: 8800, atk: 2200, dfs: 1500, phys: 1.0,
+    trait: { key: 'regen', name: '巻き戻し', desc: 'ラリーが終わるたびにHP+350', heal: 350 },
+    actions: {
+      rock:     { name: '巻撃', rate: RATE.big },
+      scissors: { name: '逆巻', rate: RATE.normal, seal: 1 },
+      paper:    { name: '巻戻', rate: RATE.normal, heal: 1100 } } },
+  z_sand: { name: '零の砂使い', faction: '零', hp: 7800, atk: 2400, dfs: 1200, phys: 0.95,
+    trait: { key: 'oldwound', name: '風化', desc: '時蝕は重ねがけで加算。時蝕中の相手にはATK+600', add: 600 },
+    actions: {
+      rock:     { name: '砂嵐', rate: RATE.huge, up: { rate: RATE.max, when: 'foeStacks', v: 2, text: '時蝕2回以上の相手には極大' } },
+      scissors: { name: '砂蝕', rate: RATE.normal, poison: 3 },
+      paper:    { name: '朽ち', rate: RATE.normal, poison: 2, mods: [foeDfs(800, 2)] } } },
+  // --- 矢:速くて連勝を稼ぐ ---
+  y_runner: { name: '矢の伝令兵', faction: '矢', hp: 7000, atk: 3000, dfs: 1000, phys: 1.05,
+    trait: { key: 'rush', name: '早駆け', desc: '場に出て1〜3ラリー目はATK+1200、7ラリー目以降はATK−700', until: 3, early: 1200, from: 7, late: -700 },
+    actions: {
+      rock:     { name: '速射', rate: RATE.huge },
+      scissors: { name: '連射', rate: RATE.big, atkUp: 700 },
+      paper:    { name: '牽制', rate: RATE.normal, mods: [foeDfs(800, 2)] } } },
+  y_archer: { name: '矢の射手', faction: '矢', hp: 7600, atk: 2800, dfs: 1100, phys: 1.0,
+    trait: { key: 'backwater', name: '引き絞り', desc: '残りHPが半分以下でATK+900', below: 0.5, add: 900 },
+    actions: {
+      rock:     { name: '狙撃', rate: RATE.huge },
+      scissors: { name: '二連', rate: RATE.big },
+      paper:    { name: '溜め', rate: RATE.normal, mods: [selfAtk(800, 3)] } } },
+  y_seer: { name: '矢の見習い占者', faction: '矢', hp: 8200, atk: 2300, dfs: 1200, phys: 0.95,
+    trait: { key: 'foresight', name: '先見', desc: `${BREAK_NAME}の一撃はATK+1000`, add: 1000 },
+    actions: {
+      rock:     { name: '弦打ち', rate: RATE.big, up: { rate: RATE.max, when: 'inBreak', text: `${BREAK_NAME}中は極大` } },
+      scissors: { name: '先読',   rate: RATE.normal, streak: 1 },
+      paper:    { name: '張り',   rate: RATE.normal, mods: [selfAtk(700, 3)] } } },
+
+  // --- ボス(★★★、1体で3人を相手にする。特性3つ) ---
+  b_tomari: { name: '大錨トマリ', faction: '錨', hp: 30000, atk: 2600, dfs: 2400, phys: 1.1, boss: true,
+    traits: [
+      { key: 'immovable', name: '不沈', desc: '被弾でDFS+500(最大+3000)', gain: 500, cap: 3000 },
+      { key: 'regen', name: '港の灯', desc: '毎ラリーHP+500', heal: 500 },
+      { key: 'unbreak', name: '大錨', desc: `${BREAK_NAME}の被ダメージ半減`, cut: 0.5 } ],
+    actions: {
+      rock:     { name: '大凪',   rate: RATE.normal, mods: [selfDfs(3000, 2)] },
+      scissors: { name: '錨鎖',   rate: RATE.big, mods: [foeAtk(800, 3)] },
+      paper:    { name: '潮返し', rate: RATE.huge, up: { rate: RATE.max, when: 'gainMax', v: 3000, text: '不沈が最大のとき極大' } } } },
+  b_rei: { name: 'レイ・終幕', faction: '零', hp: 28000, atk: 2400, dfs: 1600, phys: 1.0, boss: true,
+    traits: [
+      { key: 'transform', name: '仮面割れ', desc: '場に出て6ラリー目に解放(ATK4200・DFS2600)',
+        at: 6, formName: 'レイ・解放', atk: 4200, dfs: 2600, actions: {
+          rock:     { name: '白紙',         rate: RATE.huge, up: { rate: RATE.max, when: 'rallyFrom', v: 12, text: '12ラリー目以降は極大' } },
+          scissors: { name: '先消し',       rate: RATE.big, seal: 1, mods: [foeAtk(1000, 2)] },
+          paper:    { name: '無かったこと', rate: RATE.normal, heal: 2000, keep: 1, cleanse: 1 } } },
+      { key: 'backwater', name: '執念', desc: '残りHPが半分以下でATK+1200', below: 0.5, add: 1200 },
+      { key: 'unbreak', name: '始まりの前', desc: `${BREAK_NAME}の被ダメージ半減`, cut: 0.5 } ],
+    actions: {
+      rock:     { name: '白紙',         rate: RATE.big },
+      scissors: { name: '先消し',       rate: RATE.normal, seal: 1, mods: [foeAtk(600, 2)] },
+      paper:    { name: '無かったこと', rate: RATE.normal, heal: 1200, keep: 1, cleanse: 1 } } },
+  b_tsuru: { name: 'ツル・天眼', faction: '矢', hp: 26000, atk: 3000, dfs: 1300, phys: 1.0, boss: true,
+    traits: [
+      { key: 'foresight', name: '天眼', desc: `${BREAK_NAME}の一撃はATK+2500`, add: 2500 },
+      { key: 'rush', name: '先回り', desc: '場に出て1〜4ラリー目はATK+1500', until: 4, early: 1500, from: 999, late: 0 },
+      { key: 'unbreak', name: '結末を知る者', desc: `${BREAK_NAME}の被ダメージ半減`, cut: 0.5 } ],
+    actions: {
+      rock:     { name: '張り詰め', rate: RATE.big, up: { rate: RATE.max, when: 'inBreak', text: `${BREAK_NAME}中は極大` } },
+      scissors: { name: '先読み',   rate: RATE.normal, streak: 1 },
+      paper:    { name: '引き絞り', rate: RATE.normal, mods: [selfAtk(1500, 3)] } } },
+};
+
+// ステージ。level はCPUの考え方の深さ(AI_LEVELS)、read はボスが読みに頼る割合、hp / atk は敵の能力値に掛ける倍率。
+// ソロでは刻の抜け落ちは起きない。倍率は sim で、ランダムに打ったときと「むずかしい」で打ったときの勝率を見て決めた
+const STAGES = [
+  { id: 'a1', faction: '錨', stars: 1, name: '港の見回り',   foes: ['a_guard', 'a_lamp', 'a_chain'], level: 1, hp: 0.55, atk: 1.0 },
+  { id: 'a2', faction: '錨', stars: 2, name: '鎖の関所',     foes: ['a_chain', 'a_guard', 'a_lamp'], level: 1, hp: 1.21, atk: 1.0 },
+  { id: 'a3', faction: '錨', stars: 3, name: '大錨の門',     foes: ['b_tomari'], level: 4, read: 0.35, hp: 0.625, atk: 1.0 },
+  { id: 'z1', faction: '零', stars: 1, name: '欠けた仮面',   foes: ['z_mask', 'z_wind', 'z_sand'], level: 1, hp: 0.47, atk: 1.0 },
+  { id: 'z2', faction: '零', stars: 2, name: '巻き戻る回廊', foes: ['z_sand', 'z_mask', 'z_wind'], level: 1, hp: 1.0, atk: 1.0 },
+  { id: 'z3', faction: '零', stars: 3, name: '針のない文字盤', foes: ['b_rei'], level: 4, read: 0.35, hp: 1.225, atk: 1.0 },
+  { id: 'y1', faction: '矢', stars: 1, name: '伝令の道',     foes: ['y_runner', 'y_seer', 'y_archer'], level: 1, hp: 0.36, atk: 0.85 },
+  { id: 'y2', faction: '矢', stars: 2, name: '射手の丘',     foes: ['y_archer', 'y_runner', 'y_seer'], level: 1, hp: 0.954, atk: 1.0 },
+  { id: 'y3', faction: '矢', stars: 3, name: '天眼の弦',     foes: ['b_tsuru'], level: 4, read: 0.35, hp: 2.17, atk: 1.0 },
+];
+// ステージの敵を、倍率を掛けた能力値で作る(元のデータは書き換えない)
+function stageFoes(stage) {
+  return stage.foes.map((id) => {
+    const e = ENEMIES[id];
+    const r10 = (v) => Math.round(v / 10) * 10;
+    return { ...e, id, hp: r10(e.hp * stage.hp), atk: r10(e.atk * stage.atk) };
+  });
+}
+
 // ===== ルール =====
 const pct = (x) => Math.round(x * 100) + '%';
-const traitOf = (card, key) => (card.ch.trait && card.ch.trait.key === key ? card.ch.trait : null);
+// 特性は1つ(trait)か複数(traits)
+const traitsOf = (ch) => ch.traits || (ch.trait ? [ch.trait] : []);
+const traitOf = (card, key) => traitsOf(card.ch).find((t) => t.key === key) || null;
 
 // バフ・デバフ(mods)の合計。ATK も DFS も実数の足し引き
 const modSum = (c, stat) => c.mods.reduce((s, m) => s + (m.stat === stat ? m.v : 0), 0);
@@ -498,7 +629,8 @@ function traitAtk(S, att, def, isBreak) {
 // 掛け算するのは「ATK × ダメージ係数 × フィジカル係数 × DFS軽減」だけで、強化・弱体はすべてATKとDFSへの足し引き
 function damage(S, att, def, rate, isBreak) {
   const atk = Math.max(ATK_MIN, baseAtk(att) + att.atkUp + traitAtk(S, att, def, isBreak));
-  return Math.round(atk * rate * att.ch.phys * (1 - dfsOf(def, isBreak) / 10000));
+  const ub = isBreak ? traitOf(def, 'unbreak') : null;   // 特性:BREAKの被ダメージを減らす
+  return Math.round(atk * rate * att.ch.phys * (1 - dfsOf(def, isBreak) / 10000) * (ub ? 1 - ub.cut : 1));
 }
 
 const modText = (m, short) => (short
@@ -549,7 +681,7 @@ function newMatch(charsA, charsB) {
   };
 }
 const active = (team) => team.cards[team.idx];
-const nameOf = (c) => (c.form ? c.ch.trait.formName : c.ch.name);
+const nameOf = (c) => (c.form ? traitOf(c, 'transform').formName : c.ch.name);
 
 function judge(a, b) {
   if (a === b) return 0;
@@ -673,7 +805,7 @@ function endRally(S, log, winSide) {
     f.mods = f.mods.filter((m) => m.t > 0);
   });
   // 刻の抜け落ち:長引くほど両者が削れる
-  if (S.boutRally > DECAY_FROM) {
+  if (!S.noDecay && S.boutRally > DECAY_FROM) {
     S.teams.forEach((t, side) => {
       const f = active(t);
       if (f.hp <= 0) return;
@@ -710,12 +842,12 @@ function endRally(S, log, winSide) {
   S.teams.forEach((t, side) => { if (ko[side]) t.idx++; });
   S.boutRally = 0;
 
-  const out = S.teams.map((t) => t.idx >= TEAM_SIZE);
+  const out = S.teams.map((t) => t.idx >= t.cards.length);
   if (out[0] || out[1]) {
     // 全員倒れた側の負け。同時に全滅したら、このラリーのじゃんけんに勝った側の勝ち(あいこなら引き分け)
     S.over = true;
     S.winner = out[0] && out[1] ? winSide : out[0] ? 1 : 0;
-    S.teams.forEach((t) => { t.idx = Math.min(t.idx, TEAM_SIZE - 1); t.breakReady = false; });
+    S.teams.forEach((t) => { t.idx = Math.min(t.idx, t.cards.length - 1); t.breakReady = false; });
   } else {
     log(`— 交代:${nameOf(active(a))} vs ${nameOf(active(b))} —`);
   }
@@ -788,6 +920,7 @@ const AI_LEVELS = {
   1: { name: 'やさしい',   depth: '自分の技の得だけを見る' },
   2: { name: 'ふつう',     depth: '相手の出方を予測して、それに勝つ手を選ぶ' },
   3: { name: 'むずかしい', depth: '読まれることまで考えて、読み合いの均衡と相手の癖を両方使う' },
+  4: { name: 'ボス', depth: '相手の立場で考え、理屈で選ぶならこの手、という手を読んで返す' },   // ソロの★★★専用
 };
 const beaterOf = (h) => HAND_KEYS.find((k) => HANDS[k].beats === h);   // h に勝つ手
 
@@ -893,7 +1026,36 @@ function aiHand(S, side, level) {
     return { hand, why: `相手は${HANDS[top].label}が多そう(${share(q)})と読み、${act(hand)}を出した` };
   }
 
+  if (level >= 4) {
+    // 深さ4(ソロのボス):相手の立場に立って、深さ3と同じ考え方で相手が「読みに頼るなら出す手」を求め、それに勝つ手を出す。
+    // 見ているのは過去の手と盤面だけで、相手が今回選んだ手は見ていない。理屈で打つ相手ほど読まれる
+    const foeM = payoffMatrix(S, 1 - side);
+    const foeView = deepRead(S, 1 - side, foeM);
+    const counter = beaterOf(foeView.best);
+    const eq = equilibrium(M), mix = {};
+    const p = S.bossRead || BOSS_READ;
+    HAND_KEYS.forEach((h) => { mix[h] = (1 - p) * eq[h] + (h === counter ? p : 0); });
+    const hand = pickFrom(mix);
+    return { hand, why: `相手が理屈で選ぶなら${HANDS[foeView.best].label}と読み、それに勝つ${HANDS[counter].label}を軸に、${share(mix)}の割合から${act(hand)}を出した` };
+  }
+
   // 深さ3:読まれても損をしにくい割合(均衡)を土台にして、相手の癖がはっきりしているほどそこを突く
+  const { eq, q, best, mix, outread, prev } = deepRead(S, side, M);
+  const hand = pickFrom(mix);
+  const after = prev ? ['負けた', 'あいこの', '勝った'][judge(prev[1 - side], prev[side]) + 1] + '後' : '最初';
+  const note = outread < 1 ? '最近は読み負けているので均衡寄りに戻し、' : '';
+  return { hand, why: `読まれても損をしにくい割合は${share(eq)}。相手は${after}に${HANDS[argmax((h) => q[h])].label}が多い(${share(q)})と読んだ。${note}${share(mix)}の割合から${act(hand)}を出した` };
+}
+
+const BOSS_READ = 0.7;   // ボスが読みに頼る割合
+const pickFrom = (mix) => {
+  let r = Math.random();
+  for (const h of HAND_KEYS) { r -= mix[h]; if (r < 0) return h; }
+  return HAND_KEYS[HAND_KEYS.length - 1];
+};
+// 深さ3の読み:均衡の割合 eq、相手の手の予測 q、予測に一番強い手 best、実際に出す割合 mix
+function deepRead(S, side, M) {
+  const naive = naiveFoe(M);
   const eq = equilibrium(M);
   const prev = S.hist[S.hist.length - 1];
   const all = foeHabit(S, side, 12);
@@ -910,11 +1072,7 @@ function aiHand(S, side, level) {
   const best = argmax((a) => expect(M, a, q));
   const mix = {};
   HAND_KEYS.forEach((h) => { mix[h] = (1 - trust) * eq[h] + (h === best ? trust : 0); });
-  let r = Math.random(), hand = HAND_KEYS[HAND_KEYS.length - 1];
-  for (const h of HAND_KEYS) { r -= mix[h]; if (r < 0) { hand = h; break; } }
-  const after = prev ? ['負けた', 'あいこの', '勝った'][judge(prev[1 - side], prev[side]) + 1] + '後' : '最初';
-  const note = outread < 1 ? '最近は読み負けているので均衡寄りに戻し、' : '';
-  return { hand, why: `読まれても損をしにくい割合は${share(eq)}。相手は${after}に${HANDS[argmax((h) => q[h])].label}が多い(${share(q)})と読んだ。${note}${share(mix)}の割合から${act(hand)}を出した` };
+  return { eq, q, best, mix, outread, prev };
 }
 
 // ブレイク時の手:3通りを実際に試して、一番良い盤面になる手を選ぶ
@@ -1441,7 +1599,7 @@ function actionList(ch, tag, cls) {
 const statNow = (label, now, base) => `${label} <span class="${now > base ? 'up' : now < base ? 'down' : ''}">${now}${now > base ? '↑' : now < base ? '↓' : ''}</span>`;
 // フィジカル係数(phys)は裏データなので画面には出さない
 const statLine = (ch) => `ATK ${ch.atk}　DFS ${ch.dfs}`;
-const traitLine = (ch) => `特性「${ch.trait.name}」:${ch.trait.desc}`;
+const traitLine = (ch) => '特性' + traitsOf(ch).map((t) => `「${t.name}」${t.desc}`).join(' ');
 
 // --- 対戦画面は、スクロールしなくても全部見えるように1画面に詰める ---
 
@@ -1456,7 +1614,7 @@ function teamHead(el, t) {
   const streak = t.breakReady
     ? `<span class="break">${BREAK_NAME}!</span>`
     : '●'.repeat(t.streak) + '○'.repeat(Math.max(0, BREAK_STREAK - t.streak)) + (reach ? ' リーチ!' : '');
-  el.innerHTML = `<div class="head"><span>${t.label}${t === S.teams[1] && !PVP.on ? `(${AI_LEVELS[FX.level].name})` : ''} <span class="score">撃破${t.wins}</span></span>
+  el.innerHTML = `<div class="head"><span>${t.label}${t === S.teams[1] && !PVP.on ? `(${S.stage ? '★'.repeat(S.stage.stars) : AI_LEVELS[S.cpuLevel].name})` : ''} <span class="score">撃破${t.wins}</span></span>
     <span class="streak${reach ? ' reach' : ''}">${streak}</span></div>
     <div class="chips">${chips}</div>`;
 }
@@ -1513,6 +1671,7 @@ function render(view) {
   // 下段:左が自分(技がそのまま手のボタン)、右が相手の技
   $('traitYou').textContent = traitLine(me.ch);
   $('traitCpu').textContent = traitLine(foe.ch);
+  $('traitCpu').classList.toggle('multi', traitsOf(foe.ch).length > 1);
   document.querySelectorAll('#hands button').forEach((b) => {
     const r = actHtml(me, foe, b.dataset.hand, you.breakReady);
     b.innerHTML = r.html;
@@ -1750,7 +1909,8 @@ async function finale() {
   render();
   if (S.winner === 0) {
     Sound.fanfare(); Particles.shower(COLORS.rainbow, 220); flash('#ffffff');
-    await cutin('勝利', `刻は、あなたの側に確定した ${score}`, 'rainbow', 1900);
+    if (S.stage) soloClear(S.stage.id);
+    await cutin('勝利', S.stage ? `${S.stage.name} クリア ${score}` : `刻は、あなたの側に確定した ${score}`, 'rainbow', 1900);
   } else if (S.winner === 1) {
     Sound.defeat(); Particles.shower(COLORS.violet, 80);
     await cutin('敗北', `刻は、相手の側に確定した ${score}`, 'violet', 1600);
@@ -1763,7 +1923,7 @@ async function finale() {
 async function normalRally(hand, cpuHand, why) {
   const b = before();
   const r = rally(S, hand, cpuHand, logLater);
-  if (why) logLater(`　CPUの考え(${AI_LEVELS[FX.level].name}):${why}`);
+  if (why) logLater(`　CPUの考え(${AI_LEVELS[S.cpuLevel].name}):${why}`);
   const o = outcome(b);
   const side = r === 0 ? -1 : r > 0 ? 0 : 1;
   const reach = b.streak[0] >= BREAK_STREAK - 1 ? 0 : b.streak[1] >= BREAK_STREAK - 1 ? 1 : -1;
@@ -1823,7 +1983,7 @@ async function cpuBreak(forced) {
   Sound.breakIn();
   await cutin(BREAK_NAME, '相手の時間だけが動く', 'violet', 1000);
   const b = before();
-  const h = forced || (FX.level >= 2 ? aiBreakHand(S, 1) : pickBreakHand(S, 1));
+  const h = forced || (S.cpuLevel >= 2 ? aiBreakHand(S, 1) : pickBreakHand(S, 1));
   breakRally(S, 1, h, logLater);
   const o = outcome(b);
   await transformFx(o);
@@ -1845,7 +2005,7 @@ async function play(hand) {
   try {
     if (S.teams[0].breakReady) await playerBreak(hand);
     else {
-      const ai = aiHand(S, 1, FX.level);   // CPUは、あなたの今回の手を見ずに決める
+      const ai = aiHand(S, 1, S.cpuLevel);   // CPUは、あなたの今回の手を見ずに決める
       await normalRally(hand, ai.hand, ai.why);
     }
   } finally {
@@ -2097,13 +2257,34 @@ async function pvpPick(hand) {
 
 // ----- 対戦相手の選択(CPU / オンライン対人) -----
 function renderMode() {
-  [...$('modes').children].forEach((b, i) => b.classList.toggle('picked', (i === 1) === PVP.on));
-  $('cpuOpts').classList.toggle('hidden', PVP.on);
-  $('netOpts').classList.toggle('hidden', !PVP.on);
+  [...$('modes').children].forEach((b, i) => b.classList.toggle('picked', MODES[i][1] === MODE));
+  $('cpuOpts').classList.toggle('hidden', MODE !== 'cpu');
+  $('soloOpts').classList.toggle('hidden', MODE !== 'solo');
+  $('netOpts').classList.toggle('hidden', MODE !== 'pvp');
   if (PVP.on && !PVP.room) pvpStatus('この画面では、オンライン対人は使えません。公開サイト版(https://uzsangl.github.io/test/)を、二人とも開いてください。');
   else if (PVP.on && PVP.phase === 'idle') pvpStatus('相手と決めた合言葉を入れて、「部屋に入る」を押してください。');
   $('roomCode').disabled = $('joinRoom').disabled = !PVP.room || PVP.phase !== 'idle';
   $('leaveRoom').classList.toggle('hidden', PVP.phase === 'idle');
+  renderSelect();
+}
+
+// ----- ソロモード -----
+const MODES = [['CPUと対戦', 'cpu'], ['ソロ', 'solo'], ['オンライン対人', 'pvp']];
+let MODE = 'cpu';
+const SOLO = { stage: 'a1', cleared: [] };
+function soloClear(id) {
+  if (!SOLO.cleared.includes(id)) SOLO.cleared.push(id);
+  try { localStorage.setItem('kokusen.cleared', JSON.stringify(SOLO.cleared)); } catch (e) { /* 保存できなくても動く */ }
+  renderStages();
+}
+function renderStages() {
+  [...$('stages').children].forEach((b) => {
+    b.classList.toggle('picked', b.dataset.id === SOLO.stage);
+    b.classList.toggle('cleared', SOLO.cleared.includes(b.dataset.id));
+  });
+  const st = STAGES.find((x) => x.id === SOLO.stage), foes = stageFoes(st);
+  $('stageNote').textContent = `${st.faction} ${'★'.repeat(st.stars)}「${st.name}」 敵:${foes.map((f) => f.name).join('・')}`
+    + (foes.length === 1 ? '(ボス1体と3対1)' : '(3対3)') + `。CPUの考え方:${AI_LEVELS[st.level].name}。ソロでは刻の抜け落ちは起きません。`;
   renderSelect();
 }
 
@@ -2135,7 +2316,7 @@ function renderSelect() {
   const full = picked.length === TEAM_SIZE;
   if (!PVP.on) {
     $('start').disabled = !full;
-    $('start').textContent = full ? 'この順番で対戦開始' : `あと${TEAM_SIZE - picked.length}枚選ぶ`;
+    $('start').textContent = full ? (MODE === 'solo' ? 'この順番でステージに挑む' : 'この順番で対戦開始') : `あと${TEAM_SIZE - picked.length}枚選ぶ`;
   } else {
     // オンライン対人:部屋に入ってからキャラを決める。決めたあとは選び直せない
     $('start').disabled = !full || PVP.phase !== 'lobby';
@@ -2145,11 +2326,21 @@ function renderSelect() {
 
 function start() {
   if (PVP.on) return pvpReady();
-  return startMatch(picked.map((id) => CHARACTERS.find((c) => c.id === id)), shuffled(CHARACTERS).slice(0, TEAM_SIZE), 'CPU');
+  const mine = picked.map((id) => CHARACTERS.find((c) => c.id === id));
+  if (MODE === 'solo') {
+    const st = STAGES.find((x) => x.id === SOLO.stage);
+    return startMatch(mine, stageFoes(st), '敵', { level: st.level, read: st.read, stage: st, noDecay: true });
+  }
+  return startMatch(mine, shuffled(CHARACTERS).slice(0, TEAM_SIZE), 'CPU');
 }
-async function startMatch(mine, theirs, foeLabel) {
+// opt:level はCPUの深さ、read はボスが読みに頼る割合、stage はソロのステージ、noDecay は刻の抜け落ちを止める
+async function startMatch(mine, theirs, foeLabel, opt = {}) {
   S = newMatch(mine, theirs);
   S.teams[1].label = foeLabel;
+  S.cpuLevel = opt.level || FX.level;
+  S.bossRead = opt.read || 0;
+  S.stage = opt.stage || null;
+  S.noDecay = !!opt.noDecay;
   $('log').innerHTML = '';
   logBuf = [];
   freeze(false);
@@ -2190,12 +2381,22 @@ function init() {
     document.body.classList.remove('in-battle');
     if (PVP.on) { PVP.phase = 'idle'; pvpJoin(); renderMode(); }   // 同じ合言葉のまま、もう一度キャラ選びから
   };
-  [['CPUと対戦', false], ['オンライン対人', true]].forEach(([label, v]) => {
+  MODES.forEach(([label, m]) => {
     const b = document.createElement('button');
     b.textContent = label;
-    b.onclick = () => { if (PVP.on && !v && PVP.phase !== 'idle') pvpLeave(); PVP.on = v; renderMode(); };
+    b.onclick = () => { if (PVP.on && m !== 'pvp' && PVP.phase !== 'idle') pvpLeave(); MODE = m; PVP.on = m === 'pvp'; renderMode(); };
     $('modes').appendChild(b);
   });
+  try { SOLO.stage = localStorage.getItem('kokusen.stage') || 'a1'; SOLO.cleared = JSON.parse(localStorage.getItem('kokusen.cleared') || '[]'); } catch (e) { /* 保存できなくても動く */ }
+  if (!STAGES.some((x) => x.id === SOLO.stage)) SOLO.stage = 'a1';
+  STAGES.forEach((st) => {
+    const b = document.createElement('button');
+    b.dataset.id = st.id;
+    b.innerHTML = `<b>${st.faction} ${'★'.repeat(st.stars)}</b>${st.name}`;
+    b.onclick = () => { SOLO.stage = st.id; try { localStorage.setItem('kokusen.stage', st.id); } catch (e) { /* 保存できなくても動く */ } renderStages(); };
+    $('stages').appendChild(b);
+  });
+  renderStages();
   $('joinRoom').onclick = () => { pvpJoin(); renderMode(); };
   $('leaveRoom').onclick = () => { pvpLeave(); renderMode(); };
   $('logBtn').onclick = () => {
@@ -2212,7 +2413,7 @@ function init() {
   ['pointerdown', 'touchend', 'click', 'keydown'].forEach((ev) => document.addEventListener(ev, firstTouch, { once: true }));
   $('optSound').onclick = () => { FX.sound = !FX.sound; saveOpt('kokusen.sound', FX.sound); applyOpts(); if (FX.sound) Sound.wake(); };
   try { FX.level = Number(localStorage.getItem('kokusen.level')) || 2; } catch (e) { FX.level = 2; }
-  Object.keys(AI_LEVELS).forEach((k) => {
+  Object.keys(AI_LEVELS).filter((k) => k <= 3).forEach((k) => {
     const b = document.createElement('button');
     b.textContent = AI_LEVELS[k].name;
     b.onclick = () => { FX.level = Number(k); try { localStorage.setItem('kokusen.level', k); } catch (e) { /* 保存できなくても動く */ } renderLevels(); };
