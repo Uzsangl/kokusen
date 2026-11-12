@@ -464,6 +464,50 @@ const CHARACTERS = [
       rock:     { name: '射止め', rate: RATE.huge, up: { rate: RATE.max, when: 'rallyUntil', v: 3, text: '3ラリー目までは極大' } },
       scissors: { name: '二の矢', rate: RATE.big, atkUp: 1100 },
       paper:    { name: '矢返し', rate: RATE.normal, mods: [foeDfs(1000, 3)] } } },
+
+  // --- ソロ攻略向けの支援キャラ(各陣営2体)。対人・CPU戦でも使える ---
+  { id: 'moyai', name: 'モヤイ', faction: '錨', hp: 15700, atk: 1900, dfs: 1700, phys: 1.0,
+    traits: [{ key: 'legacy', name: '舫い', desc: '倒れたとき、控えの味方全員にDFS+1000と最大HP+1500', atk: 0, dfs: 1000, hp: 1500 },
+      { key: 'giantSlayer', name: '一点留め', desc: '相手が1体だけのチームのとき、ATK+1200・DFS+800', atk: 1200, dfs: 800 }],
+    actions: {
+      rock:     { name: '結び留め', rate: RATE.normal, mods: [foeAtk(600, 3)] },
+      scissors: { name: '投げ綱',   rate: RATE.big, mods: [foeDfs(800, 3)] },
+      paper:    { name: '繋ぎ直し', rate: RATE.normal, team: { stat: 'dfs', v: 300, cap: 1200 } } } },
+  { id: 'shio', name: 'シオ', faction: '錨', hp: 14450, atk: 1800, dfs: 1500, phys: 0.95,
+    traits: [{ key: 'regen', name: '満ち潮', desc: 'ラリーが終わるたびにHPを350回復', heal: 350 },
+      { key: 'giantSlayer', name: '一点留め', desc: '相手が1体だけのチームのとき、ATK+1200・DFS+800', atk: 1200, dfs: 800 }],
+    actions: {
+      rock:     { name: '凪ぎ払い', rate: RATE.normal, noheal: 3 },
+      scissors: { name: '引き潮',   rate: RATE.normal, mods: [foeAtk(500, 2)] },
+      paper:    { name: '潮満ち',   rate: RATE.normal, heal: 2200, cleanse: 1 } } },
+  { id: 'moto', name: 'モト', faction: '零', hp: 17250, atk: 2100, dfs: 1400, phys: 1.0,
+    traits: [{ key: 'enterDispel', name: '白紙化', desc: '場に出たとき、相手のバフをすべて消す' },
+      { key: 'giantSlayer', name: '巻き戻しの刃', desc: '相手が1体だけのチームのとき、ATK+1200・DFS+800', atk: 1200, dfs: 800 }],
+    actions: {
+      rock:     { name: '元に戻す', rate: RATE.big, dispel: 1 },
+      scissors: { name: '遡り読み', rate: RATE.normal, seal: 1 },
+      paper:    { name: '原点回帰', rate: RATE.normal, heal: 1500, cleanse: 1 } } },
+  { id: 'kasumi', name: 'カスミ', faction: '零', hp: 12500, atk: 2200, dfs: 1300, phys: 1.0,
+    traits: [{ key: 'hazeMark', name: '霞の刻', desc: '攻撃が当たるたびに相手のATK−250(刻印。最大−1500)', v: 250, cap: 1500 },
+      { key: 'giantSlayer', name: '巻き戻しの刃', desc: '相手が1体だけのチームのとき、ATK+1200・DFS+800', atk: 1200, dfs: 800 }],
+    actions: {
+      rock:     { name: '霞斬り',   rate: RATE.normal, mark: { stat: 'dfs', v: 600, cap: 3000 } },
+      scissors: { name: '朧',       rate: RATE.normal, poison: 3 },
+      paper:    { name: '霞隠れ',   rate: RATE.normal, mods: [selfDfs(2500, 2)] } } },
+  { id: 'yajiri', name: 'ヤジリ', faction: '矢', hp: 11850, atk: 2600, dfs: 1100, phys: 1.0,
+    traits: [{ key: 'pierce', name: '貫き', desc: '相手のDFSを1000低いものとして攻撃する', v: 1000 },
+      { key: 'giantSlayer', name: '大物狙い', desc: '相手が1体だけのチームのとき、ATK+1200・DFS+800', atk: 1200, dfs: 800 }],
+    actions: {
+      rock:     { name: '穿ち',       rate: RATE.huge },
+      scissors: { name: '刻み矢',     rate: RATE.normal, mark: { stat: 'dfs', v: 700, cap: 3000 } },
+      paper:    { name: '矢じり研ぎ', rate: RATE.normal, mods: [selfAtk(800, 3)] } } },
+  { id: 'hane', name: 'ハネ', faction: '矢', hp: 9550, atk: 2300, dfs: 1200, phys: 1.0,
+    traits: [{ key: 'legacy', name: '羽渡し', desc: '倒れたとき、控えの味方全員にATK+800', atk: 800, dfs: 0, hp: 0 },
+      { key: 'giantSlayer', name: '大物狙い', desc: '相手が1体だけのチームのとき、ATK+1200・DFS+800', atk: 1200, dfs: 800 }],
+    actions: {
+      rock:     { name: '羽撃ち', rate: RATE.big },
+      scissors: { name: '風読み', rate: RATE.normal, streak: 1 },
+      paper:    { name: '追い風', rate: RATE.normal, team: { stat: 'atk', v: 250, cap: 1000 } } } },
 ];
 
 // ===== ソロモードの敵(プレイヤーは選べない、ソロ専用の能力値) =====
@@ -595,17 +639,21 @@ const traitOf = (card, key) => traitsOf(card.ch).find((t) => t.key === key) || n
 const modSum = (c, stat) => c.mods.reduce((s, m) => s + (m.stat === stat ? m.v : 0), 0);
 // 現在のATK(変身・渡された強化・バフ/デバフ込み。次の攻撃だけの上乗せ atkUp は含めない)
 const ATK_MIN = 250;   // デバフでATKがこれより下がることはない
-const baseAtk = (c) => Math.max(ATK_MIN, c.atk + c.atkBonus + modSum(c, 'atk'));
+const baseAtk = (c) => Math.max(ATK_MIN, c.atk + c.atkBonus + c.teamAtk + c.markAtk + modSum(c, 'atk'));
 // 現在のDFS(変身・特性・渡された強化・バフ/デバフ込み。次の被弾だけの上乗せ dfsUp は含めない)
-const baseDfs = (c) => Math.max(0, Math.min(DFS_MAX, c.dfs + c.dfsGain + c.dfsBonus + modSum(c, 'dfs')));
+const baseDfs = (c) => Math.max(0, Math.min(DFS_MAX, c.dfs + c.dfsGain + c.dfsBonus + c.teamDfs + c.markDfs + modSum(c, 'dfs')));
 // 攻撃を受けるときのDFS。BREAK中の攻撃は DFS を 0 として扱う
-const dfsOf = (def, isBreak) => (isBreak ? 0 : Math.min(DFS_MAX, baseDfs(def) + def.dfsUp));
+// 特性「一点留め」など:相手のチームが1体だけのとき(ソロのボス戦)のDFSの上乗せ。S.giant は、相手が1体のチームの側
+const giantDfs = (c) => { const t = traitOf(c, 'giantSlayer'); return t && c.giant ? t.dfs : 0; };
+const dfsOf = (def, isBreak) => (isBreak ? 0 : Math.min(DFS_MAX, baseDfs(def) + def.dfsUp + giantDfs(def)));
+// 攻撃する側から見た相手のDFS(特性「貫き」はDFSを一定量無視する)
+const dfsVs = (att, def, isBreak) => { const p = traitOf(att, 'pierce'); return Math.max(0, dfsOf(def, isBreak) - (p ? p.v : 0)); };
 
 // 必殺技の格上げ条件(up)を満たしているか。n はそのカードが場に出て何ラリー目か
 function upActive(a, att, def, n, isBreak) {
   const u = a.up;
   if (!u) return false;
-  if (u.when === 'hpBelow') return att.hp <= att.ch.hp * u.v;
+  if (u.when === 'hpBelow') return att.hp <= att.max * u.v;
   if (u.when === 'rallyUntil') return n <= u.v;
   if (u.when === 'rallyFrom') return n >= u.v;
   if (u.when === 'foeStacks') return def.poison > 0 && def.poisonStacks >= u.v;
@@ -618,9 +666,10 @@ const rateOf = (a, att, def, n, isBreak) => (upActive(a, att, def, n, isBreak) ?
 // 特性によるATKの増減(実数の足し引き)
 function traitAtk(S, att, def, isBreak) {
   let v = 0, t;
-  if ((t = traitOf(att, 'backwater')) && att.hp <= att.ch.hp * t.below) v += t.add;
+  if ((t = traitOf(att, 'backwater')) && att.hp <= att.max * t.below) v += t.add;
   if ((t = traitOf(att, 'oldwound')) && def.poison > 0) v += t.add;
   if ((t = traitOf(att, 'foresight')) && isBreak) v += t.add;
+  if ((t = traitOf(att, 'giantSlayer')) && att.giant) v += t.atk;   // 相手が1体だけのチーム(ソロのボス戦)のとき
   if ((t = traitOf(att, 'rush'))) v += att.turn <= t.until ? t.early : att.turn >= t.from ? t.late : 0;
   return v;
 }
@@ -630,7 +679,7 @@ function traitAtk(S, att, def, isBreak) {
 function damage(S, att, def, rate, isBreak) {
   const atk = Math.max(ATK_MIN, baseAtk(att) + att.atkUp + traitAtk(S, att, def, isBreak));
   const ub = isBreak ? traitOf(def, 'unbreak') : null;   // 特性:BREAKの被ダメージを減らす
-  return Math.round(atk * rate * att.ch.phys * (1 - dfsOf(def, isBreak) / 10000) * (ub ? 1 - ub.cut : 1));
+  return Math.round(atk * rate * att.ch.phys * (1 - dfsVs(att, def, isBreak) / 10000) * (ub ? 1 - ub.cut : 1));
 }
 
 const modText = (m, short) => (short
@@ -653,6 +702,10 @@ function describe(a, rate, short) {
   if (a.streak) parts.push(short ? `連勝+${a.streak}` : `自分の連勝+${a.streak}`);
   if (a.seal) parts.push(short ? '連勝封じ' : '相手の次の勝ちを連勝に数えない(連勝封じ)');
   if (a.keep) parts.push(short ? '連勝保護' : '次に負けても連勝が途切れない(連勝保護)');
+  if (a.noheal) parts.push(short ? `回復封じ${a.noheal}` : `相手の回復を${a.noheal}ラリー封じる`);
+  if (a.dispel) parts.push(short ? 'バフ消し' : '相手のバフをすべて消す');
+  if (a.mark) { const L = a.mark.stat === 'atk' ? 'ATK' : 'DFS'; parts.push(short ? `敵${L}−${a.mark.v}刻印` : `相手の${L}−${a.mark.v}(刻印。消えず、重ねがけで最大−${a.mark.cap})`); }
+  if (a.team) { const L = a.team.stat === 'atk' ? 'ATK' : 'DFS'; parts.push(short ? `全員${L}+${a.team.v}` : `味方全員(控えも)の${L}+${a.team.v}(消えず、重ねがけで最大+${a.team.cap})`); }
   if (a.nextAtkUp) parts.push(short ? `次番手ATK+${a.nextAtkUp}` : `次の番手の最初の攻撃ATK+${a.nextAtkUp}`);
   if (a.nextDfsUp) parts.push(short ? `次番手DFS+${a.nextDfsUp}` : `次の番手の最初の被弾DFS+${a.nextDfsUp}`);
   return parts.join(short ? '・' : '、');
@@ -668,17 +721,24 @@ function newTeam(label, chars) {
       turn: 0, kills: 0,           // 場に出てからのラリー数 / 倒した数
       atkBonus: 0, dfsBonus: 0,    // 場にいる間ずっと(特性「記録」で渡される)
       dfsGain: 0,                  // 特性「不動」の累積
+      max: ch.hp,                  // 最大HP(特性「舫い」などで増える)
+      teamAtk: 0, teamDfs: 0,      // 味方全員への強化(消えない)
+      markAtk: 0, markDfs: 0,      // 刻印(消えない弱体。マイナスの値)
+      noHeal: 0,                   // 回復封じの残りラリー数
       mods: [],                    // ラリー数つきのバフ・デバフ { stat, v, t, fresh }
       poison: 0, poisonDmg: 0, poisonStacks: 0, result: null,
     })),
   };
 }
 function newMatch(charsA, charsB) {
-  return {
+  const S = {
     teams: [newTeam('あなた', charsA), newTeam('CPU', charsB)],
     rally: 0, boutRally: 0, bouts: 0, over: false, winner: null, hit: null, ticks: [], events: [],
     hist: [],   // これまでの手の記録 [あなたの手, CPUの手](CPUの読みに使う)
   };
+  // 相手が1体だけのチームなら、こちらのカードに目印を付ける(特性「一点留め」などが効く)
+  S.teams.forEach((t, i) => { if (S.teams[1 - i].cards.length === 1) t.cards.forEach((c) => { c.giant = true; }); });
+  return S;
 }
 const active = (team) => team.cards[team.idx];
 const nameOf = (c) => (c.form ? traitOf(c, 'transform').formName : c.ch.name);
@@ -697,6 +757,7 @@ function beginRally(S, log) {
   S.teams.forEach((t, side) => {
     const c = active(t), tr = traitOf(c, 'transform');
     c.turn++;
+    if (c.turn === 1 && traitOf(c, 'enterDispel')) dispel(S, side, log);   // 特性「白紙化」
     if (tr && !c.form && c.turn >= tr.at) {
       c.form = 1; c.atk = tr.atk; c.dfs = tr.dfs; c.actions = tr.actions;
       S.events.push({ type: 'transform', side });
@@ -727,20 +788,26 @@ function act(S, side, hand, log, isBreak) {
   S.hit = { side, dmg: 0, heal: 0, rate: 0, half: false };   // 画面表示用:このアクションで与えたダメージと回復量
   if (a.rate) {
     const rate = rateOf(a, w, l, w.turn, isBreak);
-    const dfs = dfsOf(l, isBreak);
+    const dfs = dfsVs(w, l, isBreak);
     const d = damage(S, w, l, rate, isBreak);
     w.atkUp = 0;
     l.dfsUp = 0;
     l.hp = Math.max(0, l.hp - d);
     S.hit.dmg = d; S.hit.rate = rate;
-    S.hit.half = d >= l.ch.hp / 2 && l.hp === 0;   // 最大HPの半分以上のダメージで倒したか
+    S.hit.half = d >= l.max / 2 && l.hp === 0;   // 最大HPの半分以上のダメージで倒したか
     log(`　${lt.label}の${nameOf(l)}に${d}ダメージ(${RATE_LABEL[rate]}、${isBreak ? `${BREAK_NAME}中はDFS無視` : `DFS${dfs}で${pct(dfs / 10000)}カット`})`);
     // 特性「不動」:攻撃を受けるたびに硬くなる
     if ((t = traitOf(l, 'immovable')) && l.hp > 0) l.dfsGain = Math.min(t.cap, l.dfsGain + t.gain);
+    // 特性「霞の刻」:当たるたびに相手のATKを削る刻印
+    if ((t = traitOf(w, 'hazeMark')) && l.hp > 0 && d > 0 && l.markAtk > -t.cap) {
+      l.markAtk = Math.max(-t.cap, l.markAtk - t.v);
+      log(`　${nameOf(l)}にATKの刻印(ATK${l.markAtk})`);
+    }
   }
-  if (a.heal) {
+  if (a.heal && w.noHeal > 0) log(`　${nameOf(w)}は回復を封じられている`);
+  else if (a.heal) {
     const before = w.hp;
-    w.hp = Math.min(w.ch.hp, w.hp + a.heal);
+    w.hp = Math.min(w.max, w.hp + a.heal);
     S.hit.heal = w.hp - before;
     log(`　${nameOf(w)}は${w.hp - before}回復`);
   }
@@ -752,6 +819,24 @@ function act(S, side, hand, log, isBreak) {
       S.events.push({ type: 'mod', side, text: '解除', good: true });
       log(`　${nameOf(w)}の${a.cleanse ? 'デバフと時蝕' : '時蝕'}が消えた`);
     }
+  }
+  if (a.dispel && l.hp > 0) dispel(S, side, log);
+  if (a.noheal && l.hp > 0) {
+    l.noHeal = Math.max(l.noHeal, a.noheal);
+    S.events.push({ type: 'mod', side: 1 - side, text: '回復封じ', good: false });
+    log(`　${nameOf(l)}の回復を${a.noheal}ラリー封じた`);
+  }
+  if (a.mark && l.hp > 0) {
+    const k = a.mark.stat === 'atk' ? 'markAtk' : 'markDfs', label = a.mark.stat === 'atk' ? 'ATK' : 'DFS';
+    l[k] = Math.max(-a.mark.cap, l[k] - a.mark.v);
+    S.events.push({ type: 'mod', side: 1 - side, text: `${label}刻印`, good: false });
+    log(`　${nameOf(l)}に${label}の刻印(${label}${l[k]})`);
+  }
+  if (a.team) {
+    const k = a.team.stat === 'atk' ? 'teamAtk' : 'teamDfs', label = a.team.stat === 'atk' ? 'ATK' : 'DFS';
+    wt.cards.forEach((c) => { if (c.hp > 0 && c.result !== 'lose') c[k] = Math.min(a.team.cap, c[k] + a.team.v); });
+    S.events.push({ type: 'mod', side, text: `全員${label}↑`, good: true });
+    log(`　${wt.label}の味方全員の${label}+${a.team.v}(全体${label}+${w[k]})`);
   }
   if (a.atkUp) w.atkUp = a.atkUp;
   if (a.dfsUp) w.dfsUp = a.dfsUp;
@@ -781,6 +866,18 @@ function act(S, side, hand, log, isBreak) {
   if (next && a.nextDfsUp) next.dfsUp = Math.max(next.dfsUp, a.nextDfsUp);
 }
 
+// 相手(side の反対側)の場のカードのバフをすべて消す。特性「不動」で上がったDFSも消える
+function dispel(S, side, log) {
+  const l = active(S.teams[1 - side]);
+  const had = l.mods.some((m) => m.v > 0) || l.atkUp || l.dfsUp || l.dfsGain;
+  l.mods = l.mods.filter((m) => m.v < 0);
+  l.atkUp = 0; l.dfsUp = 0; l.dfsGain = 0;
+  if (had) {
+    S.events.push({ type: 'mod', side: 1 - side, text: 'バフ消し', good: false });
+    log(`　${nameOf(l)}のバフが消えた`);
+  }
+}
+
 // ラリーの締め:時蝕 → 特性「処置」 → バフ・デバフの残りラリー数 → 抜け落ち → 倒れたカードの交代
 // winSide: このラリーのじゃんけんに勝った側(あいこは -1)
 function endRally(S, log, winSide) {
@@ -794,22 +891,23 @@ function endRally(S, log, winSide) {
       log(`　${t.label}の${nameOf(f)}は時蝕で${f.poisonDmg}ダメージ`);
       if (f.poison === 0) { f.poisonDmg = 0; f.poisonStacks = 0; }
     }
-    if ((tr = traitOf(f, 'regen')) && f.hp > 0 && f.hp < f.ch.hp) {
+    if ((tr = traitOf(f, 'regen')) && f.hp > 0 && f.hp < f.max && f.noHeal <= 0) {
       const before = f.hp;
-      f.hp = Math.min(f.ch.hp, f.hp + tr.heal);
+      f.hp = Math.min(f.max, f.hp + tr.heal);
       S.ticks.push({ side, heal: f.hp - before });
       log(`　${t.label}の${nameOf(f)}は「${tr.name}」で${f.hp - before}回復`);
     }
     // バフ・デバフ:付いたラリーは数えず、次のラリーから残りを減らす
     f.mods.forEach((m) => { if (m.fresh) m.fresh = false; else m.t--; });
     f.mods = f.mods.filter((m) => m.t > 0);
+    if (f.noHeal > 0) f.noHeal--;
   });
   // 刻の抜け落ち:長引くほど両者が削れる
   if (!S.noDecay && S.boutRally > DECAY_FROM) {
     S.teams.forEach((t, side) => {
       const f = active(t);
       if (f.hp <= 0) return;
-      const d = Math.round(f.ch.hp * DECAY_STEP * (S.boutRally - DECAY_FROM));
+      const d = Math.round(f.max * DECAY_STEP * (S.boutRally - DECAY_FROM));
       f.hp = Math.max(0, f.hp - d);
       S.ticks.push({ side, dmg: d, decay: true });
       log(`　刻の抜け落ち:${t.label}の${nameOf(f)}に${d}ダメージ`);
@@ -823,8 +921,14 @@ function endRally(S, log, winSide) {
   S.teams.forEach((t, side) => {
     const f = active(t), tr = traitOf(f, 'record'), next = t.cards[t.idx + 1];
     if (ko[side] && tr && next) {
-      next.atkBonus = tr.atk; next.dfsBonus = tr.dfs;
+      next.atkBonus += tr.atk; next.dfsBonus += tr.dfs;
       log(`　${t.label}の${f.ch.name}の「${tr.name}」→ 次の${next.ch.name}にATK+${tr.atk}・DFS+${tr.dfs}`);
+    }
+    // 特性「舫い」「羽渡し」:倒れたとき、控えの味方全員を強化する
+    const lg = traitOf(f, 'legacy'), bench = t.cards.slice(t.idx + 1);
+    if (ko[side] && lg && bench.length) {
+      bench.forEach((c) => { c.atkBonus += lg.atk; c.dfsBonus += lg.dfs; c.max += lg.hp; c.hp += lg.hp; });
+      log(`　${t.label}の${f.ch.name}の「${lg.name}」→ 控えの味方全員に` + [lg.atk && `ATK+${lg.atk}`, lg.dfs && `DFS+${lg.dfs}`, lg.hp && `最大HP+${lg.hp}`].filter(Boolean).join('・'));
     }
   });
 
@@ -899,7 +1003,7 @@ function pickBreakHand(S, side) {
     const a = me.actions[h];
     const d = a.rate ? damage(S, me, foe, rateOf(a, me, foe, n, true), true) : 0;
     let s = Math.min(d, foe.hp) + (d >= foe.hp ? 1e6 : 0);
-    if (a.heal) s += Math.min(a.heal, me.ch.hp - me.hp);
+    if (a.heal) s += Math.min(a.heal, me.max - me.hp);
     if (a.poison) s += Math.min(a.poison * hit * POISON_RATE, foe.hp);
     if ((a.cleanse || a.cure) && me.poison > 0) s += me.poison * me.poisonDmg;
     s += ((a.atkUp || 0) + (a.nextAtkUp || 0) * 0.8) / baseAtk(me) * hit * 0.6;
@@ -935,12 +1039,12 @@ function cloneState(S) {
 // 片方のチームの「良さ」。残っているカードとHPが主で、強化・弱体・時蝕・連勝を少し加味する
 function teamValue(t) {
   let v = 0;
-  t.cards.forEach((c) => { if (c.result !== 'lose' && c.hp > 0) v += 0.5 + 0.5 * c.hp / c.ch.hp; });
+  t.cards.forEach((c) => { if (c.result !== 'lose' && c.hp > 0) v += 0.5 + 0.5 * c.hp / c.max; });
   const f = active(t);
   if (f.hp > 0) {
-    v += (modSum(f, 'atk') + f.atkBonus) / f.atk * 0.15 + f.atkUp / f.atk * 0.1;
-    v += (modSum(f, 'dfs') + f.dfsBonus + f.dfsGain) / 10000 * 0.3 + f.dfsUp / 10000 * 0.15;
-    v -= Math.min(f.hp, f.poison * f.poisonDmg) / f.ch.hp * 0.4;
+    v += (modSum(f, 'atk') + f.atkBonus + f.teamAtk + f.markAtk) / f.atk * 0.15 + f.atkUp / f.atk * 0.1;
+    v += (modSum(f, 'dfs') + f.dfsBonus + f.dfsGain + f.teamDfs + f.markDfs) / 10000 * 0.3 + f.dfsUp / 10000 * 0.15 - f.noHeal * 0.01;
+    v -= Math.min(f.hp, f.poison * f.poisonDmg) / f.max * 0.4;
   }
   v += t.breakReady ? 0.35 : t.streak * 0.08;
   v += (t.keep ? 0.04 : 0) - (t.sealed ? 0.04 : 0);
@@ -1438,7 +1542,7 @@ function climaxReady() {
   if (!S || S.over || S.climax) return false;
   const cards = S.teams[1].cards;
   const left = cards.filter((c) => c.hp > 0 && c.result !== 'lose');
-  const hp = left.reduce((s, c) => s + c.hp, 0), max = cards.reduce((s, c) => s + c.ch.hp, 0);
+  const hp = left.reduce((s, c) => s + c.hp, 0), max = cards.reduce((s, c) => s + c.max, 0);
   return PVP.on ? left.length <= 1 : hp <= max * 0.25;
 }
 // 条件を満たしたら、「あとひと刻!」のカットインと同時に曲を切り替える(1試合に1回)
@@ -1630,20 +1734,26 @@ function statGauge(label, now, base, max) {
 
 // 勝負の枠の中:場のカードの名前・HP・ゲージ・能力値・状態
 function stageSide(el, t, f) {
-  const bar = (f.hp / f.ch.hp) * 100;
+  const bar = (f.hp / f.max) * 100;
   // 同じカードなら、前の長さから今の長さへゲージを動かす(減っていく様子が見える)
   const from = el.dataset.card === f.ch.id ? Number(el.dataset.bar) : bar;
   el.dataset.card = f.ch.id; el.dataset.bar = bar;
   const st = [];
   f.mods.forEach((m) => st.push(`${m.stat === 'atk' ? 'ATK' : 'DFS'}${m.v > 0 ? '+' : '−'}${Math.abs(m.v)}(残${m.t})`));
-  if (f.atkBonus) st.push(`記録ATK+${f.atkBonus}`);
+  if (f.atkBonus) st.push(`継承ATK+${f.atkBonus}`);
+  if (f.dfsBonus) st.push(`継承DFS+${f.dfsBonus}`);
+  if (f.teamAtk) st.push(`全体ATK+${f.teamAtk}`);
+  if (f.teamDfs) st.push(`全体DFS+${f.teamDfs}`);
+  if (f.markAtk) st.push(`刻印ATK${f.markAtk}`);
+  if (f.markDfs) st.push(`刻印DFS${f.markDfs}`);
+  if (f.noHeal) st.push(`回復封じ${f.noHeal}`);
   if (f.atkUp) st.push(`次撃ATK+${f.atkUp}`);
   if (f.dfsUp) st.push(`次被弾DFS+${f.dfsUp}`);
   if (f.poison) st.push(`時蝕${f.poison}(${f.poisonDmg})`);
   if (t.keep) st.push('連勝保護');
   if (t.sealed) st.push('連勝封じ');
   el.innerHTML = `<div class="who">${nameOf(f)}<span class="turn">場${f.turn + 1}ラリー目</span></div>
-    <div>HP <b>${f.hp}</b> / ${f.ch.hp}</div>
+    <div>HP <b>${f.hp}</b> / ${f.max}</div>
     <div class="bar"><div class="hpbar ${bar <= 34 ? 'low' : ''}" style="width:${from}%"></div></div>
     <div class="gauges">${statGauge('ATK', baseAtk(f), f.atk, ATK_GAUGE_MAX)}${statGauge('DFS', baseDfs(f), f.dfs, DFS_MAX)}</div>
     <div class="status">${st.join(' / ')}</div>`;
