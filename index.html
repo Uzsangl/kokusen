@@ -53,6 +53,8 @@
   .stages { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 4px; }
   .stages button { padding: 6px 4px; font-size: .74rem; line-height: 1.3; }
   .stages button b { display: block; color: var(--gold); letter-spacing: .1em; }
+  .stages button.s1 b { color: #38bdf8; }
+  .stages button.s2 b { color: #4ade80; }
   .stages button.picked { border-color: var(--accent); border-width: 2px; box-shadow: 0 0 12px #f5c45144; }
   .stages button.cleared::after { content: ' ✓'; color: #4ade80; font-weight: 700; }
   .col .trait.multi { font-size: .56rem; line-height: 1.25; height: 4.6em; }
@@ -2541,6 +2543,7 @@ function init() {
   STAGES.forEach((st) => {
     const b = document.createElement('button');
     b.dataset.id = st.id;
+    b.classList.add('s' + st.stars);   // ★の数で色を変える
     b.innerHTML = `<b>${st.faction} ${'★'.repeat(st.stars)}</b>${st.name}`;
     b.onclick = () => { SOLO.stage = st.id; try { localStorage.setItem('kokusen.stage', st.id); } catch (e) { /* 保存できなくても動く */ } renderStages(); };
     $('stages').appendChild(b);
