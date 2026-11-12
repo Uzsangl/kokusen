@@ -297,6 +297,26 @@
   @media (prefers-reduced-motion: reduce) {
     .shake, .shake-big, #flash.on, .stage.heat3, .stage.heat4, .streak.reach { animation: none; }
   }
+  /* アカウント */
+  .acct { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; padding: 8px 12px;
+    border: 1px solid var(--line); border-radius: 12px; background: #0f1226; font-size: .85rem; }
+  .acct .who { flex: 1; min-width: 0; color: var(--sub); }
+  .acct .who b { color: var(--text); }
+  .acct .rate { color: var(--gold); font-weight: 900; }
+  .acct button { padding: 5px 12px; font-size: .8rem; border-radius: 16px; }
+  .modal { position: fixed; inset: 0; z-index: 60; background: #000a; display: flex; align-items: center; justify-content: center; padding: 16px; }
+  .modal.hidden { display: none; }
+  .modal .box { width: 100%; max-width: 420px; max-height: calc(100vh - 32px); overflow-y: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px; }
+  .modal label { display: block; font-size: .8rem; color: var(--sub); margin: 10px 0 4px; }
+  .modal input { width: 100%; font: inherit; font-size: 16px; color: var(--text); background: #0b0d1c; border: 1px solid var(--line); border-radius: 10px; padding: 10px; }
+  .modal .row { display: flex; gap: 8px; margin-top: 12px; }
+  .modal .row button { flex: 1; padding: 10px; }
+  .modal #accGo { border-color: var(--accent); font-weight: 700; }
+  .modal .msg { min-height: 1.5em; margin: 10px 0 0; font-size: .85rem; color: var(--gold); }
+  .modal .msg.err { color: var(--red); }
+  .modal ol { margin: 6px 0 0; padding-left: 1.8em; font-size: .85rem; }
+  .modal ol li.me { color: var(--gold); font-weight: 700; }
+  .modal ol .r { float: right; color: var(--sub); }
 </style>
 </head>
 <body>
@@ -312,6 +332,7 @@
   </header>
 
   <section id="select" class="panel">
+    <div class="acct" id="acct"></div>
     <h2>出す順に3枚選ぶ</h2>
     <p class="sub">3枚1チームの勝ち抜き戦です。場のカード同士が1対1で戦い、倒されたら次のカードに交代します。倒した側はそのままのHPで場に残ります。相手の3枚をすべて倒した側の勝ちです。</p>
     <p class="sub">グーは停止、チョキは跳躍、パーは遡行の技です。ダメージはATKと技の威力で決まり、相手のDFSで軽減されます(DFS1000で10%カット、上限9000)。じゃんけんに3連勝すると BREAK が発生し、次は好きな手のアクションが確定で通ります(あいこでは連勝は途切れません)。BREAK中の攻撃は相手のDFSを無視します。</p>
@@ -380,6 +401,14 @@
     <p class="credit hidden" id="bgmCredit">音楽:<a href="https://nagumorizu.com/" target="_blank" rel="noopener">なぐもりずの音楽室</a>(南雲莉翠)</p>
   </section>
 </main>
+  <div id="accModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="accTitle">
+    <div class="box">
+      <h2 id="accTitle">アカウント</h2>
+      <div id="accBody"></div>
+      <p class="msg" id="accMsg" aria-live="polite"></p>
+      <div class="row"><button id="accClose">閉じる</button></div>
+    </div>
+  </div>
 
 <div id="fx" aria-hidden="true">
   <canvas id="particles"></canvas>
@@ -2244,6 +2273,12 @@ async function finale() {
   log(`=== ${msg} ${S.rally}ラリー ===`);
   setResult(msg);
   render();
+  // オンライン対人のレーティング(1試合に1回だけ)。演出を待たずに、決着した時点で保存を始める
+  let rating = null;
+  if (MODE === 'pvp' && PVP.foeAcc && !S.rated) {
+    S.rated = true;
+    rating = accRate(S.winner === 0 ? 1 : S.winner === 1 ? 0 : 0.5, PVP.foeAcc.r);
+  }
   if (S.winner === 0) {
     Sound.fanfare(); Particles.shower(COLORS.rainbow, 220); flash('#ffffff');
     if (S.stage && S.stage.id === 'x5') {
@@ -2259,6 +2294,13 @@ async function finale() {
     await cutin('敗北', `刻は、相手の側に確定した ${score}`, 'violet', 1600);
   } else {
     await cutin('引き分け', score, 'plain', 1200);
+  }
+  const res = rating && await rating;
+  if (res) {
+    const d = res.after - res.before;
+    log(`レーティング:${res.before} → ${res.after}(${d >= 0 ? '+' : ''}${d})`);
+    setResult(`${msg} レート${res.after}(${d >= 0 ? '+' : ''}${d})`);
+    flushLog();
   }
 }
 
@@ -2508,13 +2550,14 @@ function pvpJoin() {
 // キャラと順番を決めた。まず印だけを出す
 function pvpReady() {
   PVP.team = picked.slice(); PVP.teamSalt = rnd(); PVP.phase = 'ready';
-  pvpPublish({ ts: seal(PVP.teamSalt + '|' + PVP.team.join(',')) });
+  const p = ACC.profile;
+  pvpPublish({ ts: seal(PVP.teamSalt + '|' + PVP.team.join(',')), acc: p ? { id: p.id, r: p.rating } : null });
   pvpStep();
   renderSelect();
 }
 function pvpLeave() {
   PVP.phase = 'idle'; PVP.code = ''; PVP.applying = false;
-  pvpPublish({ g: null, ts: null, t: null, n: null, c: null, r: null, b: null, last: null });
+  pvpPublish({ g: null, ts: null, t: null, n: null, c: null, r: null, b: null, last: null, acc: null });
   if (PVP.room && PVP.room.leave) PVP.room.leave();
   renderSelect();
 }
@@ -2548,6 +2591,8 @@ async function pvpStep() {
       pvpStatus('相手のキャラ情報が正しくありません。部屋を出て、入り直してください。'); return;
     }
     PVP.phase = 'play'; PVP.n = 0; PVP.hand = null; PVP.foeSeal = {};
+    // レーティング戦:お互いにログインしていて、別のアカウントどうしのときだけ
+    PVP.foeAcc = fp.acc && typeof fp.acc.r === 'number' && ACC.profile && fp.acc.id !== ACC.profile.id ? fp.acc : null;
     await startMatch(PVP.team.map((id) => CHARACTERS.find((c) => c.id === id)), chars, '相手');
     pvpStep();
     return;
@@ -2628,9 +2673,209 @@ const MODES = [['CPUと対戦', 'cpu'], ['ソロ', 'solo'], ['オンライン対
 let MODE = 'cpu';
 const SOLO = { stage: 'a1', cleared: [] };
 function soloClear(id) {
-  if (!SOLO.cleared.includes(id)) SOLO.cleared.push(id);
+  const fresh = !SOLO.cleared.includes(id);
+  if (fresh) SOLO.cleared.push(id);
   try { localStorage.setItem('kokusen.cleared', JSON.stringify(SOLO.cleared)); } catch (e) { /* 保存できなくても動く */ }
   renderStages();
+  if (fresh) accSaveCleared();
+}
+
+// ===== アカウント(Supabase) =====
+// ログインすると、ソロのクリア記録とオンライン対人のレーティングをサーバーに保存する。
+// 公開用のキー(publishable key)は、ページに書いてよい種類のもの。誰が何を書き換えられるかは、データベース側の決まり(RLS)で守る。
+// ※対戦の計算は各プレイヤーのブラウザで行うため、レーティングは遊びとしての数字(改ざんは防げない)
+const SB = { url: 'https://qebyhyftdqkthjplopcl.supabase.co', key: 'sb_publishable_J4YZx8BpLY8SvOSLcjhPUg_tFKiR_8p' };
+const RATING_START = 1500, RATING_K = 32;
+const ACC = { session: null, profile: null, ranking: null, tab: 'login' };
+const escHtml = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const accUid = () => (ACC.session && ACC.session.user ? ACC.session.user.id : null);
+
+function accStore() {
+  try {
+    if (ACC.session) localStorage.setItem('kokusen.auth', JSON.stringify(ACC.session));
+    else localStorage.removeItem('kokusen.auth');
+  } catch (e) { /* 保存できなくても、この画面を開いている間はログインしたまま */ }
+}
+function accSetSession(d) {
+  ACC.session = d && d.access_token ? {
+    access_token: d.access_token, refresh_token: d.refresh_token,
+    expires_at: d.expires_at || Math.floor(Date.now() / 1000) + (d.expires_in || 3600), user: d.user,
+  } : null;
+  accStore();
+}
+// Supabase のAPIを呼ぶ。ログイン中は、期限が近ければ先に更新してから呼ぶ
+async function sbFetch(path, { method = 'GET', body, auth = true, prefer } = {}) {
+  if (auth && ACC.session && ACC.session.expires_at - 60 < Date.now() / 1000) await accRefresh();
+  const headers = { apikey: SB.key, 'Content-Type': 'application/json' };
+  if (auth && ACC.session) headers.Authorization = 'Bearer ' + ACC.session.access_token;
+  if (prefer) headers.Prefer = prefer;
+  const r = await fetch(SB.url + path, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
+  const text = await r.text();
+  let data = null;
+  try { data = text ? JSON.parse(text) : null; } catch (e) { data = null; }
+  if (!r.ok) {
+    const err = new Error((data && (data.msg || data.message || data.error_description || data.error)) || `HTTP ${r.status}`);
+    err.status = r.status; err.code = data && (data.error_code || data.code);
+    throw err;
+  }
+  return data;
+}
+async function accRefresh() {
+  const rt = ACC.session && ACC.session.refresh_token;
+  if (!rt) return;
+  try { accSetSession(await sbFetch('/auth/v1/token?grant_type=refresh_token', { method: 'POST', body: { refresh_token: rt }, auth: false })); }
+  catch (e) { if (e.status >= 400 && e.status < 500) { ACC.session = null; ACC.profile = null; accStore(); renderAcct(); } throw e; }
+}
+// エラーを日本語の案内にする
+function accErrText(e) {
+  const m = String(e.message || ''), c = String(e.code || '');
+  if (c === 'invalid_credentials' || /Invalid login credentials/i.test(m)) return 'メールアドレスかパスワードが違います。';
+  if (c === 'email_not_confirmed' || /Email not confirmed/i.test(m)) return 'メールアドレスの確認がまだです。届いた確認メールのリンクを開いてから、もう一度ログインしてください。';
+  if (c === 'user_already_exists' || /already registered/i.test(m)) return 'このメールアドレスはもう登録されています。ログインしてください。';
+  if (c === 'weak_password' || /Password should be/i.test(m)) return 'パスワードは6文字以上にしてください。';
+  if (c === 'over_email_send_rate_limit' || /rate limit/i.test(m)) return '確認メールの送信が混み合っています。しばらく待ってからもう一度試してください。';
+  if (c === 'validation_failed' || /invalid format|Unable to validate email/i.test(m)) return 'メールアドレスの形が正しくありません。';
+  if (c === '23514') return '名前は1〜12文字にしてください。';
+  if (e instanceof TypeError) return 'サーバーにつながりませんでした。通信状態を確かめてください。';
+  return `うまくいきませんでした(${m})`;
+}
+
+// 自分のプレイヤー情報を読む。なければ作る。端末に残っているクリア記録はアカウントにまとめる
+async function accLoadProfile(name) {
+  const uid = accUid();
+  if (!uid) return;
+  const rows = await sbFetch(`/rest/v1/profiles?id=eq.${uid}&select=*`);
+  let p = rows && rows[0];
+  if (!p) {
+    const nm = (name || (ACC.session.user.user_metadata || {}).name || '名無し').slice(0, 12);
+    const made = await sbFetch('/rest/v1/profiles', { method: 'POST', prefer: 'return=representation', body: { id: uid, name: nm, cleared: SOLO.cleared } });
+    p = made[0];
+  }
+  ACC.profile = p;
+  const all = [...new Set([...(p.cleared || []), ...SOLO.cleared])].filter((id) => STAGES.some((x) => x.id === id));
+  const serverMissing = all.some((id) => !(p.cleared || []).includes(id));
+  SOLO.cleared = all;
+  try { localStorage.setItem('kokusen.cleared', JSON.stringify(SOLO.cleared)); } catch (e) { /* 保存できなくても動く */ }
+  renderStages(); renderAcct();
+  if (serverMissing) await accSaveCleared();
+}
+async function accSaveCleared() {
+  if (!ACC.profile) return;
+  try {
+    await sbFetch(`/rest/v1/profiles?id=eq.${accUid()}`, { method: 'PATCH', prefer: 'return=minimal', body: { cleared: SOLO.cleared, updated_at: new Date().toISOString() } });
+    ACC.profile.cleared = SOLO.cleared.slice();
+  } catch (e) { /* 次に保存するときにまとめて送られる */ }
+}
+// オンライン対人の結果でレーティングを更新する(イロレーティング)。score:勝ち1、引き分け0.5、負け0
+async function accRate(score, foeRating) {
+  const p = ACC.profile;
+  if (!p) return null;
+  const expect = 1 / (1 + Math.pow(10, (foeRating - p.rating) / 400));
+  const next = Math.max(100, Math.round(p.rating + RATING_K * (score - expect)));
+  const patch = { rating: next, wins: p.wins + (score === 1 ? 1 : 0), losses: p.losses + (score === 0 ? 1 : 0), updated_at: new Date().toISOString() };
+  try {
+    await sbFetch(`/rest/v1/profiles?id=eq.${accUid()}`, { method: 'PATCH', prefer: 'return=minimal', body: patch });
+    const before = p.rating;
+    Object.assign(p, patch);
+    renderAcct();
+    return { before, after: next };
+  } catch (e) { return null; }
+}
+
+async function accSignIn(email, password) {
+  accSetSession(await sbFetch('/auth/v1/token?grant_type=password', { method: 'POST', auth: false, body: { email, password } }));
+  await accLoadProfile();
+}
+async function accSignUp(email, password, name) {
+  const d = await sbFetch('/auth/v1/signup', { method: 'POST', auth: false, body: { email, password, data: { name } } });
+  if (!d || !d.access_token) return 'confirm';   // メールの確認が必要な設定
+  accSetSession(d);
+  await accLoadProfile(name);
+  return 'ok';
+}
+async function accSignOut() {
+  try { await sbFetch('/auth/v1/logout', { method: 'POST' }); } catch (e) { /* サーバー側が失敗しても、この端末ではログアウトする */ }
+  ACC.session = null; ACC.profile = null; accStore(); renderAcct();
+}
+async function accLoadRanking() {
+  try { ACC.ranking = await sbFetch('/rest/v1/profiles?select=id,name,rating,wins,losses&order=rating.desc&limit=20'); }
+  catch (e) { ACC.ranking = null; }
+}
+
+// ----- 画面 -----
+function renderAcct() {
+  const el = $('acct');
+  if (!el) return;
+  const p = ACC.profile;
+  el.innerHTML = p
+    ? `<span class="who"><b>${escHtml(p.name)}</b> <span class="rate">レート${p.rating}</span>(${p.wins}勝${p.losses}敗)</span><button id="accOpen">アカウント</button>`
+    : ACC.session
+      ? `<span class="who">ログイン中(読み込んでいます…)</span><button id="accOpen">アカウント</button>`
+      : `<span class="who">ログインすると、クリア記録とレーティングを保存できます</span><button id="accOpen">ログイン</button>`;
+  $('accOpen').onclick = () => accOpen();
+}
+function accMsg(text, err) { $('accMsg').textContent = text || ''; $('accMsg').className = 'msg' + (err ? ' err' : ''); }
+function renderAccModal() {
+  const p = ACC.profile, body = $('accBody');
+  if (p) {
+    const uid = accUid();
+    const list = ACC.ranking
+      ? `<ol>${ACC.ranking.map((r) => `<li class="${r.id === uid ? 'me' : ''}">${escHtml(r.name)}<span class="r">${r.rating}(${r.wins}勝${r.losses}敗)</span></li>`).join('')}</ol>`
+      : '<p class="sub">ランキングを読み込んでいます…</p>';
+    const cleared = STAGES.filter((x) => SOLO.cleared.includes(x.id)).map((x) => `${x.faction}${'★'.repeat(x.stars)}`).join(' ') || 'まだありません';
+    body.innerHTML = `<p class="sub"><b style="color:var(--text)">${escHtml(p.name)}</b> <span style="color:var(--gold);font-weight:900">レート${p.rating}</span>(${p.wins}勝${p.losses}敗)<br>クリアしたステージ:${cleared}</p>
+      <label for="accName">名前(1〜12文字)</label><input id="accName" maxlength="12" value="${escHtml(p.name)}">
+      <div class="row"><button id="accRename">名前を変える</button><button id="accOut">ログアウト</button></div>
+      <h2 style="margin-top:14px">レーティング上位</h2>${list}`;
+    $('accRename').onclick = () => accDo(async () => {
+      const nm = $('accName').value.trim();
+      if (!nm || nm.length > 12) throw Object.assign(new Error('name'), { code: '23514' });
+      await sbFetch(`/rest/v1/profiles?id=eq.${uid}`, { method: 'PATCH', prefer: 'return=minimal', body: { name: nm } });
+      p.name = nm; await accLoadRanking(); renderAcct(); renderAccModal(); return '名前を変えました。';
+    });
+    $('accOut').onclick = () => accDo(async () => { await accSignOut(); renderAccModal(); return 'ログアウトしました。'; });
+    return;
+  }
+  const signup = ACC.tab === 'signup';
+  body.innerHTML = `<div class="levels"><button id="accTabIn" class="${signup ? '' : 'picked'}">ログイン</button><button id="accTabUp" class="${signup ? 'picked' : ''}">新規登録</button></div>
+    <label for="accEmail">メールアドレス</label><input id="accEmail" type="email" autocomplete="email" inputmode="email">
+    <label for="accPass">パスワード(6文字以上)</label><input id="accPass" type="password" autocomplete="${signup ? 'new-password' : 'current-password'}">
+    ${signup ? '<label for="accName">名前(1〜12文字。ランキングに出ます)</label><input id="accName" maxlength="12">' : ''}
+    <div class="row"><button id="accGo">${signup ? '登録する' : 'ログインする'}</button></div>`;
+  $('accTabIn').onclick = () => { ACC.tab = 'login'; accMsg(''); renderAccModal(); };
+  $('accTabUp').onclick = () => { ACC.tab = 'signup'; accMsg(''); renderAccModal(); };
+  $('accGo').onclick = () => accDo(async () => {
+    const email = $('accEmail').value.trim(), pass = $('accPass').value;
+    if (!email || !pass) throw new Error('メールアドレスとパスワードを入れてください。');
+    if (!signup) { await accSignIn(email, pass); await accLoadRanking(); renderAccModal(); return 'ログインしました。'; }
+    const nm = $('accName').value.trim();
+    if (!nm || nm.length > 12) throw Object.assign(new Error('name'), { code: '23514' });
+    const r = await accSignUp(email, pass, nm);
+    if (r === 'confirm') { ACC.tab = 'login'; renderAccModal(); return '確認メールを送りました。メールのリンクを開いてから(開いた先のページが表示されなくても大丈夫です)、ここでログインしてください。'; }
+    await accLoadRanking(); renderAccModal(); return '登録しました。';
+  });
+}
+// ボタンの処理中は二重に押せないようにし、結果を案内に出す
+async function accDo(fn) {
+  const btns = [...$('accModal').querySelectorAll('button')];
+  btns.forEach((b) => (b.disabled = true));
+  accMsg('通信しています…');
+  try { accMsg(await fn()); } catch (e) { accMsg(e.code || e.status || e instanceof TypeError ? accErrText(e) : e.message, true); }
+  finally { btns.forEach((b) => (b.disabled = false)); }
+}
+async function accOpen() {
+  $('accModal').classList.remove('hidden');
+  accMsg('');
+  renderAccModal();
+  if (ACC.profile) { await accLoadRanking(); renderAccModal(); }
+}
+async function accInit() {
+  try { ACC.session = JSON.parse(localStorage.getItem('kokusen.auth') || 'null'); } catch (e) { ACC.session = null; }
+  $('accClose').onclick = () => $('accModal').classList.add('hidden');
+  $('accModal').onclick = (e) => { if (e.target === $('accModal')) $('accModal').classList.add('hidden'); };
+  renderAcct();
+  if (!ACC.session) return;
+  try { await accLoadProfile(); } catch (e) { if (e.status === 401) { ACC.session = null; accStore(); } renderAcct(); }
 }
 function renderStages() {
   [...$('stages').children].forEach((b) => {
@@ -2797,6 +3042,7 @@ function init() {
     $('stages').appendChild(b);
   });
   renderStages();
+  accInit();
   $('joinRoom').onclick = () => { pvpJoin(); renderMode(); };
   $('leaveRoom').onclick = () => { pvpLeave(); renderMode(); };
   $('logBtn').onclick = () => {
