@@ -1185,7 +1185,7 @@ const Sound = (() => {
 // 曲は「なぐもりずの音楽室」(https://nagumorizu.com/)の楽曲。利用条件と表記は bgm/CREDIT.txt にある。
 // main は対戦中の曲、climax は決着が近いときの曲。ファイルが読めなければ何もせず、「曲」ボタンも出さない。
 const BGM_TRACKS = { main: 'bgm/The-Battle-of-Beliefs.mp3', climax: 'bgm/Sign-of-Victory.mp3' };
-const BGM_VOLUME = 0.35;
+const BGM_VOLUME = 0.2;
 // 曲は、効果音と同じ仕組み(WebAudio)で鳴らす。
 // iPhoneでは <audio> での再生がうまくいかないことがあり、効果音だけ鳴って曲が鳴らなかったため。
 // 曲のファイルを読み込んで音のデータに変換し、ループ再生する。メモリを食うので、変換して持つのは今流す曲だけにする
@@ -1276,12 +1276,20 @@ const Bgm = (() => {
 // 決着が近いときの曲に切り替える条件。
 // 対人戦:相手の残りが1枚になったとき。CPU戦:相手チーム全体の残りHPが25%以下になったとき
 // (ストーリーモードはまだないので、CPU戦をその代わりにしている)
-function bgmCheck() {
-  if (!S || S.over || Bgm.current() === 'climax') return;
+function climaxReady() {
+  if (!S || S.over || S.climax) return false;
   const cards = S.teams[1].cards;
   const left = cards.filter((c) => c.hp > 0 && c.result !== 'lose');
   const hp = left.reduce((s, c) => s + c.hp, 0), max = cards.reduce((s, c) => s + c.ch.hp, 0);
-  if (PVP.on ? left.length <= 1 : hp <= max * 0.25) Bgm.switchTo('climax');
+  return PVP.on ? left.length <= 1 : hp <= max * 0.25;
+}
+// 条件を満たしたら、「あとひと刻!」のカットインと同時に曲を切り替える(1試合に1回)
+async function climaxFx() {
+  if (!climaxReady()) return;
+  S.climax = true;
+  Bgm.switchTo('climax');
+  flash('#ffd24a'); shake(false); Sound.cue(3);
+  await cutin('あとひと刻!', '決着は目の前', 'gold', 1400);
 }
 
 // ----- 粒(刻のかけら) -----
@@ -1384,6 +1392,7 @@ function pop(side, text, cls, dy = 0) {
 async function cutin(big, small, cls, ms) {
   const el = $('cutin');
   $('cutBig').textContent = big;
+  $('cutBig').style.fontSize = `min(${(78 / Math.max(3, [...big].length)).toFixed(1)}vw, 5rem)`;
   $('cutBig').className = 'big' + (cls === 'rainbow' ? ' rainbow' : '');
   $('cutSmall').textContent = small || '';
   el.className = 'show ' + cls;
@@ -1500,7 +1509,6 @@ function render(view) {
   const n = S.boutRally + 1, decay = n > DECAY_FROM;
   $('boutInfo').textContent = S.over ? '' : `交代から${n}ラリー目` + (decay ? '　刻の抜け落ち!' : n === DECAY_FROM ? '　次から刻の抜け落ち' : '');
   $('boutInfo').className = 'boutinfo' + (decay ? ' warn' : '');
-  bgmCheck();
 
   // 下段:左が自分(技がそのまま手のボタン)、右が相手の技
   $('traitYou').textContent = traitLine(me.ch);
@@ -1776,6 +1784,7 @@ async function normalRally(hand, cpuHand, why) {
   }
   await aftermath(o);
   if (S.over) return finale();
+  await climaxFx();
 
   if (S.teams[0].breakReady) {
     await shatter(false);
@@ -1804,6 +1813,7 @@ async function playerBreak(hand) {
   await strike(0, hand, b.cards[0].actions[hand], o, true);
   await aftermath(o);
   if (S.over) return finale();
+  await climaxFx();
 }
 
 // 相手のBREAK。forced は対人戦で相手が選んだ手
@@ -1823,6 +1833,7 @@ async function cpuBreak(forced) {
   await strike(1, h, b.cards[1].actions[h], o, true);
   await aftermath(o);
   if (S.over) return finale();
+  await climaxFx();
 }
 
 async function play(hand) {
