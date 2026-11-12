@@ -634,13 +634,13 @@ const ENEMIES = {
   // --- ★★★★★:ゼノ(倒すまで名前は「？？？」)。肉体を倒すと精神離脱体が現れる2段階 ---
   xeno_body: { name: 'ゼノ・肉体', secret: '？？？', faction: '始', hp: 10000, atk: 9000, dfs: 9000, phys: 1.2, boss: true,
     traits: [
-      { key: 'hardshell', name: '鋼の刻', desc: 'DFS9000。巻き戻るたびに半減' },
+      { key: 'hardshell', name: '鋼の刻', desc: 'DFSは下げられない。巻き戻るたびに半減' },
       { key: 'retaliate', name: '時の報い', desc: `${BREAK_NAME}されると99999ダメージを返す(倒しきれば返さない)`, dmg: 99999 },
-      { key: 'devour', name: '刻喰い', desc: '与ダメージの30%回復', rate: 0.3 } ],
+      { key: 'regen', name: '刻戻り', desc: 'ラリーが終わるたびにHP+1000', heal: 1000 } ],
     actions: {
-      rock:     { name: '圧し止め', rate: RATE.big, mods: [foeAtk(1500, 3)] },
+      rock:     { name: '圧し止め', rate: RATE.big, mods: [foeAtk(1500, 3)], seal: 1 },
       scissors: { name: '先喰い',   rate: RATE.huge, mods: [foeDfs(2500, 3)] },
-      paper:    { name: '呑み戻し', rate: RATE.normal, heal: 1500, noheal: 3 } } },
+      paper:    { name: '呑み戻し', rate: RATE.normal, heal: 4000, noheal: 3, seal: 1 } } },
   xeno_spirit: { name: 'ゼノ・精神離脱体', secret: '？？？・精神離脱体', faction: '始', hp: 40000, atk: 5000, dfs: 0, phys: 1.0, boss: true,
     hiddenUntilActive: true,   // 肉体を倒すまで、敵チームの欄に出さない
     traits: [
@@ -658,15 +658,15 @@ const ENEMIES = {
 const STAGES = [
   { id: 'a1', faction: '錨', stars: 1, name: '港の見回り',   foes: ['a_guard', 'a_lamp', 'a_chain'], level: 1, hp: 0.55, atk: 1.0 },
   { id: 'a2', faction: '錨', stars: 2, name: '鎖の関所',     foes: ['a_chain', 'a_guard', 'a_lamp'], level: 1, hp: 1.21, atk: 1.0 },
-  { id: 'a3', faction: '錨', stars: 3, name: '大錨の門',     foes: ['b_tomari'], level: 4, read: 0.35, hp: 0.625, atk: 1.0 },
+  { id: 'a3', faction: '錨', stars: 3, name: '大錨の門',     foes: ['b_tomari'], level: 4, read: 0.35, hp: 1.0, atk: 1.0 },
   { id: 'z1', faction: '零', stars: 1, name: '欠けた仮面',   foes: ['z_mask', 'z_wind', 'z_sand'], level: 1, hp: 0.47, atk: 1.0 },
   { id: 'z2', faction: '零', stars: 2, name: '巻き戻る回廊', foes: ['z_sand', 'z_mask', 'z_wind'], level: 1, hp: 1.0, atk: 1.0 },
-  { id: 'z3', faction: '零', stars: 3, name: '針のない文字盤', foes: ['b_rei'], level: 4, read: 0.35, hp: 1.225, atk: 1.0 },
+  { id: 'z3', faction: '零', stars: 3, name: '針のない文字盤', foes: ['b_rei'], level: 4, read: 0.35, hp: 1.5, atk: 1.0 },
   { id: 'y1', faction: '矢', stars: 1, name: '伝令の道',     foes: ['y_runner', 'y_seer', 'y_archer'], level: 1, hp: 0.36, atk: 0.85 },
   { id: 'y2', faction: '矢', stars: 2, name: '射手の丘',     foes: ['y_archer', 'y_runner', 'y_seer'], level: 1, hp: 0.954, atk: 1.0 },
-  { id: 'y3', faction: '矢', stars: 3, name: '天眼の弦',     foes: ['b_tsuru'], level: 4, read: 0.35, hp: 2.17, atk: 1.0 },
-  { id: 'x5', faction: '始', stars: 5, name: '始まりの前', foes: ['xeno_body', 'xeno_spirit'], level: 4, read: 0.9, hp: 1.0, atk: 1.0, bgm: 'xeno' },
-  { id: 't4', faction: '刻喰', stars: 4, name: '刻喰らいの淵', foes: ['tokibami'], level: 4, read: 0.35, hp: 0.6, atk: 1.0 },
+  { id: 'y3', faction: '矢', stars: 3, name: '天眼の弦',     foes: ['b_tsuru'], level: 4, read: 0.35, hp: 2.6, atk: 1.0 },
+  { id: 'x5', faction: '始', stars: 5, name: '始まりの前', foes: ['xeno_body', 'xeno_spirit'], level: 4, read: 1.0, hp: 1.0, atk: 1.0, bgm: 'xeno' },
+  { id: 't4', faction: '刻喰', stars: 4, name: '刻喰らいの淵', foes: ['tokibami'], level: 4, read: 0.35, hp: 1.8, atk: 1.0 },
 ];
 // ステージの敵を、倍率を掛けた能力値で作る(元のデータは書き換えない)
 function stageFoes(stage) {
@@ -689,13 +689,17 @@ const modSum = (c, stat) => c.mods.reduce((s, m) => s + (m.stat === stat ? m.v :
 const ATK_MIN = 250;   // デバフでATKがこれより下がることはない
 const baseAtk = (c) => Math.max(ATK_MIN, c.atk + c.atkBonus + c.teamAtk + c.markAtk + modSum(c, 'atk'));
 // 現在のDFS(変身・特性・渡された強化・バフ/デバフ込み。次の被弾だけの上乗せ dfsUp は含めない)
-const baseDfs = (c) => Math.max(0, Math.min(DFS_MAX, c.dfs + c.dfsGain + c.dfsBonus + c.teamDfs + c.markDfs + modSum(c, 'dfs')));
+const baseDfs = (c) => {
+  const v = c.dfs + c.dfsGain + c.dfsBonus + c.teamDfs + c.markDfs + modSum(c, 'dfs');
+  // 特性「鋼の刻」:DFSはデバフや刻印で下がらない
+  return Math.max(0, Math.min(DFS_MAX, traitOf(c, 'hardshell') ? Math.max(c.dfs, v) : v));
+};
 // 攻撃を受けるときのDFS。BREAK中の攻撃は DFS を 0 として扱う
 // 特性「一点留め」など:相手のチームが1体だけのとき(ソロのボス戦)のDFSの上乗せ。S.giant は、相手が1体のチームの側
 const giantDfs = (c) => { const t = traitOf(c, 'giantSlayer'); return t && c.giant ? t.dfs : 0; };
 const dfsOf = (def, isBreak) => (isBreak ? 0 : Math.min(DFS_MAX, baseDfs(def) + def.dfsUp + giantDfs(def)));
 // 攻撃する側から見た相手のDFS(特性「貫き」はDFSを一定量無視する)
-const dfsVs = (att, def, isBreak) => { const p = traitOf(att, 'pierce'); return Math.max(0, dfsOf(def, isBreak) - (p ? p.v : 0)); };
+const dfsVs = (att, def, isBreak) => { const p = traitOf(att, 'pierce'); return Math.max(0, dfsOf(def, isBreak) - (p && !traitOf(def, 'hardshell') ? p.v : 0)); };
 
 // 必殺技の格上げ条件(up)を満たしているか。n はそのカードが場に出て何ラリー目か
 function upActive(a, att, def, n, isBreak) {
@@ -1242,17 +1246,13 @@ function aiHand(S, side, level) {
   }
 
   if (level >= 4) {
-    // 深さ4(ソロのボス):相手の立場に立って、深さ3と同じ考え方で相手が「読みに頼るなら出す手」を求め、それに勝つ手を出す。
-    // 見ているのは過去の手と盤面だけで、相手が今回選んだ手は見ていない。理屈で打つ相手ほど読まれる
-    const foeM = payoffMatrix(S, 1 - side);
-    const foeView = deepRead(S, 1 - side, foeM);
-    const counter = beaterOf(foeView.best);
-    const eq = equilibrium(M), mix = {};
-    const p = S.bossRead || BOSS_READ;
-    HAND_KEYS.forEach((h) => { mix[h] = (1 - p) * eq[h] + (h === counter ? p : 0); });
+    // 深さ4(ソロのボス):相手が実際に出してきた手の癖だけを、深さ3より強く読む。
+    // 「理屈ならこの手」という先読みはしない。理屈で打つ相手が狙い撃ちされて、適当に打つほうが勝てる、ということが起きないようにするため。
+    // 癖の無い相手には、読まれても損をしにくい均衡の割合で打つ
+    const { q, best, mix } = deepRead(S, side, M, { naive: 0, trustMax: S.bossRead || BOSS_READ });
     const hand = pickFrom(mix);
     if (me.ch.id === 'tokibami') return { hand, why: TOKIBAMI_VOICE[Math.floor(Math.random() * TOKIBAMI_VOICE.length)] };
-    return { hand, why: `相手が理屈で選ぶなら${HANDS[foeView.best].label}と読み、それに勝つ${HANDS[counter].label}を軸に、${share(mix)}の割合から${act(hand)}を出した` };
+    return { hand, why: `相手の癖は${share(q)}と読み、それに強い${HANDS[best].label}を軸に、${share(mix)}の割合から${act(hand)}を出した` };
   }
 
   // 深さ3:読まれても損をしにくい割合(均衡)を土台にして、相手の癖がはっきりしているほどそこを突く
@@ -1279,7 +1279,8 @@ const pickFrom = (mix) => {
   return HAND_KEYS[HAND_KEYS.length - 1];
 };
 // 深さ3の読み:均衡の割合 eq、相手の手の予測 q、予測に一番強い手 best、実際に出す割合 mix
-function deepRead(S, side, M) {
+function deepRead(S, side, M, opt = {}) {
+  const naiveW = opt.naive ?? 0.1, trustMax = opt.trustMax ?? 0.8;
   const naive = naiveFoe(M);
   const eq = equilibrium(M);
   const prev = S.hist[S.hist.length - 1];
@@ -1287,13 +1288,16 @@ function deepRead(S, side, M) {
   const cond = prev ? foeHabit(S, side, 40, { r: judge(prev[1 - side], prev[side]) }) : { q: all.q, n: 0 };
   const q = {};
   const wc = Math.min(1, cond.n / 6), wa = Math.min(1, all.n / 8);
-  HAND_KEYS.forEach((h) => { q[h] = 0.45 * wc * cond.q[h] + 0.3 * wa * all.q[h] + (h === naive ? 0.1 : 0) + (0.9 - 0.45 * wc - 0.3 * wa) / 3; });
+  HAND_KEYS.forEach((h) => { q[h] = 0.45 * wc * cond.q[h] + 0.3 * wa * all.q[h] + (h === naive ? naiveW : 0) + (1 - naiveW - 0.45 * wc - 0.3 * wa) / 3; });
   // 予測をどれだけ信じるか:相手の手を多く見たほど信じる。ただし最近こちらが読み負けているなら、
   // 逆に読まれていると考えて、読まれても損をしにくい均衡の割合に戻す
   const recent = S.hist.slice(-8).map((p) => judge(p[side], p[1 - side])).filter((r) => r !== 0);
   const lost = recent.length ? recent.filter((r) => r < 0).length / recent.length : 0;
   const outread = recent.length >= 5 && lost >= 0.7 ? 0.25 : 1;
-  const trust = Math.min(0.8, all.n / 10 * 0.8) * outread;
+  // 癖の偏りが小さいうちは、たまたまの偏りとみて信じない(読みに行くと、こちらの手が偏って逆に読まれるため)
+  const dev = Math.max(...HAND_KEYS.map((h) => Math.abs(all.q[h] - 1 / 3)));
+  const edge = Math.max(0, Math.min(1, (dev - 0.12) / 0.15));
+  const trust = Math.min(trustMax, all.n / 10 * trustMax) * outread * edge;
   const best = argmax((a) => expect(M, a, q));
   const mix = {};
   HAND_KEYS.forEach((h) => { mix[h] = (1 - trust) * eq[h] + (h === best ? trust : 0); });
