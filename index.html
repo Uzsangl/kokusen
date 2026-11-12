@@ -635,8 +635,7 @@ const ENEMIES = {
   xeno_body: { name: 'ゼノ・肉体', secret: '？？？', faction: '始', hp: 10000, atk: 9000, dfs: 9000, phys: 1.2, boss: true,
     traits: [
       { key: 'hardshell', name: '鋼の刻', desc: 'DFSは下げられない。巻き戻るたびに半減' },
-      { key: 'retaliate', name: '時の報い', desc: `${BREAK_NAME}されると99999ダメージを返す(倒しきれば返さない)`, dmg: 99999 },
-      { key: 'regen', name: '刻戻り', desc: 'ラリーが終わるたびにHP+1000', heal: 1000 } ],
+      { key: 'regen', name: '刻戻り', desc: 'ラリーが終わるたびにHP+1600', heal: 1600 } ],
     actions: {
       rock:     { name: '圧し止め', rate: RATE.big, mods: [foeAtk(1500, 3)], seal: 1 },
       scissors: { name: '先喰い',   rate: RATE.huge, mods: [foeDfs(2500, 3)] },
