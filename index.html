@@ -656,7 +656,7 @@ const ENEMIES = {
     actions: {
       rock:     { name: '圧し止め', rate: RATE.big, mods: [foeAtk(1500, 3)], seal: 1 },
       scissors: { name: '先喰い',   rate: RATE.huge, mods: [foeDfs(2500, 3)] },
-      paper:    { name: '呑み戻し', rate: RATE.normal, heal: 4000, noheal: 3, seal: 1 } } },
+      paper:    { name: '呑み戻し', rate: RATE.normal, noheal: 3, seal: 1 } } },
   xeno_spirit: { name: 'ゼノ・精神離脱体', secret: '？？？・精神離脱体', faction: '始', hp: 20000, atk: 5000, dfs: 0, phys: 1.0, boss: true,
     hiddenUntilActive: true,   // 肉体を倒すまで、敵チームの欄に出さない
     traits: [
