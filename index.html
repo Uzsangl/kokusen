@@ -1342,10 +1342,10 @@ function shuffled(arr) {
 const $ = (id) => document.getElementById(id);
 
 // ----- キャラアイコン(icons/*.webp、192px)-----
-// ソロのボスは元のキャラの絵を使う。絵がまだないキャラ(ハネ)は名前の頭文字を出す。
+// ソロのボスは元のキャラの絵を使う。絵がないキャラは名前の頭文字を出す。
 // ゼノは名前が明かされるまでシルエットにする。
 const ICON_IDS = new Set(['kaji', 'tomari', 'mio', 'moyai', 'shio', 'rei', 'hajime', 'uro', 'moto', 'kasumi',
-  'tsuru', 'haya', 'yajiri', 'tokibami', 'xeno_body', 'xeno_spirit',
+  'tsuru', 'haya', 'yajiri', 'hane', 'tokibami', 'xeno_body', 'xeno_spirit',
   'a_guard', 'a_chain', 'a_lamp', 'z_mask', 'z_wind', 'z_sand', 'y_runner', 'y_archer', 'y_seer']);
 const ICON_ALIAS = { b_tomari: 'tomari', b_rei: 'rei', b_tsuru: 'tsuru' };
 const ICON_FACTION = { '錨': 'f-anchor', '零': 'f-zero', '矢': 'f-arrow' };
