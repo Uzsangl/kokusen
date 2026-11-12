@@ -640,16 +640,16 @@ const ENEMIES = {
       rock:     { name: '圧し止め', rate: RATE.big, mods: [foeAtk(1500, 3)], seal: 1 },
       scissors: { name: '先喰い',   rate: RATE.huge, mods: [foeDfs(2500, 3)] },
       paper:    { name: '呑み戻し', rate: RATE.normal, heal: 4000, noheal: 3, seal: 1 } } },
-  xeno_spirit: { name: 'ゼノ・精神離脱体', secret: '？？？・精神離脱体', faction: '始', hp: 40000, atk: 5000, dfs: 0, phys: 1.0, boss: true,
+  xeno_spirit: { name: 'ゼノ・精神離脱体', secret: '？？？・精神離脱体', faction: '始', hp: 20000, atk: 5000, dfs: 0, phys: 1.0, boss: true,
     hiddenUntilActive: true,   // 肉体を倒すまで、敵チームの欄に出さない
     traits: [
-      { key: 'rewindRite', name: '巻き戻しの儀', desc: '20ラリー以内に倒せないか、全滅させると、刻が戦いの前に巻き戻る', limit: 20 },
+      { key: 'rewindRite', name: '巻き戻しの儀', desc: '20ラリー以内に倒せないと、刻が戦いの前に巻き戻る', limit: 20 },
       { key: 'undying', name: '不滅', desc: `${BREAK_NAME}以外の攻撃ではHP1で耐える` },
       { key: 'astral', name: '離脱体', desc: 'DFS0' } ],
     actions: {
       rock:     { name: '静止の手',   rate: RATE.normal },
       scissors: { name: '先回りの手', rate: RATE.normal },
-      paper:    { name: '戻しの手',   rate: RATE.normal, resetStreak: 1 } } },
+      paper:    { name: '戻しの手',   rate: RATE.normal, streak: 1 } } },
 };
 
 // ステージ。level はCPUの考え方の深さ(AI_LEVELS)、read はボスが読みに頼る割合、hp / atk は敵の能力値に掛ける倍率。
@@ -1011,9 +1011,8 @@ function endRally(S, log, winSide) {
   }
   // 特性「巻き戻しの儀」:期限までに倒せなければ、刻が巻き戻る
   const sp = active(S.teams[1]), rite = traitOf(sp, 'rewindRite');
-  const me = S.teams[0], wiped = active(me).hp <= 0 && me.idx === me.cards.length - 1;
-  // 時間切れ、または精神離脱体に全滅させられたとき(負けではなく、巻き戻される)
-  if (rite && sp.hp > 0 && (sp.turn >= rite.limit || wiped)) { rewindMatch(S, log); return; }
+  // 期限までに倒せなかったとき(こちらが全滅していれば、巻き戻らずに負け)
+  if (rite && sp.hp > 0 && sp.turn >= rite.limit && active(S.teams[0]).hp > 0) { rewindMatch(S, log); return; }
   const [a, b] = S.teams;
   const ko = S.teams.map((t) => active(t).hp <= 0);
   if (!ko[0] && !ko[1]) return;
