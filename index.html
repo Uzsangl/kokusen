@@ -638,10 +638,10 @@ const ENEMIES = {
       { key: 'retaliate', name: '時の報い', desc: `${BREAK_NAME}されると99999ダメージを返す(倒しきれば返さない)`, dmg: 99999 },
       { key: 'devour', name: '刻喰い', desc: '与ダメージの30%回復', rate: 0.3 } ],
     actions: {
-      rock:     { name: '圧し止め', rate: RATE.big },
-      scissors: { name: '先喰い',   rate: RATE.huge },
-      paper:    { name: '呑み戻し', rate: RATE.normal, heal: 1500 } } },
-  xeno_spirit: { name: 'ゼノ・精神離脱体', secret: '？？？・精神離脱体', faction: '始', hp: 44444, atk: 33333, dfs: 0, phys: 1.0, boss: true,
+      rock:     { name: '圧し止め', rate: RATE.big, mods: [foeAtk(1500, 3)] },
+      scissors: { name: '先喰い',   rate: RATE.huge, mods: [foeDfs(2500, 3)] },
+      paper:    { name: '呑み戻し', rate: RATE.normal, heal: 1500, noheal: 3 } } },
+  xeno_spirit: { name: 'ゼノ・精神離脱体', secret: '？？？・精神離脱体', faction: '始', hp: 40000, atk: 5000, dfs: 0, phys: 1.0, boss: true,
     hiddenUntilActive: true,   // 肉体を倒すまで、敵チームの欄に出さない
     traits: [
       { key: 'rewindRite', name: '巻き戻しの儀', desc: '20ラリー以内に倒せないか、全滅させると、刻が戦いの前に巻き戻る', limit: 20 },
@@ -665,7 +665,7 @@ const STAGES = [
   { id: 'y1', faction: '矢', stars: 1, name: '伝令の道',     foes: ['y_runner', 'y_seer', 'y_archer'], level: 1, hp: 0.36, atk: 0.85 },
   { id: 'y2', faction: '矢', stars: 2, name: '射手の丘',     foes: ['y_archer', 'y_runner', 'y_seer'], level: 1, hp: 0.954, atk: 1.0 },
   { id: 'y3', faction: '矢', stars: 3, name: '天眼の弦',     foes: ['b_tsuru'], level: 4, read: 0.35, hp: 2.17, atk: 1.0 },
-  { id: 'x5', faction: '始', stars: 5, name: '始まりの前', foes: ['xeno_body', 'xeno_spirit'], level: 4, read: 0.8, hp: 1.0, atk: 1.0, bgm: 'xeno' },
+  { id: 'x5', faction: '始', stars: 5, name: '始まりの前', foes: ['xeno_body', 'xeno_spirit'], level: 4, read: 0.9, hp: 1.0, atk: 1.0, bgm: 'xeno' },
   { id: 't4', faction: '刻喰', stars: 4, name: '刻喰らいの淵', foes: ['tokibami'], level: 4, read: 0.35, hp: 0.6, atk: 1.0 },
 ];
 // ステージの敵を、倍率を掛けた能力値で作る(元のデータは書き換えない)
@@ -873,7 +873,7 @@ function act(S, side, hand, log, isBreak) {
     }
   }
   if (a.heal && w.noHeal > 0) log(`　${nameOf(w)}は回復を封じられている`);
-  else if (a.heal) {
+  else if (a.heal && w.hp > 0) {   // 「時の報い」などで倒れたカードは回復しない
     const before = w.hp;
     w.hp = Math.min(w.max, w.hp + a.heal);
     S.hit.heal = w.hp - before;
@@ -1464,14 +1464,13 @@ const Sound = (() => {
     stop() {
       tone(115, 0.18, { vol: 0.75, to: 52 });
       noise(0.045, { vol: 0.35, freq: 2600 });
-      tone(700, 0.05, { type: 'square', vol: 0.08 });
     },
     // リーチ中の鼓動
     heart() { tone(58, 0.16, { vol: 0.85, to: 46 }); tone(58, 0.16, { vol: 0.6, to: 46, at: 0.2 }); },
     // 予告音。1=青(静かな単音)、2=緑(軽い上昇音)、3=赤(サイレン)、4=虹(告知音の連打)
     cue(lv) {
       if (lv === 1) { tone(880, 0.3, { vol: 0.13 }); tone(1320, 0.35, { vol: 0.07, at: 0.05 }); }
-      else if (lv === 2) seq([988, 1319, 1568, 1976], 0.06, { type: 'square', vol: 0.09, dur: 0.11 });
+      else if (lv === 2) { tone(660, 0.35, { vol: 0.14 }); tone(990, 0.4, { vol: 0.08, at: 0.08 }); }
       else if (lv === 3) {
         tone(480, 0.3, { type: 'sawtooth', vol: 0.14, to: 1500 });
         tone(480, 0.3, { type: 'sawtooth', vol: 0.14, to: 1500, at: 0.3 });
@@ -1834,7 +1833,7 @@ function tickLoop() {
   clearTimeout(tickTimer);
   if (!S || S.over || $('battle').classList.contains('hidden')) return;
   const heat = Math.min(BREAK_STREAK - 1, Math.max(S.teams[0].streak, S.teams[1].streak));
-  if (!frozen && Bgm.current() !== 'tick') Sound.tick(tickN++);
+  // 背景の時計の音は鳴らさない(バトル中の電子音を減らすため)
   document.documentElement.style.setProperty('--tick', [8, 4, 1.6][heat] + 's');
   tickTimer = setTimeout(tickLoop, [900, 600, 360][heat]);
 }
@@ -2049,7 +2048,6 @@ async function spin(hand, cpuHand, heat, reach) {
   let i = 0;
   const iv = setInterval(() => {
     $('slotCpu').textContent = HANDS[HAND_KEYS[i++ % HAND_KEYS.length]].icon;
-    Sound.reel();
   }, 80);
   if (reach >= 0) Sound.heart();
   await sleep(300);
@@ -2107,7 +2105,6 @@ function pops(o, big) {
   if (h && h.dmg) {
     const tier = h.half ? 'rainbow' : h.dmg >= 5000 ? 't-gold' : h.dmg >= 3000 ? 't-red' : 't-white';
     pop(1 - h.side, '-' + h.dmg, 'dmg ' + tier + (big ? ' big' : ''));
-    Sound.count(450 * FX.speed);
     Sound.tier(tier, 0.45 * FX.speed + 0.05);
     lines.push(`<div class="dmg">${o.names[1 - h.side]}に<b class="${tier}" data-n="${h.dmg}">0</b>ダメージ!</div>`);
   }
