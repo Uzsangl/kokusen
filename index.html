@@ -317,6 +317,13 @@
   .modal ol { margin: 6px 0 0; padding-left: 1.8em; font-size: .85rem; }
   .modal ol li.me { color: var(--gold); font-weight: 700; }
   .modal ol .r { float: right; color: var(--sub); }
+  .ttl { display: inline-block; margin-right: 4px; padding: 0 6px; border-radius: 6px; font-size: .72em; font-weight: 700; vertical-align: .1em;
+    color: #1a1200; background: linear-gradient(90deg, #fff3c4, var(--gold)); }
+  .modal .titles { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .modal .titles button { text-align: left; padding: 6px 8px; }
+  .modal .titles button b { display: block; font-size: .85rem; }
+  .modal .titles button small { display: block; font-size: .7rem; color: var(--sub); }
+  .modal .titles button:disabled { opacity: .45; }
 </style>
 </head>
 <body>
@@ -2551,7 +2558,7 @@ function pvpJoin() {
 function pvpReady() {
   PVP.team = picked.slice(); PVP.teamSalt = rnd(); PVP.phase = 'ready';
   const p = ACC.profile;
-  pvpPublish({ ts: seal(PVP.teamSalt + '|' + PVP.team.join(',')), acc: p ? { id: p.id, r: p.rating } : null });
+  pvpPublish({ ts: seal(PVP.teamSalt + '|' + PVP.team.join(',')), acc: p ? { id: p.id, r: p.rating, nm: p.name, t: p.title || '' } : null });
   pvpStep();
   renderSelect();
 }
@@ -2593,6 +2600,7 @@ async function pvpStep() {
     PVP.phase = 'play'; PVP.n = 0; PVP.hand = null; PVP.foeSeal = {};
     // レーティング戦:お互いにログインしていて、別のアカウントどうしのときだけ
     PVP.foeAcc = fp.acc && typeof fp.acc.r === 'number' && ACC.profile && fp.acc.id !== ACC.profile.id ? fp.acc : null;
+    if (fp.acc && typeof fp.acc.nm === 'string') log(`対戦相手:${titleOf(fp.acc.t) ? `〔${titleOf(fp.acc.t).name}〕` : ''}${fp.acc.nm.slice(0, 12)}(レート${fp.acc.r})${PVP.foeAcc ? '' : '・レーティングなし'}`);
     await startMatch(PVP.team.map((id) => CHARACTERS.find((c) => c.id === id)), chars, '相手');
     pvpStep();
     return;
@@ -2758,6 +2766,7 @@ async function accLoadProfile(name) {
   try { localStorage.setItem('kokusen.cleared', JSON.stringify(SOLO.cleared)); } catch (e) { /* 保存できなくても動く */ }
   renderStages(); renderAcct();
   if (serverMissing) await accSaveCleared();
+  await accCheckTitle();
 }
 async function accSaveCleared() {
   if (!ACC.profile) return;
@@ -2778,6 +2787,7 @@ async function accRate(score, foeRating) {
     const before = p.rating;
     Object.assign(p, patch);
     renderAcct();
+    accCheckTitle();
     return { before, after: next };
   } catch (e) { return null; }
 }
@@ -2797,8 +2807,40 @@ async function accSignOut() {
   try { await sbFetch('/auth/v1/logout', { method: 'POST' }); } catch (e) { /* サーバー側が失敗しても、この端末ではログアウトする */ }
   ACC.session = null; ACC.profile = null; accStore(); renderAcct();
 }
+// ----- 称号:条件を満たすと選べるようになり、名前の横に飾れる -----
+// 条件は、アカウントに保存されている記録(クリアしたステージ・対人の勝ち数・レート)だけで決まる
+const hasClear = (p, ...ids) => ids.every((id) => (p.cleared || []).includes(id));
+const TITLES = [
+  { id: 'first', name: '初陣', desc: 'ソロのステージをどれか1つクリア', test: (p) => (p.cleared || []).length > 0 },
+  { id: 'anchor3', name: '大錨を越えし者', desc: '錨★★★をクリア', test: (p) => hasClear(p, 'a3') },
+  { id: 'zero3', name: '針を読む者', desc: '零★★★をクリア', test: (p) => hasClear(p, 'z3') },
+  { id: 'arrow3', name: '天眼を射抜く者', desc: '矢★★★をクリア', test: (p) => hasClear(p, 'y3') },
+  { id: 'all3', name: '三陣営の覇者', desc: '★★★を3つともクリア', test: (p) => hasClear(p, 'a3', 'z3', 'y3') },
+  { id: 'toki', name: '刻喰らいを捕らえし者', desc: '★★★★をクリア', test: (p) => hasClear(p, 't4') },
+  { id: 'xeno', name: '始まりを見た者', desc: '★★★★★をクリア', test: (p) => hasClear(p, 'x5') },
+  { id: 'all', name: '刻の覇者', desc: 'ソロの全ステージをクリア', test: (p) => STAGES.every((x) => hasClear(p, x.id)) },
+  { id: 'win1', name: '初勝利', desc: 'オンライン対人で1勝', test: (p) => p.wins >= 1 },
+  { id: 'win10', name: '歴戦', desc: 'オンライン対人で10勝', test: (p) => p.wins >= 10 },
+  { id: 'win50', name: '百戦錬磨', desc: 'オンライン対人で50勝', test: (p) => p.wins >= 50 },
+  { id: 'r1600', name: '刻読み', desc: 'レート1600以上(下回ると外れる)', test: (p) => p.rating >= 1600 },
+  { id: 'r1800', name: '刻の支配者', desc: 'レート1800以上(下回ると外れる)', test: (p) => p.rating >= 1800 },
+];
+const titleOf = (id) => TITLES.find((t) => t.id === id);
+const titleTag = (id) => { const t = titleOf(id); return t ? `<span class="ttl">${escHtml(t.name)}</span>` : ''; };
+// サーバーの表に「title」の列があるか(まだSQLを実行していない場合に備える)
+const titleReady = () => !!ACC.profile && 'title' in ACC.profile;
+// 自分の称号が条件を満たさなくなったら外す(レートが下がったときなど)
+async function accCheckTitle() {
+  const p = ACC.profile;
+  if (!titleReady() || !p.title) return;
+  const t = titleOf(p.title);
+  if (t && t.test(p)) return;
+  try { await sbFetch(`/rest/v1/profiles?id=eq.${accUid()}`, { method: 'PATCH', prefer: 'return=minimal', body: { title: '' } }); p.title = ''; renderAcct(); } catch (e) { /* 次の機会に外す */ }
+}
+
 async function accLoadRanking() {
-  try { ACC.ranking = await sbFetch('/rest/v1/profiles?select=id,name,rating,wins,losses&order=rating.desc&limit=20'); }
+  const cols = titleReady() ? 'id,name,title,rating,wins,losses' : 'id,name,rating,wins,losses';
+  try { ACC.ranking = await sbFetch(`/rest/v1/profiles?select=${cols}&order=rating.desc&limit=20`); }
   catch (e) { ACC.ranking = null; }
 }
 
@@ -2808,7 +2850,7 @@ function renderAcct() {
   if (!el) return;
   const p = ACC.profile;
   el.innerHTML = p
-    ? `<span class="who"><b>${escHtml(p.name)}</b> <span class="rate">レート${p.rating}</span>(${p.wins}勝${p.losses}敗)</span><button id="accOpen">アカウント</button>`
+    ? `<span class="who">${titleTag(p.title)}<b>${escHtml(p.name)}</b> <span class="rate">レート${p.rating}</span>(${p.wins}勝${p.losses}敗)</span><button id="accOpen">アカウント</button>`
     : ACC.session
       ? `<span class="who">ログイン中(読み込んでいます…)</span><button id="accOpen">アカウント</button>`
       : `<span class="who">ログインすると、クリア記録とレーティングを保存できます</span><button id="accOpen">ログイン</button>`;
@@ -2820,13 +2862,28 @@ function renderAccModal() {
   if (p) {
     const uid = accUid();
     const list = ACC.ranking
-      ? `<ol>${ACC.ranking.map((r) => `<li class="${r.id === uid ? 'me' : ''}">${escHtml(r.name)}<span class="r">${r.rating}(${r.wins}勝${r.losses}敗)</span></li>`).join('')}</ol>`
+      ? `<ol>${ACC.ranking.map((r) => `<li class="${r.id === uid ? 'me' : ''}">${titleTag(r.title)}${escHtml(r.name)}<span class="r">${r.rating}(${r.wins}勝${r.losses}敗)</span></li>`).join('')}</ol>`
       : '<p class="sub">ランキングを読み込んでいます…</p>';
     const cleared = STAGES.filter((x) => SOLO.cleared.includes(x.id)).map((x) => `${x.faction}${'★'.repeat(x.stars)}`).join(' ') || 'まだありません';
-    body.innerHTML = `<p class="sub"><b style="color:var(--text)">${escHtml(p.name)}</b> <span style="color:var(--gold);font-weight:900">レート${p.rating}</span>(${p.wins}勝${p.losses}敗)<br>クリアしたステージ:${cleared}</p>
+    body.innerHTML = `<p class="sub">${titleTag(p.title)}<b style="color:var(--text)">${escHtml(p.name)}</b> <span style="color:var(--gold);font-weight:900">レート${p.rating}</span>(${p.wins}勝${p.losses}敗)<br>クリアしたステージ:${cleared}</p>
       <label for="accName">名前(1〜12文字)</label><input id="accName" maxlength="12" value="${escHtml(p.name)}">
       <div class="row"><button id="accRename">名前を変える</button><button id="accOut">ログアウト</button></div>
+      <h2 style="margin-top:14px">称号</h2>${titleReady()
+        ? `<div class="titles"><button data-t="" class="${p.title ? '' : 'picked'}">なし</button>${TITLES.map((t) => {
+            const ok = t.test(p);
+            return `<button data-t="${t.id}" class="${p.title === t.id ? 'picked' : ''}" ${ok ? '' : 'disabled'}><b>${escHtml(t.name)}</b><small>${ok ? '' : '🔒 '}${escHtml(t.desc)}</small></button>`;
+          }).join('')}</div>`
+        : '<p class="sub">称号を使うには、管理者がSupabaseで準備のSQLを1行実行する必要があります。</p>'}
       <h2 style="margin-top:14px">レーティング上位</h2>${list}`;
+    body.querySelectorAll('.titles button').forEach((b) => {
+      b.onclick = () => accDo(async () => {
+        const t = b.dataset.t;
+        if (t && !(titleOf(t) && titleOf(t).test(p))) throw new Error('まだその称号の条件を満たしていません。');
+        await sbFetch(`/rest/v1/profiles?id=eq.${uid}`, { method: 'PATCH', prefer: 'return=minimal', body: { title: t } });
+        p.title = t; await accLoadRanking(); renderAcct(); renderAccModal();
+        return t ? `称号を「${titleOf(t).name}」にしました。` : '称号を外しました。';
+      });
+    });
     $('accRename').onclick = () => accDo(async () => {
       const nm = $('accName').value.trim();
       if (!nm || nm.length > 12) throw Object.assign(new Error('name'), { code: '23514' });

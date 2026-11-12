@@ -13,3 +13,6 @@ alter table public.profiles enable row level security;
 create policy "誰でも読める" on public.profiles for select using (true);
 create policy "自分の行だけ作れる" on public.profiles for insert with check (auth.uid() = id);
 create policy "自分の行だけ書ける" on public.profiles for update using (auth.uid() = id);
+
+-- 称号(あとから追加)
+alter table public.profiles add column if not exists title text not null default '';
