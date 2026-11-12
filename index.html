@@ -660,8 +660,8 @@ const ENEMIES = {
   xeno_spirit: { name: 'ゼノ・精神離脱体', secret: '？？？・精神離脱体', faction: '始', hp: 20000, atk: 5000, dfs: 0, phys: 1.0, boss: true,
     hiddenUntilActive: true,   // 肉体を倒すまで、敵チームの欄に出さない
     traits: [
-      { key: 'rewindRite', name: '巻き戻しの儀', desc: '30ラリー以内に倒せないと、刻が戦いの前に巻き戻る', limit: 30 },
-      { key: 'undying', name: '不滅', desc: `${BREAK_NAME}以外の攻撃ではHP1で耐える` },
+      { key: 'rewindRite', name: '巻き戻しの儀', desc: '30ラリーで倒せないと刻が巻き戻る', limit: 30 },
+      { key: 'undying', name: '不滅', desc: `${BREAK_NAME}以外ではHP1で耐える` },
       { key: 'astral', name: '離脱体', desc: 'DFS0' } ],
     actions: {
       rock:     { name: '静止の手',   rate: RATE.normal },
@@ -2218,7 +2218,8 @@ async function aftermath(o) {
   await sleep(150);
   const w = o.boutWin;
   // ★5:肉体を倒しきると、時間が止まり、精神離脱体が現れる
-  if (w === 0 && o.cards[1].ch.id === 'xeno_body' && !S.over) {
+  // (相打ちで同時に倒れたときも、ここを通す)
+  if (o.cards[1].ch.id === 'xeno_body' && o.cards[1].hp <= 0 && !S.over) {
     Particles.crumble(panelOf(1).getBoundingClientRect(), COLORS.violet);
     Bgm.switchTo('tick');
     freeze(true); flash('#3a0010'); shake(true); Sound.breakIn();
