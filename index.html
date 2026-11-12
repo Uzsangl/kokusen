@@ -55,6 +55,8 @@
   .stages button b { display: block; color: var(--gold); letter-spacing: .1em; }
   .stages button.s1 b { color: #38bdf8; }
   .stages button.s2 b { color: #4ade80; }
+  .stages button.s4 { grid-column: 1 / -1; }
+  .stages button.s4 b { background: linear-gradient(90deg, #ff4d5e, #f5c451, #4ade80, #38bdf8, #8b6cff); -webkit-background-clip: text; background-clip: text; color: transparent; }
   .stages button.picked { border-color: var(--accent); border-width: 2px; box-shadow: 0 0 12px #f5c45144; }
   .stages button.cleared::after { content: ' ✓'; color: #4ade80; font-weight: 700; }
   .col .trait.multi { font-size: .56rem; line-height: 1.25; height: 4.6em; }
@@ -615,6 +617,17 @@ const ENEMIES = {
       rock:     { name: '張り詰め', rate: RATE.big, up: { rate: RATE.max, when: 'inBreak', text: `${BREAK_NAME}中は極大` } },
       scissors: { name: '先読み',   rate: RATE.normal, streak: 1 },
       paper:    { name: '引き絞り', rate: RATE.normal, mods: [selfAtk(1500, 3)] } } },
+
+  // --- ★★★★:トキバミ(時の流れの外にいる大敵。三陣営の共通の敵) ---
+  tokibami: { name: 'トキバミ', faction: '刻喰', hp: 45000, atk: 3400, dfs: 2000, phys: 1.0, boss: true,
+    traits: [
+      { key: 'outside', name: '時の外側', desc: '被ダメージ−60%', cut: 0.6 },
+      { key: 'weakness', name: '三刻の重ね', desc: `${BREAK_NAME}で3つの力を当てると時の外側が消える` },
+      { key: 'devour', name: '刻喰い', desc: '与ダメージの30%回復', rate: 0.3 } ],
+    actions: {
+      rock:     { name: '止め喰い', rate: RATE.big, mods: [foeAtk(800, 3)] },
+      scissors: { name: '先喰い',   rate: RATE.huge, up: { rate: RATE.max, when: 'captured', text: '今に捕らえられると極大' } },
+      paper:    { name: '呑み戻し', rate: RATE.normal, heal: 2000, dispel: 1 } } },
 };
 
 // ステージ。level はCPUの考え方の深さ(AI_LEVELS)、read はボスが読みに頼る割合、hp / atk は敵の能力値に掛ける倍率。
@@ -629,6 +642,7 @@ const STAGES = [
   { id: 'y1', faction: '矢', stars: 1, name: '伝令の道',     foes: ['y_runner', 'y_seer', 'y_archer'], level: 1, hp: 0.36, atk: 0.85 },
   { id: 'y2', faction: '矢', stars: 2, name: '射手の丘',     foes: ['y_archer', 'y_runner', 'y_seer'], level: 1, hp: 0.954, atk: 1.0 },
   { id: 'y3', faction: '矢', stars: 3, name: '天眼の弦',     foes: ['b_tsuru'], level: 4, read: 0.35, hp: 2.17, atk: 1.0 },
+  { id: 't4', faction: '刻喰', stars: 4, name: '刻喰らいの淵', foes: ['tokibami'], level: 4, read: 0.35, hp: 0.6, atk: 1.0 },
 ];
 // ステージの敵を、倍率を掛けた能力値で作る(元のデータは書き換えない)
 function stageFoes(stage) {
@@ -669,6 +683,7 @@ function upActive(a, att, def, n, isBreak) {
   if (u.when === 'foeStacks') return def.poison > 0 && def.poisonStacks >= u.v;
   if (u.when === 'gainMax') return att.dfsGain >= u.v;
   if (u.when === 'inBreak') return !!isBreak;
+  if (u.when === 'captured') return !!att.captured;
   return false;
 }
 const rateOf = (a, att, def, n, isBreak) => (upActive(a, att, def, n, isBreak) ? a.up.rate : a.rate);
@@ -689,7 +704,8 @@ function traitAtk(S, att, def, isBreak) {
 function damage(S, att, def, rate, isBreak) {
   const atk = Math.max(ATK_MIN, baseAtk(att) + att.atkUp + traitAtk(S, att, def, isBreak));
   const ub = isBreak ? traitOf(def, 'unbreak') : null;   // 特性:BREAKの被ダメージを減らす
-  return Math.round(atk * rate * att.ch.phys * (1 - dfsVs(att, def, isBreak) / 10000) * (ub ? 1 - ub.cut : 1));
+  const out = !def.captured ? traitOf(def, 'outside') : null;   // 特性「時の外側」
+  return Math.round(atk * rate * att.ch.phys * (1 - dfsVs(att, def, isBreak) / 10000) * (ub ? 1 - ub.cut : 1) * (out ? 1 - out.cut : 1));
 }
 
 const modText = (m, short) => (short
@@ -808,6 +824,13 @@ function act(S, side, hand, log, isBreak) {
     log(`　${lt.label}の${nameOf(l)}に${d}ダメージ(${RATE_LABEL[rate]}、${isBreak ? `${BREAK_NAME}中はDFS無視` : `DFS${dfs}で${pct(dfs / 10000)}カット`})`);
     // 特性「不動」:攻撃を受けるたびに硬くなる
     if ((t = traitOf(l, 'immovable')) && l.hp > 0) l.dfsGain = Math.min(t.cap, l.dfsGain + t.gain);
+    // 特性「刻喰い」:当てたダメージの一部を回復する(回復封じ中は回復しない)
+    if ((t = traitOf(w, 'devour')) && d > 0 && w.noHeal <= 0 && w.hp < w.max) {
+      const before = w.hp;
+      w.hp = Math.min(w.max, w.hp + Math.round(d * t.rate));
+      S.hit.heal += w.hp - before;
+      log(`　${nameOf(w)}は刻を喰らって${w.hp - before}回復`);
+    }
     // 特性「霞の刻」:当たるたびに相手のATKを削る刻印
     if ((t = traitOf(w, 'hazeMark')) && l.hp > 0 && d > 0 && l.markAtk > -t.cap) {
       l.markAtk = Math.max(-t.cap, l.markAtk - t.v);
@@ -1000,6 +1023,18 @@ function breakRally(S, side, hand, log) {
   beginRally(S, log);
   S.teams[side].breakReady = false;
   act(S, side, hand, log, true);
+  // 特性「三刻の重ね」:BREAKで停止・跳躍・遡行を1回ずつ当てると、「時の外側」が消える
+  const foe = active(S.teams[1 - side]);
+  if (traitOf(foe, 'weakness') && !foe.captured && foe.hp > 0 && S.hit && S.hit.dmg > 0) {
+    const got = new Set((foe.seals || '').split(',').filter(Boolean)).add(hand);
+    foe.seals = [...got].join(',');   // 文字列で持つ(CPUが盤面を写して試すときに、元と共有しないため)
+    log(`　三刻の重ね:${[...got].map((h) => HANDS[h].power).join('・')}(${got.size}/3)`);
+    if (got.size >= 3) {
+      foe.captured = true;
+      S.events.push({ type: 'capture', side: 1 - side });
+      log(`　${nameOf(foe)}を今に捕らえた。「時の外側」が消えた`);
+    }
+  }
   endRally(S, log, side);
 }
 
@@ -1058,6 +1093,7 @@ function teamValue(t) {
   }
   v += t.breakReady ? 0.35 : t.streak * 0.08;
   v += (t.keep ? 0.04 : 0) - (t.sealed ? 0.04 : 0);
+  if (f.hp > 0 && traitOf(f, 'weakness')) v -= f.captured ? 1.2 : (f.seals ? f.seals.split(',').length : 0) * 0.3;
   return v;
 }
 function evalState(S, side) {
@@ -1150,6 +1186,7 @@ function aiHand(S, side, level) {
     const p = S.bossRead || BOSS_READ;
     HAND_KEYS.forEach((h) => { mix[h] = (1 - p) * eq[h] + (h === counter ? p : 0); });
     const hand = pickFrom(mix);
+    if (me.ch.id === 'tokibami') return { hand, why: TOKIBAMI_VOICE[Math.floor(Math.random() * TOKIBAMI_VOICE.length)] };
     return { hand, why: `相手が理屈で選ぶなら${HANDS[foeView.best].label}と読み、それに勝つ${HANDS[counter].label}を軸に、${share(mix)}の割合から${act(hand)}を出した` };
   }
 
@@ -1162,6 +1199,15 @@ function aiHand(S, side, level) {
 }
 
 const BOSS_READ = 0.7;   // ボスが読みに頼る割合
+// トキバミは自分の声を持たず、喰った者たちの声で、過去・現在・未来を混ぜて話す
+const TOKIBAMI_VOICE = [
+  'おまえは出した。おまえは出す。だから、ここにいる',
+  '止めておいてくれて、ありがとう。おかげで腐らない',
+  '戻っておいで。始まりの前で待っている',
+  '急がなくていい。終わりにも、わたしはいる',
+  'その手は、もう喰べた。これから喰べる',
+  'みんな、ここで待っていた。待っている。待つ',
+];
 const pickFrom = (mix) => {
   let r = Math.random();
   for (const h of HAND_KEYS) { r -= mix[h]; if (r < 0) return h; }
@@ -1757,6 +1803,7 @@ function stageSide(el, t, f) {
   if (f.markAtk) st.push(`刻印ATK${f.markAtk}`);
   if (f.markDfs) st.push(`刻印DFS${f.markDfs}`);
   if (f.noHeal) st.push(`回復封じ${f.noHeal}`);
+  if (traitOf(f, 'weakness')) st.push(f.captured ? '今に捕らえた' : `三刻 ${f.seals ? f.seals.split(',').map((h) => HANDS[h].power).join('・') : 'なし'}`);
   if (f.atkUp) st.push(`次撃ATK+${f.atkUp}`);
   if (f.dfsUp) st.push(`次被弾DFS+${f.dfsUp}`);
   if (f.poison) st.push(`時蝕${f.poison}(${f.poisonDmg})`);
@@ -2079,6 +2126,14 @@ async function normalRally(hand, cpuHand, why) {
   }
 }
 
+// 三刻の重ねがそろって、トキバミを今に捕らえたとき
+async function captureFx(o) {
+  if (!o.events.some((e) => e.type === 'capture')) return;
+  freeze(false); flash('#ffffff'); shake(true); Sound.breakHit();
+  Particles.shower(COLORS.rainbow, 160);
+  await cutin('今に、捕らえた', '時の外側が消えた', 'rainbow', 1500);
+}
+
 async function playerBreak(hand) {
   const b = before();
   breakRally(S, 0, hand, logLater);
@@ -2091,6 +2146,7 @@ async function playerBreak(hand) {
   freeze(false);
   setResult(`${BREAK_NAME}! ${HANDS[hand].icon} が確定で通った`);
   await strike(0, hand, b.cards[0].actions[hand], o, true);
+  await captureFx(o);
   await aftermath(o);
   if (S.over) return finale();
   await climaxFx();
@@ -2510,7 +2566,12 @@ async function startMatch(mine, theirs, foeLabel, opt = {}) {
   Sound.wake();
   Bgm.play();
   Sound.cue(2);
-  await cutin('開戦', `${active(S.teams[0]).ch.name} vs ${active(S.teams[1]).ch.name}`, 'gold', 900);
+  if (S.stage && S.stage.id === 't4') {
+    clearTimeout(tickTimer); Sound.breakIn();
+    await cutin('トキバミ', '止めておいてくれて、ありがとう', 'violet', 1500);
+  } else {
+    await cutin('開戦', `${active(S.teams[0]).ch.name} vs ${active(S.teams[1]).ch.name}`, 'gold', 900);
+  }
   busy = false;
   render();
   tickLoop();
