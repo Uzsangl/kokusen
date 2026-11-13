@@ -708,7 +708,7 @@ const ENEMIES = {
       paper:    { name: '引き絞り', rate: RATE.normal, mods: [selfAtk(1500, 3)] } } },
 
   // --- ★★★★:トキバミ(時の流れの外にいる大敵。三陣営の共通の敵) ---
-  tokibami: { name: 'トキバミ', faction: '刻喰', hp: 1 /* 【一時的】試すため。元は45000 */, atk: 3400, dfs: 2000, phys: 1.0, boss: true,
+  tokibami: { name: 'トキバミ', faction: '刻喰', hp: 45000, atk: 3400, dfs: 2000, phys: 1.0, boss: true,
     traits: [
       { key: 'outside', name: '時の外側', desc: '被ダメージ−60%', cut: 0.6 },
       { key: 'weakness', name: '三刻の重ね', desc: `${BREAK_NAME}で3つの力を当てると時の外側が消える` },
@@ -719,7 +719,7 @@ const ENEMIES = {
       paper:    { name: '呑み戻し', rate: RATE.normal, heal: 2000, dispel: 1 } } },
 
   // --- ★★★★★:ゼノ(倒すまで名前は「？？？」)。肉体を倒すと精神離脱体が現れる2段階 ---
-  xeno_body: { name: 'ゼノ', secret: '？？？', faction: '始', hp: 1 /* 【一時的】試すため。元は10000 */, atk: 9000, dfs: 9000, phys: 1.2, boss: true,
+  xeno_body: { name: 'ゼノ', secret: '？？？', faction: '始', hp: 10000, atk: 9000, dfs: 9000, phys: 1.2, boss: true,
     traits: [
       { key: 'hardshell', name: '鋼の刻', desc: 'DFSは下げられない。巻き戻るたびに半減' },
       { key: 'regen', name: '刻戻り', desc: 'ラリーが終わるたびにHP+1600', heal: 1600 } ],
@@ -727,7 +727,7 @@ const ENEMIES = {
       rock:     { name: '圧し止め', rate: RATE.big, mods: [foeAtk(1500, 3)], seal: 1 },
       scissors: { name: '先喰い',   rate: RATE.huge, mods: [foeDfs(2500, 3)] },
       paper:    { name: '呑み戻し', rate: RATE.normal, noheal: 3, seal: 1 } } },
-  xeno_spirit: { name: 'ゼノ・精神離脱体', secret: '？？？・精神離脱体', faction: '始', hp: 1 /* 【一時的】試すため。元は20000 */, atk: 5000, dfs: 0, phys: 1.0, boss: true,
+  xeno_spirit: { name: 'ゼノ・精神離脱体', secret: '？？？・精神離脱体', faction: '始', hp: 20000, atk: 5000, dfs: 0, phys: 1.0, boss: true,
     hiddenUntilActive: true,   // 肉体を倒すまで、敵チームの欄に出さない
     traits: [
       { key: 'rewindRite', name: '巻き戻しの儀', desc: '30ラリーで倒せないと刻が巻き戻る', limit: 30 },
