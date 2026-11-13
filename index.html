@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>刻戦</title>
 <style>
   :root {
@@ -11,6 +11,8 @@
     --gold: #f5c451; --violet: #8b6cff; --red: #ff4d5e; --spd: 1; --tick: 8s;
   }
   * { box-sizing: border-box; }
+  html, body, button { touch-action: manipulation; }
+  input { font-size: 16px !important; }
   body {
     margin: 0; padding: 16px; color: var(--text);
     background: radial-gradient(1200px 600px at 50% -10%, #1c2250 0%, var(--bg) 60%) fixed var(--bg);
@@ -3506,6 +3508,10 @@ function init() {
   renderStages();
   accInit();
   setInterval(pvpWatch, 1000);
+  // 画面の拡大・縮小をさせない(iPhone の Safari は viewport の指定だけでは止まらないため)
+  ['gesturestart', 'gesturechange', 'gestureend'].forEach((ev) => document.addEventListener(ev, (e) => e.preventDefault(), { passive: false }));
+  document.addEventListener('touchmove', (e) => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
+  // ダブルタップでの拡大は、CSS の touch-action: manipulation で止める(続けて押したボタンが効かなくならないように)
   $('joinRoom').onclick = () => { pvpJoin(); renderMode(); };
   $('leaveRoom').onclick = () => { pvpLeave(); renderMode(); };
   $('logBtn').onclick = () => {
