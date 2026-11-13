@@ -586,7 +586,7 @@ const CHARACTERS = [
 // 解放キャラ:称号を解放したプレイヤーだけが使える(トキバミ=「三つの刻を束ねし者」、ゼノ=「完全なる刻」)。
 // まだキャラ選択には出していない。強さは、入れたチームがランダムな3枚に勝つ率で トキバミ約60%・ゼノ約65% に合わせた
 const SPECIAL_CHARS = [
-  { id: 'p_tokibami', name: 'トキバミ', faction: '刻喰', role: '耐久・吸収', unlock: 'trio', hp: 13000, atk: 2500, dfs: 1500, phys: 1.0,
+  { id: 'p_tokibami', name: 'トキバミ', faction: '刻喰', role: '耐久・吸収', unlock: 'trio', hp: 20000, atk: 2000, dfs: 1000, phys: 1.0,
     traits: [{ key: 'outside', name: '時の外側', desc: '被ダメージ−20%', cut: 0.2 },
       { key: 'devour', name: '刻喰い', desc: '与ダメージの20%回復', rate: 0.2 }],
     actions: {
@@ -595,12 +595,12 @@ const SPECIAL_CHARS = [
       paper:    { name: '呑み戻し', rate: RATE.normal, heal: 1200, dispel: 1 } } },
   { id: 'p_xeno', name: 'ゼノ', faction: '始', role: '二段構え', unlock: 'kaji', hp: 9000, atk: 2600, dfs: 3500, phys: 1.1,
     traits: [{ key: 'hardshell', name: '鋼の刻', desc: 'DFSはデバフ・刻印・貫きで下がらない' },
-      { key: 'detach', name: '離脱', desc: '倒れたとき一度だけ、精神離脱体(HP4700・ATK3500・DFS0)として場に残る',
-        formName: 'ゼノ・精神離脱体', hp: 4700, atk: 3500, dfs: 0,
+      { key: 'detach', name: '離脱', desc: '倒れたとき一度だけ、精神離脱体(HP3500・ATK2500・DFS0。技はすべて極大)として場に残る',
+        formName: 'ゼノ・精神離脱体', hp: 3500, atk: 2500, dfs: 0,
         actions: {
-          rock:     { name: '静止の手',   rate: RATE.big },
-          scissors: { name: '先回りの手', rate: RATE.normal, streak: 1 },
-          paper:    { name: '戻しの手',   rate: RATE.normal, resetStreak: 1 } } }],
+          rock:     { name: '静止の手',   rate: RATE.max },
+          scissors: { name: '先回りの手', rate: RATE.max, streak: 1 },
+          paper:    { name: '戻しの手',   rate: RATE.max, resetStreak: 1 } } }],
     actions: {
       rock:     { name: '圧し止め', rate: RATE.big, mods: [foeAtk(800, 3)] },
       scissors: { name: '先喰い',   rate: RATE.huge, mods: [foeDfs(1000, 3)] },
