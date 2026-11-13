@@ -1581,6 +1581,7 @@ function iconHtml(ch, size) {
 let S = null;
 let picked = [];
 let busy = false;      // 演出中は入力を受け付けない
+let SILENCED = false;  // ほかのタブで開き直したため、このタブの音を止めている
 let frozen = false;    // BREAKで時間が止まっている間
 
 // ----- 設定(音・演出の長さ) -----
@@ -3793,6 +3794,33 @@ function init() {
   $('sheet').onclick = (e) => { if (e.target === $('sheet')) $('sheet').classList.add('hidden'); };
   showTitle(true);
   Bgm.stop();               // 最初の画面では曲を流さない(ガラスが砕け終わってから流す)
+  // 別のタブや裏に回ったページから音が鳴り続けないようにする
+  // ・このページが裏に回ったら、音を止める。表に戻ったら、続きから鳴らす(iPhoneでは次に画面に触れたとき)
+  // ・新しいタブでゲームを開いたら、前から開いていたタブの音を止める
+  const audioCtx = () => Sound.wake();
+  document.addEventListener('visibilitychange', () => {
+    const c = audioCtx();
+    if (!c) return;
+    if (document.hidden) c.suspend().catch(() => {});
+    else if (!SILENCED) c.resume().catch(() => {});
+  });
+  window.addEventListener('pagehide', () => { const c = audioCtx(); if (c) c.suspend().catch(() => {}); });
+  try {
+    const bc = new BroadcastChannel('kokusen-audio');
+    bc.onmessage = (e) => {
+      if (e.data !== 'new-tab') return;
+      SILENCED = true;   // あとから開いたタブに譲る(このタブで画面に触れたら、また鳴らせる)
+      Bgm.stop();
+      const c = audioCtx(); if (c) c.suspend().catch(() => {});
+    };
+    bc.postMessage('new-tab');
+  } catch (e) { /* BroadcastChannel が使えないブラウザでは、何もしない */ }
+  document.addEventListener('pointerdown', () => {
+    if (!SILENCED) return;
+    SILENCED = false;
+    const c = audioCtx(); if (c) c.resume().catch(() => {});
+    if (!$('splash')) Bgm.play($('title').classList.contains('hidden') ? ($('battle').classList.contains('hidden') ? 'menu' : 'main') : 'title');
+  }, true);
   Bgm.prepare('title');     // その瞬間にすぐ鳴るよう、先に読み込んでおく
   // タップした場所からひびが走り、BREAKと同じようにガラスが砕けて、タイトル画面が現れる
   const splashGo = async (e) => {
