@@ -2756,7 +2756,12 @@ function soloClear(id) {
 // ※対戦の計算は各プレイヤーのブラウザで行うため、レーティングは遊びとしての数字(改ざんは防げない)
 const SB = { url: 'https://qebyhyftdqkthjplopcl.supabase.co', key: 'sb_publishable_J4YZx8BpLY8SvOSLcjhPUg_tFKiR_8p' };
 const RATING_START = 1500, RATING_K = 32;
-const ACC = { session: null, profile: null, ranking: null, tab: 'login' };
+// アカウントを使ってよいのは、自分たち専用のサイトだけ。
+// raw.githack.com のように誰でもページを置けるサイトでは、ブラウザの保存領域がほかの人のページと共有され、
+// 保存したログイン情報を読まれるおそれがある。そういうサイトではログインさせず、残っているログイン情報も消す
+const HOME_URL = 'https://uzsangl.github.io/test/';
+const isSharedOrigin = (host) => /(^|\.)githack\.com$|(^|\.)githubusercontent\.com$|(^|\.)htmlpreview\.github\.io$|(^|\.)jsdelivr\.net$|(^|\.)rawgit\.com$/.test(host);
+const ACC = { session: null, profile: null, ranking: null, tab: 'login', shared: isSharedOrigin(location.hostname) };
 const escHtml = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const accUid = () => (ACC.session && ACC.session.user ? ACC.session.user.id : null);
 
@@ -2911,6 +2916,10 @@ function renderAcct() {
   const el = $('acct');
   if (!el) return;
   const p = ACC.profile;
+  if (ACC.shared) {
+    el.innerHTML = `<span class="who">このURLではアカウントを使えません(安全のため)。ログインは <a href="${HOME_URL}" style="color:var(--gold)">新しいURL</a> からお願いします。</span>`;
+    return;
+  }
   el.innerHTML = p
     ? `<span class="who">${titleTag(p.title)}<b>${escHtml(p.name)}</b> <span class="rate">レート${p.rating}</span>(${p.wins}勝${p.losses}敗)</span><button id="accOpen">アカウント</button>`
     : ACC.session
@@ -2989,6 +2998,12 @@ async function accOpen() {
   if (ACC.profile) { await accLoadRanking(); renderAccModal(); }
 }
 async function accInit() {
+  if (ACC.shared) {
+    // 共有のサイト:残っているログイン情報を消して、ログインなしで動かす
+    try { localStorage.removeItem('kokusen.auth'); } catch (e) { /* 消せなくても、このページでは使わない */ }
+    renderAcct();
+    return;
+  }
   try { ACC.session = JSON.parse(localStorage.getItem('kokusen.auth') || 'null'); } catch (e) { ACC.session = null; }
   $('accClose').onclick = () => $('accModal').classList.add('hidden');
   $('accModal').onclick = (e) => { if (e.target === $('accModal')) $('accModal').classList.add('hidden'); };
