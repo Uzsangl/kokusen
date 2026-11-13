@@ -328,6 +328,8 @@
   .modal .titles button .rt { color: var(--text); opacity: .8; }
   .modal .titles button small { display: block; font-size: .7rem; color: var(--sub); }
   .modal .titles button:disabled { opacity: .45; }
+  .chars button.lockedChar { opacity: .6; }
+  .chars button.lockedChar .sub { color: var(--gold); }
 </style>
 </head>
 <body>
@@ -593,7 +595,7 @@ const SPECIAL_CHARS = [
       rock:     { name: '止め喰い', rate: RATE.big, mods: [foeAtk(600, 3)] },
       scissors: { name: '先喰い',   rate: RATE.huge },
       paper:    { name: '呑み戻し', rate: RATE.normal, heal: 1200, dispel: 1 } } },
-  { id: 'p_xeno', name: 'ゼノ', faction: '始', role: '二段構え', unlock: 'kaji', hp: 9000, atk: 2600, dfs: 3500, phys: 1.1,
+  { id: 'p_xeno', name: 'ゼノ', secret: '？？？', faction: '始', role: '二段構え', unlock: 'kaji', hp: 9000, atk: 2600, dfs: 3500, phys: 1.1,
     traits: [{ key: 'hardshell', name: '鋼の刻', desc: 'DFSはデバフ・刻印・貫きで下がらない' },
       { key: 'detach', name: '離脱', desc: '倒れたとき一度だけ、精神離脱体(HP3500・ATK2500・DFS0。技はすべて極大)として場に残る',
         formName: 'ゼノ・精神離脱体', hp: 3500, atk: 2500, dfs: 0,
@@ -1454,7 +1456,7 @@ const $ = (id) => document.getElementById(id);
 const ICON_IDS = new Set(['kaji', 'tomari', 'mio', 'moyai', 'shio', 'rei', 'hajime', 'uro', 'moto', 'kasumi',
   'tsuru', 'haya', 'yajiri', 'hane', 'tokibami', 'xeno_body', 'xeno_spirit',
   'a_guard', 'a_chain', 'a_lamp', 'z_mask', 'z_wind', 'z_sand', 'y_runner', 'y_archer', 'y_seer']);
-const ICON_ALIAS = { b_tomari: 'tomari', b_rei: 'rei', b_tsuru: 'tsuru' };
+const ICON_ALIAS = { b_tomari: 'tomari', b_rei: 'rei', b_tsuru: 'tsuru', p_tokibami: 'tokibami', p_xeno: 'xeno_body' };
 const ICON_FACTION = { '錨': 'f-anchor', '零': 'f-zero', '矢': 'f-arrow' };
 function iconHtml(ch, size) {
   const id = ICON_ALIAS[ch.id] || ch.id;
@@ -2305,6 +2307,11 @@ async function transformFx(o) {
 // ★5の場面転換:精神離脱体がHP1になったとき、刻が巻き戻されたとき
 async function stageFx(o) {
   for (const e of o.events) {
+    if (e.type === 'detach') {   // 解放キャラ・ゼノの特性「離脱」
+      flash('#3a0010'); shake(true); Sound.breakIn();
+      await cutin('精神離脱', `${e.side === 0 ? 'こちら' : '相手'}のゼノが、肉体を捨てて場に残る`, 'evil', 1300);
+      render();
+    }
     if (e.type === 'rushHeal') {
       const next = active(S.teams[1]);
       flash('#4ade80'); Sound.heal();
@@ -2695,7 +2702,7 @@ async function pvpStep() {
     if (!PVP.my.t) pvpPublish({ t: { ids: PVP.team, s: PVP.teamSalt }, n: 0 });   // 相手の印を見たので、自分の中身を明かす
     const t = fp.t;
     if (!t || !Array.isArray(t.ids)) { pvpStatus('相手の準備を待っています…'); return; }
-    const chars = t.ids.map((id) => CHARACTERS.find((c) => c.id === id));
+    const chars = t.ids.map((id) => charById(id));
     if (seal(t.s + '|' + t.ids.join(',')) !== PVP.foeTeamSeal || chars.length !== TEAM_SIZE || chars.some((c) => !c) || new Set(t.ids).size !== TEAM_SIZE) {
       pvpStatus('相手のキャラ情報が正しくありません。部屋を出て、入り直してください。'); return;
     }
@@ -2710,7 +2717,7 @@ async function pvpStep() {
       logLater(v ? `対戦相手:${titleOf(v.title) ? `〔${titleOf(v.title).name}〕` : ''}${v.name}(レート${v.r})` : '対戦相手はログインしていないため、レーティングなしの対戦です');
       return v;
     });
-    await startMatch(PVP.team.map((id) => CHARACTERS.find((c) => c.id === id)), chars, '相手');
+    await startMatch(PVP.team.map((id) => charById(id)), chars, '相手');
     pvpStep();
     return;
   }
@@ -3162,6 +3169,7 @@ async function accLoadRanking() {
 function renderAcct() {
   const el = $('acct');
   if (!el) return;
+  if (typeof renderSelect === 'function' && $('picks')) renderSelect();
   const p = ACC.profile;
   if (ACC.shared) {
     el.innerHTML = `<span class="who">このURLではアカウントを使えません(安全のため)。ログインは <a href="${HOME_URL}" style="color:var(--gold)">新しいURL</a> からお願いします。</span>`;
@@ -3289,22 +3297,31 @@ function renderLevels() {
 // ----- キャラ選択 -----
 // キャラ選択:陣営のボタンで、その陣営のキャラだけを並べる。選んだ3枚は上の枠に出る
 let selFaction = '錨';
-const FACTIONS = ['錨', '零', '矢'];
+const FACTIONS = ['錨', '零', '矢', '隔絶'];   // 隔絶:解放キャラ(トキバミ・ゼノ)
+const ALL_CHARS = [...CHARACTERS, ...SPECIAL_CHARS];
+const charById = (id) => ALL_CHARS.find((c) => c.id === id);
+const charGroup = (ch) => (SPECIAL_CHARS.includes(ch) ? '隔絶' : ch.faction);
+// 解放キャラを使えるか(称号を解放したアカウントでログインしているとき)
+const charUnlocked = (ch) => !ch.unlock || myTitles().includes(ch.unlock);
+// 解放キャラの条件の書き方(隠し称号は、解放するまで名前を伏せる)
+const unlockText = (ch) => { const t = titleOf(ch.unlock); return `称号「${t.hidden ? '？？？' : t.name}」${t.hidden ? '(隠し称号)' : ''}を解放すると使える(ログインが必要)`; };
 function renderSelect() {
   const locked = PVP.on && PVP.phase === 'ready';
   // 選んだ3枚(押すと外す)
   $('picks').innerHTML = '';
   for (let i = 0; i < TEAM_SIZE; i++) {
-    const ch = CHARACTERS.find((c) => c.id === picked[i]);
+    const ch = charById(picked[i]);
     const b = document.createElement('button');
     b.className = ch ? '' : 'empty';
-    b.innerHTML = ch ? `<b>${i + 1}番手</b>${iconHtml(ch, 'md')}${ch.name}` : `<b>${i + 1}番手</b>未選択`;
+    b.innerHTML = ch ? `<b>${i + 1}番手</b>${iconHtml(ch, 'md')}${dispName(ch)}` : `<b>${i + 1}番手</b>未選択`;
     b.disabled = !ch || locked;
     if (ch) b.onclick = () => { picked.splice(i, 1); Sound.click(); renderSelect(); };
     $('picks').appendChild(b);
   }
   // 陣営ボーナスの案内
-  const fb = factionBonus(picked.map((id) => CHARACTERS.find((c) => c.id === id)));
+  // 解放していないキャラ(ログアウトしたときなど)は、選んだ3枚から外す
+  picked = picked.filter((id) => charById(id) && charUnlocked(charById(id)));
+  const fb = factionBonus(picked.map((id) => charById(id)));
   $('bonusNote').innerHTML = fb
     ? `<b style="color:var(--gold)">陣営ボーナス発動:${fb.faction}の3枚で、全員に${fb.text}</b>`
     : `陣営ボーナス:同じ陣営で3枚そろえると全員に効果(錨 ${FACTION_BONUS['錨'].text} / 零 ${FACTION_BONUS['零'].text} / 矢 ${FACTION_BONUS['矢'].text})`;
@@ -3318,17 +3335,36 @@ function renderSelect() {
     });
   }
   [...$('factions').children].forEach((b) => {
-    const n = picked.filter((id) => CHARACTERS.find((c) => c.id === id).faction === b.dataset.f).length;
+    const n = picked.filter((id) => charGroup(charById(id)) === b.dataset.f).length;
     b.innerHTML = `${b.dataset.f}${n ? `<span class="n">${n}枚</span>` : ''}`;
     b.classList.toggle('picked', b.dataset.f === selFaction);
   });
   // その陣営のキャラ
   $('charList').innerHTML = '';
-  CHARACTERS.filter((ch) => ch.faction === selFaction).forEach((ch) => {
+  if (selFaction === '隔絶') {
+    const note = document.createElement('p');
+    note.className = 'sub';
+    note.textContent = '隔絶:称号を解放した人だけが使えるキャラ。陣営ボーナスは付かない。';
+    $('charList').appendChild(note);
+  }
+  ALL_CHARS.filter((ch) => charGroup(ch) === selFaction).forEach((ch) => {
     const order = picked.indexOf(ch.id);
     const b = document.createElement('button');
     b.dataset.id = ch.id;
     if (order >= 0) b.classList.add('picked');
+    // まだ解放していないキャラ:鍵と条件だけ。ゼノは倒すまで名前も能力も見せない(いることだけ)
+    if (!charUnlocked(ch)) {
+      const hide = ch.secret && !xenoKnown();
+      b.disabled = true;
+      b.classList.add('lockedChar');
+      b.innerHTML = `<div class="crow">${iconHtml(ch, 'lg')}<div>` +
+        `<div class="name">🔒 ${dispName(ch)}${hide ? '' : `<span class="role">${ch.role || ''}</span>`}</div>` +
+        `<div class="sub">${unlockText(ch)}</div>` +
+        (hide ? '' : `<div class="stats"><span class="s-hp">HP ${ch.hp}</span>　${statLine(ch)}</div><div class="trait">${traitLine(ch)}</div>` + actionList(ch, 'div', 'sub')) +
+        `</div></div>`;
+      $('charList').appendChild(b);
+      return;
+    }
     b.disabled = (order < 0 && picked.length >= TEAM_SIZE) || locked;
     b.innerHTML = `<div class="crow">${iconHtml(ch, 'lg')}<div>` +
       `<div class="name">${order >= 0 ? `【${order + 1}番手】` : ''}${ch.name}<span class="role">${ch.role || ''}</span></div>` +
@@ -3355,7 +3391,7 @@ function renderSelect() {
 
 function start() {
   if (PVP.on) return pvpReady();
-  const mine = picked.map((id) => CHARACTERS.find((c) => c.id === id));
+  const mine = picked.map((id) => charById(id));
   if (MODE === 'solo') {
     const st = STAGES.find((x) => x.id === SOLO.stage);
     return startMatch(mine, stageFoes(st), '敵', { level: st.level, read: st.read, stage: st, noDecay: true });
