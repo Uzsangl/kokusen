@@ -2194,6 +2194,7 @@ async function strike(side, hand, a, o, isBreak) {
   const rate = o.hit ? o.hit.rate : 0;   // 実際に出たダメージ段階(条件つきの格上げ込み)
   const big = isBreak || rate >= RATE.huge;
   const kill = mine && o.ko && o.boutWin === 0;   // 自分の一撃で相手を倒した
+  if (mine && o.hit) { S.maxHit = Math.max(S.maxHit || 0, dealt); if (o.hit.half && kill) S.rainbows = (S.rainbows || 0) + 1; }   // 称号用
   // 技名のカットイン:極大のときと、倒す一撃のとき
   if (rate >= RATE.max) { Sound.cue(3); await cutin(a.name, RATE_LABEL[rate], 'red', 650); }
   else if (kill) { Sound.cue(2); await cutin(a.name, `${HANDS[hand].power}の一撃`, 'gold', 700); }
@@ -2338,6 +2339,8 @@ async function finale() {
     if (n > SOLO.rush) { SOLO.rush = n; try { localStorage.setItem('kokusen.rush', String(n)); } catch (e) { /* 保存できなくても動く */ } }
     log(`ボスラッシュ:${n} / ${S.stage.rush.length}体を倒した(最高記録 ${SOLO.rush}体)`);
   }
+  // 称号用の記録(勝敗が決まった時点で数える)
+  if (!S.recorded) { S.recorded = true; accRecordMatch(S); }
   // オンライン対人のレーティング(1試合に1回だけ)。演出を待たずに、決着した時点で保存を始める
   let rating = null;
   if (MODE === 'pvp' && PVP.foeAccP && !S.rated) {
@@ -2420,6 +2423,7 @@ async function captureFx(o) {
 }
 
 async function playerBreak(hand) {
+  S.breaks = (S.breaks || 0) + 1;   // 称号用
   const b = before();
   breakRally(S, 0, hand, logLater);
   const o = outcome(b);
@@ -2910,6 +2914,36 @@ async function accSaveCleared() {
   } catch (e) { /* 次に保存するときにまとめて送られる */ }
   await accUnlockTitles();
 }
+// 試合が終わったときに、称号用の数え上げをまとめて保存する(ログイン中、どのモードでも)
+async function accRecordMatch(S) {
+  if (!ACC.profile || ACC.progMode !== 'table') return;
+  const s = ACC.stats = ACC.stats || {};
+  const add = (k, n = 1) => { s[k] = (s[k] || 0) + n; };
+  const max = (k, v) => { s[k] = Math.max(s[k] || 0, v); };
+  const me = S.teams[0], ids = me.cards.map((c) => c.ch.id), win = S.winner === 0;
+  add('rallies', S.rally);
+  add('breaks', S.breaks || 0);
+  add('rainbows', S.rainbows || 0);
+  max('rainbowGame', S.rainbows || 0);
+  max('maxHit', S.maxHit || 0);
+  if (MODE === 'pvp') add('pvpPlayed');
+  if (win) {
+    s.charWins = [...new Set([...(s.charWins || []), ...ids])];
+    const fb = me.cards[0].fac;
+    if (fb) { add('bonusWins'); s['bonus_' + fb.faction] = 1; }
+    if (me.cards.every((c) => c.result !== 'lose')) add('flawless');
+    if (me.cards[0].result !== 'lose' && S.teams[1].cards.length === TEAM_SIZE && !(S.stage && S.stage.rush)) add('single');
+    const sid = S.stage && S.stage.id;
+    if (sid) [...new Set(me.cards.map((c) => c.ch.faction))].forEach((f) => { s['solo_' + f] = 1; });
+    if (sid === 'x5' && S.rewinds) s.rewindWin = 1;
+    if ((sid === 'x5' || (S.stage && S.stage.rush)) && ids.includes('kaji')) s.kajiXeno = 1;
+    if (sid === 't4' && fb) s.facToki = 1;
+    if (sid === 't4' && ['kaji', 'rei', 'tsuru'].every((id) => ids.includes(id))) s.trioToki = 1;
+  }
+  if (S.stage && S.stage.rush) max('rushBest', rushCount(S.teams[1]));
+  try { await sbFetch(`/rest/v1/progress?id=eq.${accUid()}`, { method: 'PATCH', prefer: 'return=minimal', body: { stats: s, updated_at: new Date().toISOString() } }); } catch (e) { /* 次に保存するときにまとめて送られる */ }
+  await accUnlockTitles();
+}
 // 称号用の数え上げ(BREAKでとどめを刺した回数など)。ログイン中だけ数える
 async function accAddStat(key, n = 1) {
   if (!ACC.profile || ACC.progMode !== 'table') return;
@@ -2930,7 +2964,11 @@ async function accRateStart(foeRating) {
   const p = ACC.profile;
   if (!p) return;
   const base = { rating: p.rating, wins: p.wins, losses: p.losses };
-  ACC.pending = { base, foeRating };
+  ACC.pending = { base, foeRating, streak: (ACC.stats || {}).curStreak || 0 };
+  if (ACC.stats && ACC.progMode === 'table' && ACC.stats.curStreak) {
+    ACC.stats.curStreak = 0;
+    sbFetch(`/rest/v1/progress?id=eq.${accUid()}`, { method: 'PATCH', prefer: 'return=minimal', body: { stats: ACC.stats } }).catch(() => null);
+  }
   ACC.pendingP = sbFetch(`/rest/v1/profiles?id=eq.${accUid()}`, { method: 'PATCH', prefer: 'return=minimal', body: { ...rateAfter(base, foeRating, 0), updated_at: new Date().toISOString() } }).catch(() => null);
   await ACC.pendingP;
 }
@@ -2943,6 +2981,13 @@ async function accRateFinish(score) {
     await sbFetch(`/rest/v1/profiles?id=eq.${accUid()}`, { method: 'PATCH', prefer: 'return=minimal', body: { ...next, updated_at: new Date().toISOString() } });
     ACC.pending = null;
     Object.assign(p, next);
+    if (ACC.stats && ACC.progMode === 'table') {
+      const s = ACC.stats;
+      s.curStreak = score === 1 ? pd.streak + 1 : 0;
+      s.bestStreak = Math.max(s.bestStreak || 0, s.curStreak);
+      s.bestRating = Math.max(s.bestRating || 0, next.rating);
+      try { await sbFetch(`/rest/v1/progress?id=eq.${accUid()}`, { method: 'PATCH', prefer: 'return=minimal', body: { stats: s } }); } catch (e) { /* 次に保存するときにまとめて送られる */ }
+    }
     renderAcct();
     accUnlockTitles();
     return { before: pd.base.rating, after: next.rating };
@@ -2979,31 +3024,68 @@ async function accSignOut() {
 // ----- 称号:条件を満たすと解放され、選んだものを名前の横に飾れる -----
 // 一度解放した称号は消えない(profiles.titles に残す)。段階は1〜5で、色はステージの★と同じ
 // 称号の一覧(50個)を決めるまでは、画面に出さず、解放もしない
-const TITLES_ON = false;
+const TITLES_ON = true;
 const TITLE_TIERS = { 1: '#38bdf8', 2: '#4ade80', 3: '#f5c451', 4: '#b57bff', 5: '#ff2a3d' };
 const SOLO_STAGES = () => STAGES.filter((x) => !x.rush).map((x) => x.id);
 const hasClear = (c, ...ids) => ids.every((id) => c.cleared.includes(id));
+// c:{ cleared, wins, rating, stats }。stats は progress 表に保存している数え上げ
+const st = (c, k) => c.stats[k] || 0;
 const TITLES = [
+  // ★1 青:遊べば自然に取れる
   { id: 'start', tier: 1, name: '門出', desc: 'アカウントを登録する', test: () => true },
   { id: 'first', tier: 1, name: '初陣', desc: 'ソロのステージをどれか1つクリア', test: (c) => c.cleared.length > 0 },
   { id: 'novice', tier: 1, name: '三刻の見習い', desc: '★のステージを3つともクリア', test: (c) => hasClear(c, 'a1', 'z1', 'y1') },
+  { id: 'pvp1', tier: 1, name: '手合わせ', desc: 'オンライン対人で1回対戦する', test: (c) => st(c, 'pvpPlayed') >= 1 },
   { id: 'win1', tier: 1, name: '初勝利', desc: 'オンライン対人で1勝', test: (c) => c.wins >= 1 },
+  { id: 'break1', tier: 1, name: '初めての刻割り', desc: `${BREAK_NAME}を1回発動する`, test: (c) => st(c, 'breaks') >= 1 },
+  { id: 'facA', tier: 1, name: '錨の門下', desc: '錨のキャラを入れて、ソロを1回クリア', test: (c) => st(c, 'solo_錨') >= 1 },
+  { id: 'facZ', tier: 1, name: '零の門下', desc: '零のキャラを入れて、ソロを1回クリア', test: (c) => st(c, 'solo_零') >= 1 },
+  { id: 'facY', tier: 1, name: '矢の門下', desc: '矢のキャラを入れて、ソロを1回クリア', test: (c) => st(c, 'solo_矢') >= 1 },
+  { id: 'rush1', tier: 1, name: '連戦の始まり', desc: 'ボスラッシュで1体倒す', test: (c) => st(c, 'rushBest') >= 1 },
+  // ★2 緑:少しやり込む
   { id: 'gate', tier: 2, name: '関所破り', desc: '★★のステージをどれか1つクリア', test: (c) => ['a2', 'z2', 'y2'].some((id) => c.cleared.includes(id)) },
   { id: 'soldier', tier: 2, name: '三陣営の兵', desc: '★★のステージを3つともクリア', test: (c) => hasClear(c, 'a2', 'z2', 'y2') },
   { id: 'win10', tier: 2, name: '歴戦', desc: 'オンライン対人で10勝', test: (c) => c.wins >= 10 },
-  { id: 'breaker', tier: 2, name: '刻を割る者', desc: `${BREAK_NAME}でとどめを刺す(累計10回)`, test: (c) => (c.stats.breakKills || 0) >= 10 },
+  { id: 'streak3', tier: 2, name: '三連勝', desc: 'オンライン対人で3連勝', test: (c) => st(c, 'bestStreak') >= 3 },
+  { id: 'breaker', tier: 2, name: '刻を割る者', desc: `${BREAK_NAME}でとどめを刺す(累計10回)`, test: (c) => st(c, 'breakKills') >= 10 },
+  { id: 'bond', tier: 2, name: '陣の結束', desc: '陣営ボーナスありで10回勝つ', test: (c) => st(c, 'bonusWins') >= 10 },
+  { id: 'rainbow', tier: 2, name: '虹を見た者', desc: '虹のダメージを出す', test: (c) => st(c, 'rainbows') >= 1 },
+  { id: 'flawless', tier: 2, name: '無傷の刻', desc: '1枚も倒されずに勝つ', test: (c) => st(c, 'flawless') >= 1 },
+  { id: 'rally1000', tier: 2, name: '千の刻', desc: '累計1000ラリー戦う', test: (c) => st(c, 'rallies') >= 1000 },
+  { id: 'rush2', tier: 2, name: '連戦の兵', desc: 'ボスラッシュで2体倒す', test: (c) => st(c, 'rushBest') >= 2 },
+  // ★3 金:腕が要る
   { id: 'anchor3', tier: 3, name: '大錨を越えし者', desc: '錨★★★をクリア', test: (c) => hasClear(c, 'a3') },
   { id: 'zero3', tier: 3, name: '針を読む者', desc: '零★★★をクリア', test: (c) => hasClear(c, 'z3') },
   { id: 'arrow3', tier: 3, name: '天眼を射抜く者', desc: '矢★★★をクリア', test: (c) => hasClear(c, 'y3') },
-  { id: 'r1600', tier: 3, name: '刻読み', desc: 'レート1600に到達', test: (c) => c.rating >= 1600 },
+  { id: 'r1550', tier: 3, name: '刻読み', desc: 'レート1550に到達', test: (c) => c.rating >= 1550 || st(c, 'bestRating') >= 1550 },
   { id: 'win50', tier: 3, name: '百戦錬磨', desc: 'オンライン対人で50勝', test: (c) => c.wins >= 50 },
+  { id: 'streak5', tier: 3, name: '五連勝', desc: 'オンライン対人で5連勝', test: (c) => st(c, 'bestStreak') >= 5 },
+  { id: 'oneshot', tier: 3, name: '一撃必殺', desc: '1発で10000以上のダメージを出す', test: (c) => st(c, 'maxHit') >= 10000 },
+  { id: 'allchars', tier: 3, name: '全員使い', desc: `${CHARACTERS.length}体全員で、それぞれ1回以上勝つ`, test: (c) => CHARACTERS.every((ch) => (c.stats.charWins || []).includes(ch.id)) },
+  { id: 'break100', tier: 3, name: '刻を砕く者', desc: `${BREAK_NAME}でとどめを刺す(累計100回)`, test: (c) => st(c, 'breakKills') >= 100 },
+  { id: 'rush3', tier: 3, name: '連戦の将', desc: 'ボスラッシュで3体倒す', test: (c) => st(c, 'rushBest') >= 3 },
+  // ★4 紫:かなり難しい
   { id: 'all3', tier: 4, name: '三陣営の覇者', desc: '★★★を3つともクリア', test: (c) => hasClear(c, 'a3', 'z3', 'y3') },
   { id: 'toki', tier: 4, name: '刻喰らいを捕らえし者', desc: '★★★★をクリア', test: (c) => hasClear(c, 't4') },
-  { id: 'r1800', tier: 4, name: '刻の支配者', desc: 'レート1800に到達', test: (c) => c.rating >= 1800 },
+  { id: 'r1600', tier: 4, name: '刻の支配者', desc: 'レート1600に到達', test: (c) => c.rating >= 1600 || st(c, 'bestRating') >= 1600 },
   { id: 'win100', tier: 4, name: '千刻の兵', desc: 'オンライン対人で100勝', test: (c) => c.wins >= 100 },
+  { id: 'streak7', tier: 4, name: '七連勝', desc: 'オンライン対人で7連勝', test: (c) => st(c, 'bestStreak') >= 7 },
+  { id: 'single', tier: 4, name: '単騎', desc: '1番手だけで相手の3枚を倒して勝つ', test: (c) => st(c, 'single') >= 1 },
+  { id: 'rewound', tier: 4, name: '巻き戻しを越えし者', desc: '★★★★★で巻き戻されたあとに勝つ', test: (c) => st(c, 'rewindWin') >= 1 },
+  { id: 'rainbow3', tier: 4, name: '虹の連撃', desc: '1試合で虹のダメージを3回出す', test: (c) => st(c, 'rainbowGame') >= 3 },
+  { id: 'bond3', tier: 4, name: '三陣営の結束', desc: '錨・零・矢それぞれの陣営ボーナスで勝つ', test: (c) => ['錨', '零', '矢'].every((f) => st(c, 'bonus_' + f) >= 1) },
+  { id: 'rush4', tier: 4, name: '連戦の覇', desc: 'ボスラッシュでゼノまでたどり着く', test: (c) => st(c, 'rushBest') >= 4 },
+  // ★5 赤:ほぼ極み
   { id: 'xeno', tier: 5, name: '始まりを見た者', desc: '★★★★★をクリア', test: (c) => hasClear(c, 'x5') },
   { id: 'all', tier: 5, name: '刻の覇者', desc: 'ソロの全ステージをクリア(ボスラッシュは除く)', test: (c) => hasClear(c, ...SOLO_STAGES()) },
   { id: 'top', tier: 5, name: '頂に立つ者', desc: 'レーティングのランキングで1位になる', test: (c) => !!c.stats.top },
+  { id: 'rush5', tier: 5, name: '連戦を制す者', desc: 'ボスラッシュを突破する', test: (c) => st(c, 'rushBest') >= 5 },
+  { id: 'r1650', tier: 5, name: '刻神', desc: 'レート1650に到達', test: (c) => c.rating >= 1650 || st(c, 'bestRating') >= 1650 },
+  { id: 'win500', tier: 5, name: '永劫の兵', desc: 'オンライン対人で500勝', test: (c) => c.wins >= 500 },
+  { id: 'kaji', tier: 5, name: '完全なる刻', desc: 'カジをパーティに入れて★★★★★をクリア', test: (c) => st(c, 'kajiXeno') >= 1 },
+  { id: 'outside', tier: 5, name: '時の外側', desc: '★★★★を同じ陣営3枚でクリア', test: (c) => st(c, 'facToki') >= 1 },
+  { id: 'streak10', tier: 5, name: '十連勝', desc: 'オンライン対人で10連勝', test: (c) => st(c, 'bestStreak') >= 10 },
+  { id: 'trio', tier: 5, name: '三つの刻を束ねし者', desc: 'カジ・レイ・ツルの3枚でトキバミを倒す', hidden: true, test: (c) => st(c, 'trioToki') >= 1 },
 ];
 const titleOf = (id) => TITLES.find((t) => t.id === id);
 const titleTag = (id) => { const t = titleOf(id); return t ? `<span class="ttl" style="--tc:${TITLE_TIERS[t.tier]}">${escHtml(t.name)}</span>` : ''; };
@@ -3076,8 +3158,10 @@ function renderAccModal() {
         ? `<p class="sub" style="margin:0 0 6px">解放した称号を押すと、名前の横に飾れます。解放率は、登録している全プレイヤーのうち持っている人の割合です。</p>
           <div class="titles"><button data-t="" class="${p.title ? '' : 'picked'}"><b>なし</b></button>${TITLES.map((t) => {
             const ok = myTitles().includes(t.id), st = ACC.titleStats;
-            const rate = st && st.total ? `解放率 ${(100 * (st.cnt[t.id] || 0) / st.total).toFixed((st.cnt[t.id] || 0) * 1000 < st.total ? 1 : 0)}%` : '';
-            return `<button data-t="${t.id}" class="${p.title === t.id ? 'picked' : ''}" style="--tc:${TITLE_TIERS[t.tier]}" ${ok ? '' : 'disabled'}><b><i>${'★'.repeat(t.tier)}</i>${escHtml(t.name)}</b><small>${ok ? '' : '🔒 '}${escHtml(t.desc)}</small><small class="rt">${rate}</small></button>`;
+            const n = st && st.cnt[t.id] || 0, pc = st && st.total ? 100 * n / st.total : 0;
+            const rate = st && st.total ? `解放率 ${n === 0 ? '0' : pc < 1 ? pc.toFixed(1) : Math.round(pc)}%` : '';
+            const secret = t.hidden && !ok;
+            return `<button data-t="${t.id}" class="${p.title === t.id ? 'picked' : ''}" style="--tc:${TITLE_TIERS[t.tier]}" ${ok ? '' : 'disabled'}><b><i>${'★'.repeat(t.tier)}</i>${secret ? '？？？' : escHtml(t.name)}</b><small>${ok ? '' : '🔒 '}${secret ? '隠し称号' : escHtml(t.desc)}</small><small class="rt">${rate}</small></button>`;
           }).join('')}</div>`
         : '<p class="sub">称号を使うには、管理者がSupabaseで準備のSQLを実行する必要があります。</p>'}${TITLES_ON ? '' : '-->'}
       <h2 style="margin-top:14px">レーティング上位</h2>${list}`;
