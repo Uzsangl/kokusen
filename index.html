@@ -3135,7 +3135,12 @@ const titleTag = (id) => { const t = titleOf(id); return t ? `<span class="ttl" 
 const titleReady = () => TITLES_ON && !!ACC.profile && Array.isArray(ACC.profile.titles);
 const myTitles = () => (titleReady() ? ACC.profile.titles : []);
 // 条件を満たした称号を解放して保存する(一度解放したら消えない)
-async function accUnlockTitles() {
+// 同時に呼ばれても二重に解放しないよう、1つずつ順番に処理する
+function accUnlockTitles() {
+  ACC.unlockChain = (ACC.unlockChain || Promise.resolve()).then(unlockTitlesNow, unlockTitlesNow);
+  return ACC.unlockChain;
+}
+async function unlockTitlesNow() {
   const p = ACC.profile;
   if (!titleReady()) return;
   const c = { cleared: SOLO.cleared, wins: p.wins, rating: p.rating, stats: ACC.stats || {} };
@@ -3146,8 +3151,33 @@ async function accUnlockTitles() {
     await sbFetch(`/rest/v1/profiles?id=eq.${accUid()}`, { method: 'PATCH', prefer: 'return=minimal', body: { titles: next } });
     p.titles = next;
     renderAcct();
-    if (typeof cutin === 'function' && !busy) add.forEach((id) => logLater(`称号「${titleOf(id).name}」を解放した`));
+    // 解放したことは、メニュー(キャラ選択)に戻ったときにカットインで知らせる
+    ACC.newTitles = [...new Set([...(ACC.newTitles || []), ...add])];
+    showNewTitles();
   } catch (e) { /* 次の機会に保存する */ }
+}
+// 解放した称号を、メニューにいるときに1つずつカットインで見せる(対戦中は、メニューに戻るまで待つ)
+let titleFxBusy = false;
+async function showNewTitles() {
+  if (titleFxBusy || !ACC.newTitles || !ACC.newTitles.length) return;
+  if ($('select').classList.contains('hidden') || busy) return;
+  titleFxBusy = true;
+  try {
+    // 一度にたくさん解放したとき(初めてログインしたときなど)は、まとめて1回で知らせる
+    if (ACC.newTitles.length > 3) {
+      const list = ACC.newTitles.splice(0).map(titleOf).filter(Boolean);
+      const top = Math.max(...list.map((t) => t.tier));
+      Sound.wake(); Sound.cue(top >= 4 ? 4 : 2);
+      await cutin(`称号を${list.length}個解放`, list.slice(0, 3).map((t) => t.name).join('・') + (list.length > 3 ? ' ほか' : ''), top >= 5 ? 'rainbow' : 'gold', 2000);
+    }
+    while (ACC.newTitles.length && !$('select').classList.contains('hidden')) {
+      const t = titleOf(ACC.newTitles.shift());
+      if (!t) continue;
+      Sound.wake(); Sound.cue(t.tier >= 4 ? 4 : 2);
+      if (t.tier >= 5) Particles.shower(COLORS.rainbow, 120);
+      await cutin(t.name, `${'★'.repeat(t.tier)} 称号解放`, t.tier >= 5 ? 'rainbow' : t.tier === 4 ? 'violet' : 'gold', 1600);
+    }
+  } finally { titleFxBusy = false; }
 }
 // 称号一覧の解放率:登録している全プレイヤーのうち、その称号を持っている人の割合
 async function accLoadTitleStats() {
@@ -3456,6 +3486,7 @@ function init() {
     $('select').classList.remove('hidden');
     document.body.classList.remove('in-battle');
     if (PVP.on) { PVP.phase = 'idle'; pvpJoin(); renderMode(); }   // 同じ合言葉のまま、もう一度キャラ選びから
+    showNewTitles();   // 対戦中に解放した称号を知らせる
   };
   MODES.forEach(([label, m]) => {
     const b = document.createElement('button');
