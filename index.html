@@ -583,6 +583,30 @@ const CHARACTERS = [
 ];
 
 // ===== ソロモードの敵(プレイヤーは選べない、ソロ専用の能力値) =====
+// 解放キャラ:称号を解放したプレイヤーだけが使える(トキバミ=「三つの刻を束ねし者」、ゼノ=「完全なる刻」)。
+// まだキャラ選択には出していない。強さは、入れたチームがランダムな3枚に勝つ率で トキバミ約60%・ゼノ約65% に合わせた
+const SPECIAL_CHARS = [
+  { id: 'p_tokibami', name: 'トキバミ', faction: '刻喰', role: '耐久・吸収', unlock: 'trio', hp: 13000, atk: 2500, dfs: 1500, phys: 1.0,
+    traits: [{ key: 'outside', name: '時の外側', desc: '被ダメージ−20%', cut: 0.2 },
+      { key: 'devour', name: '刻喰い', desc: '与ダメージの20%回復', rate: 0.2 }],
+    actions: {
+      rock:     { name: '止め喰い', rate: RATE.big, mods: [foeAtk(600, 3)] },
+      scissors: { name: '先喰い',   rate: RATE.huge },
+      paper:    { name: '呑み戻し', rate: RATE.normal, heal: 1200, dispel: 1 } } },
+  { id: 'p_xeno', name: 'ゼノ', faction: '始', role: '二段構え', unlock: 'kaji', hp: 9000, atk: 2600, dfs: 3500, phys: 1.1,
+    traits: [{ key: 'hardshell', name: '鋼の刻', desc: 'DFSはデバフ・刻印・貫きで下がらない' },
+      { key: 'detach', name: '離脱', desc: '倒れたとき一度だけ、精神離脱体(HP4700・ATK3500・DFS0)として場に残る',
+        formName: 'ゼノ・精神離脱体', hp: 4700, atk: 3500, dfs: 0,
+        actions: {
+          rock:     { name: '静止の手',   rate: RATE.big },
+          scissors: { name: '先回りの手', rate: RATE.normal, streak: 1 },
+          paper:    { name: '戻しの手',   rate: RATE.normal, resetStreak: 1 } } }],
+    actions: {
+      rock:     { name: '圧し止め', rate: RATE.big, mods: [foeAtk(800, 3)] },
+      scissors: { name: '先喰い',   rate: RATE.huge, mods: [foeDfs(1000, 3)] },
+      paper:    { name: '呑み戻し', rate: RATE.normal, seal: 1 } } },
+];
+
 // 各陣営に★・★★・★★★の3ステージ、全9ステージ。★と★★は3対3、★★★は3対1(敵はボス1体、特性3つ)。
 // 敵の能力値はステージごとに決める。hp と atk は、下の STAGES の倍率(hp, atk)を掛けた値になる。
 // 特性の key の処理は、プレイヤーのキャラと共通(「特性」と書いた箇所)。unbreak はボス用。
@@ -875,7 +899,7 @@ const active = (team) => team.cards[team.idx];
 // ゼノは、一度倒すまで名前を伏せる(ソロのクリア記録で判定。シミュレーターでは常に本名)
 const xenoKnown = () => typeof SOLO === 'undefined' || SOLO.cleared.includes('x5');
 const dispName = (ch) => (ch.secret && !xenoKnown() ? ch.secret : ch.name);
-const nameOf = (c) => (c.form ? traitOf(c, 'transform').formName : dispName(c.ch));
+const nameOf = (c) => (c.form ? c.formName || traitOf(c, 'transform').formName : dispName(c.ch));
 
 function judge(a, b) {
   if (a === b) return 0;
@@ -1094,6 +1118,14 @@ function endRally(S, log, winSide) {
   const sp = active(S.teams[1]), rite = traitOf(sp, 'rewindRite');
   // 期限までに倒せなかったとき(こちらが全滅していれば、巻き戻らずに負け)
   if (rite && sp.hp > 0 && sp.turn >= rite.limit && active(S.teams[0]).hp > 0) { rewindMatch(S, log); return; }
+  // 特性「離脱」:倒れたとき一度だけ、別の姿で場に残る(撃破には数えない)
+  S.teams.forEach((t, side) => {
+    const f = active(t), dt = traitOf(f, 'detach');
+    if (f.hp > 0 || !dt || f.form) return;
+    Object.assign(f, { form: 1, formName: dt.formName, hp: dt.hp, max: dt.hp, atk: dt.atk, dfs: dt.dfs, actions: dt.actions, mods: [], poison: 0, poisonDmg: 0, poisonStacks: 0, noHeal: 0 });
+    S.events.push({ type: 'detach', side });
+    log(`　${t.label}の${f.ch.name}の肉体が倒れた → 「${dt.formName}」として場に残る(HP${dt.hp}・ATK${dt.atk}・DFS${dt.dfs})`);
+  });
   const [a, b] = S.teams;
   const ko = S.teams.map((t) => active(t).hp <= 0);
   if (!ko[0] && !ko[1]) return;
