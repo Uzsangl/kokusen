@@ -320,10 +320,12 @@
   .modal ol li.me { color: var(--gold); font-weight: 700; }
   .modal ol .r { float: right; color: var(--sub); }
   .ttl { display: inline-block; margin-right: 4px; padding: 0 6px; border-radius: 6px; font-size: .72em; font-weight: 700; vertical-align: .1em;
-    color: #1a1200; background: linear-gradient(90deg, #fff3c4, var(--gold)); }
+    color: var(--tc, var(--gold)); border: 1px solid var(--tc, var(--gold)); background: color-mix(in srgb, var(--tc, var(--gold)) 15%, transparent); }
   .modal .titles { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
   .modal .titles button { text-align: left; padding: 6px 8px; }
-  .modal .titles button b { display: block; font-size: .85rem; }
+  .modal .titles button b { display: block; font-size: .85rem; color: var(--tc, var(--text)); }
+  .modal .titles button b i { font-style: normal; font-size: .62rem; margin-right: 3px; letter-spacing: -.05em; }
+  .modal .titles button .rt { color: var(--text); opacity: .8; }
   .modal .titles button small { display: block; font-size: .7rem; color: var(--sub); }
   .modal .titles button:disabled { opacity: .45; }
 </style>
@@ -2326,7 +2328,7 @@ async function finale() {
   clearTimeout(tickTimer);
   freeze(false);
   const score = `(${S.teams[0].wins}-${S.teams[1].wins})`;
-  const msg = (S.winner === -1 ? '引き分け' : S.winner === 0 ? 'あなたの勝利!' : 'あなたの敗北…') + score;
+  const msg = (S.winner === -1 ? '引き分け' : S.winner === 0 ? 'あなたの勝利!' : 'あなたの敗北…') + score + (S.forfeit === 0 ? '(相手の応答なし)' : S.forfeit === 1 ? '(応答なし)' : '');
   log(`=== ${msg} ${S.rally}ラリー ===`);
   setResult(msg);
   render();
@@ -2341,7 +2343,7 @@ async function finale() {
   if (MODE === 'pvp' && PVP.foeAccP && !S.rated) {
     S.rated = true;
     const score = S.winner === 0 ? 1 : S.winner === 1 ? 0 : 0.5;
-    rating = PVP.foeAccP.then((v) => (v ? accRate(score, v.r) : null));
+    rating = PVP.foeAccP.then((v) => (v ? accRateFinish(score) : null));
   }
   if (S.winner === 0) {
     Sound.fanfare(); Particles.shower(COLORS.rainbow, 220); flash('#ffffff');
@@ -2429,6 +2431,7 @@ async function playerBreak(hand) {
   freeze(false);
   setResult(`${BREAK_NAME}! ${HANDS[hand].icon} が確定で通った`);
   await strike(0, hand, b.cards[0].actions[hand], o, true);
+  if (o.cards[1].hp <= 0) accAddStat('breakKills');   // 称号「刻を割る者」用
   await captureFx(o);
   await aftermath(o);
   if (S.over) return finale();
@@ -2619,13 +2622,13 @@ function pvpJoin() {
 function pvpReady() {
   PVP.team = picked.slice(); PVP.teamSalt = rnd(); PVP.phase = 'ready';
   const p = ACC.profile;
-  pvpPublish({ ts: seal(PVP.teamSalt + '|' + PVP.team.join(',')), acc: p ? { id: p.id } : null });
+  pvpPublish({ ts: seal(PVP.teamSalt + '|' + PVP.team.join(',')), acc: p ? { id: p.id } : null, ff: null });
   pvpStep();
   renderSelect();
 }
 function pvpLeave() {
   PVP.phase = 'idle'; PVP.code = ''; PVP.applying = false;
-  pvpPublish({ g: null, ts: null, t: null, n: null, c: null, r: null, b: null, last: null, acc: null });
+  pvpPublish({ g: null, ts: null, t: null, n: null, c: null, r: null, b: null, last: null, acc: null, ff: null });
   if (PVP.room && PVP.room.leave) PVP.room.leave();
   renderSelect();
 }
@@ -2664,8 +2667,10 @@ async function pvpStep() {
     // レーティング戦:お互いにログインしていて、別のアカウントどうしのときだけ
     // 相手が名乗ったアカウントは、サーバーに保存されている情報で確かめる(名前・称号・レートは相手の申告を使わない)
     PVP.foeAcc = null;
-    PVP.foeAccP = accVerifyFoe(fp.acc).then((v) => {
+    ACC.pending = null;
+    PVP.foeAccP = accVerifyFoe(fp.acc).then(async (v) => {
       PVP.foeAcc = v;
+      if (v) await accRateStart(v.r);
       logLater(v ? `対戦相手:${titleOf(v.title) ? `〔${titleOf(v.title).name}〕` : ''}${v.name}(レート${v.r})` : '対戦相手はログインしていないため、レーティングなしの対戦です');
       return v;
     });
@@ -2676,6 +2681,8 @@ async function pvpStep() {
 
   if (PVP.phase !== 'play' || PVP.applying || !S || S.over) return;
   if (!fp) { setResult('相手との接続が切れました。相手が戻るのを待っています…'); return; }
+  // 相手が「応答なしで不戦勝」を宣言した(こちらが止まっていたか、接続が切れていた)
+  if (fp.ff != null && fp.ff >= PVP.n - 1) { await pvpForfeit(1); return; }
   const k = PVP.n, turn = pvpTurn();
   // 相手がこのラリーについて公開している内容。相手が先に次へ進んでいたら、ひとつ前の記録を見る
   const fr = fp.n === k ? fp : fp.last && fp.last.n === k ? fp.last : null;
@@ -2696,6 +2703,29 @@ async function pvpStep() {
   if (seal(r.s + '|' + k + '|' + r.h) !== PVP.foeSeal[k]) { setResult('相手の手の情報が正しくありません。対戦を続けられません。'); return; }
   const mine = PVP.hand, mySalt = PVP.salt;
   await pvpApply(() => normalRally(mine, r.h, null), { n: k, r: { h: mine, s: mySalt }, c: PVP.my.c });
+}
+
+// 相手の応答を待っている時間を数え、60秒続いたら不戦勝にする。
+// 待つのは、こちらが手を選び終わったのに相手が出さないとき・相手のBREAKの番・相手との接続が切れているとき
+const PVP_TIMEOUT = 60;
+function pvpWatch() {
+  const playing = PVP.on && PVP.phase === 'play' && S && !S.over && !PVP.applying;
+  const turn = playing ? pvpTurn() : '';
+  const waiting = playing && (!pvpFoe() || turn === 'foe' || (turn === 'pick' && PVP.hand !== null) || (turn === 'mine' && PVP.hand !== null));
+  if (!waiting) { PVP.waitSince = 0; return; }
+  if (!PVP.waitSince) PVP.waitSince = Date.now();
+  const left = PVP_TIMEOUT - Math.floor((Date.now() - PVP.waitSince) / 1000);
+  if (left <= 0) { PVP.waitSince = 0; pvpForfeit(0); return; }
+  if (left <= PVP_TIMEOUT - 15) setResult(`相手の応答がありません。あと${left}秒で不戦勝になります`);
+}
+// 不戦勝・不戦敗で試合を終える。side:勝った側(0=自分、1=相手)
+async function pvpForfeit(side) {
+  if (!S || S.over) return;
+  S.over = true; S.winner = side; S.forfeit = side;
+  if (side === 0) pvpPublish({ ff: PVP.n });   // 相手が戻ってきたときに、相手の画面も終わらせる
+  log(side === 0 ? '相手の応答が60秒なかったため、不戦勝' : '応答がなかったため、相手の不戦勝');
+  busy = true;
+  try { await finale(); } finally { busy = false; flushLog(); render(); }
 }
 
 // 1ラリーぶんを画面に流し、終わったら次のラリーへ進める
@@ -2737,7 +2767,7 @@ function renderMode() {
   $('cpuOpts').classList.toggle('hidden', MODE !== 'cpu');
   $('soloOpts').classList.toggle('hidden', MODE !== 'solo');
   $('netOpts').classList.toggle('hidden', MODE !== 'pvp');
-  if (PVP.on && !PVP.room) pvpStatus('この画面では、オンライン対人は使えません。公開サイト版(https://uzsangl.github.io/test/)を、二人とも開いてください。');
+  if (PVP.on && !PVP.room) pvpStatus('この画面では、オンライン対人は使えません。公開サイト版(https://uzsangl.github.io/kokusen/)を、二人とも開いてください。');
   else if (PVP.on && PVP.phase === 'idle') pvpStatus('相手と決めた合言葉を入れて、「部屋に入る」を押してください。');
   $('roomCode').disabled = $('joinRoom').disabled = !PVP.room || PVP.phase !== 'idle';
   $('leaveRoom').classList.toggle('hidden', PVP.phase === 'idle');
@@ -2832,7 +2862,9 @@ function accErrText(e) {
 
 // 自分のプレイヤー情報を読む。なければ作る。端末に残っているクリア記録はアカウントにまとめる
 // 自分のプレイヤー情報を読む。なければ作る。
-// ゲストの記録をアカウントへ移すのは、アカウントを作るとき(新規登録)の1回だけ。既存のアカウントには混ぜない
+// クリア記録などの非公開の記録は、本人だけが読める progress 表に置く(SQLを実行する前は、旧形式の profiles.cleared を使う)。
+// ゲストの記録をアカウントへ移すのは、この端末で最初に作ったアカウントの1回だけ。既存のアカウントには混ぜない
+const isMissingTable = (e) => e && (e.status === 404 || e.code === 'PGRST205' || e.code === '42P01');
 async function accLoadProfile(name) {
   const uid = accUid();
   if (!uid) return;
@@ -2840,47 +2872,80 @@ async function accLoadProfile(name) {
   SOLO.cleared = readCleared(userKey(uid));
   renderStages();
   const rows = await sbFetch(`/rest/v1/profiles?id=eq.${uid}&select=*`);
-  let p = rows && rows[0];
+  let p = rows && rows[0], created = false;
   if (!p) {
     const nm = (name || (ACC.session.user.user_metadata || {}).name || '名無し').slice(0, 12);
-    // ゲストの記録を持っていくのは、この端末で最初に作ったアカウントだけ
-    let migrated = false;
-    try { migrated = localStorage.getItem('kokusen.guestMoved') === '1'; } catch (e) { /* 読めなければ未移行として扱う */ }
-    const made = await sbFetch('/rest/v1/profiles', { method: 'POST', prefer: 'return=representation', body: { id: uid, name: nm, cleared: migrated ? [] : readCleared(GUEST_KEY) } });
-    p = made[0];
-    try { localStorage.setItem('kokusen.guestMoved', '1'); } catch (e) { /* 保存できなくても動く */ }
+    p = (await sbFetch('/rest/v1/profiles', { method: 'POST', prefer: 'return=representation', body: { id: uid, name: nm } }))[0];
+    created = true;
   }
   ACC.profile = p;
-  // サーバーの記録に、この端末でこのアカウントのままクリアしたが送れていなかった分を足す
-  const all = [...new Set([...(p.cleared || []), ...readCleared(userKey(uid))])].filter((id) => STAGES.some((x) => x.id === id));
-  const serverMissing = all.some((id) => !(p.cleared || []).includes(id));
+  // 非公開の記録
+  let server = { cleared: p.cleared || [], stats: {} };
+  ACC.progMode = 'legacy';
+  try {
+    const pr = await sbFetch(`/rest/v1/progress?id=eq.${uid}&select=*`);
+    ACC.progMode = 'table';
+    if (pr && pr[0]) server = { cleared: pr[0].cleared || [], stats: pr[0].stats || {} };
+    else await sbFetch('/rest/v1/progress', { method: 'POST', prefer: 'return=minimal', body: { id: uid, cleared: [], stats: {} } });
+  } catch (e) { if (!isMissingTable(e)) throw e; }
+  ACC.stats = { ...server.stats };
+  let moved = false;
+  try { moved = localStorage.getItem('kokusen.guestMoved') === '1'; } catch (e) { /* 読めなければ未移行として扱う */ }
+  const guest = created && !moved ? readCleared(GUEST_KEY) : [];
+  if (created) { try { localStorage.setItem('kokusen.guestMoved', '1'); } catch (e) { /* 保存できなくても動く */ } }
+  // サーバーの記録に、この端末でこのアカウントのままクリアしたが送れていなかった分と、移すゲストの記録を足す
+  const all = [...new Set([...server.cleared, ...readCleared(userKey(uid)), ...guest])].filter((id) => STAGES.some((x) => x.id === id));
+  const serverMissing = all.some((id) => !server.cleared.includes(id));
   SOLO.cleared = all;
   writeCleared(userKey(uid), all);
   renderStages(); renderAcct();
   if (serverMissing) await accSaveCleared();
-  await accCheckTitle();
+  await accUnlockTitles();
 }
 async function accSaveCleared() {
   if (!ACC.profile) return;
   try {
-    await sbFetch(`/rest/v1/profiles?id=eq.${accUid()}`, { method: 'PATCH', prefer: 'return=minimal', body: { cleared: SOLO.cleared, updated_at: new Date().toISOString() } });
-    ACC.profile.cleared = SOLO.cleared.slice();
+    if (ACC.progMode === 'table') await sbFetch(`/rest/v1/progress?id=eq.${accUid()}`, { method: 'PATCH', prefer: 'return=minimal', body: { cleared: SOLO.cleared, stats: ACC.stats || {}, updated_at: new Date().toISOString() } });
+    else await sbFetch(`/rest/v1/profiles?id=eq.${accUid()}`, { method: 'PATCH', prefer: 'return=minimal', body: { cleared: SOLO.cleared, updated_at: new Date().toISOString() } });
   } catch (e) { /* 次に保存するときにまとめて送られる */ }
+  await accUnlockTitles();
+}
+// 称号用の数え上げ(BREAKでとどめを刺した回数など)。ログイン中だけ数える
+async function accAddStat(key, n = 1) {
+  if (!ACC.profile || ACC.progMode !== 'table') return;
+  ACC.stats = ACC.stats || {};
+  ACC.stats[key] = (ACC.stats[key] || 0) + n;
+  try { await sbFetch(`/rest/v1/progress?id=eq.${accUid()}`, { method: 'PATCH', prefer: 'return=minimal', body: { stats: ACC.stats, updated_at: new Date().toISOString() } }); } catch (e) { /* 次に保存するときにまとめて送られる */ }
+  await accUnlockTitles();
 }
 // オンライン対人の結果でレーティングを更新する(イロレーティング)。score:勝ち1、引き分け0.5、負け0
-async function accRate(score, foeRating) {
+// base は対戦前の自分の記録 { rating, wins, losses }。score:勝ち1、引き分け0.5、負け0
+function rateAfter(base, foeRating, score) {
+  const expect = 1 / (1 + Math.pow(10, (foeRating - base.rating) / 400));
+  return { rating: Math.max(100, Math.round(base.rating + RATING_K * (score - expect))), wins: base.wins + (score === 1 ? 1 : 0), losses: base.losses + (score === 0 ? 1 : 0) };
+}
+// 切断対策:レーティング戦が始まった時点で、先に「負け」として保存しておく。
+// 決着すれば正しい結果に直すので、途中でページを閉じたり接続を切ったりすると負けのまま残る
+async function accRateStart(foeRating) {
   const p = ACC.profile;
-  if (!p) return null;
-  const expect = 1 / (1 + Math.pow(10, (foeRating - p.rating) / 400));
-  const next = Math.max(100, Math.round(p.rating + RATING_K * (score - expect)));
-  const patch = { rating: next, wins: p.wins + (score === 1 ? 1 : 0), losses: p.losses + (score === 0 ? 1 : 0), updated_at: new Date().toISOString() };
+  if (!p) return;
+  const base = { rating: p.rating, wins: p.wins, losses: p.losses };
+  ACC.pending = { base, foeRating };
+  ACC.pendingP = sbFetch(`/rest/v1/profiles?id=eq.${accUid()}`, { method: 'PATCH', prefer: 'return=minimal', body: { ...rateAfter(base, foeRating, 0), updated_at: new Date().toISOString() } }).catch(() => null);
+  await ACC.pendingP;
+}
+async function accRateFinish(score) {
+  const pd = ACC.pending, p = ACC.profile;
+  if (!pd || !p) return null;
+  await ACC.pendingP;
+  const next = rateAfter(pd.base, pd.foeRating, score);
   try {
-    await sbFetch(`/rest/v1/profiles?id=eq.${accUid()}`, { method: 'PATCH', prefer: 'return=minimal', body: patch });
-    const before = p.rating;
-    Object.assign(p, patch);
+    await sbFetch(`/rest/v1/profiles?id=eq.${accUid()}`, { method: 'PATCH', prefer: 'return=minimal', body: { ...next, updated_at: new Date().toISOString() } });
+    ACC.pending = null;
+    Object.assign(p, next);
     renderAcct();
-    accCheckTitle();
-    return { before, after: next };
+    accUnlockTitles();
+    return { before: pd.base.rating, after: next.rating };
   } catch (e) { return null; }
 }
 
@@ -2911,41 +2976,72 @@ async function accSignOut() {
   SOLO.cleared = readCleared(GUEST_KEY);   // ゲストの記録に戻す
   renderStages();
 }
-// ----- 称号:条件を満たすと選べるようになり、名前の横に飾れる -----
-// 条件は、アカウントに保存されている記録(クリアしたステージ・対人の勝ち数・レート)だけで決まる
-const hasClear = (p, ...ids) => ids.every((id) => (p.cleared || []).includes(id));
+// ----- 称号:条件を満たすと解放され、選んだものを名前の横に飾れる -----
+// 一度解放した称号は消えない(profiles.titles に残す)。段階は1〜5で、色はステージの★と同じ
+// 称号の一覧(50個)を決めるまでは、画面に出さず、解放もしない
+const TITLES_ON = false;
+const TITLE_TIERS = { 1: '#38bdf8', 2: '#4ade80', 3: '#f5c451', 4: '#b57bff', 5: '#ff2a3d' };
+const SOLO_STAGES = () => STAGES.filter((x) => !x.rush).map((x) => x.id);
+const hasClear = (c, ...ids) => ids.every((id) => c.cleared.includes(id));
 const TITLES = [
-  { id: 'first', name: '初陣', desc: 'ソロのステージをどれか1つクリア', test: (p) => (p.cleared || []).length > 0 },
-  { id: 'anchor3', name: '大錨を越えし者', desc: '錨★★★をクリア', test: (p) => hasClear(p, 'a3') },
-  { id: 'zero3', name: '針を読む者', desc: '零★★★をクリア', test: (p) => hasClear(p, 'z3') },
-  { id: 'arrow3', name: '天眼を射抜く者', desc: '矢★★★をクリア', test: (p) => hasClear(p, 'y3') },
-  { id: 'all3', name: '三陣営の覇者', desc: '★★★を3つともクリア', test: (p) => hasClear(p, 'a3', 'z3', 'y3') },
-  { id: 'toki', name: '刻喰らいを捕らえし者', desc: '★★★★をクリア', test: (p) => hasClear(p, 't4') },
-  { id: 'xeno', name: '始まりを見た者', desc: '★★★★★をクリア', test: (p) => hasClear(p, 'x5') },
-  { id: 'all', name: '刻の覇者', desc: 'ソロの全ステージをクリア', test: (p) => STAGES.every((x) => hasClear(p, x.id)) },
-  { id: 'win1', name: '初勝利', desc: 'オンライン対人で1勝', test: (p) => p.wins >= 1 },
-  { id: 'win10', name: '歴戦', desc: 'オンライン対人で10勝', test: (p) => p.wins >= 10 },
-  { id: 'win50', name: '百戦錬磨', desc: 'オンライン対人で50勝', test: (p) => p.wins >= 50 },
-  { id: 'r1600', name: '刻読み', desc: 'レート1600以上(下回ると外れる)', test: (p) => p.rating >= 1600 },
-  { id: 'r1800', name: '刻の支配者', desc: 'レート1800以上(下回ると外れる)', test: (p) => p.rating >= 1800 },
+  { id: 'start', tier: 1, name: '門出', desc: 'アカウントを登録する', test: () => true },
+  { id: 'first', tier: 1, name: '初陣', desc: 'ソロのステージをどれか1つクリア', test: (c) => c.cleared.length > 0 },
+  { id: 'novice', tier: 1, name: '三刻の見習い', desc: '★のステージを3つともクリア', test: (c) => hasClear(c, 'a1', 'z1', 'y1') },
+  { id: 'win1', tier: 1, name: '初勝利', desc: 'オンライン対人で1勝', test: (c) => c.wins >= 1 },
+  { id: 'gate', tier: 2, name: '関所破り', desc: '★★のステージをどれか1つクリア', test: (c) => ['a2', 'z2', 'y2'].some((id) => c.cleared.includes(id)) },
+  { id: 'soldier', tier: 2, name: '三陣営の兵', desc: '★★のステージを3つともクリア', test: (c) => hasClear(c, 'a2', 'z2', 'y2') },
+  { id: 'win10', tier: 2, name: '歴戦', desc: 'オンライン対人で10勝', test: (c) => c.wins >= 10 },
+  { id: 'breaker', tier: 2, name: '刻を割る者', desc: `${BREAK_NAME}でとどめを刺す(累計10回)`, test: (c) => (c.stats.breakKills || 0) >= 10 },
+  { id: 'anchor3', tier: 3, name: '大錨を越えし者', desc: '錨★★★をクリア', test: (c) => hasClear(c, 'a3') },
+  { id: 'zero3', tier: 3, name: '針を読む者', desc: '零★★★をクリア', test: (c) => hasClear(c, 'z3') },
+  { id: 'arrow3', tier: 3, name: '天眼を射抜く者', desc: '矢★★★をクリア', test: (c) => hasClear(c, 'y3') },
+  { id: 'r1600', tier: 3, name: '刻読み', desc: 'レート1600に到達', test: (c) => c.rating >= 1600 },
+  { id: 'win50', tier: 3, name: '百戦錬磨', desc: 'オンライン対人で50勝', test: (c) => c.wins >= 50 },
+  { id: 'all3', tier: 4, name: '三陣営の覇者', desc: '★★★を3つともクリア', test: (c) => hasClear(c, 'a3', 'z3', 'y3') },
+  { id: 'toki', tier: 4, name: '刻喰らいを捕らえし者', desc: '★★★★をクリア', test: (c) => hasClear(c, 't4') },
+  { id: 'r1800', tier: 4, name: '刻の支配者', desc: 'レート1800に到達', test: (c) => c.rating >= 1800 },
+  { id: 'win100', tier: 4, name: '千刻の兵', desc: 'オンライン対人で100勝', test: (c) => c.wins >= 100 },
+  { id: 'xeno', tier: 5, name: '始まりを見た者', desc: '★★★★★をクリア', test: (c) => hasClear(c, 'x5') },
+  { id: 'all', tier: 5, name: '刻の覇者', desc: 'ソロの全ステージをクリア(ボスラッシュは除く)', test: (c) => hasClear(c, ...SOLO_STAGES()) },
+  { id: 'top', tier: 5, name: '頂に立つ者', desc: 'レーティングのランキングで1位になる', test: (c) => !!c.stats.top },
 ];
 const titleOf = (id) => TITLES.find((t) => t.id === id);
-const titleTag = (id) => { const t = titleOf(id); return t ? `<span class="ttl">${escHtml(t.name)}</span>` : ''; };
-// サーバーの表に「title」の列があるか(まだSQLを実行していない場合に備える)
-const titleReady = () => !!ACC.profile && 'title' in ACC.profile;
-// 自分の称号が条件を満たさなくなったら外す(レートが下がったときなど)
-async function accCheckTitle() {
+const titleTag = (id) => { const t = titleOf(id); return t ? `<span class="ttl" style="--tc:${TITLE_TIERS[t.tier]}">${escHtml(t.name)}</span>` : ''; };
+// サーバーの表に称号の列があるか(まだSQLを実行していない場合に備える)
+const titleReady = () => TITLES_ON && !!ACC.profile && Array.isArray(ACC.profile.titles);
+const myTitles = () => (titleReady() ? ACC.profile.titles : []);
+// 条件を満たした称号を解放して保存する(一度解放したら消えない)
+async function accUnlockTitles() {
   const p = ACC.profile;
-  if (!titleReady() || !p.title) return;
-  const t = titleOf(p.title);
-  if (t && t.test(p)) return;
-  try { await sbFetch(`/rest/v1/profiles?id=eq.${accUid()}`, { method: 'PATCH', prefer: 'return=minimal', body: { title: '' } }); p.title = ''; renderAcct(); } catch (e) { /* 次の機会に外す */ }
+  if (!titleReady()) return;
+  const c = { cleared: SOLO.cleared, wins: p.wins, rating: p.rating, stats: ACC.stats || {} };
+  const add = TITLES.filter((t) => !p.titles.includes(t.id) && t.test(c)).map((t) => t.id);
+  if (!add.length) return;
+  const next = [...p.titles, ...add];
+  try {
+    await sbFetch(`/rest/v1/profiles?id=eq.${accUid()}`, { method: 'PATCH', prefer: 'return=minimal', body: { titles: next } });
+    p.titles = next;
+    renderAcct();
+    if (typeof cutin === 'function' && !busy) add.forEach((id) => logLater(`称号「${titleOf(id).name}」を解放した`));
+  } catch (e) { /* 次の機会に保存する */ }
+}
+// 称号一覧の解放率:登録している全プレイヤーのうち、その称号を持っている人の割合
+async function accLoadTitleStats() {
+  try {
+    const rows = await sbFetch('/rest/v1/profiles?select=titles&limit=10000');
+    const cnt = {};
+    rows.forEach((r) => (r.titles || []).forEach((id) => { cnt[id] = (cnt[id] || 0) + 1; }));
+    ACC.titleStats = { total: rows.length, cnt };
+  } catch (e) { ACC.titleStats = null; }
 }
 
 async function accLoadRanking() {
   const cols = titleReady() ? 'id,name,title,rating,wins,losses' : 'id,name,rating,wins,losses';
   try { ACC.ranking = await sbFetch(`/rest/v1/profiles?select=${cols}&order=rating.desc&limit=20`); }
   catch (e) { ACC.ranking = null; }
+  // 称号「頂に立つ者」:ランキングの1位(対人で1回以上戦っていること)
+  const top = ACC.ranking && ACC.ranking[0], p = ACC.profile;
+  if (p && top && top.id === p.id && p.wins + p.losses > 0 && !(ACC.stats || {}).top) await accAddStat('top');
 }
 
 // ----- 画面 -----
@@ -2976,17 +3072,19 @@ function renderAccModal() {
     body.innerHTML = `<p class="sub">${titleTag(p.title)}<b style="color:var(--text)">${escHtml(p.name)}</b> <span style="color:var(--gold);font-weight:900">レート${p.rating}</span>(${p.wins}勝${p.losses}敗)<br>クリアしたステージ:${cleared}</p>
       <label for="accName">名前(1〜12文字)</label><input id="accName" maxlength="12" value="${escHtml(p.name)}">
       <div class="row"><button id="accRename">名前を変える</button><button id="accOut">ログアウト</button></div>
-      <h2 style="margin-top:14px">称号</h2>${titleReady()
-        ? `<div class="titles"><button data-t="" class="${p.title ? '' : 'picked'}">なし</button>${TITLES.map((t) => {
-            const ok = t.test(p);
-            return `<button data-t="${t.id}" class="${p.title === t.id ? 'picked' : ''}" ${ok ? '' : 'disabled'}><b>${escHtml(t.name)}</b><small>${ok ? '' : '🔒 '}${escHtml(t.desc)}</small></button>`;
+      ${TITLES_ON ? '' : '<!--'}<h2 style="margin-top:14px">称号 <small style="color:var(--sub);font-weight:400">${myTitles().length} / ${TITLES.length}</small></h2>${titleReady()
+        ? `<p class="sub" style="margin:0 0 6px">解放した称号を押すと、名前の横に飾れます。解放率は、登録している全プレイヤーのうち持っている人の割合です。</p>
+          <div class="titles"><button data-t="" class="${p.title ? '' : 'picked'}"><b>なし</b></button>${TITLES.map((t) => {
+            const ok = myTitles().includes(t.id), st = ACC.titleStats;
+            const rate = st && st.total ? `解放率 ${(100 * (st.cnt[t.id] || 0) / st.total).toFixed((st.cnt[t.id] || 0) * 1000 < st.total ? 1 : 0)}%` : '';
+            return `<button data-t="${t.id}" class="${p.title === t.id ? 'picked' : ''}" style="--tc:${TITLE_TIERS[t.tier]}" ${ok ? '' : 'disabled'}><b><i>${'★'.repeat(t.tier)}</i>${escHtml(t.name)}</b><small>${ok ? '' : '🔒 '}${escHtml(t.desc)}</small><small class="rt">${rate}</small></button>`;
           }).join('')}</div>`
-        : '<p class="sub">称号を使うには、管理者がSupabaseで準備のSQLを1行実行する必要があります。</p>'}
+        : '<p class="sub">称号を使うには、管理者がSupabaseで準備のSQLを実行する必要があります。</p>'}${TITLES_ON ? '' : '-->'}
       <h2 style="margin-top:14px">レーティング上位</h2>${list}`;
     body.querySelectorAll('.titles button').forEach((b) => {
       b.onclick = () => accDo(async () => {
         const t = b.dataset.t;
-        if (t && !(titleOf(t) && titleOf(t).test(p))) throw new Error('まだその称号の条件を満たしていません。');
+        if (t && !myTitles().includes(t)) throw new Error('まだその称号を解放していません。');
         await sbFetch(`/rest/v1/profiles?id=eq.${uid}`, { method: 'PATCH', prefer: 'return=minimal', body: { title: t } });
         p.title = t; await accLoadRanking(); renderAcct(); renderAccModal();
         return t ? `称号を「${titleOf(t).name}」にしました。` : '称号を外しました。';
@@ -3032,7 +3130,7 @@ async function accOpen() {
   $('accModal').classList.remove('hidden');
   accMsg('');
   renderAccModal();
-  if (ACC.profile) { await accLoadRanking(); renderAccModal(); }
+  if (ACC.profile) { await Promise.all([accLoadRanking(), titleReady() ? accLoadTitleStats() : null]); renderAccModal(); }
 }
 async function accInit() {
   if (ACC.shared) {
@@ -3221,6 +3319,7 @@ function init() {
   });
   renderStages();
   accInit();
+  setInterval(pvpWatch, 1000);
   $('joinRoom').onclick = () => { pvpJoin(); renderMode(); };
   $('leaveRoom').onclick = () => { pvpLeave(); renderMode(); };
   $('logBtn').onclick = () => {
