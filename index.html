@@ -374,6 +374,22 @@
     .tfoot { margin-top: 6px; }
   }
   .back { padding: 5px 12px; border-radius: 16px; font-size: .8rem; margin-bottom: 10px; }
+  /* 最初の画面 */
+  #splash { position: fixed; inset: 0; z-index: 50; background: radial-gradient(700px 500px at 50% 40%, #2a1f55 0%, #0b0d1c 60%, #05060d 100%);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; }
+  #splash img { width: min(80%, 340px, 46vh); height: auto; filter: drop-shadow(0 0 30px #f5c45144) brightness(.9); animation: splashBreath 3s ease-in-out infinite; }
+  #splash .tap { margin-top: 24px; font-weight: 900; letter-spacing: .4em; margin-left: .4em; color: var(--gold); text-shadow: 0 0 12px #f5c45188; animation: tapBlink 1.4s ease-in-out infinite; }
+  #splash .tap2 { margin-top: 6px; font-size: .75rem; color: var(--sub); }
+  #splash.go { animation: splashOut .7s ease-in forwards; pointer-events: none; }
+  #splash.go img { animation: splashBurst .7s ease-in forwards; }
+  @keyframes splashBreath { 50% { filter: drop-shadow(0 0 44px #f5c45188) brightness(1); } }
+  @keyframes tapBlink { 50% { opacity: .25; } }
+  @keyframes splashBurst { 30% { transform: scale(1.08); filter: brightness(2.2) drop-shadow(0 0 60px #fff); } 100% { transform: scale(1.35); opacity: 0; filter: brightness(3); } }
+  @keyframes splashOut { 60% { opacity: 1; } 100% { opacity: 0; visibility: hidden; } }
+  /* タップした瞬間、タイトルのロゴが金の光とともに現れる */
+  body.title-burst .tlogo img { animation: logoBurst 1s cubic-bezier(.2,.9,.3,1.3) both; }
+  @keyframes logoBurst { 0% { opacity: 0; transform: scale(1.6); filter: brightness(3) drop-shadow(0 0 60px #fff); } 60% { opacity: 1; } 100% { transform: scale(1); } }
+  @media (prefers-reduced-motion: reduce) { #splash img, #splash .tap, #splash.go, #splash.go img, body.title-burst .tlogo img { animation: none; } #splash.go { display: none; } }
   /* シート(設定・ルールブックなど) */
   .srow { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid #22284a; }
   .srow small { display: block; color: var(--sub); font-size: .72rem; }
@@ -409,6 +425,12 @@
     </div>
   </header>
 
+  <!-- 最初の画面:ここをタップした瞬間に、音を鳴らせるようになる(ブラウザは、触れる前の再生を許さないため) -->
+  <div id="splash" role="button" tabindex="0" aria-label="タップしてスタート">
+    <img src="img/logo.webp" alt="刻戦 KOKUSEN" width="720" height="636">
+    <div class="tap">TAP TO START</div>
+    <div class="tap2">画面をタップ</div>
+  </div>
   <!-- タイトル画面 -->
   <section id="title">
     <div class="tbg" aria-hidden="true"><img src="icons/rei.webp" alt=""><img src="icons/kaji.webp" alt=""><img src="icons/tsuru.webp" alt=""></div>
@@ -3736,6 +3758,19 @@ function init() {
   $('sheetClose').onclick = () => $('sheet').classList.add('hidden');
   $('sheet').onclick = (e) => { if (e.target === $('sheet')) $('sheet').classList.add('hidden'); };
   showTitle(true);
+  const splashGo = () => {
+    const sp = $('splash');
+    if (sp.classList.contains('go')) return;
+    Sound.wake(); Bgm.unlock(); Bgm.play('title');
+    Sound.breakIn(); Sound.cue(4);
+    sp.classList.add('go');
+    document.body.classList.add('title-burst');
+    flash('#ffffff'); shake(true);
+    Particles.shower(COLORS.rainbow, 160);
+    setTimeout(() => { sp.remove(); document.body.classList.remove('title-burst'); }, 1100);
+  };
+  $('splash').addEventListener('click', splashGo);
+  $('splash').addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') splashGo(); });
   // 画面の拡大・縮小をさせない(iPhone の Safari は viewport の指定だけでは止まらないため)
   ['gesturestart', 'gesturechange', 'gestureend'].forEach((ev) => document.addEventListener(ev, (e) => e.preventDefault(), { passive: false }));
   document.addEventListener('touchmove', (e) => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
