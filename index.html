@@ -3785,7 +3785,7 @@ function init() {
   $('sheetClose').onclick = () => $('sheet').classList.add('hidden');
   $('sheet').onclick = (e) => { if (e.target === $('sheet')) $('sheet').classList.add('hidden'); };
   showTitle(true);
-  Bgm.stop();               // 最初の画面では曲を流さない(パリーンの瞬間に流す)
+  Bgm.stop();               // 最初の画面では曲を流さない(ガラスが砕け終わってから流す)
   Bgm.prepare('title');     // その瞬間にすぐ鳴るよう、先に読み込んでおく
   // タップした場所からひびが走り、BREAKと同じようにガラスが砕けて、タイトル画面が現れる
   const splashGo = async (e) => {
@@ -3794,11 +3794,12 @@ function init() {
     sp.classList.add('broken');
     Sound.wake(); Bgm.unlock();   // 音を鳴らせる状態にする(曲はまだ流さない)
     const at = e && e.clientX ? { x: e.clientX, y: e.clientY } : { x: innerWidth / 2, y: innerHeight / 2 };
-    const glass = shatter(false, at, () => Bgm.play('title'));   // パリーンの瞬間に、タイトル曲を頭から
+    const glass = shatter(false, at);
     await sleep(600);   // ひびが広がり切って、砕ける瞬間
     sp.classList.add('go');
     document.body.classList.add('title-burst');
     await glass;
+    Bgm.play('title');   // ガラスが砕け終わってから、タイトル曲を頭から流す
     setTimeout(() => { sp.remove(); document.body.classList.remove('title-burst'); }, 500);
   };
   $('splash').addEventListener('click', splashGo);
