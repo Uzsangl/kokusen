@@ -33,3 +33,6 @@ alter table public.profiles drop column if exists cleared;
 -- 称号:選んでいる称号と、解放した称号の一覧(公開)
 alter table public.profiles add column if not exists title text not null default '';
 alter table public.profiles add column if not exists titles text[] not null default '{}';
+
+-- ===== 3回目:お気に入りキャラ =====
+alter table public.profiles add column if not exists fav text not null default '';

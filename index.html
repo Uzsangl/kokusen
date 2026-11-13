@@ -335,6 +335,57 @@
   .modal .titles button:disabled { opacity: .45; }
   .chars button.lockedChar { opacity: .6; }
   .chars button.lockedChar .sub { color: var(--gold); }
+  /* タイトル画面 */
+  body.on-title header { display: none; }
+  body.on-title { overflow-x: hidden; }
+  #title { position: relative; min-height: calc(100vh - 32px); display: flex; flex-direction: column; }
+  #title.hidden { display: none; }
+  /* 背景の3人:顔がロゴに隠れないよう、ロゴより上に顔が来るように並べる(ロゴは胸元から下に重なる) */
+  .tbg { position: absolute; left: 0; right: 0; top: 34px; display: flex; justify-content: center; gap: 2%; pointer-events: none; }
+  .tbg img { width: 31%; aspect-ratio: 1; object-fit: cover; object-position: 50% 30%; opacity: .5; border-radius: 16px;
+    -webkit-mask-image: linear-gradient(180deg, #000 45%, transparent 92%); mask-image: linear-gradient(180deg, #000 45%, transparent 92%); }
+  .tbg img:nth-child(2) { opacity: .62; transform: translateY(-10px); }
+  .ttop { display: flex; justify-content: flex-end; gap: 8px; position: relative; z-index: 2; }
+  .ib { width: 42px; height: 42px; border-radius: 50%; padding: 0; font-size: 18px; display: grid; place-items: center; }
+  .tlogo { position: relative; z-index: 2; text-align: center; margin-top: 84px; }
+  .tlogo img { width: 100%; max-width: 350px; height: auto; filter: drop-shadow(0 8px 24px #000c); animation: logoIn .9s ease-out both; }
+  @keyframes logoIn { from { opacity: 0; transform: scale(.92); } }
+  .tplay { margin-top: auto; position: relative; z-index: 2; padding-top: 12px; }
+  .btn-play { width: 100%; padding: 18px; border-radius: 18px; border: 2px solid #ffe8a3; font-size: 1.5rem; font-weight: 900; letter-spacing: .3em; color: #1a1200;
+    background: linear-gradient(180deg, #ffe8a3, var(--gold) 60%, #c98e22); box-shadow: 0 0 28px #f5c45177; animation: playGlow 2.4s ease-in-out infinite; }
+  @keyframes playGlow { 50% { box-shadow: 0 0 44px #f5c451aa; } }
+  .tnote { text-align: center; color: var(--sub); font-size: .75rem; margin-top: 8px; }
+  .tsub { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+  .tsub button { padding: 12px; border-radius: 12px; font-size: .95rem; font-weight: 700; }
+  .tacc { margin-top: 12px; border: 1px solid var(--line); border-radius: 14px; background: #0f1226dd; padding: 12px 14px; display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; }
+  .tacc .nm { font-weight: 800; } .tacc .rate { color: var(--gold); font-weight: 900; }
+  .tacc .meta { font-size: .75rem; color: var(--sub); margin-top: 2px; }
+  .tacc button { padding: 6px 12px; border-radius: 14px; font-size: .8rem; }
+  .tfoot { margin-top: 12px; text-align: center; font-size: .7rem; color: #6f7499; }
+  .tfoot a { color: inherit; }
+  @media (prefers-reduced-motion: reduce) { .tlogo img, .btn-play { animation: none; } }
+  .back { padding: 5px 12px; border-radius: 16px; font-size: .8rem; margin-bottom: 10px; }
+  /* シート(設定・ルールブックなど) */
+  .srow { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid #22284a; }
+  .srow small { display: block; color: var(--sub); font-size: .72rem; }
+  .srow input[type=range] { width: 140px; accent-color: var(--gold); }
+  .sw { width: 52px; height: 30px; border-radius: 15px; padding: 0; position: relative; background: #3a3f62; border: 0; flex: none; }
+  .sw::after { content: ''; position: absolute; left: 4px; top: 4px; width: 22px; height: 22px; border-radius: 50%; background: #fff; transition: left .15s; }
+  .sw.on { background: #4ade80; } .sw.on::after { left: 26px; }
+  .seg { display: flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; flex: none; }
+  .seg button { border: 0; border-radius: 0; padding: 6px 12px; font-size: .8rem; background: transparent; }
+  .seg button.on { background: var(--gold); color: #1a1200; font-weight: 700; }
+  .rtabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+  .rtabs button { padding: 4px 10px; border-radius: 12px; font-size: .8rem; }
+  .rtabs button.on { background: var(--gold); color: #1a1200; font-weight: 700; border-color: var(--gold); }
+  #sheetBody h3 { margin: 12px 0 4px; font-size: .95rem; color: var(--gold); }
+  #sheetBody p { margin: 0; font-size: .85rem; color: #cfd3ef; line-height: 1.65; }
+  .rank li { display: flex; align-items: center; gap: 6px; padding: 3px 0; }
+  .rank li .r { margin-left: auto; }
+  .favs { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-top: 6px; }
+  .favs button { padding: 2px; border-radius: 10px; }
+  .favs button.picked { border-color: var(--gold); box-shadow: 0 0 10px #f5c45166; }
+  .favs .cico { width: 100%; height: auto; aspect-ratio: 1; }
 </style>
 </head>
 <body>
@@ -349,13 +400,25 @@
     </div>
   </header>
 
-  <section id="select" class="panel">
+  <!-- タイトル画面 -->
+  <section id="title">
+    <div class="tbg" aria-hidden="true"><img src="icons/rei.webp" alt=""><img src="icons/kaji.webp" alt=""><img src="icons/tsuru.webp" alt=""></div>
+    <div class="ttop"><button class="ib" id="tRank" aria-label="ランキング">🏆</button><button class="ib" id="tSet" aria-label="設定">⚙</button></div>
+    <div class="tlogo"><img src="img/logo.webp" alt="刻戦 KOKUSEN" width="720" height="636"></div>
+    <div class="tplay">
+      <button id="tPlay" class="btn-play">プレイ</button>
+      <div class="tnote">CPU戦・ソロ・オンライン対人</div>
+      <div class="tsub"><button id="tRule">📖 ルールブック</button><button id="tTitles">🎖 称号一覧</button></div>
+      <div class="tacc" id="tAcc"></div>
+      <div class="tfoot">音楽:<a href="https://nagumorizu.com/" target="_blank" rel="noopener">なぐもりずの音楽室</a>(南雲莉翠) ・ <span id="tVer"></span></div>
+    </div>
+  </section>
+
+  <section id="select" class="panel hidden">
+    <button id="toTitle" class="back">◀ タイトルへ</button>
     <div class="acct" id="acct"></div>
     <h2>出す順に3枚選ぶ</h2>
-    <p class="sub">3枚1チームの勝ち抜き戦です。場のカード同士が1対1で戦い、倒されたら次のカードに交代します。倒した側はそのままのHPで場に残ります。相手の3枚をすべて倒した側の勝ちです。</p>
-    <p class="sub">グーは停止、チョキは跳躍、パーは遡行の技です。ダメージはATKと技の威力で決まり、相手のDFSで軽減されます(DFS1000で10%カット、上限9000)。じゃんけんに3連勝すると BREAK が発生し、次は好きな手のアクションが確定で通ります(あいこでは連勝は途切れません)。BREAK中の攻撃は相手のDFSを無視します。</p>
-    <p class="sub">キャラごとに「特性」があります。技にはATKやDFSを数ラリーの間だけ上げ下げするものがあります。極大ダメージは条件を満たしたときだけ出ます(条件を満たした技は赤く光ります)。交代がないまま12ラリー続くと「刻の抜け落ち」が始まり、両者のHPが毎ラリー削れていきます。</p>
-    <p class="sub">予兆の色:青 → 緑 → <span style="color:var(--red);font-weight:700">赤(勝ち確定)</span> → <span class="rainbow" style="font-weight:700">虹(撃破かBREAK確定)</span></p>
+    <p class="sub">ルールは、タイトル画面の「📖 ルールブック」で見られます。予兆の色:青 → 緑 → <span style="color:var(--red);font-weight:700">赤(勝ち確定)</span> → <span class="rainbow" style="font-weight:700">虹(撃破かBREAK確定)</span></p>
     <h2>対戦相手</h2>
     <div class="levels" id="modes"></div>
     <div id="cpuOpts">
@@ -420,6 +483,13 @@
     <p class="credit hidden" id="bgmCredit">音楽:<a href="https://nagumorizu.com/" target="_blank" rel="noopener">なぐもりずの音楽室</a>(南雲莉翠)</p>
   </section>
 </main>
+  <div id="sheet" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <div class="box">
+      <h2 id="sheetTitle"></h2>
+      <div id="sheetBody"></div>
+      <div class="row"><button id="sheetClose">閉じる</button></div>
+    </div>
+  </div>
   <div id="accModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="accTitle">
     <div class="box">
       <h2 id="accTitle">アカウント</h2>
@@ -1476,7 +1546,7 @@ let busy = false;      // 演出中は入力を受け付けない
 let frozen = false;    // BREAKで時間が止まっている間
 
 // ----- 設定(音・演出の長さ) -----
-const FX = { speed: 1, sound: true, short: false, level: 2, bgm: true };
+const FX = { speed: 1, sound: true, short: false, level: 2, bgm: true, bgmVol: 1, seVol: 1 };
 const REDUCE = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 function loadOpt(key, def) {
   try { const v = localStorage.getItem(key); return v === null ? def : v === '1'; } catch (e) { return def; }
@@ -1509,7 +1579,7 @@ const Sound = (() => {
       ctx = new AC();
       const comp = ctx.createDynamicsCompressor();   // 音を重ねても割れないように抑える
       master = ctx.createGain();
-      master.gain.value = on ? LEVEL : 0;
+      master.gain.value = on ? LEVEL * FX.seVol : 0;
       master.connect(comp); comp.connect(ctx.destination);
     }
     if (ctx.state === 'suspended') ctx.resume();
@@ -1569,7 +1639,8 @@ const Sound = (() => {
   const boom = (at = 0, vol = 0.8, dur = 0.5) => { tone(150, dur, { vol, to: 32, at }); noise(dur * 0.7, { vol: vol * 0.5, freq: 2600, to: 200, at }); };
 
   return {
-    setOn(v) { on = v; if (master) master.gain.value = v ? LEVEL : 0; },
+    setOn(v) { on = v; if (master) master.gain.value = v ? LEVEL * FX.seVol : 0; },
+    setVol() { if (master) master.gain.value = on ? LEVEL * FX.seVol : 0; },
     wake: ac,
     // 背景で鳴り続ける時計
     tick(n) { tone(n % 2 ? 1500 : 1900, 0.025, { type: 'square', vol: 0.022 }); },
@@ -1724,7 +1795,7 @@ const BGM_VOLUME = 0.2;
 const Bgm = (() => {
   const raw = {}, buf = {}, gain = {}, src = {}, startedAt = {}, decoding = {}, missing = {};
   let ctx = null, on = true, want = false, now = 'main', ducked = false;
-  const level = () => (ducked ? 0.04 : BGM_VOLUME);
+  const level = () => (ducked ? 0.04 : BGM_VOLUME) * FX.bgmVol;
   const ensure = () => (ctx || (ctx = Sound.wake()));
   function showButton() { $('optBgm').classList.remove('hidden'); $('bgmCredit').classList.remove('hidden'); }
   const loading = {};
@@ -1808,6 +1879,7 @@ const Bgm = (() => {
     // 最初に画面を触ったとき:音を出せる状態にして、最初の曲の変換を始めておく
     unlock() { if (ensure()) decode('main'); },
     setOn(v) { on = v; if (v) startTrack(now, 300); else stopTrack(now); },
+    setVol() { const g = gain[now]; if (g && ctx) { g.gain.cancelScheduledValues(ctx.currentTime); g.gain.setValueAtTime(level(), ctx.currentTime); } },
     // 対戦開始:最初の曲を頭から流す
     // 対戦開始:最初の曲(ふつうは main)を頭から流す。ほかの曲のデータは手放す
     play(name = 'main') {
@@ -3162,7 +3234,7 @@ async function unlockTitlesNow() {
 let titleFxBusy = false;
 async function showNewTitles() {
   if (titleFxBusy || !ACC.newTitles || !ACC.newTitles.length) return;
-  if ($('select').classList.contains('hidden') || busy) return;
+  if (!$('battle').classList.contains('hidden') || busy) return;
   titleFxBusy = true;
   try {
     // 一度にたくさん解放したとき(初めてログインしたときなど)は、まとめて1回で知らせる
@@ -3172,7 +3244,7 @@ async function showNewTitles() {
       Sound.wake(); Sound.cue(top >= 4 ? 4 : 2);
       await cutin(`称号を${list.length}個解放`, list.slice(0, 3).map((t) => t.name).join('・') + (list.length > 3 ? ' ほか' : ''), top >= 5 ? 'rainbow' : 'gold', 2000);
     }
-    while (ACC.newTitles.length && !$('select').classList.contains('hidden')) {
+    while (ACC.newTitles.length && $('battle').classList.contains('hidden')) {
       const t = titleOf(ACC.newTitles.shift());
       if (!t) continue;
       Sound.wake(); Sound.cue(t.tier >= 4 ? 4 : 2);
@@ -3192,7 +3264,7 @@ async function accLoadTitleStats() {
 }
 
 async function accLoadRanking() {
-  const cols = titleReady() ? 'id,name,title,rating,wins,losses' : 'id,name,rating,wins,losses';
+  const cols = 'id,name,rating,wins,losses' + (titleReady() ? ',title' : '') + (favReady() ? ',fav' : '');
   try { ACC.ranking = await sbFetch(`/rest/v1/profiles?select=${cols}&order=rating.desc&limit=20`); }
   catch (e) { ACC.ranking = null; }
   // 称号「頂に立つ者」:ランキングの1位(対人で1回以上戦っていること)
@@ -3200,8 +3272,125 @@ async function accLoadRanking() {
   if (p && top && top.id === p.id && p.wins + p.losses > 0 && !(ACC.stats || {}).top) await accAddStat('top');
 }
 
+// ----- タイトル画面 -----
+function showTitle(on) {
+  $('title').classList.toggle('hidden', !on);
+  $('select').classList.toggle('hidden', on);
+  document.body.classList.toggle('on-title', on);
+  window.scrollTo(0, 0);
+  if (on) renderTitleAcc(); else renderSelect();
+}
+// アカウント欄:お気に入りキャラ・称号・名前・レート・勝敗・クリア数・称号の数
+function renderTitleAcc() {
+  const el = $('tAcc');
+  if (!el) return;
+  const p = ACC.profile;
+  if (ACC.shared) { el.innerHTML = `<span></span><div class="meta">このURLではアカウントを使えません。<a href="${HOME_URL}" style="color:var(--gold)">新しいURL</a>で開いてください。</div><span></span>`; return; }
+  if (!p) {
+    el.innerHTML = `<span style="font-size:28px">👤</span><div><div class="nm">ゲスト</div><div class="meta">ログインすると、クリア記録・称号・レーティングを保存できます</div></div><button id="tLogin">ログイン</button>`;
+    $('tLogin').onclick = () => accOpen();
+    return;
+  }
+  const fav = favChar(p);
+  const stages = STAGES.filter((x) => !x.rush);
+  el.innerHTML = `${fav ? iconHtml(fav, 'lg') : '<span style="font-size:28px">👤</span>'}<div><div class="nm">${titleTag(p.title)}${escHtml(p.name)}</div>
+    <div><span class="rate">レート${p.rating}</span> <span style="font-size:.8rem;color:var(--sub)">(${p.wins}勝${p.losses}敗)</span></div>
+    <div class="meta">クリア ${stages.filter((x) => SOLO.cleared.includes(x.id)).length} / ${stages.length}ステージ${titleReady() ? ` ・ 称号 ${myTitles().length} / ${TITLES.length}` : ''}</div></div>
+    <button id="tAccBtn">アカウント</button>`;
+  $('tAccBtn').onclick = () => accOpen();
+}
+// 汎用のシート
+function openSheet(title, html) {
+  $('sheetTitle').textContent = title;
+  $('sheetBody').innerHTML = html;
+  $('sheet').classList.remove('hidden');
+  $('sheet').querySelector('.box').scrollTop = 0;
+}
+// 設定
+function openSettings() {
+  const sw = (id, on) => `<button class="sw${on ? ' on' : ''}" id="${id}" aria-pressed="${on}"></button>`;
+  openSheet('⚙ 設定', `
+    <div class="srow"><div>BGM<small>曲を流す</small></div>${sw('sBgm', FX.bgm)}</div>
+    <div class="srow"><div>BGMの音量</div><input type="range" id="sBgmVol" min="0" max="100" value="${Math.round(FX.bgmVol * 100)}" aria-label="BGMの音量"></div>
+    <div class="srow"><div>効果音</div>${sw('sSe', FX.sound)}</div>
+    <div class="srow"><div>効果音の音量</div><input type="range" id="sSeVol" min="0" max="100" value="${Math.round(FX.seVol * 100)}" aria-label="効果音の音量"></div>
+    <div class="srow"><div>演出<small>短縮にすると対戦のテンポが速くなる</small></div><div class="seg"><button id="sFull" class="${FX.short ? '' : 'on'}">フル</button><button id="sShort" class="${FX.short ? 'on' : ''}">短縮</button></div></div>
+    <div class="srow" style="border:0"><div>クレジット</div><button id="sCredit">見る</button></div>`);
+  $('sBgm').onclick = () => { FX.bgm = !FX.bgm; saveOpt('kokusen.bgm', FX.bgm); applyOpts(); openSettings(); };
+  $('sSe').onclick = () => { FX.sound = !FX.sound; saveOpt('kokusen.sound', FX.sound); applyOpts(); if (FX.sound) { Sound.wake(); Sound.click(); } openSettings(); };
+  $('sFull').onclick = () => { FX.short = false; saveOpt('kokusen.short', false); applyOpts(); openSettings(); };
+  $('sShort').onclick = () => { FX.short = true; saveOpt('kokusen.short', true); applyOpts(); openSettings(); };
+  $('sBgmVol').oninput = (e) => { FX.bgmVol = e.target.value / 100; saveVol(); Bgm.setVol(); };
+  $('sSeVol').oninput = (e) => { FX.seVol = e.target.value / 100; saveVol(); Sound.setVol(); };
+  $('sSeVol').onchange = () => { Sound.wake(); Sound.click(); };
+  $('sCredit').onclick = () => openSheet('クレジット', `
+    <h3>音楽</h3><p><a href="https://nagumorizu.com/" target="_blank" rel="noopener" style="color:var(--gold)">なぐもりずの音楽室</a>(南雲莉翠)<br>The Battle of Beliefs / Sign of Victory / Devine Fencer</p>
+    <h3>効果音</h3><p>ゲーム内で合成</p>
+    <h3>通信</h3><p>PeerJS(MIT License)/ Supabase</p>`);
+}
+function saveVol() { try { localStorage.setItem('kokusen.vol', JSON.stringify({ b: FX.bgmVol, s: FX.seVol })); } catch (e) { /* 保存できなくても動く */ } }
+// ルールブック
+const RULEBOOK = {
+  '基本': `<h3>勝ち方</h3><p>3枚1チームの勝ち抜き戦。場のカード同士がじゃんけんで戦い、倒されたら次のカードに交代する。倒した側はそのままのHPで場に残る。相手の3枚をすべて倒した側の勝ち。</p>
+    <h3>手と技</h3><p>✊グー=停止、✌️チョキ=跳躍、🖐パー=遡行。じゃんけんに勝った側の技だけが出る。停止は跳躍に、跳躍は遡行に、遡行は停止に勝つ。</p>
+    <h3>あいこ</h3><p>どちらの技も出ない。連勝は途切れない。</p>
+    <h3>刻の抜け落ち</h3><p>交代がないまま12ラリー続くと、両者のHPが毎ラリー削れていく(ソロでは起きない)。</p>`,
+  'BREAK': `<h3>BREAK</h3><p>じゃんけんに3連勝すると BREAK が発生する。次は好きな手を選ぶと、その技が確定で通る。</p>
+    <h3>BREAK中の攻撃</h3><p>相手のDFSを無視してダメージを与える。キャラによっては BREAK でさらに強くなる。</p>
+    <h3>予兆の色</h3><p>手を出すと、相手の手が回って止まる。そのときの色が、結果の予兆になる。青 → 緑 → <span style="color:var(--red);font-weight:700">赤(勝ち確定)</span> → <span class="rainbow" style="font-weight:700">虹(撃破かBREAK確定)</span></p>`,
+  'ダメージ': `<h3>計算</h3><p>ダメージ = ATK × 技の威力 ×(1 − 相手のDFS ÷ 10000)。DFS1000で10%カット、上限は9000(90%カット)。</p>
+    <h3>技の威力</h3><p>通常 ×1.0 / 大 ×1.25 / 特大 ×1.5 / 極大 ×2.0。極大は、条件を満たしたときだけ出る(条件を満たした技は赤く光る)。</p>
+    <h3>バフ・デバフ</h3><p>ATKやDFSを数ラリーの間だけ上げ下げする。「刻印」は消えずに重ねがけできる弱体。「時蝕」は毎ラリー削れる毒。「回復封じ」の間は回復できない。</p>
+    <h3>ダメージの色</h3><p>白 → <span style="color:var(--red)">赤(3000以上)</span> → <span style="color:var(--gold)">金(5000以上)</span> → <span class="rainbow">虹(相手の最大HPの半分以上で倒したとき)</span></p>`,
+  '特性・陣営': `<h3>特性</h3><p>キャラごとに「特性」がある。HPが減ると強くなる、変身する、倒れたときに味方を強くする、など。</p>
+    <h3>陣営</h3><p>錨(停止が得意)・零(遡行が得意)・矢(跳躍が得意)の3陣営。</p>
+    <h3>陣営ボーナス</h3><p>同じ陣営の3枚でチームを組むと、全員に効果が付く。錨:DFS+1000 / 零:最大HP+2000 / 矢:ATK+1000</p>
+    <h3>隔絶</h3><p>称号を解放した人だけが使える特別なキャラ。陣営ボーナスは付かない。</p>`,
+  'ソロ': `<h3>ステージ</h3><p>各陣営に★・★★・★★★のステージがある。★と★★は3対3、★★★からはボス1体と3対1。</p>
+    <h3>ボス</h3><p>ボスは、こちらの手の癖を読んでくる。同じ手ばかり出していると狙われる。</p>
+    <h3>ボスラッシュ</h3><p>ボスと続けて戦う。ボスを1体倒すごとに、味方は全回復して1番手から出直す。</p>
+    <h3>その他</h3><p>ソロでは「刻の抜け落ち」は起きない。クリアしたステージには印が付く。</p>`,
+  '対人': `<h3>オンライン対人</h3><p>相手と同じ合言葉を入れて部屋に入り、お互いにキャラを選んで「準備完了」を押すと対戦が始まる。</p>
+    <h3>レーティング</h3><p>2人ともログインしていると、勝敗でレートが動く(最初は1500)。強い相手に勝つほど大きく上がる。</p>
+    <h3>切断・放置</h3><p>相手の応答が60秒ないと不戦勝。レーティング戦の途中で抜けると負けになる。</p>
+    <h3>版の確認</h3><p>相手とゲームの版が違うと対戦できない。「版が違います」と出たら、お互いにページを開き直す。</p>`,
+};
+function openRulebook(tab = '基本') {
+  openSheet('📖 ルールブック', `<div class="rtabs">${Object.keys(RULEBOOK).map((k) => `<button data-k="${k}" class="${k === tab ? 'on' : ''}">${k}</button>`).join('')}</div>${RULEBOOK[tab]}`);
+  $('sheetBody').querySelectorAll('.rtabs button').forEach((b) => { b.onclick = () => openRulebook(b.dataset.k); });
+}
+// ランキング(ログインしていなくても見られる)
+async function openRanking() {
+  openSheet('🏆 ランキング', '<p class="sub">読み込んでいます…</p>');
+  let rows = null;
+  try { rows = await sbFetch('/rest/v1/profiles?select=id,name,title,fav,rating,wins,losses&order=rating.desc&limit=50'); }
+  catch (e) { try { rows = await sbFetch('/rest/v1/profiles?select=id,name,rating,wins,losses&order=rating.desc&limit=50'); } catch (e2) { rows = null; } }
+  if (!rows) { openSheet('🏆 ランキング', '<p class="sub">読み込めませんでした。通信状態を確かめてください。</p>'); return; }
+  const uid = accUid();
+  openSheet('🏆 ランキング', `<p class="sub">オンライン対人のレーティング上位50人</p><ol class="rank">${rows.map((r) => {
+    const fav = favChar(r);
+    return `<li class="${r.id === uid ? 'me' : ''}">${fav ? iconHtml(fav, 'sm') : ''}${titleTag(r.title)}${escHtml(r.name)}<span class="r">${r.rating}(${r.wins}勝${r.losses}敗)</span></li>`;
+  }).join('')}</ol>`);
+}
+// 称号一覧:ログインしていればアカウント画面の称号の欄へ。していなければ、一覧と解放率だけ見せる
+async function openTitles() {
+  if (ACC.profile && titleReady()) { await accOpen(); const h = [...$('accBody').querySelectorAll('h2')].find((x) => x.textContent.startsWith('称号')); if (h) h.scrollIntoView({ block: 'start' }); return; }
+  openSheet('🎖 称号一覧', '<p class="sub">読み込んでいます…</p>');
+  await accLoadTitleStats();
+  const st = ACC.titleStats;
+  openSheet('🎖 称号一覧', `<p class="sub" style="margin-bottom:6px">ログインすると、遊んだ内容に応じて称号を解放できます。</p><div class="titles">${TITLES.map((t) => {
+    const n = st && st.cnt[t.id] || 0, pc = st && st.total ? 100 * n / st.total : 0;
+    const rate = st && st.total ? `解放率 ${n === 0 ? '0' : pc < 1 ? pc.toFixed(1) : Math.round(pc)}%` : '';
+    return `<button disabled style="--tc:${TITLE_TIERS[t.tier]}"><b><i>${'★'.repeat(t.tier)}</i>${t.hidden ? '？？？' : escHtml(t.name)}</b><small>${t.hidden ? '隠し称号' : escHtml(t.desc)}</small><small class="rt">${rate}</small></button>`;
+  }).join('')}</div>`);
+}
+// ----- お気に入りキャラ:アイコンとして、タイトル・ランキングなどに出る -----
+const favChar = (p) => { const ch = p && p.fav && charById(p.fav); return ch && (!ch.secret || xenoKnown() || (ACC.profile && p.id === ACC.profile.id)) ? ch : null; };
+const favReady = () => !!ACC.profile && 'fav' in ACC.profile;
+
 // ----- 画面 -----
 function renderAcct() {
+  renderTitleAcc();
   const el = $('acct');
   if (!el) return;
   if (typeof renderSelect === 'function' && $('picks')) renderSelect();
@@ -3223,12 +3412,15 @@ function renderAccModal() {
   if (p) {
     const uid = accUid();
     const list = ACC.ranking
-      ? `<ol>${ACC.ranking.map((r) => `<li class="${r.id === uid ? 'me' : ''}">${titleTag(r.title)}${escHtml(r.name)}<span class="r">${r.rating}(${r.wins}勝${r.losses}敗)</span></li>`).join('')}</ol>`
+      ? `<ol class="rank">${ACC.ranking.map((r) => `<li class="${r.id === uid ? 'me' : ''}">${favChar(r) ? iconHtml(favChar(r), 'sm') : ''}${titleTag(r.title)}${escHtml(r.name)}<span class="r">${r.rating}(${r.wins}勝${r.losses}敗)</span></li>`).join('')}</ol>`
       : '<p class="sub">ランキングを読み込んでいます…</p>';
     const cleared = STAGES.filter((x) => SOLO.cleared.includes(x.id)).map((x) => `${x.faction}${'★'.repeat(x.stars)}`).join(' ') || 'まだありません';
     body.innerHTML = `<p class="sub">${titleTag(p.title)}<b style="color:var(--text)">${escHtml(p.name)}</b> <span style="color:var(--gold);font-weight:900">レート${p.rating}</span>(${p.wins}勝${p.losses}敗)<br>クリアしたステージ:${cleared}</p>
       <label for="accName">名前(1〜12文字)</label><input id="accName" maxlength="12" value="${escHtml(p.name)}">
       <div class="row"><button id="accRename">名前を変える</button><button id="accOut">ログアウト</button></div>
+      <h2 style="margin-top:14px">お気に入りキャラ</h2>${favReady()
+        ? `<p class="sub" style="margin:0">選んだキャラが、タイトル画面やランキングで名前の横に出ます。</p><div class="favs">${ALL_CHARS.filter((ch) => charUnlocked(ch)).map((ch) => `<button data-fav="${ch.id}" class="${p.fav === ch.id ? 'picked' : ''}" aria-label="${escHtml(dispName(ch))}">${iconHtml(ch, 'md')}</button>`).join('')}</div>`
+        : '<p class="sub">お気に入りキャラを使うには、管理者がSupabaseで準備のSQLを実行する必要があります。</p>'}
       ${TITLES_ON ? '' : '<!--'}<h2 style="margin-top:14px">称号 <small style="color:var(--sub);font-weight:400">${myTitles().length} / ${TITLES.length}</small></h2>${titleReady()
         ? `<p class="sub" style="margin:0 0 6px">解放した称号を押すと、名前の横に飾れます。解放率は、登録している全プレイヤーのうち持っている人の割合です。</p>
           <div class="titles"><button data-t="" class="${p.title ? '' : 'picked'}"><b>なし</b></button>${TITLES.map((t) => {
@@ -3240,6 +3432,14 @@ function renderAccModal() {
           }).join('')}</div>`
         : '<p class="sub">称号を使うには、管理者がSupabaseで準備のSQLを実行する必要があります。</p>'}${TITLES_ON ? '' : '-->'}
       <h2 style="margin-top:14px">レーティング上位</h2>${list}`;
+    body.querySelectorAll('.favs button').forEach((b) => {
+      b.onclick = () => accDo(async () => {
+        const id = b.dataset.fav;
+        await sbFetch(`/rest/v1/profiles?id=eq.${uid}`, { method: 'PATCH', prefer: 'return=minimal', body: { fav: id } });
+        p.fav = id; renderAcct(); renderAccModal();
+        return `お気に入りキャラを「${dispName(charById(id))}」にしました。`;
+      });
+    });
     body.querySelectorAll('.titles button').forEach((b) => {
       b.onclick = () => accDo(async () => {
         const t = b.dataset.t;
@@ -3506,8 +3706,20 @@ function init() {
     $('stages').appendChild(b);
   });
   renderStages();
+  try { const v = JSON.parse(localStorage.getItem('kokusen.vol') || 'null'); if (v) { FX.bgmVol = +v.b >= 0 ? +v.b : 1; FX.seVol = +v.s >= 0 ? +v.s : 1; } } catch (e) { /* 保存できなくても動く */ }
   accInit();
   setInterval(pvpWatch, 1000);
+  // タイトル画面
+  $('tVer').textContent = `ver ${RULES_VER.slice(0, 6)}`;
+  $('tPlay').onclick = () => { Sound.wake(); Bgm.unlock && Bgm.unlock(); showTitle(false); };
+  $('toTitle').onclick = () => showTitle(true);
+  $('tSet').onclick = openSettings;
+  $('tRule').onclick = () => openRulebook();
+  $('tRank').onclick = openRanking;
+  $('tTitles').onclick = openTitles;
+  $('sheetClose').onclick = () => $('sheet').classList.add('hidden');
+  $('sheet').onclick = (e) => { if (e.target === $('sheet')) $('sheet').classList.add('hidden'); };
+  showTitle(true);
   // 画面の拡大・縮小をさせない(iPhone の Safari は viewport の指定だけでは止まらないため)
   ['gesturestart', 'gesturechange', 'gestureend'].forEach((ev) => document.addEventListener(ev, (e) => e.preventDefault(), { passive: false }));
   document.addEventListener('touchmove', (e) => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
