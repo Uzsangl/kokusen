@@ -373,6 +373,7 @@
     .tacc { margin-top: 8px; padding: 8px 12px; } .tacc .cico.lg { width: 48px; height: 48px; }
     .tfoot { margin-top: 6px; }
   }
+  #battle .foot .resign { color: #ff8a95; border-color: #5a2a36; }
   .back { padding: 5px 12px; border-radius: 16px; font-size: .8rem; margin-bottom: 10px; }
   /* 最初の画面 */
   #splash { position: fixed; inset: 0; z-index: 50; background: radial-gradient(700px 500px at 50% 40%, #2a1f55 0%, #0b0d1c 60%, #05060d 100%);
@@ -508,6 +509,7 @@
     </div>
     <div class="foot">
       <button id="logBtn">ログを見る</button>
+      <button id="resign" class="resign">リタイア</button>
       <button id="retry" class="hidden">キャラ選択に戻る</button>
     </div>
     <div class="panel hidden" id="logPanel"><div id="log"></div></div>
@@ -2217,6 +2219,7 @@ function render(view) {
   }).join('');
   $('hands').classList.toggle('breaking', you.breakReady && !busy);
   $('retry').classList.toggle('hidden', !S.over);
+  $('resign').classList.toggle('hidden', S.over);
 }
 const setResult = (t) => { $('result').textContent = t; };
 
@@ -2482,7 +2485,7 @@ async function finale() {
   clearTimeout(tickTimer);
   freeze(false);
   const score = `(${S.teams[0].wins}-${S.teams[1].wins})`;
-  const msg = (S.winner === -1 ? '引き分け' : S.winner === 0 ? 'あなたの勝利!' : 'あなたの敗北…') + score + (S.forfeit === 0 ? '(相手の応答なし)' : S.forfeit === 1 ? '(応答なし)' : '');
+  const msg = (S.winner === -1 ? '引き分け' : S.winner === 0 ? 'あなたの勝利!' : 'あなたの敗北…') + score + (S.resign === 'me' ? '(リタイア)' : S.resign === 'foe' ? '(相手のリタイア)' : S.forfeit === 0 ? '(相手の応答なし)' : S.forfeit === 1 ? '(応答なし)' : '');
   log(`=== ${msg} ${S.rally}ラリー ===`);
   setResult(msg);
   render();
@@ -2779,13 +2782,13 @@ function pvpJoin() {
 function pvpReady() {
   PVP.team = picked.slice(); PVP.teamSalt = rnd(); PVP.phase = 'ready';
   const p = ACC.profile;
-  pvpPublish({ ts: seal(PVP.teamSalt + '|' + PVP.team.join(',')), acc: p ? { id: p.id } : null, ff: null });
+  pvpPublish({ ts: seal(PVP.teamSalt + '|' + PVP.team.join(',')), acc: p ? { id: p.id } : null, ff: null, rs: null });
   pvpStep();
   renderSelect();
 }
 function pvpLeave() {
   PVP.phase = 'idle'; PVP.code = ''; PVP.applying = false;
-  pvpPublish({ g: null, ts: null, t: null, n: null, c: null, r: null, b: null, last: null, acc: null, ff: null });
+  pvpPublish({ g: null, ts: null, t: null, n: null, c: null, r: null, b: null, last: null, acc: null, ff: null, rs: null });
   if (PVP.room && PVP.room.leave) PVP.room.leave();
   renderSelect();
 }
@@ -2840,6 +2843,7 @@ async function pvpStep() {
   if (!fp) { setResult('相手との接続が切れました。相手が戻るのを待っています…'); return; }
   // 相手が「応答なしで不戦勝」を宣言した(こちらが止まっていたか、接続が切れていた)
   if (fp.ff != null && fp.ff >= PVP.n - 1) { await pvpForfeit(1); return; }
+  if (fp.rs != null && fp.rs >= PVP.n - 1) { await endByResign('foe'); return; }
   const k = PVP.n, turn = pvpTurn();
   // 相手がこのラリーについて公開している内容。相手が先に次へ進んでいたら、ひとつ前の記録を見る
   const fr = fp.n === k ? fp : fp.last && fp.last.n === k ? fp.last : null;
@@ -2876,6 +2880,23 @@ function pvpWatch() {
   if (left <= PVP_TIMEOUT - 15) setResult(`相手の応答がありません。あと${left}秒で不戦勝になります`);
 }
 // 不戦勝・不戦敗で試合を終える。side:勝った側(0=自分、1=相手)
+// リタイア:確認してから負けにする。オンライン対人では相手に知らせ、相手の勝ちになる
+function askResign() {
+  if (!S || S.over) return;
+  openSheet('リタイア', `<p>この対戦をリタイアしますか? あなたの負けになります。${MODE === 'pvp' && PVP.foeAcc ? 'レーティング戦なので、負けとして記録されます。' : ''}</p>
+    <div class="row"><button id="rsYes" style="border-color:#ff4d5e;color:#ff8a95;font-weight:700">リタイアする</button></div>`);
+  $('rsYes').onclick = () => { $('sheet').classList.add('hidden'); endByResign('me'); };
+}
+async function endByResign(who) {
+  if (!S || S.over) return;
+  S.over = true; S.winner = who === 'me' ? 1 : 0; S.resign = who;
+  S.teams.forEach((t) => { t.breakReady = false; });
+  freeze(false);
+  if (who === 'me' && MODE === 'pvp' && PVP.phase === 'play') pvpPublish({ rs: PVP.n });   // 相手の画面も終わらせる
+  log(who === 'me' ? 'リタイアした' : '相手がリタイアした');
+  busy = true;
+  try { await finale(); } finally { busy = false; flushLog(); render(); }
+}
 async function pvpForfeit(side) {
   if (!S || S.over) return;
   S.over = true; S.winner = side; S.forfeit = side;
@@ -3751,6 +3772,7 @@ function init() {
   $('tVer').textContent = `ver ${RULES_VER.slice(0, 6)}`;
   $('tPlay').onclick = () => { Sound.wake(); Bgm.unlock && Bgm.unlock(); showTitle(false); };
   $('toTitle').onclick = () => showTitle(true);
+  $('resign').onclick = () => { if (!busy) askResign(); };
   $('tSet').onclick = openSettings;
   $('tRule').onclick = () => openRulebook();
   $('tRank').onclick = openRanking;
