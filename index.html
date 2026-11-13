@@ -723,13 +723,13 @@ const STAGES = [
   { id: 't4', faction: '刻喰', stars: 4, name: '刻喰らいの淵', foes: ['tokibami'], level: 4, read: 0.35, hp: 1.8, atk: 1.0 },
   { id: 'x5', faction: '始', stars: 5, name: '始まりの前', foes: ['xeno_body', 'xeno_spirit'], level: 4, read: 1.0, hp: 1.0, atk: 1.0, bgm: 'xeno' },
   // ボスラッシュ:★★★の3体 → ★★★★ → ★★★★★ を続けて戦う。ボスを1体倒すごとに、こちらは全回復する。
-  // rushHp はボスのHPの倍率。「むずかしい」で5連勝できる率が約0.01%になるように決めた
-  { id: 'rush', faction: '連戦', stars: 0, name: 'ボスラッシュ', rush: ['a3', 'z3', 'y3', 't4', 'x5'], rushHp: 0.57, level: 4, read: 0.35, hp: 1.0, atk: 1.0 },
+  // rushHp は、ゼノ以外のボスのHPの倍率。「むずかしい」で5連勝できる率が約0.01%になるように決めた
+  { id: 'rush', faction: '連戦', stars: 0, name: 'ボスラッシュ', rush: ['a3', 'z3', 'y3', 't4', 'x5'], rushHp: 0.28, level: 4, read: 0.35, hp: 1.0, atk: 1.0 },
 ];
 // ステージの敵を、倍率を掛けた能力値で作る(元のデータは書き換えない)
 function stageFoes(stage) {
   // ボスラッシュ:元のステージの強さのまま並べる。read は、そのボスが読みに頼る割合
-  if (stage.rush) return stage.rush.flatMap((sid) => { const sub = STAGES.find((x) => x.id === sid); return stageFoes(sub).map((f) => ({ ...f, rush: true, read: sub.read, hp: Math.round(f.hp * stage.rushHp / 10) * 10 })); });
+  if (stage.rush) return stage.rush.flatMap((sid) => { const sub = STAGES.find((x) => x.id === sid); return stageFoes(sub).map((f) => ({ ...f, rush: true, read: sub.read, hp: sid === 'x5' ? f.hp : Math.round(f.hp * stage.rushHp / 10) * 10 })); });   // ゼノだけは通常の強さのまま
   return stage.foes.map((id) => {
     const e = ENEMIES[id];
     const r10 = (v) => (stage.hp === 1 && stage.atk === 1 ? v : Math.round(v / 10) * 10);   // 倍率1なら数字そのまま(44444など)
@@ -3008,7 +3008,7 @@ function renderStages() {
   const st = STAGES.find((x) => x.id === SOLO.stage), foes = stageFoes(st);
   const shown = foes.filter((f) => !f.hiddenUntilActive || xenoKnown());   // ★5は、倒すまで1体に見せる
   $('stageNote').textContent = st.rush
-    ? `連戦「${st.name}」 ★★★のボス3体 → ★★★★ → ★★★★★ を、3対1で続けて戦います(ボスのHPは通常の57%)。ボスを1体倒すごとに、こちらは全回復して1番手から出直します。最高記録:${SOLO.rush} / ${st.rush.length}体`
+    ? `連戦「${st.name}」 ★★★のボス3体 → ★★★★ → ★★★★★ を、3対1で続けて戦います(ゼノ以外のボスのHPは通常の28%)。ボスを1体倒すごとに、こちらは全回復して1番手から出直します。最高記録:${SOLO.rush} / ${st.rush.length}体`
     : `${st.faction} ${'★'.repeat(st.stars)}「${st.name}」 敵:${shown.map(dispName).join('・')}`
     + (foes.every((f) => f.boss) ? '(ボス1体と3対1)' : '(3対3)') + `。CPUの考え方:${AI_LEVELS[st.level].name}。ソロでは刻の抜け落ちは起きません。`;
   renderSelect();
