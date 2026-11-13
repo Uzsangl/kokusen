@@ -376,13 +376,14 @@
   #battle .foot .resign { color: #ff8a95; border-color: #5a2a36; }
   .back { padding: 5px 12px; border-radius: 16px; font-size: .8rem; margin-bottom: 10px; }
   /* 最初の画面 */
-  #splash { position: fixed; inset: 0; z-index: 50; background: radial-gradient(700px 500px at 50% 40%, #2a1f55 0%, #0b0d1c 60%, #05060d 100%);
+  #splash { position: fixed; inset: 0; z-index: 9; background: radial-gradient(700px 500px at 50% 40%, #2a1f55 0%, #0b0d1c 60%, #05060d 100%);
     display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; }
   #splash img { width: min(80%, 340px, 46vh); height: auto; filter: drop-shadow(0 0 30px #f5c45144) brightness(.9); animation: splashBreath 3s ease-in-out infinite; }
   #splash .tap { margin-top: 24px; font-weight: 900; letter-spacing: .4em; margin-left: .4em; color: var(--gold); text-shadow: 0 0 12px #f5c45188; animation: tapBlink 1.4s ease-in-out infinite; }
   #splash .tap2 { margin-top: 6px; font-size: .75rem; color: var(--sub); }
-  #splash.go { animation: splashOut .7s ease-in forwards; pointer-events: none; }
-  #splash.go img { animation: splashBurst .7s ease-in forwards; }
+  #splash.go { animation: splashOut .45s ease-in forwards; pointer-events: none; }
+  #splash.broken { cursor: default; }
+  #splash.go img { animation: splashBurst .45s ease-in forwards; }
   @keyframes splashBreath { 50% { filter: drop-shadow(0 0 44px #f5c45188) brightness(1); } }
   @keyframes tapBlink { 50% { opacity: .25; } }
   @keyframes splashBurst { 30% { transform: scale(1.08); filter: brightness(2.2) drop-shadow(0 0 60px #fff); } 100% { transform: scale(1.35); opacity: 0; filter: brightness(3); } }
@@ -2257,8 +2258,9 @@ function pickHeat(side, o, gotBreak) {
 
 // リールが回り、予兆が出て、相手の手が止まるまで
 // BREAKの瞬間:画面のガラスにひびが走り、もう一度ひびが伸びてから、砕け散る
-async function shatter(violet) {
-  const o = center($('stage')), svg = $('crack');
+// at:ひびの起点(省略すると勝負の枠の中央)
+async function shatter(violet, at) {
+  const o = at || center($('stage')), svg = $('crack');
   const rays = [];
   const N = 13;
   for (let i = 0; i < N; i++) {
@@ -3780,16 +3782,19 @@ function init() {
   $('sheetClose').onclick = () => $('sheet').classList.add('hidden');
   $('sheet').onclick = (e) => { if (e.target === $('sheet')) $('sheet').classList.add('hidden'); };
   showTitle(true);
-  const splashGo = () => {
+  // タップした場所からひびが走り、BREAKと同じようにガラスが砕けて、タイトル画面が現れる
+  const splashGo = async (e) => {
     const sp = $('splash');
-    if (sp.classList.contains('go')) return;
+    if (sp.classList.contains('broken')) return;
+    sp.classList.add('broken');
     Sound.wake(); Bgm.unlock(); Bgm.play('title');
-    Sound.breakIn(); Sound.cue(4);
+    const at = e && e.clientX ? { x: e.clientX, y: e.clientY } : { x: innerWidth / 2, y: innerHeight / 2 };
+    const glass = shatter(false, at);
+    await sleep(600);   // ひびが広がり切って、砕ける瞬間
     sp.classList.add('go');
     document.body.classList.add('title-burst');
-    flash('#ffffff'); shake(true);
-    Particles.shower(COLORS.rainbow, 160);
-    setTimeout(() => { sp.remove(); document.body.classList.remove('title-burst'); }, 1100);
+    await glass;
+    setTimeout(() => { sp.remove(); document.body.classList.remove('title-burst'); }, 500);
   };
   $('splash').addEventListener('click', splashGo);
   $('splash').addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') splashGo(); });
