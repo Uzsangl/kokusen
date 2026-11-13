@@ -2338,9 +2338,10 @@ async function finale() {
   }
   // オンライン対人のレーティング(1試合に1回だけ)。演出を待たずに、決着した時点で保存を始める
   let rating = null;
-  if (MODE === 'pvp' && PVP.foeAcc && !S.rated) {
+  if (MODE === 'pvp' && PVP.foeAccP && !S.rated) {
     S.rated = true;
-    rating = accRate(S.winner === 0 ? 1 : S.winner === 1 ? 0 : 0.5, PVP.foeAcc.r);
+    const score = S.winner === 0 ? 1 : S.winner === 1 ? 0 : 0.5;
+    rating = PVP.foeAccP.then((v) => (v ? accRate(score, v.r) : null));
   }
   if (S.winner === 0) {
     Sound.fanfare(); Particles.shower(COLORS.rainbow, 220); flash('#ffffff');
@@ -2618,7 +2619,7 @@ function pvpJoin() {
 function pvpReady() {
   PVP.team = picked.slice(); PVP.teamSalt = rnd(); PVP.phase = 'ready';
   const p = ACC.profile;
-  pvpPublish({ ts: seal(PVP.teamSalt + '|' + PVP.team.join(',')), acc: p ? { id: p.id, r: p.rating, nm: p.name, t: p.title || '' } : null });
+  pvpPublish({ ts: seal(PVP.teamSalt + '|' + PVP.team.join(',')), acc: p ? { id: p.id } : null });
   pvpStep();
   renderSelect();
 }
@@ -2661,8 +2662,13 @@ async function pvpStep() {
     }
     PVP.phase = 'play'; PVP.n = 0; PVP.hand = null; PVP.foeSeal = {};
     // レーティング戦:お互いにログインしていて、別のアカウントどうしのときだけ
-    PVP.foeAcc = fp.acc && typeof fp.acc.r === 'number' && ACC.profile && fp.acc.id !== ACC.profile.id ? fp.acc : null;
-    if (fp.acc && typeof fp.acc.nm === 'string') log(`対戦相手:${titleOf(fp.acc.t) ? `〔${titleOf(fp.acc.t).name}〕` : ''}${fp.acc.nm.slice(0, 12)}(レート${fp.acc.r})${PVP.foeAcc ? '' : '・レーティングなし'}`);
+    // 相手が名乗ったアカウントは、サーバーに保存されている情報で確かめる(名前・称号・レートは相手の申告を使わない)
+    PVP.foeAcc = null;
+    PVP.foeAccP = accVerifyFoe(fp.acc).then((v) => {
+      PVP.foeAcc = v;
+      logLater(v ? `対戦相手:${titleOf(v.title) ? `〔${titleOf(v.title).name}〕` : ''}${v.name}(レート${v.r})` : '対戦相手はログインしていないため、レーティングなしの対戦です');
+      return v;
+    });
     await startMatch(PVP.team.map((id) => CHARACTERS.find((c) => c.id === id)), chars, '相手');
     pvpStep();
     return;
@@ -2742,12 +2748,21 @@ function renderMode() {
 const MODES = [['CPUと対戦', 'cpu'], ['ソロ', 'solo'], ['オンライン対人', 'pvp']];
 let MODE = 'cpu';
 const SOLO = { stage: 'a1', cleared: [], rush: 0 };
+// クリア記録は、ログインしていないとき(ゲスト)とアカウントで分けて持つ。
+// ゲスト:端末の「kokusen.cleared」。アカウント:サーバーの profiles.cleared(端末にもアカウント別に控えを置く)
+const GUEST_KEY = 'kokusen.cleared';
+const userKey = (uid) => `kokusen.cleared.${uid}`;
+function readCleared(key) {
+  try { const v = JSON.parse(localStorage.getItem(key) || '[]'); return Array.isArray(v) ? v.filter((id) => STAGES.some((x) => x.id === id)) : []; } catch (e) { return []; }
+}
+function writeCleared(key, list) { try { localStorage.setItem(key, JSON.stringify(list)); } catch (e) { /* 保存できなくても動く */ } }
 function soloClear(id) {
   const fresh = !SOLO.cleared.includes(id);
   if (fresh) SOLO.cleared.push(id);
-  try { localStorage.setItem('kokusen.cleared', JSON.stringify(SOLO.cleared)); } catch (e) { /* 保存できなくても動く */ }
+  const uid = typeof accUid === 'function' ? accUid() : null;
+  writeCleared(uid ? userKey(uid) : GUEST_KEY, SOLO.cleared);
   renderStages();
-  if (fresh) accSaveCleared();
+  if (fresh && uid) accSaveCleared();
 }
 
 // ===== アカウント(Supabase) =====
@@ -2816,21 +2831,31 @@ function accErrText(e) {
 }
 
 // 自分のプレイヤー情報を読む。なければ作る。端末に残っているクリア記録はアカウントにまとめる
+// 自分のプレイヤー情報を読む。なければ作る。
+// ゲストの記録をアカウントへ移すのは、アカウントを作るとき(新規登録)の1回だけ。既存のアカウントには混ぜない
 async function accLoadProfile(name) {
   const uid = accUid();
   if (!uid) return;
+  // サーバーに届くまでは、この端末に控えてあるそのアカウントの記録を出す
+  SOLO.cleared = readCleared(userKey(uid));
+  renderStages();
   const rows = await sbFetch(`/rest/v1/profiles?id=eq.${uid}&select=*`);
   let p = rows && rows[0];
   if (!p) {
     const nm = (name || (ACC.session.user.user_metadata || {}).name || '名無し').slice(0, 12);
-    const made = await sbFetch('/rest/v1/profiles', { method: 'POST', prefer: 'return=representation', body: { id: uid, name: nm, cleared: SOLO.cleared } });
+    // ゲストの記録を持っていくのは、この端末で最初に作ったアカウントだけ
+    let migrated = false;
+    try { migrated = localStorage.getItem('kokusen.guestMoved') === '1'; } catch (e) { /* 読めなければ未移行として扱う */ }
+    const made = await sbFetch('/rest/v1/profiles', { method: 'POST', prefer: 'return=representation', body: { id: uid, name: nm, cleared: migrated ? [] : readCleared(GUEST_KEY) } });
     p = made[0];
+    try { localStorage.setItem('kokusen.guestMoved', '1'); } catch (e) { /* 保存できなくても動く */ }
   }
   ACC.profile = p;
-  const all = [...new Set([...(p.cleared || []), ...SOLO.cleared])].filter((id) => STAGES.some((x) => x.id === id));
+  // サーバーの記録に、この端末でこのアカウントのままクリアしたが送れていなかった分を足す
+  const all = [...new Set([...(p.cleared || []), ...readCleared(userKey(uid))])].filter((id) => STAGES.some((x) => x.id === id));
   const serverMissing = all.some((id) => !(p.cleared || []).includes(id));
   SOLO.cleared = all;
-  try { localStorage.setItem('kokusen.cleared', JSON.stringify(SOLO.cleared)); } catch (e) { /* 保存できなくても動く */ }
+  writeCleared(userKey(uid), all);
   renderStages(); renderAcct();
   if (serverMissing) await accSaveCleared();
   await accCheckTitle();
@@ -2859,6 +2884,16 @@ async function accRate(score, foeRating) {
   } catch (e) { return null; }
 }
 
+// 対人の相手が名乗ったアカウントを、サーバーの情報で確かめる。
+// 実在しない・自分自身・どちらかがログインしていない場合は null(レーティングなし)
+async function accVerifyFoe(acc) {
+  if (!ACC.profile || !acc || typeof acc.id !== 'string' || !/^[0-9a-zA-Z-]{1,64}$/.test(acc.id) || acc.id === ACC.profile.id) return null;
+  try {
+    const rows = await sbFetch(`/rest/v1/profiles?id=eq.${encodeURIComponent(acc.id)}&select=*`);
+    const p = rows && rows[0];
+    return p && typeof p.rating === 'number' ? { id: p.id, r: p.rating, name: String(p.name).slice(0, 12), title: p.title || '' } : null;
+  } catch (e) { return null; }
+}
 async function accSignIn(email, password) {
   accSetSession(await sbFetch('/auth/v1/token?grant_type=password', { method: 'POST', auth: false, body: { email, password } }));
   await accLoadProfile();
@@ -2873,6 +2908,8 @@ async function accSignUp(email, password, name) {
 async function accSignOut() {
   try { await sbFetch('/auth/v1/logout', { method: 'POST' }); } catch (e) { /* サーバー側が失敗しても、この端末ではログアウトする */ }
   ACC.session = null; ACC.profile = null; accStore(); renderAcct();
+  SOLO.cleared = readCleared(GUEST_KEY);   // ゲストの記録に戻す
+  renderStages();
 }
 // ----- 称号:条件を満たすと選べるようになり、名前の横に飾れる -----
 // 条件は、アカウントに保存されている記録(クリアしたステージ・対人の勝ち数・レート)だけで決まる
@@ -3009,7 +3046,7 @@ async function accInit() {
   $('accModal').onclick = (e) => { if (e.target === $('accModal')) $('accModal').classList.add('hidden'); };
   renderAcct();
   if (!ACC.session) return;
-  try { await accLoadProfile(); } catch (e) { if (e.status === 401) { ACC.session = null; accStore(); } renderAcct(); }
+  try { await accLoadProfile(); } catch (e) { if (e.status === 401) { ACC.session = null; accStore(); SOLO.cleared = readCleared(GUEST_KEY); renderStages(); } renderAcct(); }
 }
 function renderStages() {
   [...$('stages').children].forEach((b) => {
@@ -3173,7 +3210,7 @@ function init() {
     b.onclick = () => { if (PVP.on && m !== 'pvp' && PVP.phase !== 'idle') pvpLeave(); MODE = m; PVP.on = m === 'pvp'; renderMode(); };
     $('modes').appendChild(b);
   });
-  try { SOLO.stage = localStorage.getItem('kokusen.stage') || 'a1'; SOLO.cleared = JSON.parse(localStorage.getItem('kokusen.cleared') || '[]'); SOLO.rush = Number(localStorage.getItem('kokusen.rush')) || 0; } catch (e) { /* 保存できなくても動く */ }
+  try { SOLO.stage = localStorage.getItem('kokusen.stage') || 'a1'; SOLO.cleared = readCleared(GUEST_KEY); SOLO.rush = Number(localStorage.getItem('kokusen.rush')) || 0; } catch (e) { /* 保存できなくても動く */ }
   if (!STAGES.some((x) => x.id === SOLO.stage)) SOLO.stage = 'a1';
   STAGES.forEach((st) => {
     const b = document.createElement('button');
