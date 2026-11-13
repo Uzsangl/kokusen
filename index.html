@@ -1912,6 +1912,8 @@ const Bgm = (() => {
       load('main').then((ab) => { if (ab) { showButton(); if (ctx) decode('main'); if (now === 'main') startTrack('main'); } });
     },
     // 最初に画面を触ったとき:音を出せる状態にして、最初の曲の変換を始めておく
+    // 曲のデータを先に用意しておく(流すのは play のとき)
+    prepare(name) { if (ensure()) decode(name); },
     // 最初に画面に触れたとき:止まっている音を動かし、流したい曲があれば流す(ブラウザは、触れる前の再生を止めるため)
     unlock() {
       if (!ensure()) return;
@@ -2258,8 +2260,8 @@ function pickHeat(side, o, gotBreak) {
 
 // リールが回り、予兆が出て、相手の手が止まるまで
 // BREAKの瞬間:画面のガラスにひびが走り、もう一度ひびが伸びてから、砕け散る
-// at:ひびの起点(省略すると勝負の枠の中央)
-async function shatter(violet, at) {
+// at:ひびの起点(省略すると勝負の枠の中央)、onBreak:ガラスが砕ける瞬間に呼ぶ
+async function shatter(violet, at, onBreak) {
   const o = at || center($('stage')), svg = $('crack');
   const rays = [];
   const N = 13;
@@ -2285,6 +2287,7 @@ async function shatter(violet, at) {
   Sound.crack(); shake(false);
   await sleep(330);
   svg.setAttribute('class', ''); svg.innerHTML = '';
+  if (onBreak) onBreak();
   Sound.glass(); flash('#ffffff'); shake(true);
   Particles.shards(o.x, o.y, violet ? COLORS.glassViolet : COLORS.glass);
   await sleep(380);
@@ -3782,14 +3785,16 @@ function init() {
   $('sheetClose').onclick = () => $('sheet').classList.add('hidden');
   $('sheet').onclick = (e) => { if (e.target === $('sheet')) $('sheet').classList.add('hidden'); };
   showTitle(true);
+  Bgm.stop();               // 最初の画面では曲を流さない(パリーンの瞬間に流す)
+  Bgm.prepare('title');     // その瞬間にすぐ鳴るよう、先に読み込んでおく
   // タップした場所からひびが走り、BREAKと同じようにガラスが砕けて、タイトル画面が現れる
   const splashGo = async (e) => {
     const sp = $('splash');
     if (sp.classList.contains('broken')) return;
     sp.classList.add('broken');
-    Sound.wake(); Bgm.unlock(); Bgm.play('title');
+    Sound.wake(); Bgm.unlock();   // 音を鳴らせる状態にする(曲はまだ流さない)
     const at = e && e.clientX ? { x: e.clientX, y: e.clientY } : { x: innerWidth / 2, y: innerHeight / 2 };
-    const glass = shatter(false, at);
+    const glass = shatter(false, at, () => Bgm.play('title'));   // パリーンの瞬間に、タイトル曲を頭から
     await sleep(600);   // ひびが広がり切って、砕ける瞬間
     sp.classList.add('go');
     document.body.classList.add('title-burst');
