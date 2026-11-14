@@ -486,6 +486,15 @@
     #logPanel { position: fixed; right: 0; top: 0; bottom: 0; width: 380px; max-height: none; overflow-y: auto; z-index: 20; border-radius: 0; box-shadow: -10px 0 30px #000a; }
     #bgmCredit { grid-column: 1 / -1; }
     #stage > div:not([id]):not(.vs) { display: none; }
+    /* 予兆の発色(好機・激熱・確定・勝ち負け)は、中央の枠に出す */
+    #battle:has(.stage.heat1)::before { border-color: #38bdf8; box-shadow: inset 0 0 40px #0008, 0 0 18px #38bdf877; }
+    #battle:has(.stage.heat2)::before { border-color: #4ade80; box-shadow: inset 0 0 40px #0008, 0 0 24px #4ade8088; }
+    #battle:has(.stage.heat3)::before { border-color: var(--red); box-shadow: inset 0 0 60px #ff4d5e44, 0 0 34px #ff4d5ecc; animation: pulse calc(.35s * var(--spd)) ease-in-out infinite alternate; }
+    #battle:has(.stage.heat4)::before { border-color: #fff; box-shadow: 0 0 40px #fff, 0 0 80px #8b6cff; background: linear-gradient(90deg, #3a0d16, #3a300d, #0d3a1c, #0d2a3a, #1c0d3a); background-size: 300% 100%; animation: hue 1s linear infinite; }
+    #battle:has(.stage.win)::before { border-color: var(--gold); box-shadow: inset 0 0 40px #0008, 0 0 30px #f5c451aa; }
+    #battle:has(.stage.lose)::before { border-color: var(--violet); box-shadow: inset 0 0 40px #0008, 0 0 30px #8b6cffaa; }
+    #battle .stage.heat2 .cue { font-size: 1.4rem; } #battle .stage.heat3 .cue { font-size: 1.9rem; } #battle .stage.heat4 .cue { font-size: 2.3rem; }
+    @media (prefers-reduced-motion: reduce) { #battle::before { animation: none !important; } }
   }
 </style>
 </head>
