@@ -810,7 +810,7 @@ const SPECIAL_CHARS = [
       scissors: { name: '先喰い',   rate: RATE.huge, mods: [foeDfs(1000, 3)] },
       paper:    { name: '呑み戻し', rate: RATE.normal, seal: 1 } } },
   // 錨のタブに並ぶ解放キャラ(group)。陣営ボーナスの対象(bonusOk)。カジとは同じパーティに入れられない(sameAs)
-  { id: 'p_kaji_shi', name: 'カジ【始】', faction: '錨', group: '錨', bonusOk: true, sameAs: 'kaji', role: '始まり', unlock: 'shiToki', hp: 9000, atk: 3300, dfs: 1400, phys: 1.0,
+  { id: 'p_kaji_shi', name: 'カジ【始】', faction: '錨', group: '錨', bonusOk: true, sameAs: 'kaji', role: '始まり', unlock: 'shiToki', hp: 12500, atk: 3600, dfs: 1400, phys: 1.0,
     traits: [
       { key: 'breakGrow', name: '始の刻', desc: `${BREAK_NAME}するたびにATK+1000(場にいる間ずっと)`, add: 1000 },
       { key: 'backwaterAll', name: '背水・始', desc: '残りHPが50%以下でATKとDFS+1000', below: 0.5, add: 1000 } ],
@@ -933,7 +933,7 @@ const ENEMIES = {
       rock:     { name: '堰切り',   rate: RATE.huge, up: { rate: RATE.max, when: 'hpBelow', v: 0.5, text: '残りHP半分以下で極大' } },
       scissors: { name: '踏み越し', rate: RATE.big, mods: [selfAtk(1000, 3)] },
       paper:    { name: '構え直し', rate: RATE.normal, atkUp: 2500, mods: [foeDfs(1000, 2)] } } },
-  b_kaji_shi: { name: 'カジ【始】', faction: '錨', hp: 36000, atk: 2800, dfs: 1800, phys: 1.0, boss: true,
+  b_kaji_shi: { name: 'カジ【始】', faction: '錨', hp: 133200, atk: 3360, dfs: 1800, phys: 1.0, boss: true,
     traits: [
       { key: 'breakGrow', name: '始の刻', desc: `${BREAK_NAME}するたびにATK+2000(ずっと続く)`, add: 2000 },
       { key: 'backwaterAll', name: '背水・始', desc: '残りHPが50%以下でATKとDFS+2000', below: 0.5, add: 2000 } ],
