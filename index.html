@@ -162,7 +162,15 @@
   .mini { position: relative; height: 5px; background: #0b0d1c; border: 1px solid var(--line); border-radius: 3px; overflow: hidden; }
   .mini i { display: block; height: 100%; background: var(--gold); transition: width .35s; }
   .mini u { position: absolute; top: 0; bottom: 0; width: 1px; background: #fff; opacity: .7; }
-  #battle .shp .status { font-size: .64rem; height: 2.5em; overflow: hidden; line-height: 1.25; }
+  #battle .shp .status { font-size: .6rem; height: 4.7em; overflow: hidden; display: flex; flex-wrap: wrap; align-content: flex-start; gap: 2px 3px; position: relative; cursor: pointer; }
+  #battle .shp .status .sc { padding: 0 4px; border-radius: 4px; line-height: 1.45; white-space: nowrap; border: 1px solid; }
+  #battle .shp .status .sc.up { color: #7dd3fc; border-color: #7dd3fc55; background: #7dd3fc14; }
+  #battle .shp .status .sc.down { color: #f0a0f5; border-color: #e879f955; background: #e879f914; }
+  #battle .shp .status .sc.info { color: var(--gold); border-color: #f5c45155; background: #f5c45114; }
+  #battle .shp .status.more::after { content: '…すべて'; position: absolute; right: 0; bottom: 0; padding: 0 4px 0 10px; font-size: .58rem; color: var(--gold);
+    background: linear-gradient(90deg, transparent, #0b0d1c 30%); }
+  .stl { margin: 4px 0 0; padding-left: 1.2em; font-size: .85rem; line-height: 1.7; }
+  .stl .up { color: #7dd3fc; } .stl .down { color: #f0a0f5; } .stl .info { color: var(--gold); }
   #battle .cue { height: 1.4em; overflow: hidden; white-space: nowrap; font-size: .92rem; }
   #battle .dmgline { height: 3.7em; overflow: hidden; font-size: .82rem; }
   #battle .dmgline .minor { font-size: .7rem; color: var(--sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -173,7 +181,9 @@
   #battle .dmgline .tick { font-size: .7rem; }
   #battle .result { margin: 0 0 5px; min-height: 1.3em; font-size: .8rem; }
   .col { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
-  .col .trait { font-size: .66rem; margin: 0; height: 3.9em; overflow: hidden; line-height: 1.3; }
+  .col .trait { font-size: .7rem; margin: 0; height: 2.7em; overflow: hidden; line-height: 1.3; cursor: pointer; }
+  .col .trait b { color: #e2d6ff; font-weight: 700; }
+  .col .trait .ti { color: var(--gold); white-space: nowrap; }
   #battle .hands { display: flex; flex-direction: column; gap: 4px; }
   #battle .hands button, .act {
     display: flex; align-items: center; gap: 6px; text-align: left; width: 100%;
@@ -504,11 +514,11 @@
     <div class="result" id="result">手を選んでください</div>
     <div class="cols">
       <div class="col">
-        <div class="trait" id="traitYou"></div>
+        <div class="trait" id="traitYou" role="button" tabindex="0" aria-label="自分のキャラの特性を見る"></div>
         <div class="hands" id="hands"></div>
       </div>
       <div class="col">
-        <div class="trait" id="traitCpu"></div>
+        <div class="trait" id="traitCpu" role="button" tabindex="0" aria-label="相手のキャラの特性を見る"></div>
         <div class="hands" id="cpuActs"></div>
       </div>
     </div>
@@ -2166,29 +2176,55 @@ function stageSide(el, t, f) {
   // 同じカードなら、前の長さから今の長さへゲージを動かす(減っていく様子が見える)
   const from = el.dataset.card === f.ch.id ? Number(el.dataset.bar) : bar;
   el.dataset.card = f.ch.id; el.dataset.bar = bar;
-  const st = [];
-  f.mods.forEach((m) => st.push(`${m.stat === 'atk' ? 'ATK' : 'DFS'}${m.v > 0 ? '+' : '−'}${Math.abs(m.v)}(残${m.t})`));
-  if (f.fac) st.push(`${f.fac.faction}の陣営ボーナス`);
-  if (f.atkBonus) st.push(`継承ATK+${f.atkBonus}`);
-  if (f.dfsBonus) st.push(`継承DFS+${f.dfsBonus}`);
-  if (f.teamAtk) st.push(`全体ATK+${f.teamAtk}`);
-  if (f.teamDfs) st.push(`全体DFS+${f.teamDfs}`);
-  if (f.markAtk) st.push(`刻印ATK${f.markAtk}`);
-  if (f.markDfs) st.push(`刻印DFS${f.markDfs}`);
-  if (f.noHeal) st.push(`回復封じ${f.noHeal}`);
-  if (traitOf(f, 'rewindRite')) st.push(`巻き戻しまで${Math.max(0, traitOf(f, 'rewindRite').limit - f.turn)}`);
-  if (traitOf(f, 'weakness')) st.push(f.captured ? '今に捕らえた' : `三刻 ${f.seals ? f.seals.split(',').map((h) => HANDS[h].power).join('・') : 'なし'}`);
-  if (f.atkUp) st.push(`次撃ATK+${f.atkUp}`);
-  if (f.dfsUp) st.push(`次被弾DFS+${f.dfsUp}`);
-  if (f.poison) st.push(`時蝕${f.poison}(${f.poisonDmg})`);
-  if (t.keep) st.push('連勝保護');
-  if (t.sealed) st.push('連勝封じ');
+  const st = statusList(t, f);
   el.innerHTML = `<div class="who">${iconHtml(f.ch, 'sm')}${nameOf(f)}<span class="turn">場${f.turn + 1}ラリー目</span></div>
     <div class="s-hp">HP <b>${f.hp}</b> / ${f.max}</div>
     <div class="bar"><div class="hpbar ${bar <= 34 ? 'low' : ''}" style="width:${from}%"></div></div>
     <div class="gauges">${statGauge('ATK', baseAtk(f), f.atk, ATK_GAUGE_MAX)}${statGauge('DFS', baseDfs(f), f.dfs, DFS_MAX)}</div>
-    <div class="status">${st.join(' / ')}</div>`;
+    <div class="status" role="button" tabindex="0" aria-label="バフ・デバフをすべて見る">${st.map((x) => `<span class="sc ${x.k}">${x.s}</span>`).join('')}</div>`;
+  el.querySelector('.status').classList.toggle('none', !st.length);
+  // 収まりきらないときは「…」を出す(押すと全部見られる)
+  const box = el.querySelector('.status');
+  box.classList.toggle('more', box.scrollHeight > box.clientHeight + 2);
   if (from !== bar) { const hb = el.querySelector('.hpbar'); void hb.offsetWidth; hb.style.width = bar + '%'; }
+}
+
+// 場のカードにかかっている効果の一覧。s は札に書く短い文、l は一覧に書く説明、k は up(強化)/down(弱体)/info
+function statusList(t, f) {
+  const st = [], sign = (v) => (v > 0 ? '+' : '−'), L = (stat) => (stat === 'atk' ? 'ATK' : 'DFS');
+  const add = (s, l, k) => st.push({ s, l, k });
+  f.mods.forEach((m) => add(`${L(m.stat)}${sign(m.v)}${Math.abs(m.v)}·${m.t}`, `${L(m.stat)}${sign(m.v)}${Math.abs(m.v)}(残り${m.t}ラリー)`, m.v > 0 ? 'up' : 'down'));
+  if (f.fac) add(`陣営 ${f.fac.text}`, `${f.fac.faction}の陣営ボーナス:${f.fac.text}(試合中ずっと)`, 'up');
+  if (f.atkBonus) add(`継承ATK+${f.atkBonus}`, `継承 ATK+${f.atkBonus}(前の番手から受け継いだ強化。場にいる間ずっと)`, 'up');
+  if (f.dfsBonus) add(`継承DFS+${f.dfsBonus}`, `継承 DFS+${f.dfsBonus}(前の番手から受け継いだ強化。場にいる間ずっと)`, 'up');
+  if (f.teamAtk) add(`全体ATK+${f.teamAtk}`, `味方全員 ATK+${f.teamAtk}(消えない)`, 'up');
+  if (f.teamDfs) add(`全体DFS+${f.teamDfs}`, `味方全員 DFS+${f.teamDfs}(消えない)`, 'up');
+  if (f.dfsGain) add(`不動DFS+${f.dfsGain}`, `特性で上がったDFS+${f.dfsGain}`, 'up');
+  if (f.markAtk) add(`刻印ATK${f.markAtk}`, `刻印 ATK${f.markAtk}(消えない弱体)`, 'down');
+  if (f.markDfs) add(`刻印DFS${f.markDfs}`, `刻印 DFS${f.markDfs}(消えない弱体)`, 'down');
+  if (f.noHeal) add(`回復封じ·${f.noHeal}`, `回復封じ(残り${f.noHeal}ラリー。回復できない)`, 'down');
+  if (f.poison) add(`時蝕·${f.poison}`, `時蝕(残り${f.poison}ラリー。毎ラリー${f.poisonDmg}ダメージ)`, 'down');
+  if (f.atkUp) add(`次撃ATK+${f.atkUp}`, `次の攻撃だけ ATK+${f.atkUp}`, 'up');
+  if (f.dfsUp) add(`次被弾DFS+${f.dfsUp}`, `次に受ける攻撃だけ DFS+${f.dfsUp}`, 'up');
+  if (t.keep) add('連勝保護', '連勝保護(次に負けても、連勝が途切れない)', 'up');
+  if (t.sealed) add('連勝封じ', '連勝封じ(次に勝っても、連勝に数えない)', 'down');
+  const rite = traitOf(f, 'rewindRite');
+  if (rite) add(`巻き戻しまで${Math.max(0, rite.limit - f.turn)}`, `巻き戻しまで残り${Math.max(0, rite.limit - f.turn)}ラリー`, 'info');
+  if (traitOf(f, 'weakness')) {
+    const seals = f.seals ? f.seals.split(',').map((h) => HANDS[h].power).join('・') : 'なし';
+    add(f.captured ? '今に捕らえた' : `三刻 ${seals}`, f.captured ? '今に捕らえた(「時の外側」が消えている)' : `三刻の重ね:${BREAK_NAME}で当てた力 ${seals}`, 'info');
+  }
+  return st;
+}
+// 場のカードの詳しい情報(特性の全文と、かかっている効果の一覧)。side:0=自分、1=相手
+function openCardInfo(side) {
+  if (!S) return;
+  const t = S.teams[side], f = active(t), st = statusList(t, f);
+  const tr = traitsOf(f.ch);
+  openSheet(`${nameOf(f)}`, `
+    <p class="sub" style="margin:0"><span class="s-hp">HP ${f.hp} / ${f.max}</span>　${statNow('ATK', baseAtk(f), f.atk)}　${statNow('DFS', baseDfs(f), f.dfs)}</p>
+    <h3>特性</h3>${tr.length ? tr.map((x) => `<p><b style="color:#c9b8ff">「${escHtml(x.name)}」</b>${escHtml(x.desc)}</p>`).join('') : '<p>なし</p>'}
+    <h3>かかっている効果</h3>${st.length ? `<ul class="stl">${st.map((x) => `<li class="${x.k}">${x.l}</li>`).join('')}</ul>` : '<p>なし</p>'}`);
 }
 
 // 技1つぶんの中身。条件を満たして格上げ中の技は hot
@@ -2212,9 +2248,9 @@ function render(view) {
   $('boutInfo').className = 'boutinfo' + (hint ? ' hint' : decay ? ' warn' : '');
 
   // 下段:左が自分(技がそのまま手のボタン)、右が相手の技
-  $('traitYou').textContent = traitLine(me.ch);
-  $('traitCpu').textContent = traitLine(foe.ch);
-  $('traitCpu').classList.toggle('multi', traitsOf(foe.ch).length > 1);
+  const traitNames = (ch) => { const tr = traitsOf(ch); return tr.length ? `特性 ${tr.map((x) => `<b>${escHtml(x.name)}</b>`).join('・')} <span class="ti">ⓘ</span>` : ''; };
+  $('traitYou').innerHTML = traitNames(me.ch);
+  $('traitCpu').innerHTML = traitNames(foe.ch);
   document.querySelectorAll('#hands button').forEach((b) => {
     const r = actHtml(me, foe, b.dataset.hand, you.breakReady);
     b.innerHTML = r.html;
@@ -3783,6 +3819,11 @@ function init() {
   $('tVer').textContent = `ver ${RULES_VER.slice(0, 6)}`;
   $('tPlay').onclick = () => { Sound.wake(); Bgm.unlock && Bgm.unlock(); showTitle(false); };
   $('toTitle').onclick = () => showTitle(true);
+  // 対戦画面:特性やバフ・デバフを押すと、全文と一覧が出る
+  $('traitYou').onclick = () => openCardInfo(0);
+  $('traitCpu').onclick = () => openCardInfo(1);
+  $('hpYou').addEventListener('click', (e) => { if (e.target.closest('.status')) openCardInfo(0); });
+  $('hpCpu').addEventListener('click', (e) => { if (e.target.closest('.status')) openCardInfo(1); });
   $('selRank').onclick = openRanking;
   $('selTitles').onclick = openTitles;
   $('resign').onclick = () => { if (!busy) askResign(); };
