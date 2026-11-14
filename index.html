@@ -810,7 +810,7 @@ const SPECIAL_CHARS = [
       scissors: { name: '先喰い',   rate: RATE.huge, mods: [foeDfs(1000, 3)] },
       paper:    { name: '呑み戻し', rate: RATE.normal, seal: 1 } } },
   // 錨のタブに並ぶ解放キャラ(group)。陣営ボーナスの対象(bonusOk)。カジとは同じパーティに入れられない(sameAs)
-  { id: 'p_kaji_shi', name: 'カジ【始】', faction: '錨', group: '錨', bonusOk: true, sameAs: 'kaji', role: '始まり', unlock: 'shiToki', hp: 12500, atk: 3600, dfs: 1400, phys: 1.0,
+  { id: 'p_kaji_shi', name: 'カジ【始】', faction: '錨', group: '錨', bonusOk: true, sameAs: 'kaji', role: '始まり', unlock: 'shiToki', hp: 12500, atk: 3600, dfs: 1400, phys: 1.5,
     traits: [
       { key: 'breakGrow', name: '始の刻', desc: `${BREAK_NAME}するたびにATK+1000(場にいる間ずっと)`, add: 1000 },
       { key: 'backwaterAll', name: '背水・始', desc: '残りHPが50%以下でATKとDFS+1000', below: 0.5, add: 1000 } ],
