@@ -2403,7 +2403,7 @@ function teamHead(el, t) {
   const streak = t.breakReady
     ? `<span class="break">${BREAK_NAME}!</span>`
     : '●'.repeat(t.streak) + '○'.repeat(Math.max(0, BREAK_STREAK - t.streak)) + (reach ? ' リーチ!' : '');
-  el.innerHTML = `<div class="head"><span>${t.label}${t === S.teams[1] && !PVP.on ? `(${S.stage ? (S.stage.rush ? '連戦' : '★'.repeat(S.stage.stars)) : AI_LEVELS[S.cpuLevel].name})` : ''} <span class="score">撃破${t.wins}</span></span>
+  el.innerHTML = `<div class="head"><span>${escHtml(t.label)}${t === S.teams[1] && !PVP.on ? `(${S.stage ? (S.stage.rush ? '連戦' : '★'.repeat(S.stage.stars)) : AI_LEVELS[S.cpuLevel].name})` : ''} <span class="score">撃破${t.wins}</span></span>
     <span class="streak${reach ? ' reach' : ''}">${streak}</span></div>
     <div class="chips">${chips}</div>`;
 }
@@ -3082,7 +3082,7 @@ function pvpJoin() {
 function pvpReady() {
   PVP.team = picked.slice(); PVP.teamSalt = rnd(); PVP.phase = 'ready';
   const p = ACC.profile;
-  pvpPublish({ ts: seal(PVP.teamSalt + '|' + PVP.team.join(',')), acc: p ? { id: p.id } : null, ff: null, rs: null });
+  pvpPublish({ ts: seal(PVP.teamSalt + '|' + PVP.team.join(',')), acc: p ? { id: p.id } : null, nm: p ? String(p.name).slice(0, 12) : null, ff: null, rs: null });
   pvpStep();
   renderSelect();
 }
@@ -3107,7 +3107,7 @@ async function pvpStep() {
   const foe = pvpFoe(), fp = foe ? foe.presence : null;
 
   const verNg = fp && fp.v !== RULES_VER;
-  if (verNg && PVP.phase !== 'play') { pvpStatus('相手とゲームの版が違います。お互いに最新のリンクを開き直してください。'); return; }
+  if (verNg && PVP.phase !== 'play') { pvpStatus(`相手とゲームの版が違います(自分 ver ${RULES_VER.slice(0, 6)} / 相手 ver ${String(fp.v || '?').slice(0, 6)})。お互いにページを再読み込みして、タイトル画面の右下の ver が同じになってから入り直してください。`); return; }
   if (PVP.phase === 'lobby') { pvpStatus(foe ? '相手が部屋にいます。キャラを選んで「準備完了」を押してください。' : `合言葉「${PVP.code}」で相手を待っています。相手にも同じ合言葉を入れてもらってください。`); return; }
 
   if (PVP.phase === 'ready') {
@@ -3128,13 +3128,17 @@ async function pvpStep() {
     // 相手が名乗ったアカウントは、サーバーに保存されている情報で確かめる(名前・称号・レートは相手の申告を使わない)
     PVP.foeAcc = null;
     ACC.pending = null;
+    // 相手の名前:まず相手が名乗った名前を出し、アカウントを確かめられたらサーバーの名前に置き換える
+    const said = typeof fp.nm === 'string' ? fp.nm.replace(/[\u0000-\u001f]/g, '').slice(0, 12) : '';
+    PVP.foeName = said;
     PVP.foeAccP = accVerifyFoe(fp.acc).then(async (v) => {
       PVP.foeAcc = v;
+      if (v && S && S.teams[1]) { PVP.foeName = v.name; S.teams[1].label = v.name; render(); }
       if (v) await accRateStart(v.r);
       logLater(v ? `対戦相手:${titleOf(v.title) ? `〔${titleOf(v.title).name}〕` : ''}${v.name}(レート${v.r})` : '対戦相手はログインしていないため、レーティングなしの対戦です');
       return v;
     });
-    await startMatch(PVP.team.map((id) => charById(id)), chars, '相手');
+    await startMatch(PVP.team.map((id) => charById(id)), chars, said || '相手');
     pvpStep();
     return;
   }
@@ -4063,7 +4067,8 @@ async function startMatch(mine, theirs, foeLabel, opt = {}) {
     clearTimeout(tickTimer); Sound.breakIn();
     await cutin('トキバミ', '止めておいてくれて、ありがとう', 'violet', 1500);
   } else {
-    await cutin('開戦', `${active(S.teams[0]).ch.name} vs ${active(S.teams[1]).ch.name}`, 'gold', 900);
+    if (PVP.on) await cutin(`VS ${PVP.foeName || '相手(ゲスト)'}`, `${active(S.teams[0]).ch.name} vs ${active(S.teams[1]).ch.name}`, 'gold', 1400);
+    else await cutin('開戦', `${active(S.teams[0]).ch.name} vs ${active(S.teams[1]).ch.name}`, 'gold', 900);
   }
   busy = false;
   render();
