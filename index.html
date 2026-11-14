@@ -1681,7 +1681,7 @@ const CPU_LINES = {
   yajiri: L(['その手、もう的だよ', '同じ軌道。外さない'], ['無駄撃ちはしない', 'まだ狙いが定まらない'], ['三本目は、そこに置いてある'], ['ハヤのやつ、また先に行ったな', '矢羽、整えないと']),
   // ゼノ(正体は伏せたまま、言葉の端にだけ滲ませる)
   xeno_body:   L(['その手は、覚えている', '懐かしい手だ'], ['急ぐな。結末は知っている', '……来い'], ['失くしたものは、もう数えない'], ['この空は、まだ青いのか', '……腹が減る、という感覚を忘れていた']),
-  xeno_spirit: L(['その次も、もう通った道だ', '同じ手を、何度見たと思う'], ['着地まで、あと少し', 'ここは、始まりの前だ'], ['戻る。戦いの前まで'], ['……長かった', '声が、遠い']),
+  xeno_spirit: L(['……'], ['……'], ['……'], ['……']),   // 精神離脱体は何も語らない
 };
 // 雑魚は性格ごとに共通
 const PERSONA_LINES = {
@@ -1712,7 +1712,8 @@ function speak(c, mood) {
   const set = CPU_LINES[key] || PERSONA_LINES[personaOf(c)];
   const pool = Math.random() < 0.2 ? set.idle : set[mood] || set.calm;
   let t = pickOne(pool);
-  if (t === c.lastLine) t = pickOne(pool.concat(set.calm, set.idle).filter((x) => x !== c.lastLine));   // 同じセリフを続けない
+  const others = pool.concat(set.calm, set.idle).filter((x) => x !== c.lastLine);
+  if (t === c.lastLine && others.length) t = pickOne(others);   // 同じセリフを続けない
   c.lastLine = t;
   return who(t);
 }
