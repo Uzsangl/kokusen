@@ -195,6 +195,8 @@
   .txt b { display: block; color: var(--text); font-size: .72rem; }
   .hot .txt, .hot .txt b { color: var(--red); font-weight: 700; }
   #battle .hands button.hot { border-color: var(--red); box-shadow: 0 0 10px #ff4d5e66; }
+  .warm .txt, .warm .txt b { color: #ffa94d; font-weight: 700; }
+  #battle .hands button.warm { border-color: #ffa94d; box-shadow: 0 0 8px #ffa94d55; }
   .credit { font-size: .62rem; color: var(--sub); text-align: center; margin: 0; }
   .credit a { color: var(--sub); }
   .foot { display: flex; gap: 6px; }
@@ -2230,8 +2232,10 @@ function openCardInfo(side) {
 // 技1つぶんの中身。条件を満たして格上げ中の技は hot
 function actHtml(card, foe, h, isBreak) {
   const a = card.actions[h];
-  const hot = upActive(a, card, foe, card.turn + 1, isBreak);
-  return { hot, html: `<span class="ico">${HANDS[h].icon}</span><span class="txt"><b>${HANDS[h].power}「${a.name}」</b>${describe(a, hot ? a.up.rate : 0, true)}</span>` };
+  const up = upActive(a, card, foe, card.turn + 1, isBreak);
+  // 今出せる威力:極大は赤(hot)、特大はオレンジ(warm)
+  const rate = up ? a.up.rate : a.rate || 0, hot = rate >= RATE.max, warm = !hot && rate >= RATE.huge;
+  return { hot, warm, html: `<span class="ico">${HANDS[h].icon}</span><span class="txt"><b>${HANDS[h].power}「${a.name}」</b>${describe(a, up ? a.up.rate : 0, true)}</span>` };
 }
 
 // view を渡すと、場のカードの代わりにそのカードを表示する(倒れた直後に、倒れたカードを見せ続けるため)
@@ -2255,11 +2259,12 @@ function render(view) {
     const r = actHtml(me, foe, b.dataset.hand, you.breakReady);
     b.innerHTML = r.html;
     b.classList.toggle('hot', r.hot);
+    b.classList.toggle('warm', r.warm);
     b.disabled = S.over || busy || pvpLocked();
   });
   $('cpuActs').innerHTML = HAND_KEYS.map((h) => {
     const r = actHtml(foe, me, h, cpu.breakReady);
-    return `<div class="act${r.hot ? ' hot' : ''}">${r.html}</div>`;
+    return `<div class="act${r.hot ? ' hot' : r.warm ? ' warm' : ''}">${r.html}</div>`;
   }).join('');
   $('hands').classList.toggle('breaking', you.breakReady && !busy);
   $('retry').classList.toggle('hidden', !S.over);
