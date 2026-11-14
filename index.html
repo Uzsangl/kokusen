@@ -61,7 +61,7 @@
   .stages button.s4, .stages button.s5 { grid-column: span 3; }
   .stages button.s0 { grid-column: 1 / -1; }
   .stages button.chain { opacity: .6; border-style: dashed; }
-  .cico.shi { box-shadow: 0 0 0 2px #f5c451, 0 0 12px #f5c451aa; }
+  .cico.shi { box-shadow: 0 0 0 2px #ff2a3d, 0 0 12px #ff2a3daa; }
   .stages button.s0 b { color: var(--gold); }
   .stages button.s5 b { color: #ff2a3d; text-shadow: 0 0 10px #ff2a3d99; }
   .stages button.s4 b { color: #b57bff; text-shadow: 0 0 10px #b57bff99; }
@@ -1825,9 +1825,9 @@ const $ = (id) => document.getElementById(id);
 // ソロのボスは元のキャラの絵を使う。絵がないキャラは名前の頭文字を出す。
 // ゼノは名前が明かされるまでシルエットにする。
 const ICON_IDS = new Set(['kaji', 'tomari', 'mio', 'moyai', 'shio', 'rei', 'hajime', 'uro', 'moto', 'kasumi',
-  'tsuru', 'haya', 'yajiri', 'hane', 'tokibami', 'xeno_body', 'xeno_spirit',
+  'tsuru', 'haya', 'yajiri', 'hane', 'tokibami', 'xeno_body', 'xeno_spirit', 'kaji_shi',
   'a_guard', 'a_chain', 'a_lamp', 'z_mask', 'z_wind', 'z_sand', 'y_runner', 'y_archer', 'y_seer']);
-const ICON_ALIAS = { b_tomari: 'tomari', b_rei: 'rei', b_tsuru: 'tsuru', p_tokibami: 'tokibami', p_xeno: 'xeno_body', b_kaji: 'kaji', b_kaji_shi: 'kaji', p_kaji_shi: 'kaji' };
+const ICON_ALIAS = { b_tomari: 'tomari', b_rei: 'rei', b_tsuru: 'tsuru', p_tokibami: 'tokibami', p_xeno: 'xeno_body', b_kaji: 'kaji', b_kaji_shi: 'kaji_shi', p_kaji_shi: 'kaji_shi' };
 const ICON_FACTION = { '錨': 'f-anchor', '零': 'f-zero', '矢': 'f-arrow' };
 function iconHtml(ch, size) {
   const id = ICON_ALIAS[ch.id] || ch.id;
