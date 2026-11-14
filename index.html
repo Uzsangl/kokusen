@@ -2934,9 +2934,22 @@ function pvpWatch() {
 // リタイア:確認してから負けにする。オンライン対人では相手に知らせ、相手の勝ちになる
 function askResign() {
   if (!S || S.over) return;
-  openSheet('リタイア', `<p>この対戦をリタイアしますか? あなたの負けになります。${MODE === 'pvp' && PVP.foeAcc ? 'レーティング戦なので、負けとして記録されます。' : ''}</p>
+  const canRetry = MODE !== 'pvp' && LAST_MATCH;   // 再挑戦はCPU戦とソロだけ(対人は相手がいるため)
+  openSheet('リタイア', `<p>${canRetry ? '同じチーム・同じ相手で最初からやり直すか、リタイアして負けにするかを選んでください。' : `この対戦をリタイアしますか? あなたの負けになります。${MODE === 'pvp' && PVP.foeAcc ? 'レーティング戦なので、負けとして記録されます。' : ''}`}</p>
+    ${canRetry ? '<div class="row"><button id="rsRetry" style="border-color:var(--gold);color:var(--gold);font-weight:700">再挑戦</button></div>' : ''}
     <div class="row"><button id="rsYes" style="border-color:#ff4d5e;color:#ff8a95;font-weight:700">リタイアする</button></div>`);
   $('rsYes').onclick = () => { $('sheet').classList.add('hidden'); endByResign('me'); };
+  if (canRetry) $('rsRetry').onclick = () => { $('sheet').classList.add('hidden'); retryMatch(); };
+}
+// 再挑戦:今の対戦をやめて、同じチーム・同じ相手・同じ設定で最初から始める(記録には残さない)
+function retryMatch() {
+  if (!LAST_MATCH) return;
+  if (S) S.over = true;
+  clearTimeout(tickTimer); freeze(false);
+  const { mine, theirs, foeLabel, opt } = LAST_MATCH;
+  // ソロは敵を作り直す(★★★★★の巻き戻しなどの状態を持ち越さない)
+  const foes = opt.stage ? stageFoes(opt.stage) : theirs;
+  startMatch(mine, foes, foeLabel, opt);
 }
 async function endByResign(who) {
   if (!S || S.over) return;
@@ -3745,7 +3758,9 @@ function start() {
   return startMatch(mine, shuffled(CHARACTERS).slice(0, TEAM_SIZE), 'CPU');
 }
 // opt:level はCPUの深さ、read はボスが読みに頼る割合、stage はソロのステージ、noDecay は刻の抜け落ちを止める
+let LAST_MATCH = null;   // 再挑戦用:直前に始めた対戦の中身
 async function startMatch(mine, theirs, foeLabel, opt = {}) {
+  LAST_MATCH = { mine, theirs, foeLabel, opt };
   S = newMatch(mine, theirs);
   S.teams[1].label = foeLabel;
   S.cpuLevel = opt.level || FX.level;
