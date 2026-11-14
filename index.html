@@ -52,12 +52,16 @@
   button:hover:not(:disabled) { border-color: var(--accent); }
   button:disabled { opacity: .45; cursor: default; }
   .levels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 4px; }
-  .stages { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 4px; }
+  .stages { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-bottom: 4px; }
+  .stages button { grid-column: span 2; }
   .stages button { padding: 6px 4px; font-size: .74rem; line-height: 1.3; }
   .stages button b { display: block; color: var(--gold); letter-spacing: .1em; }
   .stages button.s1 b { color: #38bdf8; }
   .stages button.s2 b { color: #4ade80; }
-  .stages button.s4, .stages button.s5, .stages button.s0 { grid-column: 1 / -1; }
+  .stages button.s4, .stages button.s5 { grid-column: span 3; }
+  .stages button.s0 { grid-column: 1 / -1; }
+  .stages button.chain { opacity: .6; border-style: dashed; }
+  .cico.shi { box-shadow: 0 0 0 2px #f5c451, 0 0 12px #f5c451aa; }
   .stages button.s0 b { color: var(--gold); }
   .stages button.s5 b { color: #ff2a3d; text-shadow: 0 0 10px #ff2a3d99; }
   .stages button.s4 b { color: #b57bff; text-shadow: 0 0 10px #b57bff99; }
@@ -387,6 +391,7 @@
     .tfoot { margin-top: 6px; }
   }
   #battle .foot .resign { color: #ff8a95; border-color: #5a2a36; }
+  #battle .foot #chain { color: #ff2a3d; border-color: #ff2a3d; font-weight: 700; box-shadow: 0 0 14px #ff2a3d66; }
   .seltop { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
   .seltop > span { flex: 1; }
   .seltop .back { margin-bottom: 0; }
@@ -599,6 +604,7 @@
       <button id="logBtn">ログを見る</button>
       <button id="resign" class="resign">リタイア</button>
       <button id="retry" class="hidden">キャラ選択に戻る</button>
+      <button id="chain" class="hidden">続けて【始】に挑む</button>
     </div>
     <div class="panel hidden" id="logPanel"><div id="log"></div></div>
     <p class="credit hidden" id="bgmCredit">音楽:<a href="https://nagumorizu.com/" target="_blank" rel="noopener">なぐもりずの音楽室</a>(南雲莉翠)</p>
@@ -803,6 +809,15 @@ const SPECIAL_CHARS = [
       rock:     { name: '圧し止め', rate: RATE.big, mods: [foeAtk(800, 3)] },
       scissors: { name: '先喰い',   rate: RATE.huge, mods: [foeDfs(1000, 3)] },
       paper:    { name: '呑み戻し', rate: RATE.normal, seal: 1 } } },
+  // 錨のタブに並ぶ解放キャラ(group)。陣営ボーナスの対象(bonusOk)。カジとは同じパーティに入れられない(sameAs)
+  { id: 'p_kaji_shi', name: 'カジ【始】', faction: '錨', group: '錨', bonusOk: true, sameAs: 'kaji', role: '始まり', unlock: 'shiToki', hp: 9000, atk: 3300, dfs: 1400, phys: 1.0,
+    traits: [
+      { key: 'breakGrow', name: '始の刻', desc: `${BREAK_NAME}するたびにATK+1000(場にいる間ずっと)`, add: 1000 },
+      { key: 'backwaterAll', name: '背水・始', desc: '残りHPが50%以下でATKとDFS+1000', below: 0.5, add: 1000 } ],
+    actions: {
+      rock:     { name: '始の一閃', rate: RATE.huge },
+      scissors: { name: '間を跳ぶ', rate: RATE.normal, streak: 1 },
+      paper:    { name: '流れ戻し', rate: RATE.normal, heal: 1500 } } },
 ];
 
 // 各陣営に★・★★・★★★の3ステージ、全9ステージ。★と★★は3対3、★★★は3対1(敵はボス1体、特性3つ)。
@@ -911,6 +926,22 @@ const ENEMIES = {
       scissors: { name: '先喰い',   rate: RATE.huge, up: { rate: RATE.max, when: 'captured', text: '今に捕らえられると極大' } },
       paper:    { name: '呑み戻し', rate: RATE.normal, heal: 2000, dispel: 1 } } },
 
+  // --- ★★★★:激戦の余波(カジ)。★★★★★:カジ【始】(★★★★をクリアした直後だけ、同じパーティで挑める) ---
+  b_kaji: { name: 'カジ', faction: '錨', hp: 102000, atk: 3840, dfs: 1600, phys: 1.0, boss: true,
+    traits: [{ key: 'backwaterSteps', name: '背水・見', desc: '残りHPが75%・50%・25%を切るたびにATK+1000(最大+3000)', steps: [0.75, 0.5, 0.25], add: 1000 }],
+    actions: {
+      rock:     { name: '堰切り',   rate: RATE.huge, up: { rate: RATE.max, when: 'hpBelow', v: 0.5, text: '残りHP半分以下で極大' } },
+      scissors: { name: '踏み越し', rate: RATE.big, mods: [selfAtk(1000, 3)] },
+      paper:    { name: '構え直し', rate: RATE.normal, atkUp: 2500, mods: [foeDfs(1000, 2)] } } },
+  b_kaji_shi: { name: 'カジ【始】', faction: '錨', hp: 36000, atk: 2800, dfs: 1800, phys: 1.0, boss: true,
+    traits: [
+      { key: 'breakGrow', name: '始の刻', desc: `${BREAK_NAME}するたびにATK+2000(ずっと続く)`, add: 2000 },
+      { key: 'backwaterAll', name: '背水・始', desc: '残りHPが50%以下でATKとDFS+2000', below: 0.5, add: 2000 } ],
+    actions: {
+      rock:     { name: '始の一閃', rate: RATE.huge },
+      scissors: { name: '間を跳ぶ', rate: RATE.big, streak: 1 },
+      paper:    { name: '流れ戻し', rate: RATE.normal, heal: 2000 } } },
+
   // --- ★★★★★:ゼノ(倒すまで名前は「？？？」)。肉体を倒すと精神離脱体が現れる2段階 ---
   xeno_body: { name: 'ゼノ', secret: '？？？', faction: '始', hp: 10000, atk: 9000, dfs: 9000, phys: 1.2, boss: true,
     traits: [
@@ -945,10 +976,13 @@ const STAGES = [
   { id: 'y2', faction: '矢', stars: 2, name: '射手の丘',     foes: ['y_archer', 'y_runner', 'y_seer'], level: 1, hp: 0.954, atk: 1.0 },
   { id: 'y3', faction: '矢', stars: 3, name: '天眼の弦',     foes: ['b_tsuru'], level: 4, read: 0.35, hp: 2.6, atk: 1.0 },
   { id: 't4', faction: '刻喰', stars: 4, name: '刻喰らいの淵', foes: ['tokibami'], level: 4, read: 0.35, hp: 1.8, atk: 1.0, bgm: 'toki' },
+  { id: 'k4', faction: '錨', stars: 4, name: '激戦の余波', foes: ['b_kaji'], level: 4, read: 0.35, hp: 1.0, atk: 1.0, bgm: 'toki' },
   { id: 'x5', faction: '始', stars: 5, name: '始まりの前', foes: ['xeno_body', 'xeno_spirit'], level: 4, read: 1.0, hp: 1.0, atk: 1.0, bgm: 'xeno' },
+  // ★★★★★「始まり」:★★★★「激戦の余波」をクリアした直後だけ挑める(chainFrom)
+  { id: 'k5', faction: '錨', stars: 5, name: '始まり', foes: ['b_kaji_shi'], level: 4, read: 0.6, hp: 1.0, atk: 1.0, bgm: 'xeno', chainFrom: 'k4' },
   // ボスラッシュ:★★★の3体 → ★★★★ → ★★★★★ を続けて戦う。ボスを1体倒すごとに、こちらは全回復する。
   // rushHp は、ゼノ以外のボスのHPの倍率。「むずかしい」で5連勝できる率が約0.01%になるように決めた
-  { id: 'rush', faction: '連戦', stars: 0, name: 'ボスラッシュ', rush: ['a3', 'z3', 'y3', 't4', 'x5'], rushHp: 0.28, level: 4, read: 0.35, hp: 1.0, atk: 1.0 },
+  { id: 'rush', faction: '連戦', stars: 0, name: 'ボスラッシュ1', rush: ['a3', 'z3', 'y3', 't4', 'x5'], rushHp: 0.28, level: 4, read: 0.35, hp: 1.0, atk: 1.0 },
 ];
 // ステージの敵を、倍率を掛けた能力値で作る(元のデータは書き換えない)
 function stageFoes(stage) {
@@ -971,7 +1005,8 @@ const traitOf = (card, key) => traitsOf(card.ch).find((t) => t.key === key) || n
 const modSum = (c, stat) => c.mods.reduce((s, m) => s + (m.stat === stat ? m.v : 0), 0);
 // 現在のATK(変身・渡された強化・バフ/デバフ込み。次の攻撃だけの上乗せ atkUp は含めない)
 const ATK_MIN = 250;   // デバフでATKがこれより下がることはない
-const baseAtk = (c) => Math.max(ATK_MIN, c.atk + c.atkBonus + c.teamAtk + c.markAtk + (c.facAtk || 0) + modSum(c, 'atk'));
+const ATK_MAX = 99999;   // ATKの上限
+const baseAtk = (c) => Math.min(ATK_MAX, Math.max(ATK_MIN, c.atk + c.atkBonus + c.teamAtk + c.markAtk + (c.facAtk || 0) + (c.growAtk || 0) + modSum(c, 'atk')));
 // 現在のDFS(変身・特性・渡された強化・バフ/デバフ込み。次の被弾だけの上乗せ dfsUp は含めない)
 const baseDfs = (c) => {
   const v = c.dfs + c.dfsGain + c.dfsBonus + c.teamDfs + c.markDfs + (c.facDfs || 0) + modSum(c, 'dfs');
@@ -981,7 +1016,9 @@ const baseDfs = (c) => {
 // 攻撃を受けるときのDFS。BREAK中の攻撃は DFS を 0 として扱う
 // 特性「一点留め」など:相手のチームが1体だけのとき(ソロのボス戦)のDFSの上乗せ。S.giant は、相手が1体のチームの側
 const giantDfs = (c) => { const t = traitOf(c, 'giantSlayer'); return t && c.giant ? t.dfs : 0; };
-const dfsOf = (def, isBreak) => (isBreak ? 0 : Math.min(DFS_MAX, baseDfs(def) + def.dfsUp + giantDfs(def)));
+// 特性「背水・始」:残りHPが一定以下でDFSも上がる
+const traitDfs = (c) => { const t = traitOf(c, 'backwaterAll'); return t && c.hp <= c.max * t.below ? t.add : 0; };
+const dfsOf = (def, isBreak) => (isBreak ? 0 : Math.min(DFS_MAX, baseDfs(def) + def.dfsUp + giantDfs(def) + traitDfs(def)));
 // 攻撃する側から見た相手のDFS(特性「貫き」はDFSを一定量無視する)
 const dfsVs = (att, def, isBreak) => { const p = traitOf(att, 'pierce'); return Math.max(0, dfsOf(def, isBreak) - (p && !traitOf(def, 'hardshell') ? p.v : 0)); };
 
@@ -1004,6 +1041,8 @@ const rateOf = (a, att, def, n, isBreak) => (upActive(a, att, def, n, isBreak) ?
 function traitAtk(S, att, def, isBreak) {
   let v = 0, t;
   if ((t = traitOf(att, 'backwater')) && att.hp <= att.max * t.below) v += t.add;
+  if ((t = traitOf(att, 'backwaterSteps'))) v += t.steps.filter((x) => att.hp <= att.max * x).length * t.add;   // 背水・見
+  if ((t = traitOf(att, 'backwaterAll')) && att.hp <= att.max * t.below) v += t.add;                               // 背水・始
   if ((t = traitOf(att, 'oldwound')) && def.poison > 0) v += t.add;
   if ((t = traitOf(att, 'foresight')) && isBreak) v += t.add;
   if ((t = traitOf(att, 'giantSlayer')) && att.giant) v += t.atk;   // 相手が1体だけのチーム(ソロのボス戦)のとき
@@ -1014,7 +1053,7 @@ function traitAtk(S, att, def, isBreak) {
 // 攻撃1回ぶんのダメージ。att / def は場に出ているカード
 // 掛け算するのは「ATK × ダメージ係数 × フィジカル係数 × DFS軽減」だけで、強化・弱体はすべてATKとDFSへの足し引き
 function damage(S, att, def, rate, isBreak) {
-  const atk = Math.max(ATK_MIN, baseAtk(att) + att.atkUp + traitAtk(S, att, def, isBreak));
+  const atk = Math.min(ATK_MAX, Math.max(ATK_MIN, baseAtk(att) + att.atkUp + traitAtk(S, att, def, isBreak)));
   const ub = isBreak ? traitOf(def, 'unbreak') : null;   // 特性:BREAKの被ダメージを減らす
   const out = !def.captured ? traitOf(def, 'outside') : null;   // 特性「時の外側」
   return Math.round(atk * rate * att.ch.phys * (1 - dfsVs(att, def, isBreak) / 10000) * (ub ? 1 - ub.cut : 1) * (out ? 1 - out.cut : 1));
@@ -1057,7 +1096,7 @@ const FACTION_BONUS = {
   '矢': { atk: 1000, text: 'ATK+1000' },
 };
 function factionBonus(chars) {
-  if (chars.length !== TEAM_SIZE || !chars.every((ch) => ch.faction === chars[0].faction && CHARACTERS.some((c) => c.id === ch.id))) return null;
+  if (chars.length !== TEAM_SIZE || !chars.every((ch) => ch.faction === chars[0].faction && (ch.bonusOk || CHARACTERS.some((c) => c.id === ch.id)))) return null;
   const b = FACTION_BONUS[chars[0].faction];
   return b ? { ...b, faction: chars[0].faction } : null;
 }
@@ -1412,6 +1451,9 @@ function breakRally(S, side, hand, log) {
   beginRally(S, log);
   S.teams[side].breakReady = false;
   act(S, side, hand, log, true);
+  // 特性「始の刻」:BREAKするたびに、ATKがずっと上がる
+  const me = active(S.teams[side]), grow = traitOf(me, 'breakGrow');
+  if (grow && me.hp > 0) { me.growAtk = (me.growAtk || 0) + grow.add; log(`　${nameOf(me)}の「${grow.name}」:ATK+${grow.add}(合計+${me.growAtk})`); }
   // 特性「三刻の重ね」:BREAKで停止・跳躍・遡行を1回ずつ当てると、「時の外側」が消える
   const foe = active(S.teams[1 - side]);
   if (traitOf(foe, 'weakness') && !foe.captured && foe.hp > 0 && S.hit && S.hit.dmg > 0) {
@@ -1554,9 +1596,10 @@ const PERSONA_OF = {
   tsuru: 'sight', mio: 'sight', hane: 'sight', b_tsuru: 'sight', y_seer: 'sight',
   shio: 'prey', moto: 'prey', yajiri: 'prey', tokibami: 'prey', p_tokibami: 'prey', z_mask: 'prey', a_chain: 'prey',
   kaji: 'rage', haya: 'rage', xeno_body: 'rage', p_xeno: 'rage', y_runner: 'rage', y_archer: 'rage',
-  xeno_spirit: 'abyss',
+  xeno_spirit: 'abyss', b_kaji: 'rage', p_kaji_shi: 'rage',
 };
-const personaOf = (c) => PERSONA_OF[c.ch.id] || 'guard';
+// カジ【始】は残りHPで性格が変わる(激昂 → 天眼 → 捕食)。性格は裏の数値なので画面には出さない
+const personaOf = (c) => (c.ch.id === 'b_kaji_shi' ? (c.hp > c.max * 0.67 ? 'rage' : c.hp > c.max * 0.34 ? 'sight' : 'prey') : PERSONA_OF[c.ch.id] || 'guard');
 const PERSONA_CAP = { guard: 0.7, rewind: 1, sight: 1.3, prey: 1, rage: 1, abyss: 1.3, none: 1 };   // 読みに賭ける上限の倍率
 const lowHp = (c) => c.hp <= c.max / 2;
 
@@ -1682,6 +1725,7 @@ const CPU_LINES = {
   // ゼノ(正体は伏せたまま、言葉の端にだけ滲ませる)
   xeno_body:   L(['その手は、覚えている', '懐かしい手だ'], ['急ぐな。結末は知っている', '……来い'], ['失くしたものは、もう数えない'], ['この空は、まだ青いのか', '……腹が減る、という感覚を忘れていた']),
   xeno_spirit: L(['……'], ['……'], ['……'], ['……']),   // 精神離脱体は何も語らない
+  b_kaji_shi:  L(['止めるまでもない。見えてる', 'その一瞬は、もう通った'], ['始まりは、静かだな', '……来い。全部受ける'], ['ここが、始まりだ'], ['姉さん、見てるか', '腕が、熱い']),
 };
 // 雑魚は性格ごとに共通
 const PERSONA_LINES = {
@@ -1691,7 +1735,7 @@ const PERSONA_LINES = {
   prey:   L(['同じ手だな', '続けたな？'], ['待つ', '隙を探す'], ['三度目は喰う'], ['腹が鳴る', '……いい匂いがする']),
   rage:   L(['遅い！', 'そこだ！'], ['来い', 'まだ本気じゃない'], ['ここからだ！'], ['熱い', 'ああ、もう！']),
 };
-const LINE_ALIAS = { b_tomari: 'tomari', b_rei: 'rei', b_tsuru: 'tsuru', p_xeno: 'xeno_body' };
+const LINE_ALIAS = { b_tomari: 'tomari', b_rei: 'rei', b_tsuru: 'tsuru', p_xeno: 'xeno_body', b_kaji: 'kaji', p_kaji_shi: 'b_kaji_shi' };
 // トキバミは自分の声を持たず、喰った者たちの声で、過去・現在・未来を混ぜて話す(場面は分けない)
 const TOKIBAMI_VOICE = [
   'おまえは出した。おまえは出す。だから、ここにいる',
@@ -1783,11 +1827,11 @@ const $ = (id) => document.getElementById(id);
 const ICON_IDS = new Set(['kaji', 'tomari', 'mio', 'moyai', 'shio', 'rei', 'hajime', 'uro', 'moto', 'kasumi',
   'tsuru', 'haya', 'yajiri', 'hane', 'tokibami', 'xeno_body', 'xeno_spirit',
   'a_guard', 'a_chain', 'a_lamp', 'z_mask', 'z_wind', 'z_sand', 'y_runner', 'y_archer', 'y_seer']);
-const ICON_ALIAS = { b_tomari: 'tomari', b_rei: 'rei', b_tsuru: 'tsuru', p_tokibami: 'tokibami', p_xeno: 'xeno_body' };
+const ICON_ALIAS = { b_tomari: 'tomari', b_rei: 'rei', b_tsuru: 'tsuru', p_tokibami: 'tokibami', p_xeno: 'xeno_body', b_kaji: 'kaji', b_kaji_shi: 'kaji', p_kaji_shi: 'kaji' };
 const ICON_FACTION = { '錨': 'f-anchor', '零': 'f-zero', '矢': 'f-arrow' };
 function iconHtml(ch, size) {
   const id = ICON_ALIAS[ch.id] || ch.id;
-  const cls = `cico ${size} ${ICON_FACTION[ch.faction] || 'f-none'}`;
+  const cls = `cico ${size} ${ICON_FACTION[ch.faction] || 'f-none'}${/kaji_shi$/.test(ch.id) ? ' shi' : ''}`;
   if (!ICON_IDS.has(id)) return `<span class="${cls} none" aria-hidden="true">${ch.name[0]}</span>`;
   const secret = ch.secret && !xenoKnown();
   return `<img class="${cls}${secret ? ' secret' : ''}" src="icons/${id}.webp" alt="" aria-hidden="true" width="192" height="192">`;
@@ -2177,7 +2221,7 @@ const Bgm = (() => {
 // 対人戦:相手の残りが1枚になったとき。CPU戦:相手チーム全体の残りHPが25%以下になったとき
 // (ストーリーモードはまだないので、CPU戦をその代わりにしている)
 function climaxReady() {
-  if (!S || S.over || S.climax || (S.stage && (S.stage.id === 'x5' || S.stage.rush))) return false;
+  if (!S || S.over || S.climax || (S.stage && (S.stage.bgm === 'xeno' || S.stage.rush))) return false;
   const cards = S.teams[1].cards;
   const left = cards.filter((c) => c.hp > 0 && c.result !== 'lose');
   const hp = left.reduce((s, c) => s + c.hp, 0), max = cards.reduce((s, c) => s + c.max, 0);
@@ -2470,6 +2514,7 @@ function render(view) {
   }).join('');
   $('hands').classList.toggle('breaking', you.breakReady && !busy);
   $('retry').classList.toggle('hidden', !S.over);
+  $('chain').classList.toggle('hidden', !(S.over && S.winner === 0 && S.stage && STAGES.some((x) => x.chainFrom === S.stage.id) && !S.resign));
   $('resign').classList.toggle('hidden', S.over);
 }
 const setResult = (t) => { $('result').textContent = t; };
@@ -3153,6 +3198,7 @@ function retryMatch() {
   clearTimeout(tickTimer); freeze(false);
   const { mine, theirs, foeLabel, opt } = LAST_MATCH;
   // ソロは敵を作り直す(★★★★★の巻き戻しなどの状態を持ち越さない)
+  if (opt.stage && opt.stage.chainFrom) { const from = STAGES.find((x) => x.id === opt.stage.chainFrom); return startSolo(mine, from); }
   const foes = opt.stage ? stageFoes(opt.stage) : theirs;
   startMatch(mine, foes, foeLabel, opt);
 }
@@ -3381,6 +3427,7 @@ async function accRecordMatch(S) {
     if (sid === 'x5' && S.rewinds) s.rewindWin = 1;
     if ((sid === 'x5' || (S.stage && S.stage.rush)) && ids.includes('kaji')) s.kajiXeno = 1;
     if (sid === 't4' && fb) s.facToki = 1;
+    if (sid === 'k5' && ids.includes('p_tokibami')) s.tokiShi = 1;
     if (sid === 't4' && ['kaji', 'rei', 'tsuru'].every((id) => ids.includes(id))) s.trioToki = 1;
   }
   if (S.stage && S.stage.rush) max('rushBest', rushCount(S.teams[1]));
@@ -3469,7 +3516,7 @@ async function accSignOut() {
 // 称号の一覧(50個)を決めるまでは、画面に出さず、解放もしない
 const TITLES_ON = true;
 const TITLE_TIERS = { 1: '#38bdf8', 2: '#4ade80', 3: '#f5c451', 4: '#b57bff', 5: '#ff2a3d' };
-const SOLO_STAGES = () => STAGES.filter((x) => !x.rush).map((x) => x.id);
+const SOLO_STAGES = () => STAGES.filter((x) => !x.rush && !['k4', 'k5'].includes(x.id)).map((x) => x.id);   // 「刻の覇者」は最初の11ステージ
 const hasClear = (c, ...ids) => ids.every((id) => c.cleared.includes(id));
 // c:{ cleared, wins, rating, stats }。stats は progress 表に保存している数え上げ
 const st = (c, k) => c.stats[k] || 0;
@@ -3509,25 +3556,28 @@ const TITLES = [
   { id: 'rush3', tier: 3, name: '連戦の将', desc: 'ボスラッシュで3体倒す', test: (c) => st(c, 'rushBest') >= 3 },
   // ★4 紫:かなり難しい
   { id: 'all3', tier: 4, name: '三陣営の覇者', desc: '★★★を3つともクリア', test: (c) => hasClear(c, 'a3', 'z3', 'y3') },
-  { id: 'toki', tier: 4, name: '刻喰らいを捕らえし者', desc: '★★★★をクリア', test: (c) => hasClear(c, 't4') },
+  { id: 'toki', tier: 4, name: '刻喰らいを捕らえし者', desc: '★★★★「刻喰らいの淵」をクリア', test: (c) => hasClear(c, 't4') },
   { id: 'r1600', tier: 4, name: '刻の支配者', desc: 'レート1600に到達', test: (c) => c.rating >= 1600 || st(c, 'bestRating') >= 1600 },
   { id: 'win100', tier: 4, name: '千刻の兵', desc: 'オンライン対人で100勝', test: (c) => c.wins >= 100 },
   { id: 'streak7', tier: 4, name: '七連勝', desc: 'オンライン対人で7連勝', test: (c) => st(c, 'bestStreak') >= 7 },
   { id: 'single', tier: 4, name: '単騎', desc: '1番手だけで相手の3枚を倒して勝つ', test: (c) => st(c, 'single') >= 1 },
-  { id: 'rewound', tier: 4, name: '巻き戻しを越えし者', desc: '★★★★★で巻き戻されたあとに勝つ', test: (c) => st(c, 'rewindWin') >= 1 },
+  { id: 'rewound', tier: 4, name: '巻き戻しを越えし者', desc: '★★★★★「始まりの前」で巻き戻されたあとに勝つ', test: (c) => st(c, 'rewindWin') >= 1 },
   { id: 'rainbow3', tier: 4, name: '虹の連撃', desc: '1試合で虹のダメージを3回出す', test: (c) => st(c, 'rainbowGame') >= 3 },
   { id: 'bond3', tier: 4, name: '三陣営の結束', desc: '錨・零・矢それぞれの陣営ボーナスで勝つ', test: (c) => ['錨', '零', '矢'].every((f) => st(c, 'bonus_' + f) >= 1) },
   { id: 'rush4', tier: 4, name: '連戦の覇', desc: 'ボスラッシュでゼノまでたどり着く', test: (c) => st(c, 'rushBest') >= 4 },
   // ★5 赤:ほぼ極み
-  { id: 'xeno', tier: 5, name: '始まりを見た者', desc: '★★★★★をクリア', test: (c) => hasClear(c, 'x5') },
-  { id: 'all', tier: 5, name: '刻の覇者', desc: 'ソロの全ステージをクリア(ボスラッシュは除く)', test: (c) => hasClear(c, ...SOLO_STAGES()) },
+  { id: 'xeno', tier: 5, name: '始まりを見た者', desc: '★★★★★「始まりの前」をクリア', test: (c) => hasClear(c, 'x5') },
+  { id: 'all', tier: 5, name: '刻の覇者', desc: 'ソロの全ステージをクリア(ボスラッシュ・激戦の余波・始まりは除く)', test: (c) => hasClear(c, ...SOLO_STAGES()) },
   { id: 'top', tier: 5, name: '頂に立つ者', desc: 'レーティングのランキングで1位になる', test: (c) => !!c.stats.top },
   { id: 'rush5', tier: 5, name: '連戦を制す者', desc: 'ボスラッシュを突破する', test: (c) => st(c, 'rushBest') >= 5 },
   { id: 'r1650', tier: 5, name: '刻神', desc: 'レート1650に到達', test: (c) => c.rating >= 1650 || st(c, 'bestRating') >= 1650 },
   { id: 'win500', tier: 5, name: '永劫の兵', desc: 'オンライン対人で500勝', test: (c) => c.wins >= 500 },
-  { id: 'kaji', tier: 5, name: '完全なる刻', desc: 'カジをパーティに入れて★★★★★をクリア', test: (c) => st(c, 'kajiXeno') >= 1 },
-  { id: 'outside', tier: 5, name: '時の外側', desc: '★★★★を同じ陣営3枚でクリア', test: (c) => st(c, 'facToki') >= 1 },
+  { id: 'kaji', tier: 5, name: '完全なる刻', desc: 'カジをパーティに入れて★★★★★「始まりの前」をクリア', test: (c) => st(c, 'kajiXeno') >= 1 },
+  { id: 'outside', tier: 5, name: '時の外側', desc: '★★★★「刻喰らいの淵」を同じ陣営3枚でクリア', test: (c) => st(c, 'facToki') >= 1 },
   { id: 'streak10', tier: 5, name: '十連勝', desc: 'オンライン対人で10連勝', test: (c) => st(c, 'bestStreak') >= 10 },
+  { id: 'kaji4', tier: 4, name: '堰を越えし者', desc: '★★★★「激戦の余波」をクリア', test: (c) => hasClear(c, 'k4') },
+  { id: 'kaji5', tier: 5, name: '始まりに触れし者', desc: '★★★★★「始まり」をクリア', test: (c) => hasClear(c, 'k5') },
+  { id: 'shiToki', tier: 5, name: '始まりを喰らう者', desc: 'トキバミをパーティに入れて★★★★★「始まり」をクリア(カジ【始】が使えるようになる)', test: (c) => st(c, 'tokiShi') >= 1 },
   { id: 'trio', tier: 5, name: '三つの刻を束ねし者', desc: 'カジ・レイ・ツルの3枚でトキバミを倒す', hidden: true, test: (c) => st(c, 'trioToki') >= 1 },
 ];
 const titleOf = (id) => TITLES.find((t) => t.id === id);
@@ -3840,12 +3890,16 @@ function renderStages() {
     const s = STAGES.find((x) => x.id === b.dataset.id);
     const boss = `<span class="foes">${stageFoes(s).filter((f) => !f.hiddenUntilActive).map((f) => iconHtml(f, s.stars >= 3 ? 'md' : 'sm')).join('')}</span>`;
     b.innerHTML = `<b>${s.faction} ${'★'.repeat(s.stars)}</b>${boss}${s.name}`;
+    b.classList.toggle('chain', !!s.chainFrom);
     b.classList.toggle('picked', b.dataset.id === SOLO.stage);
     b.classList.toggle('cleared', SOLO.cleared.includes(b.dataset.id));
   });
   const st = STAGES.find((x) => x.id === SOLO.stage), foes = stageFoes(st);
   const shown = foes.filter((f) => !f.hiddenUntilActive || xenoKnown());   // ★5は、倒すまで1体に見せる
-  $('stageNote').textContent = st.rush
+  const from = st.chainFrom && STAGES.find((x) => x.id === st.chainFrom);
+  $('stageNote').textContent = from
+    ? `${st.faction} ${'★'.repeat(st.stars)}「${st.name}」 敵:${shown.map(dispName).join('・')}(ボス1体と3対1)。${'★'.repeat(from.stars)}「${from.name}」をクリアした直後だけ、結果画面の「続けて【始】に挑む」から、同じパーティで挑めます(全回復します)。`
+    : st.rush
     ? `連戦「${st.name}」 ★★★のボス3体 → ★★★★ → ★★★★★ を、3対1で続けて戦います(ゼノ以外のボスのHPは通常の28%)。ボスを1体倒すごとに、こちらは全回復して1番手から出直します。最高記録:${SOLO.rush} / ${st.rush.length}体`
     : `${st.faction} ${'★'.repeat(st.stars)}「${st.name}」 敵:${shown.map(dispName).join('・')}`
     + (foes.every((f) => f.boss) ? '(ボス1体と3対1)' : '(3対3)') + `。CPUの考え方:${AI_LEVELS[st.level].name}。ソロでは刻の抜け落ちは起きません。`;
@@ -3861,10 +3915,10 @@ function renderLevels() {
 // ----- キャラ選択 -----
 // キャラ選択:陣営のボタンで、その陣営のキャラだけを並べる。選んだ3枚は上の枠に出る
 let selFaction = '錨';
-const FACTIONS = ['錨', '零', '矢', '隔絶'];   // 隔絶:解放キャラ(トキバミ・ゼノ)
+const FACTIONS = ['錨', '零', '矢', '隔絶'];   // 隔絶:解放キャラ(トキバミ・ゼノ)。カジ【始】は錨に並ぶ
 const ALL_CHARS = [...CHARACTERS, ...SPECIAL_CHARS];
 const charById = (id) => ALL_CHARS.find((c) => c.id === id);
-const charGroup = (ch) => (SPECIAL_CHARS.includes(ch) ? '隔絶' : ch.faction);
+const charGroup = (ch) => ch.group || (SPECIAL_CHARS.includes(ch) ? '隔絶' : ch.faction);
 // 解放キャラを使えるか(称号を解放したアカウントでログインしているとき)
 const charUnlocked = (ch) => !ch.unlock || myTitles().includes(ch.unlock);
 // 解放キャラの条件の書き方(隠し称号は、解放するまで名前を伏せる)
@@ -3929,9 +3983,12 @@ function renderSelect() {
       $('charList').appendChild(b);
       return;
     }
-    b.disabled = (order < 0 && picked.length >= TEAM_SIZE) || locked;
+    // 同じ人物(カジとカジ【始】)は、同じパーティに入れられない
+    const clash = order < 0 && picked.map(charById).some((o) => o && (o.sameAs === ch.id || ch.sameAs === o.id));
+    b.disabled = (order < 0 && picked.length >= TEAM_SIZE) || locked || clash;
     b.innerHTML = `<div class="crow">${iconHtml(ch, 'lg')}<div>` +
       `<div class="name">${order >= 0 ? `【${order + 1}番手】` : ''}${ch.name}<span class="role">${ch.role || ''}</span></div>` +
+      (clash ? '<div class="sub">同じ人物なので、同じパーティには入れられない</div>' : '') +
       `<div class="stats"><span class="s-hp">HP ${ch.hp}</span>　${statLine(ch)}</div>` +
       `<div class="trait">${traitLine(ch)}</div>` +
       actionList(ch, 'div', 'sub') + `</div></div>`;
@@ -3944,8 +4001,10 @@ function renderSelect() {
   });
   const full = picked.length === TEAM_SIZE;
   if (!PVP.on) {
-    $('start').disabled = !full;
-    $('start').textContent = full ? (MODE === 'solo' ? 'この順番でステージに挑む' : 'この順番で対戦開始') : `あと${TEAM_SIZE - picked.length}枚選ぶ`;
+    const chainSt = MODE === 'solo' && STAGES.find((x) => x.id === SOLO.stage && x.chainFrom);
+    $('start').disabled = !full || !!chainSt;
+    $('start').textContent = chainSt ? `${'★'.repeat(STAGES.find((x) => x.id === chainSt.chainFrom).stars)}「${STAGES.find((x) => x.id === chainSt.chainFrom).name}」のクリア直後のみ挑めます`
+      : full ? (MODE === 'solo' ? 'この順番でステージに挑む' : 'この順番で対戦開始') : `あと${TEAM_SIZE - picked.length}枚選ぶ`;
   } else {
     // オンライン対人:部屋に入ってからキャラを決める。決めたあとは選び直せない
     $('start').disabled = !full || PVP.phase !== 'lobby';
@@ -3958,11 +4017,13 @@ function start() {
   const mine = picked.map((id) => charById(id));
   if (MODE === 'solo') {
     const st = STAGES.find((x) => x.id === SOLO.stage);
-    return startMatch(mine, stageFoes(st), '敵', { level: st.level, read: st.read, stage: st, noDecay: true });
+    if (st.chainFrom) return;   // 直後にしか挑めないステージは、ここからは始めない
+    return startSolo(mine, st);
   }
   return startMatch(mine, shuffled(CHARACTERS).slice(0, TEAM_SIZE), 'CPU');
 }
 // opt:level はCPUの深さ、read はボスが読みに頼る割合、stage はソロのステージ、noDecay は刻の抜け落ちを止める
+const startSolo = (mine, st) => startMatch(mine, stageFoes(st), '敵', { level: st.level, read: st.read, stage: st, noDecay: true });
 let LAST_MATCH = null;   // 再挑戦用:直前に始めた対戦の中身
 async function startMatch(mine, theirs, foeLabel, opt = {}) {
   LAST_MATCH = { mine, theirs, foeLabel, opt };
@@ -3993,6 +4054,12 @@ async function startMatch(mine, theirs, foeLabel, opt = {}) {
   if (S.stage && S.stage.id === 'x5') {
     Sound.breakIn();
     await cutin(nameOf(active(S.teams[1])), '始まりの前', 'evil', 1500);
+  } else if (S.stage && S.stage.id === 'k5') {
+    clearTimeout(tickTimer); Sound.breakIn(); flash('#ffffff');
+    await cutin('カジ【始】', 'ここが、始まりだ', 'evil', 1600);
+  } else if (S.stage && S.stage.id === 'k4') {
+    clearTimeout(tickTimer); Sound.breakIn();
+    await cutin('カジ', '激戦の余波', 'gold', 1400);
   } else if (S.stage && S.stage.id === 't4') {
     clearTimeout(tickTimer); Sound.breakIn();
     await cutin('トキバミ', '止めておいてくれて、ありがとう', 'violet', 1500);
@@ -4013,6 +4080,13 @@ function init() {
     $('hands').appendChild(b);
   });
   $('start').onclick = start;
+  // ★★★★をクリアした直後だけ:同じパーティ・同じ並び順で、全回復して★★★★★へ
+  $('chain').onclick = () => {
+    const next = S && S.stage && STAGES.find((x) => x.chainFrom === S.stage.id);
+    if (!next || !S.over || S.winner !== 0) return;
+    clearTimeout(tickTimer);
+    startSolo(S.teams[0].cards.map((c) => c.ch), next);
+  };
   $('retry').onclick = () => {
     clearTimeout(tickTimer);
     Bgm.play('menu');
