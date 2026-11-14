@@ -3886,13 +3886,13 @@ function init() {
     if (!$('splash')) Bgm.play($('title').classList.contains('hidden') ? ($('battle').classList.contains('hidden') ? 'menu' : 'main') : 'title');
   }, true);
   Bgm.prepare('title');     // その瞬間にすぐ鳴るよう、先に読み込んでおく
-  // 画面の真ん中からひびが走り、BREAKと同じようにガラスが砕けて、タイトル画面が現れる
+  // タップした場所からひびが走り、BREAKと同じようにガラスが砕けて、タイトル画面が現れる
   const splashGo = async (e) => {
     const sp = $('splash');
     if (sp.classList.contains('broken')) return;
     sp.classList.add('broken');
     Sound.wake(); Bgm.unlock();   // 音を鳴らせる状態にする(曲はまだ流さない)
-    const at = { x: innerWidth / 2, y: innerHeight / 2 };   // ひびは画面の真ん中から
+    const at = e && e.clientX != null && (e.clientX || e.clientY) ? { x: e.clientX, y: e.clientY } : { x: innerWidth / 2, y: innerHeight / 2 };   // タップした場所から(キー操作なら真ん中)
     const glass = shatter(false, at);
     await sleep(600);   // ひびが広がり切って、砕ける瞬間
     sp.classList.add('go');
