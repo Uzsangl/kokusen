@@ -927,13 +927,13 @@ const ENEMIES = {
       paper:    { name: '呑み戻し', rate: RATE.normal, heal: 2000, dispel: 1 } } },
 
   // --- ★★★★:激戦の余波(カジ)。★★★★★:カジ【始】(★★★★をクリアした直後だけ、同じパーティで挑める) ---
-  b_kaji: { name: 'カジ', faction: '錨', hp: 102000, atk: 3840, dfs: 1600, phys: 1.0, boss: true,
+  b_kaji: { name: 'カジ', faction: '錨', hp: 1 /* テスト用:元は102000 */, atk: 3840, dfs: 1600, phys: 1.0, boss: true,
     traits: [{ key: 'backwaterSteps', name: '背水・見', desc: '残りHPが75%・50%・25%を切るたびにATK+1000(最大+3000)', steps: [0.75, 0.5, 0.25], add: 1000 }],
     actions: {
       rock:     { name: '堰切り',   rate: RATE.huge, up: { rate: RATE.max, when: 'hpBelow', v: 0.5, text: '残りHP半分以下で極大' } },
       scissors: { name: '踏み越し', rate: RATE.big, mods: [selfAtk(1000, 3)] },
       paper:    { name: '構え直し', rate: RATE.normal, atkUp: 2500, mods: [foeDfs(1000, 2)] } } },
-  b_kaji_shi: { name: 'カジ【始】', faction: '錨', hp: 133200, atk: 3360, dfs: 1800, phys: 1.0, boss: true,
+  b_kaji_shi: { name: 'カジ【始】', faction: '錨', hp: 1 /* テスト用:元は133200 */, atk: 3360, dfs: 1800, phys: 1.0, boss: true,
     traits: [
       { key: 'breakGrow', name: '始の刻', desc: `${BREAK_NAME}するたびにATK+2000(ずっと続く)`, add: 2000 },
       { key: 'backwaterAll', name: '背水・始', desc: '残りHPが50%以下でATKとDFS+2000', below: 0.5, add: 2000 } ],
