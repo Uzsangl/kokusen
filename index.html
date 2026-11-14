@@ -61,7 +61,6 @@
   .stages button.s4, .stages button.s5 { grid-column: span 3; }
   .stages button.s0 { grid-column: 1 / -1; }
   .stages button.chain { opacity: .6; border-style: dashed; }
-  .cico.shi { box-shadow: 0 0 0 2px #ff2a3d, 0 0 12px #ff2a3daa; }
   .stages button.s0 b { color: var(--gold); }
   .stages button.s5 b { color: #ff2a3d; text-shadow: 0 0 10px #ff2a3d99; }
   .stages button.s4 b { color: #b57bff; text-shadow: 0 0 10px #b57bff99; }
@@ -1831,7 +1830,7 @@ const ICON_ALIAS = { b_tomari: 'tomari', b_rei: 'rei', b_tsuru: 'tsuru', p_tokib
 const ICON_FACTION = { '錨': 'f-anchor', '零': 'f-zero', '矢': 'f-arrow' };
 function iconHtml(ch, size) {
   const id = ICON_ALIAS[ch.id] || ch.id;
-  const cls = `cico ${size} ${ICON_FACTION[ch.faction] || 'f-none'}${/kaji_shi$/.test(ch.id) ? ' shi' : ''}`;
+  const cls = `cico ${size} ${ICON_FACTION[ch.faction] || 'f-none'}`;
   if (!ICON_IDS.has(id)) return `<span class="${cls} none" aria-hidden="true">${ch.name[0]}</span>`;
   const secret = ch.secret && !xenoKnown();
   return `<img class="${cls}${secret ? ' secret' : ''}" src="icons/${id}.webp" alt="" aria-hidden="true" width="192" height="192">`;
