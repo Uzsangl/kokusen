@@ -2308,7 +2308,10 @@ function pickHeat(side, o, gotBreak) {
 // BREAKの瞬間:画面のガラスにひびが走り、もう一度ひびが伸びてから、砕け散る
 // at:ひびの起点(省略すると勝負の枠の中央)、onBreak:ガラスが砕ける瞬間に呼ぶ
 async function shatter(violet, at, onBreak) {
-  const o = at || center($('stage')), svg = $('crack');
+  // 対戦画面の真ん中(PC版は枠が分かれているので、両方の手の間)から入る
+  const st = $('stage').getBoundingClientRect();
+  const mid = () => { const a = center($('slotYou')), b = center($('slotCpu')); return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }; };
+  const o = at || (st.width ? center($('stage')) : mid()), svg = $('crack');
   const rays = [];
   const N = 13;
   for (let i = 0; i < N; i++) {
@@ -3883,13 +3886,13 @@ function init() {
     if (!$('splash')) Bgm.play($('title').classList.contains('hidden') ? ($('battle').classList.contains('hidden') ? 'menu' : 'main') : 'title');
   }, true);
   Bgm.prepare('title');     // その瞬間にすぐ鳴るよう、先に読み込んでおく
-  // タップした場所からひびが走り、BREAKと同じようにガラスが砕けて、タイトル画面が現れる
+  // 画面の真ん中からひびが走り、BREAKと同じようにガラスが砕けて、タイトル画面が現れる
   const splashGo = async (e) => {
     const sp = $('splash');
     if (sp.classList.contains('broken')) return;
     sp.classList.add('broken');
     Sound.wake(); Bgm.unlock();   // 音を鳴らせる状態にする(曲はまだ流さない)
-    const at = e && e.clientX ? { x: e.clientX, y: e.clientY } : { x: innerWidth / 2, y: innerHeight / 2 };
+    const at = { x: innerWidth / 2, y: innerHeight / 2 };   // ひびは画面の真ん中から
     const glass = shatter(false, at);
     await sleep(600);   // ひびが広がり切って、砕ける瞬間
     sp.classList.add('go');
