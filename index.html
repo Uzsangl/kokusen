@@ -738,42 +738,42 @@ const CHARACTERS = [
   // --- ソロ攻略向けの支援キャラ(各陣営2体)。対人・CPU戦でも使える ---
   { id: 'moyai', name: 'モヤイ', faction: '錨', role: 'チーム強化', hp: 15700, atk: 1900, dfs: 1700, phys: 1.0,
     traits: [{ key: 'legacy', name: '舫い', desc: '倒れたとき、控えの味方全員にDFS+1000と最大HP+1500', atk: 0, dfs: 1000, hp: 1500 },
-      { key: 'giantSlayer', name: '一点留め', desc: '相手が1体だけのチームのとき、ATK+1200・DFS+800', atk: 1200, dfs: 800 }],
+      { key: 'giantSlayer', name: '一点留め', desc: 'ソロのボス戦(相手がボス1体)のとき、ATK+1200・DFS+800', atk: 1200, dfs: 800 }],
     actions: {
       rock:     { name: '結び留め', rate: RATE.normal, mods: [foeAtk(600, 3)] },
       scissors: { name: '投げ綱',   rate: RATE.big, mods: [foeDfs(800, 3)] },
       paper:    { name: '繋ぎ直し', rate: RATE.normal, team: { stat: 'dfs', v: 300, cap: 1200 } } } },
   { id: 'shio', name: 'シオ', faction: '錨', role: '回復・回復封じ', hp: 14450, atk: 1800, dfs: 1500, phys: 0.95,
     traits: [{ key: 'regen', name: '満ち潮', desc: 'ラリーが終わるたびにHPを350回復', heal: 350 },
-      { key: 'giantSlayer', name: '一点留め', desc: '相手が1体だけのチームのとき、ATK+1200・DFS+800', atk: 1200, dfs: 800 }],
+      { key: 'giantSlayer', name: '一点留め', desc: 'ソロのボス戦(相手がボス1体)のとき、ATK+1200・DFS+800', atk: 1200, dfs: 800 }],
     actions: {
       rock:     { name: '凪ぎ払い', rate: RATE.normal, noheal: 3 },
       scissors: { name: '引き潮',   rate: RATE.normal, mods: [foeAtk(500, 2)] },
       paper:    { name: '潮満ち',   rate: RATE.normal, heal: 2200, cleanse: 1 } } },
   { id: 'moto', name: 'モト', faction: '零', role: 'バフ消し', hp: 17250, atk: 2100, dfs: 1400, phys: 1.0,
     traits: [{ key: 'enterDispel', name: '白紙化', desc: '場に出たとき、相手のバフをすべて消す' },
-      { key: 'giantSlayer', name: '巻き戻しの刃', desc: '相手が1体だけのチームのとき、ATK+1200・DFS+800', atk: 1200, dfs: 800 }],
+      { key: 'giantSlayer', name: '巻き戻しの刃', desc: 'ソロのボス戦(相手がボス1体)のとき、ATK+1200・DFS+800', atk: 1200, dfs: 800 }],
     actions: {
       rock:     { name: '元に戻す', rate: RATE.big, dispel: 1 },
       scissors: { name: '遡り読み', rate: RATE.normal, seal: 1 },
       paper:    { name: '原点回帰', rate: RATE.normal, heal: 1500, cleanse: 1 } } },
   { id: 'kasumi', name: 'カスミ', faction: '零', role: '刻印(弱体)', hp: 12500, atk: 2200, dfs: 1300, phys: 1.0,
     traits: [{ key: 'hazeMark', name: '霞の刻', desc: '攻撃が当たるたびに相手のATK−250(刻印。最大−1500)', v: 250, cap: 1500 },
-      { key: 'giantSlayer', name: '巻き戻しの刃', desc: '相手が1体だけのチームのとき、ATK+1200・DFS+800', atk: 1200, dfs: 800 }],
+      { key: 'giantSlayer', name: '巻き戻しの刃', desc: 'ソロのボス戦(相手がボス1体)のとき、ATK+1200・DFS+800', atk: 1200, dfs: 800 }],
     actions: {
       rock:     { name: '霞斬り',   rate: RATE.normal, mark: { stat: 'dfs', v: 600, cap: 3000 } },
       scissors: { name: '朧',       rate: RATE.normal, poison: 3 },
       paper:    { name: '霞隠れ',   rate: RATE.normal, mods: [selfDfs(2500, 2)] } } },
   { id: 'yajiri', name: 'ヤジリ', faction: '矢', role: 'DFS貫通', hp: 11850, atk: 2600, dfs: 1100, phys: 1.0,
     traits: [{ key: 'pierce', name: '貫き', desc: '相手のDFSを1000低いものとして攻撃する', v: 1000 },
-      { key: 'giantSlayer', name: '大物狙い', desc: '相手が1体だけのチームのとき、ATK+1200・DFS+800', atk: 1200, dfs: 800 }],
+      { key: 'giantSlayer', name: '大物狙い', desc: 'ソロのボス戦(相手がボス1体)のとき、ATK+1200・DFS+800', atk: 1200, dfs: 800 }],
     actions: {
       rock:     { name: '穿ち',       rate: RATE.huge },
       scissors: { name: '刻み矢',     rate: RATE.normal, mark: { stat: 'dfs', v: 700, cap: 3000 } },
       paper:    { name: '矢じり研ぎ', rate: RATE.normal, mods: [selfAtk(800, 3)] } } },
   { id: 'hane', name: 'ハネ', faction: '矢', role: 'チーム強化・連勝', hp: 9550, atk: 2300, dfs: 1200, phys: 1.0,
     traits: [{ key: 'legacy', name: '羽渡し', desc: '倒れたとき、控えの味方全員にATK+800', atk: 800, dfs: 0, hp: 0 },
-      { key: 'giantSlayer', name: '大物狙い', desc: '相手が1体だけのチームのとき、ATK+1200・DFS+800', atk: 1200, dfs: 800 }],
+      { key: 'giantSlayer', name: '大物狙い', desc: 'ソロのボス戦(相手がボス1体)のとき、ATK+1200・DFS+800', atk: 1200, dfs: 800 }],
     actions: {
       rock:     { name: '羽撃ち', rate: RATE.big },
       scissors: { name: '風読み', rate: RATE.normal, streak: 1 },
@@ -1544,47 +1544,155 @@ function equilibrium(M) {
   return p;
 }
 
-// CPUの手と、その理由。side はCPUの側、level は難易度
-function aiHand(S, side, level) {
-  const M = payoffMatrix(S, side), me = active(S.teams[side]);
-  const act = (h) => `${HANDS[h].power}「${me.actions[h].name}」` + (M.kill[h] ? '(通れば倒せる)' : '');
+// ===== 敵の性格 =====
+// 敵ごとに5つの性格のどれかを持つ。性格は「何を読むか・どんな隙があるか・どんな口調か」を決め、
+// 難易度(やさしい〜ボス)は「どれだけ読みに賭けるか」だけを決める。
+// guard 堅守 / rewind 巻戻 / sight 天眼 / prey 捕食 / rage 激昂。ゼノの精神離脱体(abyss)は天眼と捕食の両方を使う
+const PERSONA_OF = {
+  tomari: 'guard', hajime: 'guard', moyai: 'guard', b_tomari: 'guard', a_guard: 'guard', a_lamp: 'guard',
+  rei: 'rewind', uro: 'rewind', kasumi: 'rewind', b_rei: 'rewind', z_wind: 'rewind', z_sand: 'rewind',
+  tsuru: 'sight', mio: 'sight', hane: 'sight', b_tsuru: 'sight', y_seer: 'sight',
+  shio: 'prey', moto: 'prey', yajiri: 'prey', tokibami: 'prey', p_tokibami: 'prey', z_mask: 'prey', a_chain: 'prey',
+  kaji: 'rage', haya: 'rage', xeno_body: 'rage', p_xeno: 'rage', y_runner: 'rage', y_archer: 'rage',
+  xeno_spirit: 'abyss',
+};
+const personaOf = (c) => PERSONA_OF[c.ch.id] || 'guard';
+const PERSONA_CAP = { guard: 0.7, rewind: 1, sight: 1.3, prey: 1, rage: 1, abyss: 1.3, none: 1 };   // 読みに賭ける上限の倍率
+const lowHp = (c) => c.hp <= c.max / 2;
 
-  if (level <= 1) {
-    // 深さ1:勝ったときに一番得な自分の技を出す。相手のことは考えない
-    const hand = argmax((a) => M[a][HANDS[a].beats]);
-    return { hand, why: `通れば一番得な${act(hand)}を出した` };
+// 相手の直前2手の並びから、次の手を読む(天眼)。end は履歴のどこまでを使うか(1手前の自分の読みを確かめるのに使う)
+function seqRead(S, side, end = S.hist.length) {
+  const foe = 1 - side, H = S.hist, cnt = { rock: 0, scissors: 0, paper: 0 };
+  if (end < 3) return null;
+  const a = H[end - 2][foe], b = H[end - 1][foe];
+  let n = 0;
+  for (let i = 2; i < end; i++) if (H[i - 2][foe] === a && H[i - 1][foe] === b) { cnt[H[i][foe]]++; n++; }
+  if (n < 2) return null;
+  const q = {};
+  HAND_KEYS.forEach((h) => { q[h] = (cnt[h] + 0.5) / (n + 1.5); });
+  return { q, n, top: argmax((h) => q[h]) };
+}
+// 相手が同じ手を2回続けたか(捕食)。続けていたら、その手を返す
+const preyTarget = (S, side, end = S.hist.length) => (end >= 2 && S.hist[end - 1][1 - side] === S.hist[end - 2][1 - side] ? S.hist[end - 1][1 - side] : null);
+
+// 性格ごとの読み。q は相手の次の手の予測、power は読みの確かさ(0〜1)、peak は性格の見せ場、calm は読みを控える
+function personaRead(S, side, kind) {
+  const H = S.hist, n = H.length, foe = 1 - side, me = active(S.teams[side]);
+  const prev = H[n - 1], res = prev ? judge(prev[side], prev[foe]) : null;   // 直前のラリーの自分の結果
+  const r = { q: null, power: 0, peak: false, calm: false };
+  if (kind === 'rewind' && prev && res <= 0) {
+    // あいこや負けの直後に、相手が何を出してきたかだけを数える
+    const c = foeHabit(S, side, 60, { r: judge(prev[foe], prev[side]) });
+    if (c.n >= 3) {
+      const dev = Math.max(...HAND_KEYS.map((h) => c.q[h] - 1 / 3));
+      r.q = c.q; r.power = Math.min(1, dev / 0.3) * Math.min(1, c.n / 6); r.peak = r.power > 0.3;
+    }
   }
-
-  const naive = naiveFoe(M);
-  if (level === 2) {
-    // 深さ2:相手の手を予測する(最近の癖+相手が一番出したそうな手)。その予測に対して一番得な手を出す
-    const hab = foeHabit(S, side, 8), w = hab.n >= 3 ? 0.5 : 0, q = {};
-    HAND_KEYS.forEach((h) => { q[h] = w * hab.q[h] + (h === naive ? 0.3 : 0) + (0.7 - w) / 3; });
-    const hand = argmax((a) => expect(M, a, q));
-    const top = argmax((h) => q[h]);
-    return { hand, why: `相手は${HANDS[top].label}が多そう(${share(q)})と読み、${act(hand)}を出した` };
+  if (kind === 'sight' || kind === 'abyss') {
+    // 並びを崩された直後(1手前の並び読みが外れた)は迷う
+    const was = seqRead(S, side, n - 1);
+    if (was && prev && was.top !== prev[foe] && was.q[was.top] > 0.5) r.calm = true;
+    const s = seqRead(S, side);
+    if (s && !r.calm) {
+      const dev = s.q[s.top] - 1 / 3;
+      r.q = s.q; r.power = Math.min(1, dev / 0.35) * Math.min(1, s.n / 4); r.peak = r.power > 0.4;
+    }
   }
-
-  if (level >= 4) {
-    // 深さ4(ソロのボス):相手が実際に出してきた手の癖だけを、深さ3より強く読む。
-    // 「理屈ならこの手」という先読みはしない。理屈で打つ相手が狙い撃ちされて、適当に打つほうが勝てる、ということが起きないようにするため。
-    // 癖の無い相手には、読まれても損をしにくい均衡の割合で打つ
-    const { q, best, mix } = deepRead(S, side, M, { naive: 0, trustMax: me.ch.read || S.bossRead || BOSS_READ });
-    const hand = pickFrom(mix);
-    if (me.ch.id === 'tokibami') return { hand, why: TOKIBAMI_VOICE[Math.floor(Math.random() * TOKIBAMI_VOICE.length)] };
-    return { hand, why: `相手の癖は${share(q)}と読み、それに強い${HANDS[best].label}を軸に、${share(mix)}の割合から${act(hand)}を出した` };
+  if (kind === 'prey' || kind === 'abyss') {
+    // 狙いが外れた直後(同じ手が続いたのに3回目で変えられた)は、しばらく大人しい
+    const missed = [1, 2].some((k) => { const t = preyTarget(S, side, n - k); return t && H[n - k] && H[n - k][foe] !== t; });
+    const t = preyTarget(S, side);
+    if (missed && kind === 'prey') r.calm = true;
+    else if (t) { const q = {}; HAND_KEYS.forEach((h) => { q[h] = h === t ? 0.7 : 0.15; }); r.q = q; r.power = 0.85; r.peak = true; r.calm = false; }
   }
-
-  // 深さ3:読まれても損をしにくい割合(均衡)を土台にして、相手の癖がはっきりしているほどそこを突く
-  const { eq, q, best, mix, outread, prev } = deepRead(S, side, M);
-  const hand = pickFrom(mix);
-  const after = prev ? ['負けた', 'あいこの', '勝った'][judge(prev[1 - side], prev[side]) + 1] + '後' : '最初';
-  const note = outread < 1 ? '最近は読み負けているので均衡寄りに戻し、' : '';
-  return { hand, why: `読まれても損をしにくい割合は${share(eq)}。相手は${after}に${HANDS[argmax((h) => q[h])].label}が多い(${share(q)})と読んだ。${note}${share(mix)}の割合から${act(hand)}を出した` };
+  if (kind === 'rage' && !lowHp(me)) r.calm = true;   // 本気になるまでは、読まずに打つ
+  if ((kind === 'rage' || kind === 'guard') && lowHp(me)) r.peak = true;
+  return r;
+}
+// 性格による、自分の手の出し方の癖。mix は手を出す割合(書き換える)
+function personaHabit(S, side, kind, mix) {
+  const H = S.hist, prev = H[H.length - 1], me = active(S.teams[side]);
+  const res = prev ? judge(prev[side], prev[1 - side]) : null;
+  const boost = (pred, k) => { HAND_KEYS.forEach((h) => { if (pred(h)) mix[h] += k; }); };
+  if (kind === 'guard') {
+    if (lowHp(me)) boost((h) => { const a = me.actions[h]; return a.heal || a.dfsUp || a.nextDfsUp || (a.team && a.team.stat === 'dfs'); }, 0.25);
+    if (res < 0) boost((h) => h === prev[side], 0.35);    // 隙:負けた後は同じ手を続けがち
+  }
+  if (kind === 'rewind' && res > 0) mix[prev[side]] = 0;   // 隙:勝った後は必ず手を変える
+  if (kind === 'rage' && lowHp(me)) {                     // 隙:本気になると攻めの技に偏る
+    const top = Math.max(...HAND_KEYS.map((h) => me.actions[h].rate || 0));
+    boost((h) => (me.actions[h].rate || 0) === top, 0.3);
+  }
+  const t = HAND_KEYS.reduce((a, h) => a + mix[h], 0) || 1;
+  HAND_KEYS.forEach((h) => { mix[h] /= t; });
+  return mix;
 }
 
+// CPUの手と、そのときのセリフ。side はCPUの側、level は難易度
+function aiHand(S, side, level) {
+  const M = payoffMatrix(S, side), me = active(S.teams[side]);
+  const kind = side === 1 ? personaOf(me) : 'none';   // 性格はCPUの側だけ(シミュレーターでプレイヤー役に使うときは性格なし)
+  let hand, mood;   // mood:read 読みに賭けた / calm 様子見 / peak 見せ場
+  const pr = personaRead(S, side, kind);
+
+  if (level <= 1) {
+    // 深さ1:勝ったときに一番得な自分の技を8割で出す。残りは気まぐれ。相手のことは考えない
+    hand = Math.random() < 0.8 ? argmax((a) => M[a][HANDS[a].beats]) : randomHand();
+    mood = 'calm';
+  } else if (level === 2) {
+    // 深さ2:相手の手を予測する(最近の癖+相手が一番出したそうな手+性格の読み)。その予測に一番得な手を出す
+    const hab = foeHabit(S, side, 8), w = hab.n >= 3 ? 0.5 : 0, q = {};
+    const naive = naiveFoe(M), pw = pr.q ? 0.6 * pr.power : 0;
+    HAND_KEYS.forEach((h) => { q[h] = (1 - pw) * (w * hab.q[h] + (h === naive ? 0.3 : 0) + (0.7 - w) / 3) + pw * (pr.q ? pr.q[h] : 0); });
+    const mix = {};
+    const best = argmax((a) => expect(M, a, q));
+    HAND_KEYS.forEach((h) => { mix[h] = h === best ? 1 : 0; });
+    hand = pickFrom(personaHabit(S, side, kind, mix));
+    mood = hand === best && Math.max(...HAND_KEYS.map((h) => q[h])) >= 0.45 ? 'read' : 'calm';
+  } else {
+    // 深さ3・4:読まれても損をしにくい割合(均衡)を土台に、相手の癖と性格の読みが確かなほど、そこを突く
+    const cap = Math.min(1, (level >= 4 ? (me.ch.read || S.bossRead || BOSS_READ) : 0.8) * PERSONA_CAP[kind]);
+    const d = deepRead(S, side, M, level >= 4 ? { naive: 0, trustMax: cap } : { trustMax: cap }, pr);
+    hand = pickFrom(personaHabit(S, side, kind, d.mix));
+    mood = hand === d.best && d.trust >= 0.2 ? 'read' : 'calm';
+  }
+  if (pr.peak && (mood === 'read' || kind === 'guard' || kind === 'rage') && Math.random() < 0.35) mood = 'peak';
+  return { hand, why: speak(me, mood), mood };
+}
 const BOSS_READ = 0.7;   // ボスが読みに頼る割合
-// トキバミは自分の声を持たず、喰った者たちの声で、過去・現在・未来を混ぜて話す
+// ===== CPUのセリフ =====
+// 1キャラ7通り:read 読みに賭けた時2・calm 様子見2・peak 性格の見せ場1・idle 意味のない独り言2。
+// 独り言は約2割の確率で、どの場面にも割り込む(セリフから読みが分かりすぎないように)
+const L = (read, calm, peak, idle) => ({ read, calm, peak, idle });
+const CPU_LINES = {
+  kaji:   L(['そこだろ', 'その手は、もう止めた'], ['……来いよ', 'まだだ'], ['ここからだ。止まれ'], ['腹、減ったな', '……風、変わったか']),
+  haya:   L(['そっちだろ、知って——', '遅い遅い、読めて——'], ['早く来いって——', '待つの嫌いなんだけど——'], ['こっから全力で——'], ['てか今日何曜——', '靴紐ほどけて——']),
+  tomari: L(['潮目は読めとるよ', 'わしの港に、その手は入らん'], ['凪の日もある。焦るな', '錨を下ろして待つとしよう'], ['まだ沈まんよ'], ['明日は晴れるかのう', '腰がな、少しな']),
+  hajime: L(['その手、診えていたよ', '次はそこだと思った'], ['落ち着いて。ゆっくりいこう', '焦ると、傷が開くよ'], ['大丈夫。まだ戻せる'], ['最近、よく眠れていないんだ', 'この包帯、そろそろ替えないと']),
+  moyai:  L(['その手は読めてんだよ', 'ほどきに来るのは分かってた'], ['結んどけ。慌てんな', 'まずは足場を固めるぞ'], ['まだほどけねえよ'], ['今夜の飯、何にすっかな', 'おう、誰か結び目見てくれ']),
+  rei:    L(['さっきも、そうしたな', '同じ刻を、繰り返すのか'], ['針は、まだ回っている', 'どちらでもいい。戻せるから'], ['それを、負けのまま残すのか'], ['……今は、何度目だったか', '仮面が、少し重い']),
+  uro:    L(['ひとつ。さっきと同じ', 'ふたつ。そこが疼く'], ['かぞえている。まだ、かぞえている', 'どれも、いずれ古傷になる'], ['さっきの傷は、まだ開いている'], ['よっつ。いつつ。……なんの数だったか', '砂が、こぼれる']),
+  kasumi: L(['……その手、覚えてる、気がする', 'さっきと、同じ……だよね'], ['……どうしよう、かな', '霞んで、よく見えない'], ['……もう一回。今度は、覚えておく'], ['……あれ、今なにしてたっけ', '霧、きれいだね']),
+  tsuru:  L(['当たるよ。もう見たから', 'その次、知ってる'], ['……今日は見えにくいね', 'まあ、どれでも同じ結末だけど'], ['その並び、前の未来でも見た'], ['眠い', '……あ、雨降るよ。三日後']),
+  mio:    L(['記録どおりです', 'その順番は、記録済みです'], ['記録が足りません。様子を見ます', 'まだ傾向は出ていません'], ['三手前から、同じ流れです'], ['本日の天気、曇り。記録します', '巻物が、少し重いです']),
+  hane:   L(['わかった！次はそれでしょ！', 'へへ、当たり！'], ['えーっと、どれにしよう！', '風、まだ読めないや'], ['その流れ、さっきも見たよ！'], ['ねえねえ、終わったら何食べる？', 'あ、鳥！']),
+  shio:   L(['また同じ手。引き潮ね', '続けたら、読まれるのよ'], ['急がなくていいの', '潮の向きを見ているところ'], ['三度目は、もう満ちないわ'], ['あら、潮の匂い', 'お茶、冷めちゃったわね']),
+  moto:   L(['同じだ', '繰り返したな'], ['動くな', '何も足さない'], ['三度目はない'], ['……', '石板が、欠けた']),
+  yajiri: L(['その手、もう的だよ', '同じ軌道。外さない'], ['無駄撃ちはしない', 'まだ狙いが定まらない'], ['三本目は、そこに置いてある'], ['ハヤのやつ、また先に行ったな', '矢羽、整えないと']),
+  // ゼノ(正体は伏せたまま、言葉の端にだけ滲ませる)
+  xeno_body:   L(['その手は、覚えている', '懐かしい手だ'], ['急ぐな。結末は知っている', '……来い'], ['失くしたものは、もう数えない'], ['この空は、まだ青いのか', '……腹が減る、という感覚を忘れていた']),
+  xeno_spirit: L(['その次も、もう通った道だ', '同じ手を、何度見たと思う'], ['着地まで、あと少し', 'ここは、始まりの前だ'], ['戻る。戦いの前まで'], ['……長かった', '声が、遠い']),
+};
+// 雑魚は性格ごとに共通
+const PERSONA_LINES = {
+  guard:  L(['読めたぞ', 'その手は通さん'], ['守りを固めろ', '様子を見る'], ['まだ倒れん！'], ['交代、まだかな', '盾が重い']),
+  rewind: L(['さっきと同じだ', 'その手は覚えた'], ['時を待つ', '巻き戻せばいい'], ['もう一度だ'], ['今日、二回目な気がする', '時計が止まってる']),
+  sight:  L(['先が見えたぞ', 'その順は読めた'], ['……卦が出ない', 'まだ見えぬ'], ['流れが見えた'], ['今朝の卦、凶だった', '目が乾く']),
+  prey:   L(['同じ手だな', '続けたな？'], ['待つ', '隙を探す'], ['三度目は喰う'], ['腹が鳴る', '……いい匂いがする']),
+  rage:   L(['遅い！', 'そこだ！'], ['来い', 'まだ本気じゃない'], ['ここからだ！'], ['熱い', 'ああ、もう！']),
+};
+const LINE_ALIAS = { b_tomari: 'tomari', b_rei: 'rei', b_tsuru: 'tsuru', p_xeno: 'xeno_body' };
+// トキバミは自分の声を持たず、喰った者たちの声で、過去・現在・未来を混ぜて話す(場面は分けない)
 const TOKIBAMI_VOICE = [
   'おまえは出した。おまえは出す。だから、ここにいる',
   '止めておいてくれて、ありがとう。おかげで腐らない',
@@ -1592,14 +1700,29 @@ const TOKIBAMI_VOICE = [
   '急がなくていい。終わりにも、わたしはいる',
   'その手は、もう喰べた。これから喰べる',
   'みんな、ここで待っていた。待っている。待つ',
+  '大きくなったね。……だれだっけ',
 ];
+const pickOne = (a) => a[Math.floor(Math.random() * a.length)];
+function speak(c, mood) {
+  const id = c.ch.id;
+  const who = (t) => `${nameOf(c)}「${t}」`;
+  if (id === 'tokibami' || id === 'p_tokibami') return who(pickOne(TOKIBAMI_VOICE));
+  // 精神離脱体は、プレイヤー用ゼノでは肉体と同じカードのまま形が変わる
+  const key = id === 'p_xeno' && c.form ? 'xeno_spirit' : LINE_ALIAS[id] || id;
+  const set = CPU_LINES[key] || PERSONA_LINES[personaOf(c)];
+  const pool = Math.random() < 0.2 ? set.idle : set[mood] || set.calm;
+  let t = pickOne(pool);
+  if (t === c.lastLine) t = pickOne(pool.concat(set.calm, set.idle).filter((x) => x !== c.lastLine));   // 同じセリフを続けない
+  c.lastLine = t;
+  return who(t);
+}
 const pickFrom = (mix) => {
   let r = Math.random();
   for (const h of HAND_KEYS) { r -= mix[h]; if (r < 0) return h; }
   return HAND_KEYS[HAND_KEYS.length - 1];
 };
 // 深さ3の読み:均衡の割合 eq、相手の手の予測 q、予測に一番強い手 best、実際に出す割合 mix
-function deepRead(S, side, M, opt = {}) {
+function deepRead(S, side, M, opt = {}, pr = null) {
   const naiveW = opt.naive ?? 0.1, trustMax = opt.trustMax ?? 0.8;
   const naive = naiveFoe(M);
   const eq = equilibrium(M);
@@ -1617,11 +1740,18 @@ function deepRead(S, side, M, opt = {}) {
   // 癖の偏りが小さいうちは、たまたまの偏りとみて信じない(読みに行くと、こちらの手が偏って逆に読まれるため)
   const dev = Math.max(...HAND_KEYS.map((h) => Math.abs(all.q[h] - 1 / 3)));
   const edge = Math.max(0, Math.min(1, (dev - 0.12) / 0.15));
-  const trust = Math.min(trustMax, all.n / 10 * trustMax) * outread * edge;
+  let trust = Math.min(trustMax, all.n / 10 * trustMax) * outread * edge;
+  // 性格の読み(並び・狙い撃ちなど)が確かなら、その予測を混ぜて、そのぶん読みに賭ける
+  if (pr && pr.q) {
+    const pw = Math.min(0.8, pr.power);
+    HAND_KEYS.forEach((h) => { q[h] = (1 - pw) * q[h] + pw * pr.q[h]; });
+    trust = Math.max(trust, trustMax * pr.power * outread);
+  }
+  if (pr && pr.calm) trust *= 0.2;
   const best = argmax((a) => expect(M, a, q));
   const mix = {};
   HAND_KEYS.forEach((h) => { mix[h] = (1 - trust) * eq[h] + (h === best ? trust : 0); });
-  return { eq, q, best, mix, outread, prev };
+  return { eq, q, best, mix, outread, prev, trust };
 }
 
 // ブレイク時の手:3通りを実際に試して、一番良い盤面になる手を選ぶ
@@ -2658,7 +2788,7 @@ async function finale() {
 async function normalRally(hand, cpuHand, why) {
   const b = before();
   const r = rally(S, hand, cpuHand, logLater);
-  if (why) logLater(`　CPUの考え(${AI_LEVELS[S.cpuLevel].name}):${why}`);
+  if (why) logLater(`　${why}`);
   const o = outcome(b);
   const side = r === 0 ? -1 : r > 0 ? 0 : 1;
   const reach = b.streak[0] >= BREAK_STREAK - 1 ? 0 : b.streak[1] >= BREAK_STREAK - 1 ? 1 : -1;
@@ -3724,7 +3854,7 @@ function renderStages() {
 // ----- 難易度 -----
 function renderLevels() {
   [...$('levels').children].forEach((b, i) => b.classList.toggle('picked', i + 1 === FX.level));
-  $('levelNote').textContent = `${AI_LEVELS[FX.level].name}:${AI_LEVELS[FX.level].depth}。CPUが何を考えてその手を出したかは、対戦中のログで見られます。`;
+  $('levelNote').textContent = `${AI_LEVELS[FX.level].name}:${AI_LEVELS[FX.level].depth}。CPUのセリフは、対戦中のログで毎回見られます。`;
 }
 
 // ----- キャラ選択 -----
