@@ -13,6 +13,7 @@ YouTube: https://www.youtube.com/@nagumorizu
   Sign of Victory(決着が近いとき・タイトル画面の曲) bgm/Sign-of-Victory.mp3
   Devine Fencer(ソロ★5 ゼノ・肉体戦の曲)  bgm/Devine-Fencer.mp3
   Important Thing(メニュー画面の曲)        bgm/Important-Thing.mp3
+  天使迎撃戦(ソロ★4 トキバミ戦の曲)         bgm/Tenshi-Geigekisen.mp3
 -------------------------------------------------
 
 ※本ゲーム内で使用している楽曲の著作権は、作曲者の南雲 莉翠(nagumorizu)に帰属します。

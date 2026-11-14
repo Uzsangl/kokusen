@@ -873,7 +873,7 @@ const STAGES = [
   { id: 'y1', faction: '矢', stars: 1, name: '伝令の道',     foes: ['y_runner', 'y_seer', 'y_archer'], level: 1, hp: 0.36, atk: 0.85 },
   { id: 'y2', faction: '矢', stars: 2, name: '射手の丘',     foes: ['y_archer', 'y_runner', 'y_seer'], level: 1, hp: 0.954, atk: 1.0 },
   { id: 'y3', faction: '矢', stars: 3, name: '天眼の弦',     foes: ['b_tsuru'], level: 4, read: 0.35, hp: 2.6, atk: 1.0 },
-  { id: 't4', faction: '刻喰', stars: 4, name: '刻喰らいの淵', foes: ['tokibami'], level: 4, read: 0.35, hp: 1.8, atk: 1.0 },
+  { id: 't4', faction: '刻喰', stars: 4, name: '刻喰らいの淵', foes: ['tokibami'], level: 4, read: 0.35, hp: 1.8, atk: 1.0, bgm: 'toki' },
   { id: 'x5', faction: '始', stars: 5, name: '始まりの前', foes: ['xeno_body', 'xeno_spirit'], level: 4, read: 1.0, hp: 1.0, atk: 1.0, bgm: 'xeno' },
   // ボスラッシュ:★★★の3体 → ★★★★ → ★★★★★ を続けて戦う。ボスを1体倒すごとに、こちらは全回復する。
   // rushHp は、ゼノ以外のボスのHPの倍率。「むずかしい」で5連勝できる率が約0.01%になるように決めた
@@ -1838,8 +1838,8 @@ const Sound = (() => {
 // 曲は「なぐもりずの音楽室」(https://nagumorizu.com/)の楽曲。利用条件と表記は bgm/CREDIT.txt にある。
 // main は対戦中の曲、climax は決着が近いときの曲。ファイルが読めなければ何もせず、「曲」ボタンも出さない。
 // main:対戦中、climax:決着が近いとき、xeno:★5の肉体戦。tick(時計の音)はファイルではなく合成する
-// title:タイトル画面(climax と同じ曲)、menu:メニュー(キャラ選択)
-const BGM_TRACKS = { main: 'bgm/The-Battle-of-Beliefs.mp3', climax: 'bgm/Sign-of-Victory.mp3', xeno: 'bgm/Devine-Fencer.mp3', title: 'bgm/Sign-of-Victory.mp3', menu: 'bgm/Important-Thing.mp3' };
+// title:タイトル画面(climax と同じ曲)、menu:メニュー(キャラ選択)、toki:★★★★ トキバミ戦(天使迎撃戦)
+const BGM_TRACKS = { main: 'bgm/The-Battle-of-Beliefs.mp3', climax: 'bgm/Sign-of-Victory.mp3', xeno: 'bgm/Devine-Fencer.mp3', title: 'bgm/Sign-of-Victory.mp3', menu: 'bgm/Important-Thing.mp3', toki: 'bgm/Tenshi-Geigekisen.mp3' };
 const BGM_VOLUME = 0.2;
 // 曲は、効果音と同じ仕組み(WebAudio)で鳴らす。
 // iPhoneでは <audio> での再生がうまくいかないことがあり、効果音だけ鳴って曲が鳴らなかったため。
@@ -2485,7 +2485,7 @@ async function stageFx(o) {
       flash('#4ade80'); Sound.heal();
       await cutin(`${e.n}体撃破`, '味方が全回復した', 'gold', 1200);
       if (next.ch.id === 'xeno_body') { Bgm.switchTo('xeno'); Sound.breakIn(); await cutin(nameOf(next), '始まりの前', 'evil', 1500); }
-      else if (next.ch.id === 'tokibami') { Bgm.switchTo('main'); Sound.breakIn(); await cutin('トキバミ', '止めておいてくれて、ありがとう', 'violet', 1500); }
+      else if (next.ch.id === 'tokibami') { Bgm.switchTo('toki'); Sound.breakIn(); await cutin('トキバミ', '止めておいてくれて、ありがとう', 'violet', 1500); }
       else await cutin(nameOf(next), `${e.n + 1}体目`, 'gold', 1000);
       render();
     }
@@ -3434,7 +3434,7 @@ function openSettings() {
   $('sSeVol').oninput = (e) => { FX.seVol = e.target.value / 100; saveVol(); Sound.setVol(); };
   $('sSeVol').onchange = () => { Sound.wake(); Sound.click(); };
   $('sCredit').onclick = () => openSheet('クレジット', `
-    <h3>音楽</h3><p><a href="https://nagumorizu.com/" target="_blank" rel="noopener" style="color:var(--gold)">なぐもりずの音楽室</a>(南雲莉翠)<br>The Battle of Beliefs / Sign of Victory / Devine Fencer / Important Thing</p>
+    <h3>音楽</h3><p><a href="https://nagumorizu.com/" target="_blank" rel="noopener" style="color:var(--gold)">なぐもりずの音楽室</a>(南雲莉翠)<br>The Battle of Beliefs / Sign of Victory / Devine Fencer / Important Thing / 天使迎撃戦</p>
     <h3>効果音</h3><p>ゲーム内で合成</p>
     <h3>通信</h3><p>PeerJS(MIT License)/ Supabase</p>`);
 }
