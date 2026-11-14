@@ -3362,7 +3362,7 @@ async function showNewTitles() {
     }
   } finally { titleFxBusy = false; }
 }
-// 称号一覧の解放率:登録している全プレイヤーのうち、その称号を持っている人の割合
+// 称号一覧の解放人数:その称号を持っているプレイヤーの人数
 async function accLoadTitleStats() {
   try {
     const rows = await sbFetch('/rest/v1/profiles?select=titles&limit=10000');
@@ -3481,7 +3481,7 @@ async function openRanking() {
     return `<li class="${r.id === uid ? 'me' : ''}">${fav ? iconHtml(fav, 'sm') : ''}${titleTag(r.title)}${escHtml(r.name)}<span class="r">${r.rating}(${r.wins}勝${r.losses}敗)</span></li>`;
   }).join('')}</ol>`);
 }
-// 称号一覧:ログインしていればアカウント画面の称号の欄へ。していなければ、一覧と解放率だけ見せる
+// 称号一覧:ログインしていれば、解放済みの称号を選んで飾れる。していなければ、一覧と解放人数だけ見せる
 async function openTitles() {
   $('accModal').classList.add('hidden');
   if (ACC.profile && titleReady()) { openSheet(`🎖 称号一覧 ${myTitles().length} / ${TITLES.length}`, '<p class="sub">読み込んでいます…</p>'); await accLoadTitleStats(); renderMyTitles(); return; }
@@ -3489,19 +3489,19 @@ async function openTitles() {
   await accLoadTitleStats();
   const st = ACC.titleStats;
   openSheet('🎖 称号一覧', `<p class="sub" style="margin-bottom:6px">ログインすると、遊んだ内容に応じて称号を解放できます。</p><div class="titles">${TITLES.map((t) => {
-    const n = st && st.cnt[t.id] || 0, pc = st && st.total ? 100 * n / st.total : 0;
-    const rate = st && st.total ? `解放率 ${n === 0 ? '0' : pc < 1 ? pc.toFixed(1) : Math.round(pc)}%` : '';
+    const n = st && st.cnt[t.id] || 0;
+    const rate = st && st.total ? `解放 ${n}人` : '';
     return `<button disabled style="--tc:${TITLE_TIERS[t.tier]}"><b><i>${'★'.repeat(t.tier)}</i>${t.hidden ? '？？？' : escHtml(t.name)}</b><small>${t.hidden ? '隠し称号' : escHtml(t.desc)}</small><small class="rt">${rate}</small></button>`;
   }).join('')}</div>`);
 }
 function renderMyTitles(msg) {
   const p = ACC.profile, top = msg ? $('sheet').querySelector('.box').scrollTop : 0;   // 選び直したときは、見ていた位置のまま
-  openSheet(`🎖 称号一覧 ${myTitles().length} / ${TITLES.length}`, `<p class="sub" style="margin:0 0 6px">解放した称号を押すと、名前の横に飾れます。解放率は、登録している全プレイヤーのうち持っている人の割合です。</p>
+  openSheet(`🎖 称号一覧 ${myTitles().length} / ${TITLES.length}`, `<p class="sub" style="margin:0 0 6px">解放した称号を押すと、名前の横に飾れます。「解放 ○人」は、その称号を持っているプレイヤーの人数です。</p>
     ${msg ? `<p class="sub" style="color:var(--gold);margin:0 0 6px">${escHtml(msg)}</p>` : ''}
     <div class="titles"><button data-t="" class="${p.title ? '' : 'picked'}"><b>なし</b></button>${TITLES.map((t) => {
       const ok = myTitles().includes(t.id), st = ACC.titleStats;
-      const n = st && st.cnt[t.id] || 0, pc = st && st.total ? 100 * n / st.total : 0;
-      const rate = st && st.total ? `解放率 ${n === 0 ? '0' : pc < 1 ? pc.toFixed(1) : Math.round(pc)}%` : '';
+      const n = st && st.cnt[t.id] || 0;
+      const rate = st && st.total ? `解放 ${n}人` : '';
       const secret = t.hidden && !ok;
       return `<button data-t="${t.id}" class="${p.title === t.id ? 'picked' : ''}" style="--tc:${TITLE_TIERS[t.tier]}" ${ok ? '' : 'disabled'}><b><i>${'★'.repeat(t.tier)}</i>${secret ? '？？？' : escHtml(t.name)}</b><small>${ok ? '' : '🔒 '}${secret ? '隠し称号' : escHtml(t.desc)}</small><small class="rt">${rate}</small></button>`;
     }).join('')}</div>`);
