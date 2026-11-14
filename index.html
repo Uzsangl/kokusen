@@ -429,6 +429,64 @@
   .favs button { padding: 2px; border-radius: 10px; }
   .favs button.picked { border-color: var(--gold); box-shadow: 0 0 10px #f5c45166; }
   .favs .cico { width: 100%; height: auto; aspect-ratio: 1; }
+  /* ===== パソコン(横長の画面) ===== */
+  @media (min-width: 1000px) and (min-height: 560px) {
+    main { max-width: 1280px; }
+    /* タイトル */
+    #title { max-width: 980px; margin: 0 auto; }
+    .tbg { gap: 4%; } .tbg img { width: min(26%, 26vh); }
+    .tlogo { margin-top: min(120px, 12vh); } .tlogo img { width: min(100%, 520px, 52vh); }
+    .tplay { max-width: 760px; width: 100%; margin: 18px auto 0; }
+    .tsub { grid-template-columns: 1fr 1fr; }
+    /* キャラ選択:左に対戦相手とステージ、右にキャラ */
+    #select:not(.hidden) { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 0 28px; align-items: start; }
+    .selR { position: sticky; top: 12px; }
+    .selR .chars { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; max-height: calc(100vh - 370px); overflow-y: auto; padding-right: 4px; }
+    .selR .chars > p { grid-column: 1 / -1; }
+    .selR .chars button { margin: 0; }
+    /* 対戦:左に自分、中央に勝負の枠、右に相手 */
+    body.in-battle main { max-width: 1360px; }
+    #battle:not(.hidden) { display: grid; min-height: calc(100vh - 70px); gap: 8px 16px;
+      grid-template-columns: minmax(0, 1fr) minmax(0, .5fr) auto minmax(0, .5fr) minmax(0, 1fr);
+      grid-template-rows: auto auto auto auto 1fr auto auto;
+      grid-template-areas:
+        "you   info info info cpu"
+        "hpy   sy   vs   sc   hpc"
+        "hpy   cue  cue  cue  hpc"
+        "try   dmg  dmg  dmg  trc"
+        "hands dmg  dmg  dmg  acts"
+        "hands res  res  res  acts"
+        "foot  foot foot foot foot"; }
+    #battle .teams, #battle .stage, #battle .cols, #battle .col { display: contents; }
+    #battle::before { content: ''; grid-row: 1 / 7; grid-column: 2 / 5; border: 2px solid var(--line); border-radius: 18px;
+      background: radial-gradient(500px 360px at 50% 40%, #1a1f45, #0b0d1c 75%); box-shadow: inset 0 0 40px #0008; }
+    #you { grid-area: you; } #cpu { grid-area: cpu; }
+    #hpYou { grid-area: hpy; } #hpCpu { grid-area: hpc; }
+    #hpYou, #hpCpu { background: #0f1226cc; border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; align-self: start; }
+    #boutInfo { grid-area: info; padding-top: 10px; z-index: 1; }
+    #slotYou { grid-area: sy; } #slotCpu { grid-area: sc; } #battle .vs { grid-area: vs; align-self: center; font-size: 1.6rem; z-index: 1; }
+    #battle #slotYou, #battle #slotCpu { height: 140px; line-height: 140px; font-size: 4.2rem; margin: 0 14px; z-index: 1; }
+    #cue { grid-area: cue; z-index: 1; font-size: 1.2rem; height: 1.6em; }
+    #dmgLine { grid-area: dmg; z-index: 1; height: auto; font-size: 1.05rem; align-self: center; }
+    #dmgLine b { font-size: 2.4rem; }
+    #result { grid-area: res; z-index: 1; font-size: 1.05rem; padding-bottom: 12px; align-self: end; }
+    #traitYou { grid-area: try; } #traitCpu { grid-area: trc; }
+    #traitYou, #traitCpu { font-size: .85rem; height: auto; }
+    #hands { grid-area: hands; } #cpuActs { grid-area: acts; }
+    #battle .hands { gap: 8px; }
+    #battle .hands button, #battle .act { height: 5.2rem; font-size: .9rem; padding: 6px 12px; }
+    #battle .hands .ico { font-size: 2rem; }
+    #battle .hands button::after { content: attr(data-key); margin-left: auto; font-size: .75rem; color: var(--sub); border: 1px solid var(--line); border-radius: 6px; padding: 1px 7px; }
+    #battle .foot { grid-area: foot; max-width: 520px; width: 100%; margin: 0 auto; }
+    #battle .shp .who { font-size: 1.05rem; } #battle .shp b { font-size: 1.6rem; }
+    #battle .shp .stats { font-size: .85rem; } #battle .shp .status { font-size: .72rem; height: 5.2em; }
+    #battle .shp .cico.sm { width: 40px; height: 40px; }
+    #battle .team { font-size: .95rem; }
+    /* ログは右から出る引き出し */
+    #logPanel { position: fixed; right: 0; top: 0; bottom: 0; width: 380px; max-height: none; overflow-y: auto; z-index: 20; border-radius: 0; box-shadow: -10px 0 30px #000a; }
+    #bgmCredit { grid-column: 1 / -1; }
+    #stage > div:not([id]):not(.vs) { display: none; }
+  }
 </style>
 </head>
 <body>
@@ -464,6 +522,7 @@
   </section>
 
   <section id="select" class="panel hidden">
+    <div class="selL">
     <div class="seltop"><button id="toTitle" class="back">◀ タイトルへ</button><span></span><button class="ib" id="selRank" aria-label="ランキング">🏆</button><button class="ib" id="selTitles" aria-label="称号一覧">🎖</button></div>
     <div class="acct" id="acct"></div>
     <h2>出す順に3枚選ぶ</h2>
@@ -489,12 +548,15 @@
       <p class="sub" id="netStatus"></p>
       <p class="sub" id="netDebug"></p>
     </div>
+    </div>
+    <div class="selR">
     <h2>キャラ</h2>
     <div class="picks" id="picks"></div>
     <p class="sub" id="bonusNote" style="margin:4px 0 8px"></p>
     <div class="levels" id="factions"></div>
     <div id="charList" class="chars"></div>
     <button id="start" style="width:100%;margin-top:8px"></button>
+    </div>
   </section>
 
   <section id="battle" class="hidden">
@@ -3803,6 +3865,7 @@ function init() {
   HAND_KEYS.forEach((h) => {
     const b = document.createElement('button');
     b.dataset.hand = h;
+    b.dataset.key = String(HAND_KEYS.indexOf(h) + 1);   // パソコンではキーボードの番号を出す
     b.onclick = () => play(h);
     $('hands').appendChild(b);
   });
@@ -3839,6 +3902,15 @@ function init() {
   $('tVer').textContent = `ver ${RULES_VER.slice(0, 6)}`;
   $('tPlay').onclick = () => { Sound.wake(); Bgm.unlock && Bgm.unlock(); showTitle(false); };
   $('toTitle').onclick = () => showTitle(true);
+  // パソコン:キーボードで手を出す(1・2・3 または Q・W・E)。Escで開いている画面を閉じる
+  document.addEventListener('keydown', (e) => {
+    if (e.target.closest && e.target.closest('input, textarea')) return;
+    if (e.key === 'Escape') { $('sheet').classList.add('hidden'); $('accModal').classList.add('hidden'); return; }
+    const i = { 1: 0, 2: 1, 3: 2, q: 0, w: 1, e: 2 }[e.key.toLowerCase()];
+    if (i === undefined || $('battle').classList.contains('hidden') || !$('sheet').classList.contains('hidden')) return;
+    const b = $('hands').children[i];
+    if (b && !b.disabled) { e.preventDefault(); b.click(); }
+  });
   // 対戦画面:特性やバフ・デバフを押すと、全文と一覧が出る
   $('traitYou').onclick = () => openCardInfo(0);
   $('traitCpu').onclick = () => openCardInfo(1);
