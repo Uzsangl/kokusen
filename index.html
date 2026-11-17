@@ -81,6 +81,38 @@
   #netStatus { color: var(--gold); }
   .levels button.picked { border-color: var(--accent); border-width: 2px; box-shadow: 0 0 12px #f5c45144; font-weight: 700; }
   .chars { display: grid; gap: 8px; }
+  /* キャラ選択は2段階:相手を決める(menu)→ キャラを選ぶ(pick) */
+  #select[data-step="menu"] .selR, #select[data-step="pick"] .selL { display: none !important; }
+  .btn-next { width: 100%; margin-top: 12px; padding: 14px; font-weight: 700; color: var(--gold); border-color: var(--gold); }
+  .picktop { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .picktop .back { margin: 0; flex: none; }
+  .picktop #pickInfo { flex: 1; min-width: 0; font-size: .8rem; color: var(--sub); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .picktop #mysetBtn { flex: none; padding: 8px 10px; font-size: .8rem; color: var(--gold); }
+  #pickNet:empty { display: none; }
+  h2 .hint { font-size: .68rem; color: var(--sub); font-weight: 400; margin-left: 6px; }
+  #start { position: sticky; bottom: 8px; z-index: 2; box-shadow: 0 6px 20px #000a; }
+  /* キャラはアイコンだけを並べる。タップで選ぶ・長押しで詳細 */
+  .cgrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .cgrid > p { grid-column: 1 / -1; margin: 0; }
+  .ctile { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 2px 4px; font-size: .68rem; line-height: 1.2;
+    -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: manipulation; }
+  .ctile .cico { width: 100%; max-width: 64px; height: auto; aspect-ratio: 1; pointer-events: none; }
+  .ctile .nm { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; pointer-events: none; }
+  .ctile.picked { border-color: var(--accent); border-width: 2px; box-shadow: 0 0 12px #f5c45144; }
+  .ctile .ord { position: absolute; top: 2px; left: 4px; font-style: normal; font-weight: 700; color: var(--gold); font-size: .72rem; }
+  .ctile.off { opacity: .4; }
+  .ctile.locked .cico { filter: grayscale(1) brightness(.6); }
+  .ctile .lk { position: absolute; top: 2px; right: 4px; font-size: .7rem; }
+  .cdetail .crow { margin-bottom: 8px; }
+  .ms { display: grid; grid-template-columns: auto 1fr; gap: 6px 10px; align-items: center; border: 1px solid var(--line); border-radius: 12px; padding: 8px; margin-bottom: 8px; }
+  .ms .ic { display: flex; gap: 2px; }
+  .ms .ic .cico { width: 34px; height: 34px; }
+  .ms .ic .empty { width: 106px; height: 34px; border: 1px dashed var(--line); border-radius: 8px; }
+  .ms .nm { font-size: .85rem; font-weight: 700; }
+  .ms .nm small { display: block; font-weight: 400; color: var(--sub); font-size: .7rem; }
+  .ms .bt { grid-column: 1 / -1; display: grid; grid-template-columns: 2fr 2fr 1fr 1fr; gap: 6px; }
+  .ms .bt button { padding: 7px 4px; font-size: .78rem; }
+  .ms .bt .go { color: var(--gold); border-color: var(--gold); font-weight: 700; }
   .picks { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 8px; }
   .picks button { padding: 6px 4px; font-size: .78rem; line-height: 1.3; min-height: 3.2em; }
   .picks button b { display: block; color: var(--gold); font-size: .68rem; }
@@ -452,11 +484,8 @@
     .tplay { max-width: 760px; width: 100%; margin: 18px auto 0; }
     .tsub { grid-template-columns: 1fr 1fr; }
     /* キャラ選択:左に対戦相手とステージ、右にキャラ */
-    #select:not(.hidden) { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 0 28px; align-items: start; }
-    .selR { position: sticky; top: 12px; }
-    .selR .chars { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; max-height: calc(100vh - 370px); overflow-y: auto; padding-right: 4px; }
-    .selR .chars > p { grid-column: 1 / -1; }
-    .selR .chars button { margin: 0; }
+    #select:not(.hidden) { max-width: 860px; margin: 0 auto; }
+    .cgrid { grid-template-columns: repeat(7, 1fr); }
     /* 対戦:左に自分、中央に勝負の枠、右に相手 */
     body.in-battle main { max-width: 1360px; }
     #battle:not(.hidden) { display: grid; min-height: calc(100vh - 70px); gap: 8px 16px;
@@ -547,8 +576,6 @@
     <div class="selL">
     <div class="seltop"><button id="toTitle" class="back">◀ タイトルへ</button><span></span><button class="ib" id="selRank" aria-label="ランキング">🏆</button><button class="ib" id="selTitles" aria-label="称号一覧">🎖</button></div>
     <div class="acct" id="acct"></div>
-    <h2>出す順に3枚選ぶ</h2>
-    <p class="sub">ルールは、タイトル画面の「📖 ルールブック」で見られます。予兆の色:青 → 緑 → <span style="color:var(--red);font-weight:700">赤(勝ち確定)</span> → <span class="rainbow" style="font-weight:700">虹(撃破かBREAK確定)</span></p>
     <h2>対戦相手</h2>
     <div class="levels" id="modes"></div>
     <div id="cpuOpts">
@@ -571,9 +598,12 @@
       <p class="sub" id="netStatus"></p>
       <p class="sub" id="netDebug"></p>
     </div>
+    <button id="toPick" class="btn-next">キャラを選ぶ ▶</button>
     </div>
     <div class="selR">
-    <h2>キャラ</h2>
+    <div class="picktop"><button id="toMenu" class="back">◀ 戻る</button><span id="pickInfo"></span><button id="mysetBtn">★ マイセット</button></div>
+    <p class="sub" id="pickNet"></p>
+    <h2>出す順に3枚選ぶ <small class="hint">長押しで詳細</small></h2>
     <div class="picks" id="picks"></div>
     <p class="sub" id="bonusNote" style="margin:4px 0 8px"></p>
     <div class="levels" id="factions"></div>
@@ -3009,7 +3039,7 @@ function pvpFoe() {
   if (!PVP.room || !PVP.code) return null;
   return PVP.room.peers().find((p) => !(p.isMe && p.sameTab) && p.presence && p.presence.g === PVP.code) || null;
 }
-function pvpStatus(text) { $('netStatus').textContent = text; }
+function pvpStatus(text) { $('netStatus').textContent = text; if ($('pickNet')) $('pickNet').textContent = PVP.on && selStep === 'pick' ? text : ''; }
 // つながらないときの手がかりとして、通信の状態をそのまま表示する
 function pvpDebug() {
   if (!PVP.on) return;
@@ -3139,7 +3169,7 @@ function pvpJoin() {
   if (!/^[0-9a-zA-Z]{2,12}$/.test(code)) { pvpStatus('合言葉は、英数字2〜12文字で入れてください。'); return; }
   if (PVP.room && PVP.room.join && (PVP.code !== code || !PVP.room.connected())) PVP.room.join(code);   // 直接つなぐ方式では、ここで部屋を開く・参加する
   PVP.code = code; PVP.phase = 'lobby'; PVP.n = 0; PVP.foeTeamSeal = null; PVP.foeSeal = {};
-  pvpPublish({ g: code, v: RULES_VER, ts: null, t: null, n: null, c: null, r: null, b: null, last: null });
+  pvpPublish({ g: code, v: RULES_VER, ts: null, t: null, n: null, c: null, r: null, b: null, last: null, nm: ACC.profile ? String(ACC.profile.name).slice(0, 12) : null });
   pvpStep();
   renderSelect();
 }
@@ -3178,6 +3208,8 @@ async function pvpStep() {
 
   const verNg = fp && fp.v !== RULES_VER;
   if (verNg && PVP.phase !== 'play') { pvpStatus(`相手とゲームの版が違います(自分 ver ${RULES_VER.slice(0, 6)} / 相手 ver ${String(fp.v || '?').slice(0, 6)})。お互いにページを再読み込みして、タイトル画面の右下の ver が同じになってから入り直してください。`); return; }
+  if (PVP.phase === 'lobby' && foe && selStep === 'menu' && !$('select').classList.contains('hidden')) setStep('pick');   // 相手が来たら、キャラ選択へ
+  else if (PVP.phase === 'lobby' || PVP.phase === 'ready') renderSelHead();
   if (PVP.phase === 'lobby') { pvpStatus(foe ? '相手が部屋にいます。キャラを選んで「準備完了」を押してください。' : `合言葉「${PVP.code}」で相手を待っています。相手にも同じ合言葉を入れてもらってください。`); return; }
 
   if (PVP.phase === 'ready') {
@@ -3814,7 +3846,7 @@ function showTitle(on) {
   $('select').classList.toggle('hidden', on);
   document.body.classList.toggle('on-title', on);
   window.scrollTo(0, 0);
-  if (on) renderTitleAcc(); else renderSelect();
+  if (on) renderTitleAcc(); else setStep('menu');
 }
 // アカウント欄:お気に入りキャラ・称号・名前・レート・勝敗・クリア数・称号の数
 function renderTitleAcc() {
@@ -4081,7 +4113,115 @@ const charGroup = (ch) => ch.group || (SPECIAL_CHARS.includes(ch) ? '隔絶' : c
 const charUnlocked = (ch) => !ch.unlock || myTitles().includes(ch.unlock);
 // 解放キャラの条件の書き方(隠し称号は、解放するまで名前を伏せる)
 const unlockText = (ch) => { const t = titleOf(ch.unlock); return `称号「${t.hidden ? '？？？' : t.name}」${t.hidden ? '(隠し称号)' : ''}を解放すると使える(ログインが必要)`; };
+// 押す・長押しを分ける(長押し、またはパソコンの右クリックで詳細を出す)
+function bindPress(el, onTap, onLong) {
+  let timer = null, long = false, sx = 0, sy = 0;
+  const cancel = () => { clearTimeout(timer); timer = null; };
+  el.addEventListener('pointerdown', (e) => { long = false; sx = e.clientX; sy = e.clientY; cancel(); timer = setTimeout(() => { long = true; timer = null; Sound.click(); onLong(); }, 450); });
+  el.addEventListener('pointermove', (e) => { if (timer && Math.hypot(e.clientX - sx, e.clientY - sy) > 10) cancel(); });   // スクロールしたら長押しにしない
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach((ev) => el.addEventListener(ev, cancel));
+  el.addEventListener('click', (e) => { if (long) { e.preventDefault(); long = false; return; } onTap(); });
+  el.addEventListener('contextmenu', (e) => { e.preventDefault(); cancel(); if (!long) onLong(); long = false; });
+}
+// キャラの詳細(長押しで開く)
+function openCharDetail(ch) {
+  const order = picked.indexOf(ch.id), unlocked = charUnlocked(ch);
+  const hide = ch.secret && !xenoKnown();
+  const clash = order < 0 && picked.map(charById).some((o) => o && (o.sameAs === ch.id || ch.sameAs === o.id));
+  const canToggle = unlocked && !(PVP.on && PVP.phase === 'ready') && (order >= 0 || (!clash && picked.length < TEAM_SIZE));
+  openSheet(dispName(ch), `<div class="cdetail"><div class="crow">${iconHtml(ch, 'lg')}<div>` +
+    `<div class="name">${dispName(ch)}${hide ? '' : `<span class="role">${ch.role || ''}</span>`}</div>` +
+    (unlocked ? '' : `<div class="sub" style="color:var(--gold)">🔒 ${unlockText(ch)}</div>`) +
+    (clash ? '<div class="sub">同じ人物なので、同じパーティには入れられない</div>' : '') +
+    (hide ? '' : `<div class="stats"><span class="s-hp">HP ${ch.hp}</span>　${statLine(ch)}</div><div class="trait">${traitLine(ch)}</div>` + actionList(ch, 'div', 'sub')) +
+    `</div></div>` + (canToggle ? `<div class="row"><button id="cdPick" style="border-color:var(--gold);color:var(--gold);font-weight:700">${order >= 0 ? 'パーティから外す' : `${picked.length + 1}番手に入れる`}</button></div>` : '') + `</div>`);
+  if (canToggle) $('cdPick').onclick = () => { if (order >= 0) picked.splice(order, 1); else picked.push(ch.id); $('sheet').classList.add('hidden'); Sound.click(); renderSelect(); };
+}
+
+// ----- マイセット:好きなパーティ(並び順つき)を5つまで保存する -----
+// ログイン中はアカウント(progress の stats.mysets)、ログインしていないときはこの端末に保存する
+const MYSET_MAX = 5;
+const mysetKey = () => (accUid() ? `kokusen.mysets.${accUid()}` : 'kokusen.mysets');
+function mysetLoad() {
+  let a = null;
+  if (accUid() && ACC.stats && Array.isArray(ACC.stats.mysets)) a = ACC.stats.mysets;
+  else { try { a = JSON.parse(localStorage.getItem(mysetKey()) || 'null'); } catch (e) { a = null; } }
+  const out = [];
+  for (let i = 0; i < MYSET_MAX; i++) {
+    const v = Array.isArray(a) ? a[i] : null;
+    out.push(v && Array.isArray(v.ids) && v.ids.length === TEAM_SIZE && v.ids.every((id) => charById(id)) ? { n: String(v.n || '').slice(0, 8), ids: v.ids.slice() } : null);
+  }
+  return out;
+}
+async function mysetSave(list) {
+  try { localStorage.setItem(mysetKey(), JSON.stringify(list)); } catch (e) { /* 保存できなくても動く */ }
+  if (accUid() && ACC.progMode === 'table') {
+    ACC.stats = ACC.stats || {};
+    ACC.stats.mysets = list;
+    try { await sbFetch(`/rest/v1/progress?id=eq.${accUid()}`, { method: 'PATCH', prefer: 'return=minimal', body: { stats: ACC.stats, updated_at: new Date().toISOString() } }); } catch (e) { /* 次に保存するときにまとめて送られる */ }
+  }
+}
+function openMyset() {
+  const list = mysetLoad();
+  const lockedPick = PVP.on && PVP.phase === 'ready';
+  const full = picked.length === TEAM_SIZE;
+  const rows = list.map((m, i) => {
+    const chars = m ? m.ids.map(charById) : [];
+    const ng = m && chars.some((c) => !charUnlocked(c));
+    return `<div class="ms"><div class="ic">${m ? chars.map((c) => iconHtml(c, 'sm')).join('') : '<span class="empty"></span>'}</div>` +
+      `<div class="nm">${m ? escHtml(m.n || `セット${i + 1}`) : '空き'}<small>${m ? chars.map(dispName).join(' → ') + (ng ? '　🔒使えないキャラがいる' : '') : '今の3枚を保存できます'}</small></div>` +
+      `<div class="bt"><button class="go" data-a="load" data-i="${i}"${!m || ng || lockedPick ? ' disabled' : ''}>呼び出す</button>` +
+      `<button data-a="save" data-i="${i}"${full ? '' : ' disabled'}>${m ? '上書き保存' : '今の3枚を保存'}</button>` +
+      `<button data-a="name" data-i="${i}"${m ? '' : ' disabled'} aria-label="名前を変える">✎</button>` +
+      `<button data-a="del" data-i="${i}"${m ? '' : ' disabled'} aria-label="削除">🗑</button></div></div>`;
+  }).join('');
+  openSheet('マイセット', `<p class="sub">好きなパーティを、並び順ごと${MYSET_MAX}つまで保存できます。${accUid() ? 'アカウントに保存されます。' : 'この端末に保存されます(ログインするとアカウントに保存)。'}${full ? '' : ' 保存するには、先に3枚選んでください。'}</p>${rows}`);
+  $('sheetBody').querySelectorAll('.ms button').forEach((b) => {
+    b.onclick = async () => {
+      const i = +b.dataset.i, a = b.dataset.a, cur = mysetLoad();
+      if (a === 'load') { picked = cur[i].ids.slice(); $('sheet').classList.add('hidden'); Sound.click(); renderSelect(); return; }
+      if (a === 'save') {
+        if (cur[i] && !confirm(`「${cur[i].n || `セット${i + 1}`}」を、今の3枚で上書きしますか?`)) return;
+        cur[i] = { n: cur[i] ? cur[i].n : `セット${i + 1}`, ids: picked.slice() };
+      }
+      if (a === 'name') { const n = prompt('セットの名前(8文字まで)', cur[i].n || `セット${i + 1}`); if (n === null) return; cur[i].n = n.trim().slice(0, 8) || `セット${i + 1}`; }
+      if (a === 'del') { if (!confirm(`「${cur[i].n || `セット${i + 1}`}」を削除しますか?`)) return; cur[i] = null; }
+      Sound.click();
+      await mysetSave(cur);
+      openMyset();
+    };
+  });
+}
+
+// キャラ選択の段階:'menu'(相手を決める)→ 'pick'(キャラを選ぶ)
+let selStep = 'menu';
+function setStep(st) {
+  selStep = st;
+  $('select').dataset.step = st;
+  window.scrollTo(0, 0);
+  renderSelect();
+}
+// 選んだ相手の説明(キャラ選択の上に出す)
+function pickInfoText() {
+  if (MODE === 'solo') { const st = STAGES.find((x) => x.id === SOLO.stage); return st ? `ソロ:${st.rush ? st.name : `${st.faction}${'★'.repeat(st.stars)}「${st.name}」`}` : 'ソロ'; }
+  if (MODE === 'pvp') { const f = pvpFoe(); const nm = f && f.presence && typeof f.presence.nm === 'string' ? f.presence.nm.slice(0, 12) : ''; return f ? `対人:${nm || '相手(ゲスト)'}` : `対人:合言葉「${PVP.code}」`; }
+  return `CPU(${AI_LEVELS[FX.level].name})`;
+}
+// 相手を決める画面の「キャラを選ぶ」を押せるか
+function canPick() {
+  if (MODE === 'solo') { const st = STAGES.find((x) => x.id === SOLO.stage); return !!st && !st.chainFrom; }
+  if (MODE === 'pvp') return PVP.phase !== 'idle' && !PVP.spec && !!pvpFoe();
+  return true;
+}
+function renderSelHead() {
+  $('pickInfo').textContent = pickInfoText();
+  $('toMenu').textContent = MODE === 'pvp' ? '◀ 部屋を出る' : '◀ 戻る';
+  $('toPick').disabled = !canPick();
+  $('toPick').textContent = MODE === 'pvp' && !canPick() ? (PVP.phase === 'idle' ? '合言葉で部屋に入ってください' : '相手を待っています…') : MODE === 'solo' && !canPick() ? 'このステージは直接挑めません' : 'キャラを選ぶ ▶';
+}
 function renderSelect() {
+  if (!$('select').dataset.step) $('select').dataset.step = selStep;
+  renderSelHead();
   const locked = PVP.on && PVP.phase === 'ready';
   // 選んだ3枚(押すと外す)
   $('picks').innerHTML = '';
@@ -4123,38 +4263,31 @@ function renderSelect() {
     note.textContent = '隔絶:称号を解放した人だけが使えるキャラ。陣営ボーナスは付かない。';
     $('charList').appendChild(note);
   }
+  $('charList').className = 'cgrid';
   ALL_CHARS.filter((ch) => charGroup(ch) === selFaction).forEach((ch) => {
     const order = picked.indexOf(ch.id);
     const b = document.createElement('button');
     b.dataset.id = ch.id;
+    b.className = 'ctile';
     if (order >= 0) b.classList.add('picked');
-    // まだ解放していないキャラ:鍵と条件だけ。ゼノは倒すまで名前も能力も見せない(いることだけ)
-    if (!charUnlocked(ch)) {
-      const hide = ch.secret && !xenoKnown();
-      b.disabled = true;
-      b.classList.add('lockedChar');
-      b.innerHTML = `<div class="crow">${iconHtml(ch, 'lg')}<div>` +
-        `<div class="name">🔒 ${dispName(ch)}${hide ? '' : `<span class="role">${ch.role || ''}</span>`}</div>` +
-        `<div class="sub">${unlockText(ch)}</div>` +
-        (hide ? '' : `<div class="stats"><span class="s-hp">HP ${ch.hp}</span>　${statLine(ch)}</div><div class="trait">${traitLine(ch)}</div>` + actionList(ch, 'div', 'sub')) +
-        `</div></div>`;
-      $('charList').appendChild(b);
-      return;
-    }
-    // 同じ人物(カジとカジ【始】)は、同じパーティに入れられない
+    const unlocked = charUnlocked(ch);
     const clash = order < 0 && picked.map(charById).some((o) => o && (o.sameAs === ch.id || ch.sameAs === o.id));
-    b.disabled = (order < 0 && picked.length >= TEAM_SIZE) || locked || clash;
-    b.innerHTML = `<div class="crow">${iconHtml(ch, 'lg')}<div>` +
-      `<div class="name">${order >= 0 ? `【${order + 1}番手】` : ''}${ch.name}<span class="role">${ch.role || ''}</span></div>` +
-      (clash ? '<div class="sub">同じ人物なので、同じパーティには入れられない</div>' : '') +
-      `<div class="stats"><span class="s-hp">HP ${ch.hp}</span>　${statLine(ch)}</div>` +
-      `<div class="trait">${traitLine(ch)}</div>` +
-      actionList(ch, 'div', 'sub') + `</div></div>`;
-    b.onclick = () => {
-      if (order >= 0) picked.splice(order, 1); else picked.push(ch.id);
+    const full = order < 0 && picked.length >= TEAM_SIZE;
+    const off = !unlocked || clash || full || locked;
+    b.classList.toggle('off', off && order < 0);
+    b.classList.toggle('locked', !unlocked);
+    b.innerHTML = `${order >= 0 ? `<i class="ord">${order + 1}</i>` : ''}${unlocked ? '' : '<span class="lk">🔒</span>'}${iconHtml(ch, 'lg')}<span class="nm">${dispName(ch)}</span>`;
+    b.setAttribute('aria-label', `${dispName(ch)}${order >= 0 ? `(${order + 1}番手)` : ''}。長押しで詳細`);
+    const tap = () => {
+      if (!unlocked) { openCharDetail(ch); return; }          // 鍵つきは、押すと解放条件を見せる
+      if (locked) return;
+      if (order >= 0) picked.splice(order, 1);
+      else if (clash || full) { openCharDetail(ch); return; }
+      else picked.push(ch.id);
       Sound.click();
       renderSelect();
     };
+    bindPress(b, tap, () => openCharDetail(ch));
     $('charList').appendChild(b);
   });
   const full = picked.length === TEAM_SIZE;
@@ -4256,6 +4389,7 @@ function init() {
     $('select').classList.remove('hidden');
     document.body.classList.remove('in-battle');
     if (PVP.on) { PVP.phase = 'idle'; pvpJoin(); renderMode(); }   // 同じ合言葉のまま、もう一度キャラ選びから
+    setStep('pick');
     showNewTitles();   // 対戦中に解放した称号を知らせる
   };
   MODES.forEach(([label, m]) => {
@@ -4358,6 +4492,9 @@ function init() {
   $('joinRoom').onclick = () => { pvpJoin(); renderMode(); };
   $('leaveRoom').onclick = () => { if (PVP.spec) specStop(); else pvpLeave(); renderMode(); };
   $('specRoom').onclick = () => specStart();
+  $('toPick').onclick = () => { if (canPick()) { Sound.click(); setStep('pick'); } };
+  $('toMenu').onclick = () => { if (MODE === 'pvp' && PVP.phase !== 'idle') { pvpLeave(); renderMode(); } Sound.click(); setStep('menu'); };
+  $('mysetBtn').onclick = () => openMyset();
   $('logBtn').onclick = () => {
     const hid = $('logPanel').classList.toggle('hidden');
     $('logBtn').textContent = hid ? 'ログを見る' : 'ログを閉じる';
