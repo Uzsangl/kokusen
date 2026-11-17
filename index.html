@@ -3271,7 +3271,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.19';
+const APP_VER = '0.20';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
@@ -4174,11 +4174,10 @@ function openSettings() {
     <div class="srow"><div>効果音の音量</div><input type="range" id="sSeVol" min="0" max="100" value="${Math.round(FX.seVol * 100)}" aria-label="効果音の音量"></div>
     <div class="srow"><div>演出<small>短縮にすると対戦のテンポが速くなる</small></div><div class="seg"><button id="sFull" class="${FX.short ? '' : 'on'}">フル</button><button id="sShort" class="${FX.short ? 'on' : ''}">短縮</button></div></div>
     <div class="srow"><div>演出パターン<small>${FX_PATTERNS[FX.pattern].note}</small></div><div class="seg seg4">${Object.entries(FX_PATTERNS).map(([k, v]) => `<button data-pt="${k}" class="${FX.pattern === k ? 'on' : ''}">${v.name}</button>`).join('')}</div></div>
-    <div class="srow"><div>先バレ<small>手を出した瞬間に赤く光ったら、じゃんけん勝ち確定</small></div><div style="display:flex;gap:6px;align-items:center"><button id="sPokyun" style="padding:6px 10px;white-space:nowrap">試聴</button>${sw('sSaki', FX.sakibare)}</div></div>
+    <div class="srow"><div>先バレ<small>手を出した瞬間に赤く光ったら、じゃんけん勝ち確定</small></div>${sw('sSaki', FX.sakibare)}</div>
     <div class="srow" style="border:0"><div>クレジット</div><button id="sCredit">見る</button></div>`);
   document.querySelectorAll('#sheetBody [data-pt]').forEach((b) => { b.onclick = () => { FX.pattern = b.dataset.pt; try { localStorage.setItem('kokusen.pattern', FX.pattern); } catch (e) { /* 保存できなくても動く */ } openSettings(); }; });
   $('sSaki').onclick = () => { FX.sakibare = !FX.sakibare; saveOpt('kokusen.sakibare', FX.sakibare); openSettings(); };
-  $('sPokyun').onclick = () => { Sound.wake(); sakibareFx(); };
   $('sBgm').onclick = () => { FX.bgm = !FX.bgm; saveOpt('kokusen.bgm', FX.bgm); applyOpts(); openSettings(); };
   $('sSe').onclick = () => { FX.sound = !FX.sound; saveOpt('kokusen.sound', FX.sound); applyOpts(); if (FX.sound) { Sound.wake(); Sound.click(); } openSettings(); };
   $('sFull').onclick = () => { FX.short = false; saveOpt('kokusen.short', false); applyOpts(); openSettings(); };
