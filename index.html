@@ -963,7 +963,7 @@ const GACHA_CHARS = [
     trait: { key: 'pierceMark', name: '穿ち', desc: '技を当てるたびに、場の相手のDFS−250(そのカードに消えずに残る。最大−1500)', v: 250, cap: 1500 },
     actions: { rock: N('鏑止め'), scissors: { rate: RATE.big, name: '鳴り鏑' }, paper: { rate: RATE.normal, name: '研ぎ直し', mods: [foeAtk(400, 2)] } } },
   { id: 'g_y3b', name: 'マト', faction: '矢', rarity: 3, gacha: true, role: 'BREAK特化', hp: 11500, atk: 2600, dfs: 1000, phys: 1.05,
-    trait: { key: 'foresight', name: '一矢', desc: `自分の${BREAK_NAME}の攻撃はATK+2000`, add: 2000 },
+    trait: { key: 'foresight', name: '必中', desc: `自分の${BREAK_NAME}の攻撃はATK+2000`, add: 2000 },
     actions: { rock: { rate: RATE.big, name: '狙い澄まし' }, scissors: { rate: RATE.normal, name: '一矢', streak: 1 }, paper: N('残心') } },
   { id: 'g_y3c', name: 'エビラ', faction: '矢', rarity: 3, gacha: true, role: '連続で勝つほど強い', hp: 15300, atk: 2300, dfs: 1000, phys: 1.05,
     trait: { key: 'winStack', name: '連射', desc: '勝つたびに次の攻撃のATK+400が重なる(負けると消える)', v: 400 },
