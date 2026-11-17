@@ -103,6 +103,9 @@
   .ctile.off { opacity: .4; }
   .ctile.locked .cico { filter: grayscale(1) brightness(.6); }
   .ctile .lk { position: absolute; top: 2px; right: 4px; font-size: .7rem; }
+  .ctile .rar { font-size: .55rem; letter-spacing: -.05em; line-height: 1; pointer-events: none; }
+  .rar.r1, .rar.r2 { color: #9aa0b4; } .rar.r3 { color: #f5c451; } .rar.r4 { color: #b57bff; } .rar.r5 { color: #ff2a3d; }
+  #pickSide button.picked[data-s="foe"] { border-color: #ff8a95; color: #ff8a95; box-shadow: 0 0 12px #ff4d5e44; }
   .cdetail .crow { margin-bottom: 8px; }
   /* 文字を長押ししても、選択やコピーのメニューを出さない(入力欄だけは使えるように) */
   body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
@@ -582,10 +585,14 @@
     <div class="acct" id="acct"></div>
     <h2>対戦相手</h2>
     <div class="levels" id="modes"></div>
+    <div class="levels" id="formats" style="grid-template-columns:1fr 1fr"><button data-f="basic">ベーシック</button><button data-f="advance">アドバンス</button></div>
+    <p class="sub" id="formatNote"></p>
     <div id="cpuOpts">
       <h2>CPUの強さ</h2>
       <div class="levels" id="levels"></div>
       <p class="sub" id="levelNote"></p>
+      <h2>CPUのキャラ</h2>
+      <div class="levels" id="cpuPicks" style="grid-template-columns:1fr 1fr"><button data-c="random">おまかせ</button><button data-c="choose">自分で選ぶ</button></div>
     </div>
     <div id="soloOpts" class="hidden">
       <h2>ステージ</h2>
@@ -609,7 +616,8 @@
     <div class="selR">
     <div class="picktop"><button id="toMenu" class="back">◀ 戻る</button><span id="pickInfo"></span><button id="mysetBtn">★ マイセット</button></div>
     <p class="sub" id="pickNet"></p>
-    <h2>出す順に3枚選ぶ <small class="hint">長押しで詳細</small></h2>
+    <div class="levels hidden" id="pickSide" style="grid-template-columns:1fr 1fr;margin-bottom:6px"><button data-s="me">あなたのパーティ</button><button data-s="foe">CPUのパーティ</button></div>
+    <h2><span id="pickTitle">出す順に3枚選ぶ</span> <small class="hint">長押しで詳細</small></h2>
     <div class="picks" id="picks"></div>
     <p class="sub" id="bonusNote" style="margin:4px 0 8px"></p>
     <div class="levels" id="factions"></div>
@@ -3183,7 +3191,7 @@ function pvpJoin() {
   if (PVP.room && PVP.room.join && (PVP.code !== code || !PVP.room.connected())) PVP.room.join(code);   // 直接つなぐ方式では、ここで部屋を開く・参加する
   if (PVP.kind === 'rated' && !ACC.profile) PVP.kind = 'free';   // レート戦はログインが必要
   PVP.code = code; PVP.phase = 'lobby'; PVP.n = 0; PVP.foeTeamSeal = null; PVP.foeSeal = {};
-  pvpPublish({ g: code, v: RULES_VER, ts: null, t: null, n: null, c: null, r: null, b: null, last: null, nm: ACC.profile ? String(ACC.profile.name).slice(0, 12) : null, k: PVP.kind, acc: ACC.profile ? { id: ACC.profile.id } : null });
+  pvpPublish({ g: code, v: RULES_VER, ts: null, t: null, n: null, c: null, r: null, b: null, last: null, nm: ACC.profile ? String(ACC.profile.name).slice(0, 12) : null, k: PVP.kind, fm: FORMAT, acc: ACC.profile ? { id: ACC.profile.id } : null });
   pvpStep();
   renderSelect();
 }
@@ -3238,7 +3246,7 @@ async function pvpStep() {
     const t = fp.t;
     if (!t || !Array.isArray(t.ids)) { pvpStatus('相手の準備を待っています…'); return; }
     const chars = t.ids.map((id) => charById(id));
-    if (seal(t.s + '|' + t.ids.join(',')) !== PVP.foeTeamSeal || chars.length !== TEAM_SIZE || chars.some((c) => !c) || new Set(t.ids).size !== TEAM_SIZE) {
+    if (seal(t.s + '|' + t.ids.join(',')) !== PVP.foeTeamSeal || chars.length !== TEAM_SIZE || chars.some((c) => !c) || new Set(t.ids).size !== TEAM_SIZE || teamNg(t.ids, FORMAT)) {
       pvpStatus('相手のキャラ情報が正しくありません。部屋を出て、入り直してください。'); return;
     }
     PVP.phase = 'play'; PVP.n = 0; PVP.hand = null; PVP.foeSeal = {};
@@ -4132,6 +4140,42 @@ function renderLevels() {
 let selFaction = '錨';
 const FACTIONS = ['錨', '零', '矢', '隔絶'];   // 隔絶:解放キャラ(トキバミ・ゼノ)。カジ【始】は錨に並ぶ
 const ALL_CHARS = [...CHARACTERS, ...SPECIAL_CHARS];
+// キャラの★(レアリティ)。今いるキャラは、錨・零・矢の14人が★3、隔絶とカジ【始】が★4。
+// ガチャキャラ(gacha: true)は ★1・★2 がハズレ枠、★3 がベーシック並み、★4 が隔絶並み、★5 は1パーティに1枚まで
+CHARACTERS.forEach((c) => { c.rarity = c.rarity || 3; });
+SPECIAL_CHARS.forEach((c) => { c.rarity = c.rarity || 4; });
+const rarityOf = (ch) => ch.rarity || 3;
+const rarHtml = (ch) => `<span class="rar r${rarityOf(ch)}">${'★'.repeat(rarityOf(ch))}</span>`;
+const STAR5_MAX = 1;
+// 区分け:ベーシック(ガチャキャラ以外)/ アドバンス(すべて)。ソロはベーシックだけ
+const FORMATS = { basic: 'ベーシック', advance: 'アドバンス' };
+let FORMAT = 'basic';
+try { const f = localStorage.getItem('kokusen.format'); if (FORMATS[f]) FORMAT = f; } catch (e) { /* 読めなければベーシック */ }
+const fmtNow = () => (MODE === 'solo' ? 'basic' : FORMAT);
+const inFormat = (ch, fmt = fmtNow()) => fmt === 'advance' || !ch.gacha;
+// そのパーティがルールに合っているか(区分け・★5は1枚まで・同じ人物は1枚)。合っていなければ理由
+function teamNg(ids, fmt = fmtNow()) {
+  const cs = ids.map(charById);
+  if (cs.some((c) => !c)) return 'キャラ情報が正しくありません';
+  if (cs.some((c) => !inFormat(c, fmt))) return `${FORMATS[fmt]}では使えないキャラが入っています`;
+  if (cs.filter((c) => rarityOf(c) >= 5).length > STAR5_MAX) return '★5は1パーティに1枚までです';
+  if (cs.some((c) => cs.some((o) => o !== c && (o.sameAs === c.id || c.sameAs === o.id)))) return '同じ人物が入っています';
+  return '';
+}
+// CPUのパーティ:おまかせ / 自分で選ぶ。キャラ選択では、どちらのパーティを選んでいるか(pickSide)を切り替える
+let CPU_PICK = 'random';
+try { const c = localStorage.getItem('kokusen.cpuPick'); if (c === 'random' || c === 'choose') CPU_PICK = c; } catch (e) { /* 読めなければおまかせ */ }
+const teamPicks = { me: [], foe: [] };
+let pickSide = 'me';
+const choosingFoe = () => MODE === 'cpu' && CPU_PICK === 'choose';
+function setPickSide(side) {
+  teamPicks[pickSide] = picked;
+  pickSide = side;
+  picked = teamPicks[side];
+  renderSelect();
+}
+const myPicks = () => (pickSide === 'me' ? picked : teamPicks.me);
+const foePicks = () => (pickSide === 'foe' ? picked : teamPicks.foe);
 const charById = (id) => ALL_CHARS.find((c) => c.id === id);
 const charGroup = (ch) => ch.group || (SPECIAL_CHARS.includes(ch) ? '隔絶' : ch.faction);
 // 解放キャラを使えるか(称号を解放したアカウントでログインしているとき)
@@ -4152,10 +4196,12 @@ function bindPress(el, onTap, onLong) {
 function openCharDetail(ch) {
   const order = picked.indexOf(ch.id), unlocked = charUnlocked(ch);
   const hide = ch.secret && !xenoKnown();
-  const clash = order < 0 && picked.map(charById).some((o) => o && (o.sameAs === ch.id || ch.sameAs === o.id));
+  const clash = order < 0 && (picked.map(charById).some((o) => o && (o.sameAs === ch.id || ch.sameAs === o.id))
+    || (rarityOf(ch) >= 5 && picked.map(charById).filter((o) => o && rarityOf(o) >= 5).length >= STAR5_MAX));
   const canToggle = unlocked && !(PVP.on && PVP.phase === 'ready') && (order >= 0 || (!clash && picked.length < TEAM_SIZE));
   openSheet(dispName(ch), `<div class="cdetail"><div class="crow">${iconHtml(ch, 'lg')}<div>` +
     `<div class="name">${dispName(ch)}${hide ? '' : `<span class="role">${ch.role || ''}</span>`}</div>` +
+    (hide ? '' : `<div>${rarHtml(ch)}${ch.gacha ? ' <small class="sub">ガチャキャラ(アドバンスのみ)</small>' : ''}</div>`) +
     (unlocked ? '' : `<div class="sub" style="color:var(--gold)">🔒 ${unlockText(ch)}</div>`) +
     (clash ? '<div class="sub">同じ人物なので、同じパーティには入れられない</div>' : '') +
     (hide ? '' : `<div class="stats"><span class="s-hp">HP ${ch.hp}</span>　${statLine(ch)}</div><div class="trait">${traitLine(ch)}</div>` + actionList(ch, 'div', 'sub')) +
@@ -4258,12 +4304,13 @@ function setStep(st) {
 // 選んだ相手の説明(キャラ選択の上に出す)
 function pickInfoText() {
   if (MODE === 'solo') { const st = STAGES.find((x) => x.id === SOLO.stage); return st ? `ソロ:${st.rush ? st.name : `${st.faction}${'★'.repeat(st.stars)}「${st.name}」`}` : 'ソロ'; }
-  if (MODE === 'pvp') { const f = pvpFoe(); const nm = f && f.presence && typeof f.presence.nm === 'string' ? f.presence.nm.slice(0, 12) : ''; const kd = PVP.kind === 'rated' ? 'レート戦' : 'フリー戦'; return f ? `${kd}:${nm || '相手(ゲスト)'}` : `${kd}:合言葉「${PVP.code}」`; }
-  return `CPU(${AI_LEVELS[FX.level].name})`;
+  if (MODE === 'pvp') { const f = pvpFoe(); const nm = f && f.presence && typeof f.presence.nm === 'string' ? f.presence.nm.slice(0, 12) : ''; const kd = `${PVP.kind === 'rated' ? 'レート戦' : 'フリー戦'}・${FORMATS[FORMAT]}`; return f ? `${kd}:${nm || '相手(ゲスト)'}` : `${kd}:合言葉「${PVP.code}」`; }
+  return `CPU(${AI_LEVELS[FX.level].name})・${FORMATS[fmtNow()]}${choosingFoe() ? '・相手も選ぶ' : ''}`;
 }
 // レート戦・フリー戦がそろっているか。そろっていなければ理由を返す
 function pvpKindNg(fp) {
   if (!fp || !fp.k) return '';
+  if (fp.fm && fp.fm !== FORMAT) return `相手は「${FORMATS[fp.fm] || fp.fm}」を選んでいます。部屋を出て、ベーシック/アドバンスをそろえて入り直してください。`;
   if (fp.k !== PVP.kind) return fp.k === 'rated' ? '相手は「レート戦」を選んでいます。部屋を出て、同じ種類にそろえて入り直してください。' : '相手は「フリー戦」を選んでいます。部屋を出て、同じ種類にそろえて入り直してください。';
   if (PVP.kind === 'rated' && !fp.acc) return '相手がログインしていません。レート戦は、二人ともログインが必要です。';
   if (PVP.kind === 'rated' && ACC.profile && fp.acc && fp.acc.id === ACC.profile.id) return '同じアカウントどうしでは、レート戦はできません。';
@@ -4275,7 +4322,17 @@ function canPick() {
   if (MODE === 'pvp') { const f = pvpFoe(); return PVP.phase !== 'idle' && !PVP.spec && !!f && !pvpKindNg(f.presence); }
   return true;
 }
+function renderFormats() {
+  const solo = MODE === 'solo';
+  [...$('formats').children].forEach((b) => {
+    b.classList.toggle('picked', b.dataset.f === fmtNow());
+    b.disabled = solo || (PVP.on && PVP.phase !== 'idle');
+  });
+  $('formatNote').textContent = solo ? 'ソロはベーシックのみ。' : fmtNow() === 'advance' ? 'アドバンス:すべてのキャラが使える(ガチャキャラも)。★5は1パーティに1枚まで。' : 'ベーシック:ガチャキャラ以外のキャラで戦う。';
+  [...$('cpuPicks').children].forEach((b) => b.classList.toggle('picked', b.dataset.c === CPU_PICK));
+}
 function renderSelHead() {
+  renderFormats();
   $('pickInfo').textContent = pickInfoText();
   $('toMenu').textContent = MODE === 'pvp' ? '◀ 部屋を出る' : '◀ 戻る';
   $('toPick').disabled = !canPick();
@@ -4283,7 +4340,17 @@ function renderSelHead() {
 }
 function renderSelect() {
   if (!$('select').dataset.step) $('select').dataset.step = selStep;
+  if (!choosingFoe() && pickSide !== 'me') { teamPicks.foe = picked; pickSide = 'me'; picked = teamPicks.me; }
+  // 区分けに合わないキャラ(アドバンスからベーシックに変えたときなど)は外す
+  picked = picked.filter((id) => charById(id) && inFormat(charById(id)));
   renderSelHead();
+  $('pickSide').classList.toggle('hidden', !choosingFoe());
+  [...$('pickSide').children].forEach((b) => {
+    const n = (b.dataset.s === 'me' ? myPicks() : foePicks()).length;
+    b.textContent = `${b.dataset.s === 'me' ? 'あなた' : 'CPU'}のパーティ ${n}/${TEAM_SIZE}`;
+    b.classList.toggle('picked', b.dataset.s === pickSide);
+  });
+  $('pickTitle').textContent = choosingFoe() ? `${pickSide === 'me' ? 'あなた' : 'CPU'}が出す順に3枚選ぶ` : '出す順に3枚選ぶ';
   const locked = PVP.on && PVP.phase === 'ready';
   // 選んだ3枚(押すと外す)
   $('picks').innerHTML = '';
@@ -4326,19 +4393,20 @@ function renderSelect() {
     $('charList').appendChild(note);
   }
   $('charList').className = 'cgrid';
-  ALL_CHARS.filter((ch) => charGroup(ch) === selFaction).forEach((ch) => {
+  ALL_CHARS.filter((ch) => charGroup(ch) === selFaction && inFormat(ch)).forEach((ch) => {
     const order = picked.indexOf(ch.id);
     const b = document.createElement('button');
     b.dataset.id = ch.id;
     b.className = 'ctile';
     if (order >= 0) b.classList.add('picked');
     const unlocked = charUnlocked(ch);
-    const clash = order < 0 && picked.map(charById).some((o) => o && (o.sameAs === ch.id || ch.sameAs === o.id));
+    const clash = order < 0 && (picked.map(charById).some((o) => o && (o.sameAs === ch.id || ch.sameAs === o.id))
+      || (rarityOf(ch) >= 5 && picked.map(charById).filter((o) => o && rarityOf(o) >= 5).length >= STAR5_MAX));
     const full = order < 0 && picked.length >= TEAM_SIZE;
     const off = !unlocked || clash || full || locked;
     b.classList.toggle('off', off && order < 0);
     b.classList.toggle('locked', !unlocked);
-    b.innerHTML = `${order >= 0 ? `<i class="ord">${order + 1}</i>` : ''}${unlocked ? '' : '<span class="lk">🔒</span>'}${iconHtml(ch, 'lg')}<span class="nm">${dispName(ch)}</span>`;
+    b.innerHTML = `${order >= 0 ? `<i class="ord">${order + 1}</i>` : ''}${unlocked ? '' : '<span class="lk">🔒</span>'}${iconHtml(ch, 'lg')}${ch.secret && !xenoKnown() && !unlocked ? '' : rarHtml(ch)}<span class="nm">${dispName(ch)}</span>`;
     b.setAttribute('aria-label', `${dispName(ch)}${order >= 0 ? `(${order + 1}番手)` : ''}。長押しで詳細`);
     const tap = () => {
       if (!unlocked) { openCharDetail(ch); return; }          // 鍵つきは、押すと解放条件を見せる
@@ -4352,8 +4420,13 @@ function renderSelect() {
     bindPress(b, tap, () => openCharDetail(ch));
     $('charList').appendChild(b);
   });
-  const full = picked.length === TEAM_SIZE;
-  if (!PVP.on) {
+  const full = choosingFoe() ? myPicks().length === TEAM_SIZE && foePicks().length === TEAM_SIZE : picked.length === TEAM_SIZE;
+  const ng = full ? teamNg(myPicks()) || (choosingFoe() ? teamNg(foePicks()) : '') : '';
+  if (!PVP.on && (!full || ng)) {
+    const chainSt = MODE === 'solo' && STAGES.find((x) => x.id === SOLO.stage && x.chainFrom);
+    $('start').disabled = true;
+    $('start').textContent = chainSt ? 'このステージは直接挑めません' : ng || (choosingFoe() && myPicks().length === TEAM_SIZE ? `CPUのパーティをあと${TEAM_SIZE - foePicks().length}枚選ぶ` : choosingFoe() && pickSide === 'foe' && foePicks().length === TEAM_SIZE ? `あなたのパーティをあと${TEAM_SIZE - myPicks().length}枚選ぶ` : `あと${TEAM_SIZE - picked.length}枚選ぶ`);
+  } else if (!PVP.on) {
     const chainSt = MODE === 'solo' && STAGES.find((x) => x.id === SOLO.stage && x.chainFrom);
     $('start').disabled = !full || !!chainSt;
     $('start').textContent = chainSt ? `${'★'.repeat(STAGES.find((x) => x.id === chainSt.chainFrom).stars)}「${STAGES.find((x) => x.id === chainSt.chainFrom).name}」のクリア直後のみ挑めます`
@@ -4367,13 +4440,17 @@ function renderSelect() {
 
 function start() {
   if (PVP.on) return pvpReady();
-  const mine = picked.map((id) => charById(id));
+  teamPicks[pickSide] = picked;
+  const mine = teamPicks.me.map((id) => charById(id));
   if (MODE === 'solo') {
     const st = STAGES.find((x) => x.id === SOLO.stage);
     if (st.chainFrom) return;   // 直後にしか挑めないステージは、ここからは始めない
     return startSolo(mine, st);
   }
-  return startMatch(mine, shuffled(CHARACTERS).slice(0, TEAM_SIZE), 'CPU');
+  // CPUのパーティ:自分で選んだならそれ、おまかせなら区分けに合うキャラからランダム(ガチャキャラはアドバンスのときだけ)
+  const pool = CHARACTERS.concat(fmtNow() === 'advance' ? ALL_CHARS.filter((c) => c.gacha) : []);
+  const foes = choosingFoe() && teamPicks.foe.length === TEAM_SIZE ? teamPicks.foe.map(charById) : shuffled(pool).slice(0, TEAM_SIZE);
+  return startMatch(mine, foes, 'CPU');
 }
 // opt:level はCPUの深さ、read はボスが読みに頼る割合、stage はソロのステージ、noDecay は刻の抜け落ちを止める
 const startSolo = (mine, st) => startMatch(mine, stageFoes(st), '敵', { level: st.level, read: st.read, stage: st, noDecay: true });
@@ -4559,6 +4636,9 @@ function init() {
   $('toPick').onclick = () => { if (canPick()) { Sound.click(); setStep('pick'); } };
   $('toMenu').onclick = () => { if (MODE === 'pvp' && PVP.phase !== 'idle') { pvpLeave(); renderMode(); } Sound.click(); setStep('menu'); };
   $('mysetBtn').onclick = () => openMyset();
+  [...$('formats').children].forEach((b) => { b.onclick = () => { if (b.disabled) return; FORMAT = b.dataset.f; try { localStorage.setItem('kokusen.format', FORMAT); } catch (e) { /* 保存できなくても動く */ } Sound.click(); renderSelect(); }; });
+  [...$('cpuPicks').children].forEach((b) => { b.onclick = () => { CPU_PICK = b.dataset.c; try { localStorage.setItem('kokusen.cpuPick', CPU_PICK); } catch (e) { /* 保存できなくても動く */ } Sound.click(); renderSelect(); }; });
+  [...$('pickSide').children].forEach((b) => { b.onclick = () => { if (b.dataset.s !== pickSide) { Sound.click(); setPickSide(b.dataset.s); } }; });
   $('logBtn').onclick = () => {
     const hid = $('logPanel').classList.toggle('hidden');
     $('logBtn').textContent = hid ? 'ログを見る' : 'ログを閉じる';
