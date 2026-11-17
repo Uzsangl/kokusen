@@ -319,7 +319,7 @@
   @keyframes shakeBig { 0%,100% { transform: none; } 10% { transform: translate(-12px, 5px) rotate(-.6deg); } 25% { transform: translate(11px, -6px) rotate(.6deg); } 40% { transform: translate(-9px, 4px); } 55% { transform: translate(8px, -3px); } 70% { transform: translate(-5px, 2px); } 85% { transform: translate(3px, -1px); } }
 
   /* 画面全体にかぶせる演出の層 */
-  #fx { position: fixed; inset: 0; pointer-events: none; z-index: 10; overflow: hidden; }
+  #fx { position: fixed; inset: 0; pointer-events: none; z-index: 70;   /* 開いている画面(メールボックスなど)より手前に演出を出す */ overflow: hidden; }
   #particles { position: absolute; inset: 0; width: 100%; height: 100%; }
   #flash { position: absolute; inset: 0; opacity: 0; }
   /* BREAK:画面のガラスにひびが入って割れる */
@@ -3242,7 +3242,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.13';
+const APP_VER = '0.14';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
