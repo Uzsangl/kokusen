@@ -411,6 +411,17 @@
     -webkit-mask-image: linear-gradient(180deg, #000 45%, transparent 92%); mask-image: linear-gradient(180deg, #000 45%, transparent 92%); }
   .tbg img:nth-child(2) { opacity: .62; transform: translateY(-10px); }
   .ttop { display: flex; justify-content: flex-end; gap: 8px; position: relative; z-index: 2; }
+  .ttop .ib { position: relative; }
+  .badge { position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: #ff2a3d; color: #fff; font-size: .7rem; font-style: normal; font-weight: 700; line-height: 18px; text-align: center; }
+  .badge.hidden { display: none; }
+  .ml { border: 1px solid var(--line); border-radius: 12px; padding: 10px; margin-bottom: 8px; }
+  .ml.new { border-color: #ff8a95; }
+  .ml h4 { margin: 0 0 2px; font-size: .92rem; } .ml h4 i { color: #ff8a95; font-style: normal; font-size: .7rem; margin-right: 4px; }
+  .ml .dt { font-size: .7rem; color: var(--sub); }
+  .ml p { margin: 6px 0; font-size: .82rem; white-space: pre-wrap; }
+  .ml .gift { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: #0b0d1c; border-radius: 10px; padding: 6px 10px; font-size: .82rem; }
+  .ml .gift button { padding: 6px 12px; color: var(--gold); border-color: var(--gold); font-weight: 700; }
+  .ml .gift .got { color: var(--sub); }
   .ib { width: 42px; height: 42px; border-radius: 50%; padding: 0; font-size: 18px; display: grid; place-items: center; }
   .tlogo { position: relative; z-index: 2; text-align: center; margin-top: min(84px, 11vh); }
   .tlogo img { width: min(100%, 350px, 44vh); height: auto; filter: drop-shadow(0 8px 24px #000c); animation: logoIn .9s ease-out both; }
@@ -604,7 +615,7 @@
   <!-- タイトル画面 -->
   <section id="title">
     <div class="tbg" aria-hidden="true"><img src="icons/rei.webp" alt=""><img src="icons/kaji.webp" alt=""><img src="icons/tsuru.webp" alt=""></div>
-    <div class="ttop"><button class="ib" id="tRank" aria-label="ランキング">🏆</button><button class="ib" id="tSet" aria-label="設定">⚙</button></div>
+    <div class="ttop"><button class="ib" id="tMail" aria-label="メールボックス">✉<i class="badge hidden" id="tMailN"></i></button><button class="ib" id="tRank" aria-label="ランキング">🏆</button><button class="ib" id="tSet" aria-label="設定">⚙</button></div>
     <div class="tlogo"><img src="img/logo.webp" alt="刻戦 KOKUSEN" width="720" height="636"></div>
     <div class="tplay">
       <button id="tPlay" class="btn-play">プレイ</button>
@@ -3231,7 +3242,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.10';
+const APP_VER = '0.11';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
@@ -4066,6 +4077,7 @@ function showTitle(on) {
 }
 // アカウント欄:お気に入りキャラ・称号・名前・レート・勝敗・クリア数・称号の数
 function renderTitleAcc() {
+  renderMailBadge();
   const el = $('tAcc');
   if (!el) return;
   const p = ACC.profile;
@@ -4368,6 +4380,7 @@ const MASTER_HASHES = ['6bc4a36350f6ff8d567a477610dca5984216523e41ce0a92245a24c2
 let IS_MASTER = false;
 async function accCheckMaster() {
   IS_MASTER = false;
+  try { renderMailBadge(); } catch (e) { /* 画面がまだなくてもよい */ }
   const mail = ACC.session && ACC.session.user && ACC.session.user.email;
   if (!mail || !MASTER_HASHES.length || !(window.crypto && crypto.subtle)) return;
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(String(mail).trim().toLowerCase()));
@@ -4530,6 +4543,66 @@ function openGacha(results) {
     renderTitleAcc(); renderAcct();
     openGacha(results);
   };
+}
+
+// ----- メールボックス:運営からのお知らせとプレゼント(ログインが必要)-----
+// メールはここに書いて公開する(全員に同じものが届く)。id は一度使ったら変えない。
+// gift:{ shards: 空間のカケラの数, chars: [ガチャキャラのid] }。until:受け取り期限(この日の終わりまで。なしなら期限なし)
+// 読んだメールは progress の stats.mailRead、受け取ったプレゼントは stats.mailGot に保存する
+const MAILS = [
+  { id: 'm001', date: '2026-11-17', title: 'テストプレゼント', body: 'メールボックスのテストです。\n空間のカケラ400個をお届けします。', gift: { shards: 400 } },
+];
+const mailLive = () => MAILS.filter((m) => !m.until || new Date() <= new Date(m.until + 'T23:59:59'));
+const mailStat = (k) => (ACC.stats && Array.isArray(ACC.stats[k]) ? ACC.stats[k] : []);
+function mailUnread() {
+  if (!shardOnAcc()) return 0;
+  const read = mailStat('mailRead'), got = mailStat('mailGot');
+  return mailLive().filter((m) => !read.includes(m.id) || (m.gift && !got.includes(m.id))).length;
+}
+function renderMailBadge() {
+  const n = mailUnread(), el = $('tMailN');
+  if (!el) return;
+  el.textContent = n; el.classList.toggle('hidden', !n);
+}
+const giftText = (g) => [g.shards ? `💠${SHARD_NAME} ×${g.shards}` : '', ...(g.chars || []).map((id) => { const c = charById(id); return c ? `${c.name}(${'★'.repeat(rarityOf(c))})` : ''; })].filter(Boolean).join('・');
+async function mailSave() {
+  try { await sbFetch(`/rest/v1/progress?id=eq.${accUid()}`, { method: 'PATCH', prefer: 'return=minimal', body: { stats: ACC.stats, updated_at: new Date().toISOString() } }); } catch (e) { /* 次に保存するときにまとめて送られる */ }
+}
+// プレゼントを受け取る(1つのメールにつき1回だけ)
+async function mailClaim(ids) {
+  const got = mailStat('mailGot').slice(), todo = mailLive().filter((m) => ids.includes(m.id) && m.gift && !got.includes(m.id));
+  if (!todo.length) return [];
+  const owned = { ...(ACC.stats.owned || {}) };
+  let shards = 0;
+  todo.forEach((m) => { got.push(m.id); shards += m.gift.shards || 0; (m.gift.chars || []).forEach((id) => { owned[id] = (Number(owned[id]) || 0) + 1; }); });
+  ACC.stats.mailGot = got;
+  ACC.stats.owned = owned;
+  ACC.stats.shards = shardCount() + shards;
+  await mailSave();
+  return todo;
+}
+async function openMail() {
+  if (!shardOnAcc()) { openSheet('メールボックス', '<p class="sub">メールボックスは、ログインすると使えます。運営からのお知らせやプレゼントが届きます。</p>'); return; }
+  const read = mailStat('mailRead'), got = mailStat('mailGot'), list = mailLive().slice().reverse();
+  const canAll = list.some((m) => m.gift && !got.includes(m.id));
+  openSheet('メールボックス', (list.length ? '' : '<p class="sub">メールはありません。</p>') +
+    (canAll ? '<div class="row" style="margin:0 0 8px"><button id="mlAll" style="border-color:var(--gold);color:var(--gold);font-weight:700">すべて受け取る</button></div>' : '') +
+    list.map((m) => `<div class="ml${read.includes(m.id) ? '' : ' new'}"><h4>${read.includes(m.id) ? '' : '<i>NEW</i>'}${escHtml(m.title)}</h4>` +
+      `<div class="dt">${escHtml(m.date)}${m.until ? `　受け取り期限 ${escHtml(m.until)}まで` : ''}</div><p>${escHtml(m.body)}</p>` +
+      (m.gift ? `<div class="gift"><span>🎁 ${escHtml(giftText(m.gift))}</span>${got.includes(m.id) ? '<span class="got">受け取り済み</span>' : `<button data-m="${m.id}">受け取る</button>`}</div>` : '') + '</div>').join(''));
+  const take = async (ids) => {
+    const r = await mailClaim(ids);
+    if (!r.length) return;
+    Sound.fanfare();
+    await cutin('受け取りました', r.map((m) => giftText(m.gift)).join('・'), 'gold', 1300);
+    renderTitleAcc(); renderAcct(); openMail();
+  };
+  $('sheetBody').querySelectorAll('.gift button[data-m]').forEach((b) => { b.onclick = () => take([b.dataset.m]); });
+  if (canAll) $('mlAll').onclick = () => take(list.map((m) => m.id));
+  // 開いたら既読にする
+  const unread = list.filter((m) => !read.includes(m.id)).map((m) => m.id);
+  if (unread.length) { ACC.stats.mailRead = [...read, ...unread]; mailSave(); }
+  renderMailBadge();
 }
 
 // ----- マイセット:好きなパーティ(並び順つき)を5つまで保存する -----
@@ -4869,6 +4942,7 @@ function init() {
   $('tSet').onclick = openSettings;
   $('tRule').onclick = () => openRulebook();
   $('tRank').onclick = openRanking;
+  $('tMail').onclick = () => { Sound.click(); openMail(); };
   $('tTitles').onclick = openTitles;
   $('tGacha').onclick = () => openGacha();
   $('sheetClose').onclick = () => $('sheet').classList.add('hidden');
