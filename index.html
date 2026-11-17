@@ -134,7 +134,7 @@
   /* キャラアイコン。枠の色は陣営(錨=金、零=蒼紫、矢=朱、無所属=灰) */
   .cico { display: inline-flex; align-items: center; justify-content: center; flex: none; object-fit: cover;
     border-radius: 8px; border: 2px solid var(--line); background: #12152b; color: var(--sub); font-weight: 900; vertical-align: middle; }
-  .cico.f-anchor { border-color: #d9a53a; } .cico.f-zero { border-color: #8b6cff; } .cico.f-arrow { border-color: #e2553f; } .cico.f-none { border-color: #8a8a96; } .cico.f-black { border-color: #000; }
+  .cico.f-anchor { border-color: #d9a53a; } .cico.f-zero { border-color: #8b6cff; } .cico.f-arrow { border-color: #e2553f; } .cico.f-none { border-color: #8a8a96; }
   .cico.secret { filter: grayscale(1) brightness(.22) blur(1.5px); }
   .cico.lg { width: 60px; height: 60px; font-size: 1.5rem; }
   .cico.md { width: 40px; height: 40px; font-size: 1.1rem; border-radius: 7px; }
@@ -2056,7 +2056,7 @@ const ICON_ALIAS = { b_tomari: 'tomari', b_rei: 'rei', b_tsuru: 'tsuru', p_tokib
 const ICON_FACTION = { '錨': 'f-anchor', '零': 'f-zero', '矢': 'f-arrow' };
 function iconHtml(ch, size) {
   const id = ICON_ALIAS[ch.id] || ch.id;
-  const cls = `cico ${size} ${ch.id === 'g_z5' ? 'f-black' : ICON_FACTION[ch.faction] || 'f-none'}`;   // ゼノ【仮面】だけ黒い枠
+  const cls = `cico ${size} ${ch.id === 'g_z5' ? 'f-none' : ICON_FACTION[ch.faction] || 'f-none'}`;   // ゼノ【仮面】はゼノ・トキバミと同じ灰色の枠
   if (!ICON_IDS.has(id)) return `<span class="${cls} none" aria-hidden="true">${ch.name[0]}</span>`;
   const secret = ch.secret && !xenoKnown();
   return `<img class="${cls}${secret ? ' secret' : ''}" src="icons/${id}.webp" alt="" aria-hidden="true" width="192" height="192">`;
