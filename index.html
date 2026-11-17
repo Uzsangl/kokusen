@@ -3242,7 +3242,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.14';
+const APP_VER = '0.15';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
@@ -3454,7 +3454,7 @@ async function pvpStep() {
       PVP.foeAcc = v;
       if (v && S && S.teams[1]) { PVP.foeName = v.name; S.teams[1].label = v.name; render(); }
       if (!rated) { logLater(`フリー戦(レートは変わりません)${v ? `。対戦相手:${v.name}` : ''}`); return null; }   // フリー戦はレートを動かさない
-      if (v) await accRateStart(v.r);
+      if (v) await accRateStart(v, [PVP.teamSalt, String(t.s)].sort().join('|').slice(0, 100));
       logLater(v ? `レート戦。対戦相手:${titleOf(v.title) ? `〔${titleOf(v.title).name}〕` : ''}${v.name}(レート${v.r})` : '相手のアカウントを確かめられなかったため、レーティングなしの対戦です');
       return v;
     });
@@ -3706,7 +3706,8 @@ function soloClear(id) {
 // ===== アカウント(Supabase) =====
 // ログインすると、ソロのクリア記録とオンライン対人のレーティングをサーバーに保存する。
 // 公開用のキー(publishable key)は、ページに書いてよい種類のもの。誰が何を書き換えられるかは、データベース側の決まり(RLS)で守る。
-// ※対戦の計算は各プレイヤーのブラウザで行うため、レーティングは遊びとしての数字(改ざんは防げない)
+// レーティング・勝ち数・負け数は、サーバーの関数(rate_start / rate_finish。supabase/schema.sql の6回目)だけが書き換える。
+// 対戦の計算そのものは各プレイヤーのブラウザで行うので、二人の申告が食い違ったら二人とも負けにして、うそで得をしないようにしている
 const SB = { url: 'https://qebyhyftdqkthjplopcl.supabase.co', key: 'sb_publishable_J4YZx8BpLY8SvOSLcjhPUg_tFKiR_8p' };
 const RATING_START = 1500, RATING_K = 32;
 // アカウントを使ってよいのは、自分たち専用のサイトだけ。
@@ -3868,25 +3869,45 @@ function rateAfter(base, foeRating, score) {
 }
 // 切断対策:レーティング戦が始まった時点で、先に「負け」として保存しておく。
 // 決着すれば正しい結果に直すので、途中でページを閉じたり接続を切ったりすると負けのまま残る
-async function accRateStart(foeRating) {
+// SQL(6回目)を実行する前のサーバーには関数がない。そのときだけ、以前の方式(自分のブラウザで計算して保存)を使う
+const isMissingFn = (e) => e && (e.status === 404 || e.code === 'PGRST202');
+const ratePatch = (next) => sbFetch(`/rest/v1/profiles?id=eq.${accUid()}`, { method: 'PATCH', prefer: 'return=minimal', body: { ...next, updated_at: new Date().toISOString() } });
+// foe:サーバーで確かめた相手 { id, r }。key:この対戦の合言葉(両方の端末で同じ値になる)
+async function accRateStart(foe, key) {
   const p = ACC.profile;
   if (!p) return;
   const base = { rating: p.rating, wins: p.wins, losses: p.losses };
-  ACC.pending = { base, foeRating, streak: (ACC.stats || {}).curStreak || 0 };
+  const pd = ACC.pending = { base, foeRating: foe.r, foeId: foe.id, key, mode: null, streak: (ACC.stats || {}).curStreak || 0 };
   if (ACC.stats && ACC.progMode === 'table' && ACC.stats.curStreak) {
     ACC.stats.curStreak = 0;
     sbFetch(`/rest/v1/progress?id=eq.${accUid()}`, { method: 'PATCH', prefer: 'return=minimal', body: { stats: ACC.stats } }).catch(() => null);
   }
-  ACC.pendingP = sbFetch(`/rest/v1/profiles?id=eq.${accUid()}`, { method: 'PATCH', prefer: 'return=minimal', body: { ...rateAfter(base, foeRating, 0), updated_at: new Date().toISOString() } }).catch(() => null);
+  ACC.pendingP = (async () => {
+    try {
+      await sbFetch('/rest/v1/rpc/rate_start', { method: 'POST', body: { p_key: key, p_foe: foe.id } });
+      pd.mode = 'server';
+    } catch (e) {
+      if (!isMissingFn(e)) return;   // サーバーに断られた・つながらなかった:この対戦ではレートを動かさない
+      try { await ratePatch(rateAfter(base, foe.r, 0)); pd.mode = 'legacy'; } catch (e2) { /* 保存できなければレートを動かさない */ }
+    }
+  })();
   await ACC.pendingP;
 }
 async function accRateFinish(score) {
   const pd = ACC.pending, p = ACC.profile;
   if (!pd || !p) return null;
   await ACC.pendingP;
-  const next = rateAfter(pd.base, pd.foeRating, score);
+  if (!pd.mode) return null;
   try {
-    await sbFetch(`/rest/v1/profiles?id=eq.${accUid()}`, { method: 'PATCH', prefer: 'return=minimal', body: { ...next, updated_at: new Date().toISOString() } });
+    let next;
+    if (pd.mode === 'server') {
+      const r = await sbFetch('/rest/v1/rpc/rate_finish', { method: 'POST', body: { p_key: pd.key, p_foe: pd.foeId, p_score: score } });
+      if (!r || typeof r.rating !== 'number') return null;
+      next = { rating: r.rating, wins: r.wins, losses: r.losses };
+    } else {
+      next = rateAfter(pd.base, pd.foeRating, score);
+      await ratePatch(next);
+    }
     ACC.pending = null;
     Object.assign(p, next);
     if (ACC.stats && ACC.progMode === 'table') {
@@ -3922,6 +3943,15 @@ async function accSignUp(email, password, name) {
   accSetSession(d);
   await accLoadProfile(name);
   return 'ok';
+}
+// アカウントの削除:サーバーのアカウントと記録をすべて消し、この端末に残したそのアカウントの控えも消す
+async function accDelete() {
+  const uid = accUid();
+  await sbFetch('/rest/v1/rpc/delete_my_account', { method: 'POST', body: {} });
+  try { localStorage.removeItem(userKey(uid)); localStorage.removeItem(`kokusen.mysets.${uid}`); } catch (e) { /* 消せなくても動く */ }
+  ACC.session = null; ACC.profile = null; ACC.stats = null; ACC.pending = null; accStore(); renderAcct();
+  SOLO.cleared = readCleared(GUEST_KEY);
+  renderStages();
 }
 async function accSignOut() {
   try { await sbFetch('/auth/v1/logout', { method: 'POST' }); } catch (e) { /* サーバー側が失敗しても、この端末ではログアウトする */ }
@@ -4227,6 +4257,7 @@ function renderAcct() {
       : `<span class="who">ログインすると、クリア記録とレーティングを保存できます(💠${shardCount()})</span><button id="accOpen">ログイン</button>`;
   $('accOpen').onclick = () => accOpen();
 }
+const ACC_LEGAL = '<p class="sub" style="margin-top:12px"><a href="terms.html" target="_blank" rel="noopener" style="color:var(--gold)">利用規約</a> ・ <a href="privacy.html" target="_blank" rel="noopener" style="color:var(--gold)">プライバシーポリシー</a></p>';
 function accMsg(text, err) { $('accMsg').textContent = text || ''; $('accMsg').className = 'msg' + (err ? ' err' : ''); }
 function renderAccModal() {
   const p = ACC.profile, body = $('accBody');
@@ -4244,7 +4275,18 @@ function renderAccModal() {
           (accIsNew() && !(ACC.stats && ACC.stats.inviteUsed)
             ? `<label for="invCode">招待コードを入れる(アカウントを作って1日以内・1回だけ)</label><input id="invCode" maxlength="8" autocomplete="off" style="text-transform:uppercase"><div class="row"><button id="invGo">招待コードを使う</button></div>`
             : (ACC.stats && ACC.stats.inviteUsed ? '<p class="sub">招待コードは使用済みです。</p>' : ''))
-        : '<p class="sub">招待コードを使うには、管理者がSupabaseで準備のSQL(4回目)を実行する必要があります。</p>'}`;
+        : '<p class="sub">招待コードを使うには、管理者がSupabaseで準備のSQL(4回目)を実行する必要があります。</p>'}
+      ${ACC_LEGAL}
+      <h2 style="margin-top:14px">アカウントの削除</h2>${ACC.delAsk
+        ? `<p class="sub" style="margin:0;color:#ff8a8a">本当に削除しますか? レート・戦績・称号・クリア記録・${SHARD_NAME}・手に入れたキャラがすべて消え、元に戻せません。</p><div class="row"><button id="accDelYes" style="border-color:#ff5a5a;color:#ff8a8a">削除する</button><button id="accDelNo">やめる</button></div>`
+        : '<p class="sub" style="margin:0">アカウントと、サーバーに保存した記録をすべて消します。</p><div class="row"><button id="accDelAsk">アカウントを削除する</button></div>'}`;
+    if ($('accDelAsk')) $('accDelAsk').onclick = () => { ACC.delAsk = true; accMsg(''); renderAccModal(); };
+    if ($('accDelNo')) $('accDelNo').onclick = () => { ACC.delAsk = false; accMsg(''); renderAccModal(); };
+    if ($('accDelYes')) $('accDelYes').onclick = () => accDo(async () => {
+      try { await accDelete(); }
+      catch (e) { if (isMissingFn(e)) throw new Error('アカウントの削除は準備中です(管理者がSupabaseでSQLの6回目を実行する必要があります)。'); throw e; }
+      ACC.delAsk = false; await accLoadRanking(); renderAccModal(); return 'アカウントを削除しました。';
+    });
     body.querySelectorAll('.favs button').forEach((b) => {
       b.onclick = () => accDo(async () => {
         const id = b.dataset.fav;
@@ -4269,7 +4311,8 @@ function renderAccModal() {
     <label for="accEmail">メールアドレス</label><input id="accEmail" type="email" autocomplete="email" inputmode="email">
     <label for="accPass">パスワード(6文字以上)</label><input id="accPass" type="password" autocomplete="${signup ? 'new-password' : 'current-password'}">
     ${signup ? '<label for="accName">名前(1〜12文字。ランキングに出ます)</label><input id="accName" maxlength="12">' : ''}
-    <div class="row"><button id="accGo">${signup ? '登録する' : 'ログインする'}</button></div>`;
+    <div class="row"><button id="accGo">${signup ? '登録する' : 'ログインする'}</button></div>
+    ${signup ? '<p class="sub" style="margin-top:12px">登録すると、下の利用規約とプライバシーポリシーに同意したことになります。</p>' : ''}${ACC_LEGAL}`;
   $('accTabIn').onclick = () => { ACC.tab = 'login'; accMsg(''); renderAccModal(); };
   $('accTabUp').onclick = () => { ACC.tab = 'signup'; accMsg(''); renderAccModal(); };
   $('accGo').onclick = () => accDo(async () => {
@@ -4293,6 +4336,7 @@ async function accDo(fn) {
 }
 async function accOpen() {
   $('accModal').classList.remove('hidden');
+  ACC.delAsk = false;
   accMsg('');
   renderAccModal();
 
