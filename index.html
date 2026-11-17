@@ -2857,7 +2857,7 @@ function pickHeat(side, o, gotBreak) {
   return 0;
 }
 // 先バレ:手を出した瞬間に画面が赤く光り「ぽきゅん」。出たら、このラリーのじゃんけんは勝ち確定
-const SAKIBARE_RATE = 0.9;   // 先バレモードの勝利占有率:自分が勝つラリーのうち、先バレが出る割合
+const SAKIBARE_RATE = 0.75;   // 先バレモードの勝利占有率:自分が勝つラリーのうち、先バレが出る割合
 async function sakibareFx() {
   flash('#ff1a2e'); shake(false); Sound.pokyun();
   await sleep(450);
@@ -3306,7 +3306,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.25';
+const APP_VER = '0.26';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
