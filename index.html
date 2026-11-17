@@ -2129,13 +2129,19 @@ const Sound = (() => {
     if (o.to) osc.frequency.exponentialRampToValueAtTime(o.to, t + dur);
     if (o.vib) {
       const l = c.createOscillator(), lg = c.createGain();
-      l.frequency.value = o.vib; lg.gain.value = f * 0.03;
+      l.frequency.value = o.vib; lg.gain.value = f * (o.vibDepth || 0.03);
       l.connect(lg); lg.connect(osc.frequency); l.start(t); l.stop(t + dur + 0.05);
     }
     g.gain.setValueAtTime(0.0001, t);
     g.gain.linearRampToValueAtTime(vol, t + a);
     g.gain.exponentialRampToValueAtTime(0.001, t + dur);
-    osc.connect(g); g.connect(master);
+    osc.connect(g);
+    if (o.trem) {   // 音量の震え(トレモロ)
+      const tg = c.createGain(), l = c.createOscillator(), lg = c.createGain();
+      tg.gain.value = 1 - (o.tremDepth || 0.5) / 2; l.frequency.value = o.trem; lg.gain.value = (o.tremDepth || 0.5) / 2;
+      l.connect(lg); lg.connect(tg.gain); l.start(t); l.stop(t + dur + 0.05);
+      g.connect(tg); tg.connect(master);
+    } else g.connect(master);
     osc.start(t); osc.stop(t + dur + 0.05);
   }
   // 雑音。freq から to へフィルターを動かせる(シンバル、爆発、風切り音など)
@@ -2239,20 +2245,17 @@ const Sound = (() => {
     },
     // 先バレの告知音「ぽきゅん」:短い「ぽ」のあと、高く跳ね上がる「きゅん」
     pokyun() {
-      // 本体:短く下がる「ぽ」と、高く跳ね上がる「きゅん」
-      const body = (at, k) => {
-        tone(620, 0.07, { type: 'sine', vol: 0.5 * k, to: 380, at });
-        tone(900, 0.16, { type: 'sine', vol: 0.42 * k, to: 2900, at: at + 0.075 });
-        tone(1800, 0.14, { type: 'triangle', vol: 0.12 * k, to: 5200, at: at + 0.08 });
-      };
-      body(0, 1);
-      // 響き:鐘のように長く残る高い音(倍音を重ねる)
-      tone(2900, 1.6, { type: 'sine', vol: 0.16, at: 0.23 });
-      tone(4350, 1.2, { type: 'sine', vol: 0.06, at: 0.23 });
-      tone(5800, 0.8, { type: 'sine', vol: 0.03, at: 0.23 });
-      tone(1450, 1.4, { type: 'sine', vol: 0.08, at: 0.23 });
-      // こだま:だんだん小さくなって繰り返す
-      [0.18, 0.36, 0.54].forEach((d, i) => body(d, 0.38 / (i + 1)));
+      // 低く → 高く → 震える。緩急と強弱を大きくつける
+      // 1) 低く重い「ぽ」(強く短く、少し沈む)
+      tone(170, 0.16, { type: 'sine', vol: 0.95, to: 110 });
+      tone(340, 0.1, { type: 'triangle', vol: 0.3, to: 220 });
+      // 2) 一瞬の間のあと、一気に駆け上がる「きゅ」(弱から強へ)
+      tone(260, 0.07, { type: 'sine', vol: 0.55, to: 2600, at: 0.2, attack: 0.05 });
+      tone(520, 0.07, { type: 'triangle', vol: 0.15, to: 5200, at: 0.2, attack: 0.05 });
+      // 3) 頂点の「ん」:高い音が大きく震えながら、長く消えていく
+      tone(2600, 1.5, { type: 'sine', vol: 0.5, at: 0.27, vib: 11, vibDepth: 0.025, trem: 13, tremDepth: 0.8 });
+      tone(1300, 1.2, { type: 'sine', vol: 0.18, at: 0.27, vib: 11, vibDepth: 0.025, trem: 13, tremDepth: 0.8 });
+      tone(5200, 0.9, { type: 'sine', vol: 0.07, at: 0.27, vib: 11, vibDepth: 0.025 });
     },
     // 技が当たる。power は2.5(通常)〜5(極大)
     hit(power) {
@@ -3280,7 +3283,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.21';
+const APP_VER = '0.22';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
