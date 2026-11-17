@@ -2663,7 +2663,7 @@ function stageSide(el, t, f) {
   el.innerHTML = `<div class="who">${iconHtml(f.ch, 'sm')}${nameOf(f)}<span class="turn">場${f.turn + 1}ラリー目</span></div>
     <div class="s-hp">HP <b>${f.hp}</b> / ${f.max}</div>
     <div class="bar"><div class="hpbar ${bar <= 34 ? 'low' : ''}" style="width:${from}%"></div></div>
-    <div class="gauges">${statGauge('ATK', baseAtk(f), f.atk, ATK_GAUGE_MAX)}${statGauge('DFS', baseDfs(f), f.dfs, DFS_MAX)}</div>
+    <div class="gauges">${statGauge('ATK', shownAtk(t, f), f.atk, ATK_GAUGE_MAX)}${statGauge('DFS', baseDfs(f), f.dfs, DFS_MAX)}</div>
     <div class="status" role="button" tabindex="0" aria-label="バフ・デバフをすべて見る">${st.map((x) => `<span class="sc ${x.k}">${x.s}</span>`).join('')}</div>`;
   el.querySelector('.status').classList.toggle('none', !st.length);
   // 収まりきらないときは「…」を出す(押すと全部見られる)
@@ -2672,6 +2672,12 @@ function stageSide(el, t, f) {
   if (from !== bar) { const hb = el.querySelector('.hpbar'); void hb.offsetWidth; hb.style.width = bar + '%'; }
 }
 
+// 画面に出すATK:特性による増減(全力の減速・背水・先駆け・連射など)も込み。BREAK中だけの上乗せは含めない
+function shownAtk(t, f) {
+  const foe = S && S.teams.includes(t) ? active(S.teams[1 - S.teams.indexOf(t)]) : f;
+  const next = { ...f, turn: f.turn + 1 };   // 次のラリー(これから打つ一撃)で使うATKを出す。技のボタンや状態欄と同じ数え方
+  return Math.min(ATK_MAX, Math.max(ATK_MIN, baseAtk(next) + traitAtk(S, next, foe, false)));
+}
 // 場のカードにかかっている効果の一覧。s は札に書く短い文、l は一覧に書く説明、k は up(強化)/down(弱体)/info
 function statusList(t, f) {
   const st = [], sign = (v) => (v > 0 ? '+' : '−'), L = (stat) => (stat === 'atk' ? 'ATK' : 'DFS');
@@ -2713,7 +2719,7 @@ function openCardInfo(side) {
   const t = S.teams[side], f = active(t), st = statusList(t, f);
   const tr = traitsOf(f.ch);
   openSheet(`${nameOf(f)}`, `
-    <p class="sub" style="margin:0"><span class="s-hp">HP ${f.hp} / ${f.max}</span>　${statNow('ATK', baseAtk(f), f.atk)}　${statNow('DFS', baseDfs(f), f.dfs)}</p>
+    <p class="sub" style="margin:0"><span class="s-hp">HP ${f.hp} / ${f.max}</span>　${statNow('ATK', shownAtk(t, f), f.atk)}　${statNow('DFS', baseDfs(f), f.dfs)}</p>
     <h3>特性</h3>${tr.length ? tr.map((x) => `<p><b style="color:#c9b8ff">「${escHtml(x.name)}」</b>${escHtml(x.desc)}</p>`).join('') : '<p>なし</p>'}
     <h3>かかっている効果</h3>${st.length ? `<ul class="stl">${st.map((x) => `<li class="${x.k}">${x.l}</li>`).join('')}</ul>` : '<p>なし</p>'}`);
 }
@@ -3242,7 +3248,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.17';
+const APP_VER = '0.18';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
