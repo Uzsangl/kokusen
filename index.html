@@ -3698,6 +3698,7 @@ const escHtml = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<'
 const accUid = () => (ACC.session && ACC.session.user ? ACC.session.user.id : null);
 
 function accStore() {
+  setTimeout(accCheckMaster, 0);   // ログイン・ログアウトのたびに、マスターかどうかを確かめ直す
   try {
     if (ACC.session) localStorage.setItem('kokusen.auth', JSON.stringify(ACC.session));
     else localStorage.removeItem('kokusen.auth');
@@ -4272,6 +4273,7 @@ async function accInit() {
     return;
   }
   try { ACC.session = JSON.parse(localStorage.getItem('kokusen.auth') || 'null'); } catch (e) { ACC.session = null; }
+  accCheckMaster();
   $('accClose').onclick = () => $('accModal').classList.add('hidden');
   $('accModal').onclick = (e) => { if (e.target === $('accModal')) $('accModal').classList.add('hidden'); };
   renderAcct();
@@ -4350,7 +4352,19 @@ const foePicks = () => (pickSide === 'foe' ? picked : teamPicks.foe);
 const charById = (id) => ALL_CHARS.find((c) => c.id === id);
 const charGroup = (ch) => ch.group || (SPECIAL_CHARS.includes(ch) ? '隔絶' : ch.faction);
 // 解放キャラを使えるか(称号を解放したアカウントでログインしているとき)
-const charUnlocked = (ch) => (ch.gacha ? gachaOwned(ch.id) > 0 : !ch.unlock || myTitles().includes(ch.unlock));
+// テスト用のマスターアカウント:メールアドレスのハッシュ(SHA-256)が MASTER_HASHES にあるアカウントは、全キャラを使える(保存はしない)
+const MASTER_HASHES = [];
+let IS_MASTER = false;
+async function accCheckMaster() {
+  IS_MASTER = false;
+  const mail = ACC.session && ACC.session.user && ACC.session.user.email;
+  if (!mail || !MASTER_HASHES.length || !(window.crypto && crypto.subtle)) return;
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(String(mail).trim().toLowerCase()));
+  const hex = [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
+  IS_MASTER = MASTER_HASHES.includes(hex);
+  if (IS_MASTER) { try { renderSelect(); renderTitleAcc(); } catch (e) { /* 画面がまだなくてもよい */ } }
+}
+const charUnlocked = (ch) => IS_MASTER || (ch.gacha ? gachaOwned(ch.id) > 0 : !ch.unlock || myTitles().includes(ch.unlock));
 // 解放キャラの条件の書き方(隠し称号は、解放するまで名前を伏せる)
 const unlockText = (ch) => { if (ch.gacha) return 'ガチャで手に入れると使える(ログインが必要)'; const t = titleOf(ch.unlock); return `称号「${t.hidden ? '？？？' : t.name}」${t.hidden ? '(隠し称号)' : ''}を解放すると使える(ログインが必要)`; };
 // 押す・長押しを分ける(長押し、またはパソコンの右クリックで詳細を出す)
