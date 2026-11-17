@@ -3242,7 +3242,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.12';
+const APP_VER = '0.13';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
@@ -4240,7 +4240,7 @@ function renderAccModal() {
         ? `<p class="sub" style="margin:0">選んだキャラが、タイトル画面やランキングで名前の横に出ます。</p><div class="favs">${ALL_CHARS.filter((ch) => charUnlocked(ch)).map((ch) => `<button data-fav="${ch.id}" class="${p.fav === ch.id ? 'picked' : ''}" aria-label="${escHtml(dispName(ch))}">${iconHtml(ch, 'md')}</button>`).join('')}</div>`
         : '<p class="sub">お気に入りキャラを使うには、管理者がSupabaseで準備のSQLを実行する必要があります。</p>'}
       <h2 style="margin-top:14px">招待</h2>${inviteReady()
-        ? `<p class="sub" style="margin:0">あなたの招待コード:<b style="color:var(--gold);font-size:1.1rem;letter-spacing:.1em">${escHtml(p.invite_code)}</b> <button id="invCopy" style="padding:4px 10px">コピー</button><br>アカウントを作って1日以内の人がこのコードを入れると、お互いに空間のカケラ${INVITE_BONUS}個。</p>` +
+        ? `<p class="sub" style="margin:0">あなたの招待コード:<b style="color:var(--gold);font-size:1.1rem;letter-spacing:.1em">${escHtml(p.invite_code)}</b> <button id="invCopy" style="padding:4px 10px">コピー</button><br>アカウントを作って1日以内の人がこのコードを入れると、お互いに空間のカケラ${INVITE_BONUS}個。招待できるのは${INVITE_MAX}人まで${ACC.inviteN != null ? `(今 ${Math.min(ACC.inviteN, INVITE_MAX)}/${INVITE_MAX}人)` : ''}。</p>` +
           (accIsNew() && !(ACC.stats && ACC.stats.inviteUsed)
             ? `<label for="invCode">招待コードを入れる(アカウントを作って1日以内・1回だけ)</label><input id="invCode" maxlength="8" autocomplete="off" style="text-transform:uppercase"><div class="row"><button id="invGo">招待コードを使う</button></div>`
             : (ACC.stats && ACC.stats.inviteUsed ? '<p class="sub">招待コードは使用済みです。</p>' : ''))
@@ -4618,6 +4618,7 @@ async function openMail() {
 // コードは profiles.invite_code(サーバーがIDから作る8文字)。招待の記録は invites 表(1人1回、作って1日以内だけ登録できる)
 // 招待した側は、ログインしたときに新しい招待を見つけて受け取る(受け取った分は progress の stats.inviteGot)
 const INVITE_BONUS = 700;
+const INVITE_MAX = 5;   // 1人が招待できる(ボーナスを受け取れる)のは5人まで。サーバー側でも止める
 const inviteReady = () => !!(ACC.profile && ACC.profile.invite_code);
 const accIsNew = () => { const t = ACC.session && ACC.session.user && ACC.session.user.created_at; return !!t && Date.now() - new Date(t).getTime() < 24 * 3600 * 1000; };
 // 招待した人への受け取り(ログインのたびに確かめる)
@@ -4625,7 +4626,8 @@ async function inviteCollect() {
   if (!shardOnAcc() || !inviteReady()) return 0;
   let rows = [];
   try { rows = await sbFetch(`/rest/v1/invites?inviter=eq.${accUid()}&select=invitee`) || []; } catch (e) { return 0; }
-  const got = mailStat('inviteGot'), fresh = rows.map((r) => r.invitee).filter((id) => !got.includes(id));
+  ACC.inviteN = rows.length;
+  const got = mailStat('inviteGot'), fresh = rows.map((r) => r.invitee).filter((id) => !got.includes(id)).slice(0, Math.max(0, INVITE_MAX - got.length));
   if (!fresh.length) return 0;
   ACC.stats.inviteGot = [...got, ...fresh];
   await shardAdd(INVITE_BONUS * fresh.length);
@@ -4641,9 +4643,12 @@ async function inviteUse(code) {
   const rows = await sbFetch(`/rest/v1/profiles?invite_code=eq.${code}&select=id,name`);
   const who = rows && rows[0];
   if (!who) throw new Error('その招待コードは見つかりませんでした。');
+  let n = 0;
+  try { n = Number(await sbFetch('/rest/v1/rpc/invite_count', { method: 'POST', body: { u: who.id } })) || 0; } catch (e) { /* 数えられなくても、サーバー側で止まる */ }
+  if (n >= INVITE_MAX) throw new Error(`その招待コードは、もう${INVITE_MAX}人に使われています(1人${INVITE_MAX}人まで)。`);
   try { await sbFetch('/rest/v1/invites', { method: 'POST', prefer: 'return=minimal', body: { invitee: accUid(), inviter: who.id } }); } catch (e) {
     if (e.code === '23505' || e.status === 409) throw new Error('招待コードは、もう使っています(1回だけ)。');
-    if (e.code === '42501' || e.status === 403) throw new Error('招待コードを使えるのは、アカウントを作ってから1日以内だけです。');
+    if (e.code === '42501' || e.status === 403) throw new Error(`招待コードを使えるのは、アカウントを作ってから1日以内だけです(または、そのコードがもう${INVITE_MAX}人に使われています)。`);
     throw e;
   }
   ACC.stats.inviteUsed = who.id;

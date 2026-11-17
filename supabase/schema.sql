@@ -55,3 +55,12 @@ create or replace function public.is_new_account() returns boolean
   $$ select exists (select 1 from auth.users where id = auth.uid() and created_at > now() - interval '1 day') $$;
 create policy "招待:本人と招待した人だけ見られる" on public.invites for select using (auth.uid() = invitee or auth.uid() = inviter);
 create policy "招待:作って1日以内の本人だけ登録できる" on public.invites for insert with check (auth.uid() = invitee and public.is_new_account());
+
+-- ===== 5回目:招待は1人5人まで(アカウント量産の対策) =====
+-- 招待した人数を数える(招待された側からは他人の行が見えないため、数だけを返す関数にする)
+create or replace function public.invite_count(u uuid) returns int
+  language sql stable security definer set search_path = '' as
+  $$ select count(*)::int from public.invites where inviter = u $$;
+drop policy if exists "招待:作って1日以内の本人だけ登録できる" on public.invites;
+create policy "招待:作って1日以内の本人だけ・招待は5人まで" on public.invites for insert
+  with check (auth.uid() = invitee and public.is_new_account() and public.invite_count(inviter) < 5);
