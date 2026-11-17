@@ -74,6 +74,8 @@
   .stages button.cleared::after { content: ' ✓'; color: #4ade80; font-weight: 700; }
   .col .trait.multi { font-size: .56rem; line-height: 1.25; height: 4.6em; }
   .roomrow { display: flex; gap: 8px; margin-bottom: 4px; }
+  .roomrow button { padding: 10px 8px; white-space: nowrap; }
+  #specBadge { flex: none; align-self: center; font-size: .72rem; color: var(--sub); border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; white-space: nowrap; }
   .roomrow input { flex: 1; min-width: 0; font: inherit; color: var(--text); background: #0b0d1c; border: 1px solid var(--line); border-radius: 10px; padding: 10px; }
   #netStatus { color: var(--gold); }
   .levels button.picked { border-color: var(--accent); border-width: 2px; box-shadow: 0 0 12px #f5c45144; font-weight: 700; }
@@ -562,6 +564,7 @@
       <div class="roomrow">
         <input id="roomCode" inputmode="numeric" maxlength="12" placeholder="合言葉(例:1234)" autocomplete="off">
         <button id="joinRoom">部屋に入る</button>
+        <button id="specRoom">観戦する</button>
         <button id="leaveRoom" class="hidden">出る</button>
       </div>
       <p class="sub" id="netStatus"></p>
@@ -609,6 +612,7 @@
       <button id="logBtn">ログを見る</button>
       <button id="resign" class="resign">リタイア</button>
       <button id="retry" class="hidden">キャラ選択に戻る</button>
+      <span id="specBadge" class="hidden"></span>
       <button id="chain" class="hidden">続けて【始】に挑む</button>
     </div>
     <div class="panel hidden" id="logPanel"><div id="log"></div></div>
@@ -2511,7 +2515,7 @@ function render(view) {
     b.innerHTML = r.html;
     b.classList.toggle('hot', r.hot);
     b.classList.toggle('warm', r.warm);
-    b.disabled = S.over || busy || pvpLocked();
+    b.disabled = S.over || busy || pvpLocked() || S.spectate;
   });
   $('cpuActs').innerHTML = HAND_KEYS.map((h) => {
     const r = actHtml(foe, me, h, cpu.breakReady);
@@ -2520,7 +2524,14 @@ function render(view) {
   $('hands').classList.toggle('breaking', you.breakReady && !busy);
   $('retry').classList.toggle('hidden', !S.over);
   $('chain').classList.toggle('hidden', !(S.over && S.winner === 0 && S.stage && STAGES.some((x) => x.chainFrom === S.stage.id) && !S.resign));
-  $('resign').classList.toggle('hidden', S.over);
+  $('resign').classList.toggle('hidden', S.over && !S.spectate);
+  $('resign').textContent = S.spectate ? '観戦をやめる' : 'リタイア';
+  $('retry').classList.toggle('hidden', !S.over || !!S.spectate);
+  // 観戦者の人数(プレイヤーにも見せる)。ホストは自分で数え、相手は相手の知らせを見る
+  const fpSp = PVP.on && !S.spectate && pvpFoe() ? Number(pvpFoe().presence.sp) || 0 : 0;
+  const nSpec = PVP.on && !S.spectate ? Math.max(PVP.room && PVP.room.specCount ? PVP.room.specCount() : 0, fpSp) : 0;
+  $('specBadge').textContent = S.spectate ? '👁 観戦中' : `👁 観戦 ${nSpec}人`;
+  $('specBadge').classList.toggle('hidden', !(S.spectate || nSpec > 0) || $('battle').classList.contains('hidden'));
 }
 const setResult = (t) => { $('result').textContent = t; };
 
@@ -2791,7 +2802,7 @@ async function finale() {
   clearTimeout(tickTimer);
   freeze(false);
   const score = `(${S.teams[0].wins}-${S.teams[1].wins})`;
-  const msg = (S.winner === -1 ? '引き分け' : S.winner === 0 ? 'あなたの勝利!' : 'あなたの敗北…') + score + (S.resign === 'me' ? '(リタイア)' : S.resign === 'foe' ? '(相手のリタイア)' : S.forfeit === 0 ? '(相手の応答なし)' : S.forfeit === 1 ? '(応答なし)' : '');
+  const msg = S.spectate ? (S.winner === -1 ? '引き分け' : `${S.teams[S.winner].label}の勝利!`) + score + (S.specWhy || '') : (S.winner === -1 ? '引き分け' : S.winner === 0 ? 'あなたの勝利!' : 'あなたの敗北…') + score + (S.resign === 'me' ? '(リタイア)' : S.resign === 'foe' ? '(相手のリタイア)' : S.forfeit === 0 ? '(相手の応答なし)' : S.forfeit === 1 ? '(応答なし)' : '');
   log(`=== ${msg} ${S.rally}ラリー ===`);
   setResult(msg);
   render();
@@ -2805,10 +2816,15 @@ async function finale() {
   if (!S.recorded) { S.recorded = true; accRecordMatch(S); }
   // オンライン対人のレーティング(1試合に1回だけ)。演出を待たずに、決着した時点で保存を始める
   let rating = null;
-  if (MODE === 'pvp' && PVP.foeAccP && !S.rated) {
+  if (MODE === 'pvp' && PVP.foeAccP && !S.rated && !S.spectate) {
     S.rated = true;
     const score = S.winner === 0 ? 1 : S.winner === 1 ? 0 : 0.5;
     rating = PVP.foeAccP.then((v) => (v ? accRateFinish(score) : null));
+  }
+  if (S.spectate) {
+    Sound.fanfare(); Particles.shower(COLORS.rainbow, 120);
+    await cutin(S.winner === -1 ? '引き分け' : `${S.teams[S.winner].label}の勝利`, score, 'rainbow', 1600);
+    return;
   }
   if (S.winner === 0) {
     Sound.fanfare(); Particles.shower(COLORS.rainbow, 220); flash('#ffffff');
@@ -2869,8 +2885,8 @@ async function normalRally(hand, cpuHand, why) {
     Sound.breakIn();
     await cutin(BREAK_NAME, '時が止まる。好きな手が確定で通る', 'rainbow', 1200);
     setStage('heat4', '');
-    $('cue').innerHTML = `<span class="rainbow">${BREAK_NAME}! 好きな手を選べ</span>`;
-    setResult(`${BREAK_NAME}! 好きな手が確定で通る`);
+    $('cue').innerHTML = S.spectate ? `<span class="rainbow">${escHtml(S.teams[0].label)}の${BREAK_NAME}!</span>` : `<span class="rainbow">${BREAK_NAME}! 好きな手を選べ</span>`;
+    setResult(S.spectate ? `${S.teams[0].label}が手を選んでいます…` : `${BREAK_NAME}! 好きな手が確定で通る`);
   } else if (S.teams[1].breakReady && !PVP.on) {
     await cpuBreak();   // 対人戦では、相手が手を選ぶのを待つ
   }
@@ -2964,6 +2980,8 @@ const PVP = {
   hand: null, salt: '',       // 今のラリーで自分が選んだ手
   foeTeamSeal: null, foeSeal: {},   // 相手が先に出した印(最初に見たものを覚えておく)
   applying: false,
+  hist: [],         // この対戦で明かされた手の記録(自分の側から見て。観戦者への中継に使う)
+  spec: false,      // 観戦者として見ているか
 };
 const rnd = () => Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
 // ルールの版。ルール部分の文字列から作るので、ルールを変えると自動で変わる。
@@ -3008,8 +3026,20 @@ function pvpDebug() {
 // 端末どうしを直接つなぐ通信(PeerJS)。ログインなしで、リンクを開いただけの人どうしで使える。
 // 合言葉から部屋のIDを作り、先に入った側が部屋を開き、あとから入った側がそこへ接続する。
 // 中継サーバーは接続の仲立ちだけをし、対戦の内容は端末どうしで直接やりとりする。
+// 観戦:先に部屋を開いた側(ホスト)が、観戦者(最大 SPEC_MAX 人)にも接続を許し、試合の記録を中継する。
+// 観戦者に送るのは、両方のプレイヤーに明かされた後の手だけ(封をした手は送らない)
+const SPEC_MAX = 5;
 function makePeerRoom() {
   let peer = null, conn = null, mine = {}, foe = null, up = false, note = '';
+  let specs = [], specSnap = null, onSpec = null;   // ホスト側:観戦者の接続と最新の記録 / 観戦者側:記録を受け取る関数
+  const specSend = (c) => { try { if (c.open && specSnap) c.send({ spec: specSnap }); } catch (e) { /* 送れなければ次の更新で送る */ } };
+  function addSpec(c) {
+    if (specs.length >= SPEC_MAX) { c.on('open', () => { try { c.send({ full: 1 }); } catch (e) { /* 閉じるだけ */ } setTimeout(() => c.close(), 300); }); return; }
+    specs.push(c);
+    c.on('open', () => { specSend(c); fire(); });
+    c.on('close', () => { specs = specs.filter((x) => x !== c); fire(); });
+    c.on('error', () => { specs = specs.filter((x) => x !== c); fire(); });
+  }
   const handlers = [];
   const fire = () => handlers.forEach((h) => { try { h(); } catch (e) { /* 表示の更新に失敗しても通信は続ける */ } });
   const send = () => { if (conn && conn.open) conn.send({ p: mine }); };
@@ -3022,7 +3052,28 @@ function makePeerRoom() {
   }
   function leave() {
     try { if (peer) peer.destroy(); } catch (e) { /* すでに閉じている */ }
-    peer = null; conn = null; foe = null; up = false; note = '';
+    peer = null; conn = null; foe = null; up = false; note = ''; specs = []; specSnap = null; onSpec = null;
+  }
+  // 観戦者として、その合言葉の部屋(ホスト)につなぐ
+  function spectate(code, handler) {
+    leave();
+    onSpec = handler;
+    const hostId = 'kokusen-room-' + code.toLowerCase();
+    note = '観戦の準備をしています…';
+    const me = peer = new window.Peer();
+    me.on('open', () => {
+      const c = me.connect(hostId, { reliable: true, serialization: 'json', metadata: { spec: 1 } });
+      c.on('open', () => { up = true; note = 'つながりました。対戦の開始を待っています'; fire(); });
+      c.on('data', (d) => {
+        if (!d || typeof d !== 'object') return;
+        if (d.full) { note = `観戦できるのは${SPEC_MAX}人までです。いっぱいでした`; fire(); return; }
+        if (d.spec && typeof d.spec === 'object' && onSpec) onSpec(d.spec);
+      });
+      c.on('close', () => { up = false; note = '中継が切れました(部屋を開いた人が抜けました)'; fire(); });
+      fire();
+    });
+    me.on('error', (e) => { if (peer !== me) return; note = e.type === 'peer-unavailable' ? 'その合言葉の部屋はありません' : `接続できませんでした(${e.type})`; fire(); });
+    fire();
   }
   function join(code) {
     leave();
@@ -3030,7 +3081,11 @@ function makePeerRoom() {
     note = '接続しています…';
     const host = peer = new window.Peer(hostId);
     host.on('open', () => { note = '部屋を開きました。相手を待っています'; fire(); });
-    host.on('connection', (c) => { if (conn && conn.open) { c.close(); return; } attach(c); });   // 3人目は入れない
+    host.on('connection', (c) => {
+      if (c.metadata && c.metadata.spec) { addSpec(c); return; }   // 観戦者
+      if (conn && conn.open) { c.close(); return; }                // 3人目のプレイヤーは入れない
+      attach(c);
+    });
     host.on('error', (e) => {
       if (peer !== host) return;
       if (e.type !== 'unavailable-id') { note = `接続できませんでした(${e.type})`; fire(); return; }
@@ -3043,7 +3098,10 @@ function makePeerRoom() {
     fire();
   }
   return {
-    direct: true, join, leave,
+    direct: true, join, leave, spectate,
+    // ホスト側:観戦者に送る記録を更新する / 観戦者の人数
+    setSpec(snap) { specSnap = snap; specs.forEach(specSend); },
+    specCount: () => specs.filter((c) => c.open).length,
     status: () => note,
     presence(patch) {
       for (const k of Object.keys(patch)) { if (patch[k] === null) delete mine[k]; else mine[k] = patch[k]; }
@@ -3109,7 +3167,12 @@ const pvpLocked = () => PVP.on && (PVP.applying || PVP.hand !== null || pvpTurn(
 
 // 状況が変わるたびに呼ばれる。条件がそろっていれば次へ進める(何度呼ばれてもよい)
 async function pvpStep() {
+  if (PVP.spec) { pvpSpecShow(); return; }
   if (!PVP.on || !PVP.room || PVP.phase === 'idle') return;
+  // ホスト:観戦者の人数を相手にも知らせる
+  const nSpec = PVP.room.specCount ? PVP.room.specCount() : 0;
+  if (nSpec !== (PVP.my.sp || 0)) pvpPublish({ sp: nSpec });
+  if (S && !S.spectate) render();
   const foe = pvpFoe(), fp = foe ? foe.presence : null;
 
   const verNg = fp && fp.v !== RULES_VER;
@@ -3144,6 +3207,8 @@ async function pvpStep() {
       logLater(v ? `対戦相手:${titleOf(v.title) ? `〔${titleOf(v.title).name}〕` : ''}${v.name}(レート${v.r})` : '対戦相手はログインしていないため、レーティングなしの対戦です');
       return v;
     });
+    PVP.hist = []; PVP.matchId = rnd(); PVP.foeIds = t.ids.slice();
+    pvpSpecSync();
     await startMatch(PVP.team.map((id) => charById(id)), chars, said || '相手');
     pvpStep();
     return;
@@ -3160,7 +3225,7 @@ async function pvpStep() {
 
   if (turn === 'foe') {
     if (!fr || !HANDS[fr.b]) { setResult(`相手の${BREAK_NAME}。相手が手を選んでいます…`); render(); return; }
-    await pvpApply(() => cpuBreak(fr.b), { n: k, b: null });
+    await pvpApply(() => cpuBreak(fr.b), { n: k, b: null }, { t: 'b', s: 1, h: fr.b });
     return;
   }
   if (turn === 'mine') { if (PVP.hand === null) return; return; }   // 自分のBREAKは pvpPick で処理する
@@ -3173,7 +3238,7 @@ async function pvpStep() {
   if (!r || !HANDS[r.h]) { setResult('相手の手を待っています…'); return; }
   if (seal(r.s + '|' + k + '|' + r.h) !== PVP.foeSeal[k]) { setResult('相手の手の情報が正しくありません。対戦を続けられません。'); return; }
   const mine = PVP.hand, mySalt = PVP.salt;
-  await pvpApply(() => normalRally(mine, r.h, null), { n: k, r: { h: mine, s: mySalt }, c: PVP.my.c });
+  await pvpApply(() => normalRally(mine, r.h, null), { n: k, r: { h: mine, s: mySalt }, c: PVP.my.c }, { t: 'r', a: mine, b: r.h });
 }
 
 // 相手の応答を待っている時間を数え、60秒続いたら不戦勝にする。
@@ -3192,6 +3257,7 @@ function pvpWatch() {
 // 不戦勝・不戦敗で試合を終える。side:勝った側(0=自分、1=相手)
 // リタイア:確認してから負けにする。オンライン対人では相手に知らせ、相手の勝ちになる
 function askResign() {
+  if (S && S.spectate) { specStop(); return; }
   if (!S || S.over) return;
   const canRetry = MODE !== 'pvp' && LAST_MATCH;   // 再挑戦はCPU戦とソロだけ(対人は相手がいるため)
   openSheet('リタイア', `<p>${canRetry ? '同じチーム・同じ相手で最初からやり直すか、リタイアして負けにするかを選んでください。' : `この対戦をリタイアしますか? あなたの負けになります。${MODE === 'pvp' && PVP.foeAcc ? 'レーティング戦なので、負けとして記録されます。' : ''}`}</p>
@@ -3214,6 +3280,7 @@ function retryMatch() {
 async function endByResign(who) {
   if (!S || S.over) return;
   S.over = true; S.winner = who === 'me' ? 1 : 0; S.resign = who;
+  if (PVP.on && !S.spectate) { PVP.hist.push({ t: 'end', w: S.winner, why: 'rs' }); pvpSpecSync(); }
   S.teams.forEach((t) => { t.breakReady = false; });
   freeze(false);
   if (who === 'me' && MODE === 'pvp' && PVP.phase === 'play') pvpPublish({ rs: PVP.n });   // 相手の画面も終わらせる
@@ -3224,14 +3291,93 @@ async function endByResign(who) {
 async function pvpForfeit(side) {
   if (!S || S.over) return;
   S.over = true; S.winner = side; S.forfeit = side;
+  if (PVP.on && !S.spectate) { PVP.hist.push({ t: 'end', w: side, why: 'ff' }); pvpSpecSync(); }
   if (side === 0) pvpPublish({ ff: PVP.n });   // 相手が戻ってきたときに、相手の画面も終わらせる
   log(side === 0 ? '相手の応答が60秒なかったため、不戦勝' : '応答がなかったため、相手の不戦勝');
   busy = true;
   try { await finale(); } finally { busy = false; flushLog(); render(); }
 }
 
+// ホスト:観戦者に送る記録(自分の側をチーム0として)
+function pvpSpecSync() {
+  if (!PVP.room || !PVP.room.setSpec || PVP.spec) return;
+  const p = ACC.profile;
+  PVP.room.setSpec(PVP.phase === 'play' || PVP.hist.length ? {
+    v: RULES_VER, id: PVP.matchId, teams: [PVP.team, PVP.foeIds],
+    names: [p ? String(p.name).slice(0, 12) : 'プレイヤー1', PVP.foeName || 'プレイヤー2'],
+    hist: PVP.hist,
+  } : { v: RULES_VER, wait: 1 });
+}
+// 観戦:合言葉の部屋に、観戦者としてつなぐ
+function specStart() {
+  const code = $('roomCode').value.trim();
+  if (!/^[0-9a-zA-Z]{2,12}$/.test(code)) { pvpStatus('合言葉は、英数字2〜12文字で入れてください。'); return; }
+  if (!PVP.room || !PVP.room.spectate) return;
+  PVP.spec = true; PVP.code = code; PVP.phase = 'spec'; PVP.specSnap = null; PVP.specId = null; PVP.specN = 0;
+  PVP.room.spectate(code, (snap) => { PVP.specSnap = snap; pvpSpecShow(); });
+  renderMode(); pvpSpecShow();
+}
+function specStop() {
+  PVP.spec = false; PVP.specSnap = null; PVP.specId = null;
+  if (PVP.room && PVP.room.leave) PVP.room.leave();
+  pvpLeave();
+  if (S && S.spectate) { S.over = true; clearTimeout(tickTimer); Bgm.play('menu'); $('battle').classList.add('hidden'); $('select').classList.remove('hidden'); document.body.classList.remove('in-battle'); }
+  renderMode();
+}
+// 受け取った記録を画面に反映する(新しい対戦なら最初から、途中から入ったら早送りで追いつく)
+let specBusy = false;
+async function pvpSpecShow() {
+  if (!PVP.spec) return;
+  const snap = PVP.specSnap;
+  if (PVP.room && PVP.room.status) pvpStatus(PVP.room.status());
+  if (!snap) return;
+  if (snap.v !== RULES_VER) { pvpStatus(`ゲームの版が違うため観戦できません(自分 ver ${RULES_VER.slice(0, 6)} / 部屋 ver ${String(snap.v || '?').slice(0, 6)})。ページを再読み込みしてください。`); return; }
+  if (snap.wait || !Array.isArray(snap.teams)) { pvpStatus('つながりました。対戦の開始を待っています'); return; }
+  if (specBusy) return;
+  const teams = snap.teams.map((ids) => (Array.isArray(ids) ? ids.map(charById) : []));
+  if (teams.some((t) => t.length !== TEAM_SIZE || t.some((c) => !c))) { pvpStatus('対戦の情報を読めませんでした'); return; }
+  const hist = Array.isArray(snap.hist) ? snap.hist : [];
+  const names = (snap.names || []).map((n) => String(n || '').replace(/[\u0000-\u001f]/g, '').slice(0, 12));
+  specBusy = true;
+  try {
+    // 新しい対戦:最初から作り直し、ここまでの記録を早送りで流す
+    if (snap.id !== PVP.specId || !S || !S.spectate) {
+      PVP.specId = snap.id; PVP.specN = 0;
+      await startMatch(teams[0], teams[1], names[1] || 'プレイヤー2', { spectate: true, label0: names[0] || 'プレイヤー1' });
+      const fast = hist.slice(0, Math.max(0, hist.length - 1));   // 最後の1つだけは演出つきで見せる
+      for (const e of fast) specApply(e, true);
+      PVP.specN = fast.length;
+      flushLog(); render();
+    }
+    while (PVP.specN < hist.length && S && S.spectate && !S.over) {
+      const e = hist[PVP.specN++];
+      busy = true;
+      try { await specApply(e, false); } finally { busy = false; flushLog(); render(); }
+    }
+  } finally { specBusy = false; }
+  if (PVP.specSnap !== snap) pvpSpecShow();   // 演出中に届いた記録
+}
+// 記録1つを流す。fast は演出なし(途中から入ったときの早送り)
+async function specApply(e, fast) {
+  if (!e || typeof e !== 'object') return;
+  if (e.t === 'end') {
+    if (S.over) return;
+    S.over = true; S.winner = e.w === 1 ? 1 : 0;
+    S.specWhy = e.why === 'ff' ? '(応答なし)' : '(リタイア)';
+    S.teams.forEach((t) => { t.breakReady = false; });
+    if (!fast) await finale();
+    return;
+  }
+  if (e.t === 'r' && HANDS[e.a] && HANDS[e.b]) {
+    if (fast) rally(S, e.a, e.b, logLater); else await normalRally(e.a, e.b, null);
+  } else if (e.t === 'b' && HANDS[e.h] && (e.s === 0 || e.s === 1) && S.teams[e.s].breakReady) {
+    if (fast) breakRally(S, e.s, e.h, logLater); else await (e.s === 0 ? playerBreak(e.h) : cpuBreak(e.h));
+  }
+}
+
 // 1ラリーぶんを画面に流し、終わったら次のラリーへ進める
-async function pvpApply(run, last) {
+async function pvpApply(run, last, rec) {
+  if (rec) { PVP.hist.push(rec); pvpSpecSync(); }
   PVP.applying = true; busy = true;
   render();
   try { await run(); } finally {
@@ -3252,7 +3398,7 @@ async function pvpPick(hand) {
   if (pvpTurn() === 'mine') {
     PVP.hand = hand;
     pvpPublish({ b: hand });                                 // BREAKは同時に選ぶものではないので、そのまま知らせる
-    await pvpApply(() => playerBreak(hand), { n: k, b: hand });
+    await pvpApply(() => playerBreak(hand), { n: k, b: hand }, { t: 'b', s: 0, h: hand });
     return;
   }
   PVP.hand = hand; PVP.salt = rnd();
@@ -3270,8 +3416,10 @@ function renderMode() {
   $('soloOpts').classList.toggle('hidden', MODE !== 'solo');
   $('netOpts').classList.toggle('hidden', MODE !== 'pvp');
   if (PVP.on && !PVP.room) pvpStatus('この画面では、オンライン対人は使えません。公開サイト版(https://uzsangl.github.io/kokusen/)を、二人とも開いてください。');
-  else if (PVP.on && PVP.phase === 'idle') pvpStatus('相手と決めた合言葉を入れて、「部屋に入る」を押してください。');
+  else if (PVP.on && PVP.phase === 'idle') pvpStatus('相手と決めた合言葉を入れて、「部屋に入る」を押してください。対戦を見るだけなら「観戦する」。');
   $('roomCode').disabled = $('joinRoom').disabled = !PVP.room || PVP.phase !== 'idle';
+  $('specRoom').disabled = !PVP.room || PVP.phase !== 'idle';
+  $('specRoom').classList.toggle('hidden', !!PVP.room && !PVP.room.spectate);   // 観戦は、端末どうしを直接つなぐ方式のときだけ
   $('leaveRoom').classList.toggle('hidden', PVP.phase === 'idle');
   renderSelect();
 }
@@ -3414,7 +3562,7 @@ async function accSaveCleared() {
 }
 // 試合が終わったときに、称号用の数え上げをまとめて保存する(ログイン中、どのモードでも)
 async function accRecordMatch(S) {
-  if (!ACC.profile || ACC.progMode !== 'table') return;
+  if (!ACC.profile || ACC.progMode !== 'table' || S.spectate) return;   // 観戦では何も記録しない
   const s = ACC.stats = ACC.stats || {};
   const add = (k, n = 1) => { s[k] = (s[k] || 0) + n; };
   const max = (k, v) => { s[k] = Math.max(s[k] || 0, v); };
@@ -3445,7 +3593,7 @@ async function accRecordMatch(S) {
 }
 // 称号用の数え上げ(BREAKでとどめを刺した回数など)。ログイン中だけ数える
 async function accAddStat(key, n = 1) {
-  if (!ACC.profile || ACC.progMode !== 'table') return;
+  if (!ACC.profile || ACC.progMode !== 'table' || (S && S.spectate)) return;
   ACC.stats = ACC.stats || {};
   ACC.stats[key] = (ACC.stats[key] || 0) + n;
   try { await sbFetch(`/rest/v1/progress?id=eq.${accUid()}`, { method: 'PATCH', prefer: 'return=minimal', body: { stats: ACC.stats, updated_at: new Date().toISOString() } }); } catch (e) { /* 次に保存するときにまとめて送られる */ }
@@ -4038,6 +4186,8 @@ async function startMatch(mine, theirs, foeLabel, opt = {}) {
   LAST_MATCH = { mine, theirs, foeLabel, opt };
   S = newMatch(mine, theirs);
   S.teams[1].label = foeLabel;
+  if (opt.label0) S.teams[0].label = opt.label0;
+  S.spectate = !!opt.spectate;
   S.cpuLevel = opt.level || FX.level;
   S.bossRead = opt.read || 0;
   S.stage = opt.stage || null;
@@ -4073,7 +4223,8 @@ async function startMatch(mine, theirs, foeLabel, opt = {}) {
     clearTimeout(tickTimer); Sound.breakIn();
     await cutin('トキバミ', '止めておいてくれて、ありがとう', 'violet', 1500);
   } else {
-    if (PVP.on) await cutin(`VS ${PVP.foeName || '相手(ゲスト)'}`, `${active(S.teams[0]).ch.name} vs ${active(S.teams[1]).ch.name}`, 'gold', 1400);
+    if (S.spectate) await cutin('観戦', `${S.teams[0].label} vs ${S.teams[1].label}`, 'gold', 1200);
+    else if (PVP.on) await cutin(`VS ${PVP.foeName || '相手(ゲスト)'}`, `${active(S.teams[0]).ch.name} vs ${active(S.teams[1]).ch.name}`, 'gold', 1400);
     else await cutin('開戦', `${active(S.teams[0]).ch.name} vs ${active(S.teams[1]).ch.name}`, 'gold', 900);
   }
   busy = false;
@@ -4109,7 +4260,7 @@ function init() {
   MODES.forEach(([label, m]) => {
     const b = document.createElement('button');
     b.textContent = label;
-    b.onclick = () => { if (PVP.on && m !== 'pvp' && PVP.phase !== 'idle') pvpLeave(); MODE = m; PVP.on = m === 'pvp'; renderMode(); };
+    b.onclick = () => { if (PVP.spec) specStop(); else if (PVP.on && m !== 'pvp' && PVP.phase !== 'idle') pvpLeave(); MODE = m; PVP.on = m === 'pvp'; renderMode(); };
     $('modes').appendChild(b);
   });
   try { SOLO.stage = localStorage.getItem('kokusen.stage') || 'a1'; SOLO.cleared = readCleared(GUEST_KEY); SOLO.rush = Number(localStorage.getItem('kokusen.rush')) || 0; } catch (e) { /* 保存できなくても動く */ }
@@ -4204,7 +4355,8 @@ function init() {
   document.addEventListener('touchmove', (e) => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
   // ダブルタップでの拡大は、CSS の touch-action: manipulation で止める(続けて押したボタンが効かなくならないように)
   $('joinRoom').onclick = () => { pvpJoin(); renderMode(); };
-  $('leaveRoom').onclick = () => { pvpLeave(); renderMode(); };
+  $('leaveRoom').onclick = () => { if (PVP.spec) specStop(); else pvpLeave(); renderMode(); };
+  $('specRoom').onclick = () => specStart();
   $('logBtn').onclick = () => {
     const hid = $('logPanel').classList.toggle('hidden');
     $('logBtn').textContent = hid ? 'ログを見る' : 'ログを閉じる';
