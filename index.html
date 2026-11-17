@@ -931,7 +931,7 @@ const GACHA_CHARS = [
     trait: { key: 'winStack', name: '連射', desc: '勝つたびに次の攻撃のATK+400が重なる(負けると消える)', v: 400 },
     actions: { rock: N('停止'), scissors: { rate: RATE.big, name: '跳躍' }, paper: N('遡行') } },
   { id: 'g_y4', name: '矢★4', faction: '矢', rarity: 4, gacha: true, role: 'フルパワー→減速', hp: 10000, atk: 10000, dfs: 1100, phys: 1.1,
-    trait: { key: 'burnout', name: '全力', desc: '場に出て3ラリー目まで、技がすべて極大。4ラリー目からは毎ラリーATK−400(最大−2400)', until: 3, step: 400, cap: 2400 },
+    trait: { key: 'burnout', name: '全力', desc: '場に出て3ラリー目まで、技がすべて極大。4ラリー目からは毎ラリーATK−1000(最大−8000)', until: 3, step: 1000, cap: 8000 },
     actions: { rock: { rate: RATE.huge, name: '停止' }, scissors: { rate: RATE.big, name: '跳躍' }, paper: N('遡行') } },
 ];
 
