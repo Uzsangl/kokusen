@@ -422,6 +422,41 @@
   .tnote { text-align: center; color: var(--sub); font-size: .75rem; margin-top: 8px; }
   .tsub { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
   .tsub button { padding: 12px; border-radius: 12px; font-size: .95rem; font-weight: 700; }
+  .tsub .tgacha { grid-column: 1 / -1; color: #ffd76a; border-color: #b57bff; background: linear-gradient(90deg, #2a1846, #1b2350); }
+  /* ガチャ */
+  .gc-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+  .gc-top b { font-size: 1.1rem; color: #7ee0ff; }
+  .gc-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0; }
+  .gc-btns button { padding: 14px 6px; font-weight: 700; line-height: 1.3; }
+  .gc-btns button small { display: block; font-weight: 400; color: var(--sub); font-size: .72rem; }
+  .gc-res { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 8px 0; }
+  .gc-card { position: relative; border: 1px solid var(--line); border-radius: 10px; padding: 6px 2px; text-align: center; font-size: .66rem; opacity: 0; transform: scale(.6); transition: opacity .25s, transform .25s; }
+  .gc-card.show { opacity: 1; transform: none; }
+  .gc-card .cico { width: 100%; max-width: 56px; height: auto; aspect-ratio: 1; }
+  .gc-card.r3 { border-color: #f5c451; } .gc-card.r4 { border-color: #b57bff; box-shadow: 0 0 14px #b57bffaa; } .gc-card.r5 { border-color: #ff2a3d; box-shadow: 0 0 20px #ff2a3dcc; }
+  .gc-card .new { position: absolute; top: 2px; left: 3px; color: #ff8a95; font-weight: 700; font-size: .6rem; }
+  .gc-rates { width: 100%; font-size: .74rem; border-collapse: collapse; margin-top: 6px; }
+  .gc-rates td { border-top: 1px solid var(--line); padding: 3px 4px; }
+  .gc-own { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; margin-top: 6px; }
+  .gc-own span { position: relative; text-align: center; font-size: .6rem; color: var(--sub); }
+  .gc-own .cico { width: 100%; height: auto; aspect-ratio: 1; }
+  .gc-own .no .cico { filter: grayscale(1) brightness(.4); }
+  #gstage { position: fixed; inset: 0; z-index: 9; background: radial-gradient(600px 500px at 50% 45%, #1a1f45, #05060d 75%); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 16px; }
+  #gstage.hidden { display: none; }
+  .gpane { width: min(78vw, 340px); aspect-ratio: 3 / 4; border-radius: 18px; border: 2px solid #9fd8ff88; background: linear-gradient(135deg, #ffffff22, #9fd8ff11 40%, #ffffff18 60%, #9fd8ff08); box-shadow: inset 0 0 40px #9fd8ff33, 0 0 30px #9fd8ff44; display: flex; align-items: center; justify-content: center; cursor: pointer; animation: gpaneBreath 1.4s ease-in-out infinite; }
+  .gpane span { color: #cfeaff; letter-spacing: .4em; font-weight: 700; animation: tapBlink 1.2s infinite; }
+  .gpane.c3 { border-color: #f5c451; box-shadow: inset 0 0 40px #f5c45144, 0 0 34px #f5c45188; }
+  .gpane.c4 { border-color: #b57bff; box-shadow: inset 0 0 50px #b57bff66, 0 0 44px #b57bffcc; }
+  .gpane.c5 { border-color: #ff2a3d; box-shadow: inset 0 0 60px #ff2a3d77, 0 0 60px #ff2a3dee; animation-duration: .5s; }
+  .gpane.gone { visibility: hidden; }
+  @keyframes gpaneBreath { 50% { transform: scale(1.02); } }
+  .gres { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; width: min(94vw, 460px); }
+  .gres:empty { display: none; }
+  .gres.one { grid-template-columns: minmax(0, 160px); justify-content: center; }
+  .gres .gc-card { background: #0f1226ee; }
+  .gres .gc-card.show { animation: gcPop .35s cubic-bezier(.2, 1.6, .4, 1); }
+  @keyframes gcPop { from { transform: scale(1.8); opacity: 0; filter: brightness(3); } }
+  #gOk { min-width: 140px; }
   .tacc { margin-top: 12px; border: 1px solid var(--line); border-radius: 14px; background: #0f1226dd; padding: 12px 14px; display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; }
   .tacc .nm { font-weight: 800; } .tacc .rate { color: var(--gold); font-weight: 900; }
   .tacc .meta { font-size: .75rem; color: var(--sub); margin-top: 2px; }
@@ -573,7 +608,7 @@
     <div class="tplay">
       <button id="tPlay" class="btn-play">プレイ</button>
       <div class="tnote">CPU戦・ソロ・オンライン対人</div>
-      <div class="tsub"><button id="tRule">📖 ルールブック</button><button id="tTitles">🎖 称号一覧</button></div>
+      <div class="tsub"><button id="tRule">📖 ルールブック</button><button id="tTitles">🎖 称号一覧</button><button id="tGacha" class="tgacha">🎰 ガチャ</button></div>
       <div class="tacc" id="tAcc"></div>
       <div class="tfoot">音楽:<a href="https://nagumorizu.com/" target="_blank" rel="noopener">なぐもりずの音楽室</a>(南雲莉翠) ・ <span id="tVer"></span></div>
     </div>
@@ -680,6 +715,8 @@
     </div>
   </div>
 
+<!-- ガチャの演出:ガラスの板が割れて、中からアイコンが出てくる -->
+<div id="gstage" class="hidden"><div class="gpane" id="gpane"><span>TAP</span></div><div class="gres" id="gres"></div><button id="gOk" class="hidden">OK</button></div>
 <div id="fx" aria-hidden="true">
   <canvas id="particles"></canvas>
   <div id="flash"></div>
@@ -4312,9 +4349,9 @@ const foePicks = () => (pickSide === 'foe' ? picked : teamPicks.foe);
 const charById = (id) => ALL_CHARS.find((c) => c.id === id);
 const charGroup = (ch) => ch.group || (SPECIAL_CHARS.includes(ch) ? '隔絶' : ch.faction);
 // 解放キャラを使えるか(称号を解放したアカウントでログインしているとき)
-const charUnlocked = (ch) => !ch.unlock || myTitles().includes(ch.unlock);
+const charUnlocked = (ch) => (ch.gacha ? gachaOwned(ch.id) > 0 : !ch.unlock || myTitles().includes(ch.unlock));
 // 解放キャラの条件の書き方(隠し称号は、解放するまで名前を伏せる)
-const unlockText = (ch) => { const t = titleOf(ch.unlock); return `称号「${t.hidden ? '？？？' : t.name}」${t.hidden ? '(隠し称号)' : ''}を解放すると使える(ログインが必要)`; };
+const unlockText = (ch) => { if (ch.gacha) return 'ガチャで手に入れると使える(ログインが必要)'; const t = titleOf(ch.unlock); return `称号「${t.hidden ? '？？？' : t.name}」${t.hidden ? '(隠し称号)' : ''}を解放すると使える(ログインが必要)`; };
 // 押す・長押しを分ける(長押し、またはパソコンの右クリックで詳細を出す)
 function bindPress(el, onTap, onLong) {
   let timer = null, long = false, sx = 0, sy = 0;
@@ -4369,6 +4406,85 @@ async function shardAdd(n) {
   const t = shardCount() + n;
   try { localStorage.setItem(SHARD_KEY, String(t)); } catch (e) { /* 保存できなくても動く */ }
   return t;
+}
+
+// ----- ガチャ:空間のカケラ25個で1回、250個で11回。ログインが必要 -----
+// 確率:★5 0.1% / ★4 1%(3体で等分)/ ★3 30% / ★2 30.9% / ★1 38%。同じ★の中は等分。ダブりはそのまま数える。保証はなし
+// 持っているキャラは、アカウントの progress の stats.owned({ id: 枚数 })に保存する
+const GACHA_COST = 25, GACHA_COST11 = 250;
+const GACHA_RATES = { 5: 0.001, 4: 0.01, 3: 0.30, 2: 0.309, 1: 0.38 };
+const gachaOwned = (id) => (shardOnAcc() && ACC.stats && ACC.stats.owned ? Number(ACC.stats.owned[id]) || 0 : 0);
+function gachaRoll() {
+  let r = Math.random();
+  for (const star of [5, 4, 3, 2, 1]) {
+    r -= GACHA_RATES[star];
+    if (r < 0 || star === 1) { const pool = GACHA_CHARS.filter((c) => c.rarity === star); return pool[Math.floor(Math.random() * pool.length)]; }
+  }
+}
+async function gachaPull(times) {
+  const cost = times === 11 ? GACHA_COST11 : GACHA_COST * times;
+  if (!shardOnAcc() || shardCount() < cost) return null;
+  const got = Array.from({ length: times }, gachaRoll);
+  const owned = { ...(ACC.stats.owned || {}) };
+  const fresh = got.map((c) => { const n = !owned[c.id]; owned[c.id] = (Number(owned[c.id]) || 0) + 1; return n; });
+  ACC.stats.shards = shardCount() - cost;
+  ACC.stats.owned = owned;
+  try { await sbFetch(`/rest/v1/progress?id=eq.${accUid()}`, { method: 'PATCH', prefer: 'return=minimal', body: { stats: ACC.stats, updated_at: new Date().toISOString() } }); } catch (e) { /* 次に保存するときにまとめて送られる */ }
+  return got.map((c, i) => ({ c, fresh: fresh[i] }));
+}
+// 引いた結果を見せる:ガラスの板(一番高い★の色に光る)をタップすると割れて、アイコンが飛び出す
+function gachaShow(r) {
+  return new Promise((done) => {
+    const top = Math.max(...r.map((x) => x.c.rarity));
+    const pane = $('gpane'), res = $('gres'), ok = $('gOk');
+    pane.className = 'gpane' + (top >= 3 ? ` c${top}` : '');
+    res.innerHTML = ''; res.className = 'gres' + (r.length === 1 ? ' one' : '');
+    ok.classList.add('hidden');
+    $('gstage').classList.remove('hidden');
+    Sound.lever();
+    let broke = false;
+    pane.onclick = async (e) => {
+      if (broke) return;
+      broke = true;
+      const at = e && e.clientX ? { x: e.clientX, y: e.clientY } : null;
+      await shatter(top >= 4, at || center(pane), () => pane.classList.add('gone'));
+      if (top >= 4) { flash(top >= 5 ? '#ff2a3d' : '#b57bff'); Sound.breakIn(); await cutin(top >= 5 ? 'SEC' : '★★★★', top >= 5 ? '時が、裏返る' : '時のゆがみ', top >= 5 ? 'evil' : 'violet', 1200); }
+      pane.style.display = 'none';
+      res.innerHTML = r.map((x) => `<div class="gc-card r${x.c.rarity}">${x.fresh ? '<i class="new">NEW</i>' : ''}${iconHtml(x.c, 'lg')}<div>${rarHtml(x.c)}</div>${escHtml(x.c.name)}</div>`).join('');
+      [...res.children].forEach((el, i) => setTimeout(() => {
+        el.classList.add('show');
+        if (+el.className.match(/r(\d)/)[1] >= 4) Sound.fanfare(); else Sound.click();
+      }, 110 * i));
+      setTimeout(() => ok.classList.remove('hidden'), 110 * r.length + 300);
+    };
+    ok.onclick = () => { $('gstage').classList.add('hidden'); pane.style.display = ''; res.innerHTML = ''; done(); };
+  });
+}
+function openGacha(results) {
+  const login = shardOnAcc();
+  const n = shardCount();
+  const rateRows = [5, 4, 3, 2, 1].map((st) => `<tr><td>${rarHtml({ rarity: st })}</td><td>${(GACHA_RATES[st] * 100).toFixed(1)}%</td><td>${GACHA_CHARS.filter((c) => c.rarity === st).map((c) => c.name).join('・')}</td></tr>`).join('');
+  const own = GACHA_CHARS.map((c) => { const k = gachaOwned(c.id); return `<span class="${k ? '' : 'no'}">${iconHtml(c, 'sm')}${k ? `×${k}` : '−'}</span>`; }).join('');
+  const res = results ? `<div class="gc-res">${results.map((r) => `<div class="gc-card r${r.c.rarity}">${r.fresh ? '<i class="new">NEW</i>' : ''}${iconHtml(r.c, 'lg')}<div>${rarHtml(r.c)}</div>${escHtml(r.c.name)}</div>`).join('')}</div>` : '';
+  openSheet('ガチャ', `<div class="gc-top"><span>💠${SHARD_NAME}</span><b>${n}</b></div>` +
+    (login ? '' : '<p class="sub" style="color:var(--gold)">ガチャはログインが必要です。カケラはオンライン対人(フリー戦・レート戦)で手に入ります。</p>') +
+    `<div class="gc-btns"><button id="gc1"${login && n >= GACHA_COST ? '' : ' disabled'}>1回引く<small>💠${GACHA_COST}</small></button><button id="gc11"${login && n >= GACHA_COST11 ? '' : ' disabled'}>11回引く<small>💠${GACHA_COST11}(1回分お得)</small></button></div>` +
+    res +
+    `<p class="sub">引いたキャラは、アドバンスで使えます(ダブりはそのまま数えます)。</p>` +
+    `<details><summary class="sub">確率</summary><table class="gc-rates">${rateRows}</table><p class="sub">同じ★の中では同じ確率。11回でも保証はありません。</p></details>` +
+    `<details${results ? '' : ' open'}><summary class="sub">持っているキャラ</summary><div class="gc-own">${own}</div></details>`);
+  if (!login) return;
+  const go = async (t) => {
+    const r = await gachaPull(t);
+    if (!r) return;
+    $('sheet').classList.add('hidden');
+    renderTitleAcc(); renderAcct();
+    await gachaShow(r);
+    openGacha(r);
+    document.querySelectorAll('#sheetBody .gc-card').forEach((el) => el.classList.add('show'));
+  };
+  $('gc1').onclick = () => go(1);
+  $('gc11').onclick = () => go(11);
 }
 
 // ----- マイセット:好きなパーティ(並び順つき)を5つまで保存する -----
@@ -4708,6 +4824,7 @@ function init() {
   $('tRule').onclick = () => openRulebook();
   $('tRank').onclick = openRanking;
   $('tTitles').onclick = openTitles;
+  $('tGacha').onclick = () => openGacha();
   $('sheetClose').onclick = () => $('sheet').classList.add('hidden');
   $('sheet').onclick = (e) => { if (e.target === $('sheet')) $('sheet').classList.add('hidden'); };
   showTitle(true);
