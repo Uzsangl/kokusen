@@ -924,7 +924,7 @@ const SPECIAL_CHARS = [
 ];
 
 // ===== ガチャキャラ(仮。名前・技名はあとで決める)=====
-// ★1・★2はハズレ枠、★3はベーシックの14人並み、★4は隔絶並み、★5は1パーティに1枚まで。アドバンスでだけ使える
+// ★1・★2はハズレ枠、★3はベーシックの14人並み、★4は隔絶並み、★4以上は1パーティに1枚まで(ソロは除く)。アドバンスでだけ使える
 const N = (name) => ({ rate: RATE.normal, name });
 const GACHA_CHARS = [
   // --- 錨 ---
@@ -3242,7 +3242,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.16';
+const APP_VER = '0.17';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
@@ -4397,7 +4397,12 @@ CHARACTERS.forEach((c) => { c.rarity = c.rarity || 3; });
 SPECIAL_CHARS.forEach((c) => { c.rarity = c.rarity || 4; });
 const rarityOf = (ch) => ch.rarity || 3;
 const rarHtml = (ch) => `<span class="rar r${rarityOf(ch)}">${'★'.repeat(rarityOf(ch))}</span>`;
-const STAR5_MAX = 1;
+// ★4以上は1パーティに1枚まで(ソロは除く。ソロのボス攻略では隔絶やカジ【始】を組み合わせてよい)
+const HIGH_MAX = 1;
+const highLimit = () => MODE !== 'solo';
+// その枚数制限で、このキャラをもう入れられないか
+const highFull = (ch, ids) => highLimit() && rarityOf(ch) >= 4 && ids.map(charById).filter((o) => o && rarityOf(o) >= 4).length >= HIGH_MAX;
+const sameClash = (ch, ids) => ids.map(charById).some((o) => o && (o.sameAs === ch.id || ch.sameAs === o.id));
 // 区分け:ベーシック(ガチャキャラ以外)/ アドバンス(すべて)。ソロはベーシックだけ
 const FORMATS = { basic: 'ベーシック', advance: 'アドバンス' };
 let FORMAT = 'basic';
@@ -4409,7 +4414,7 @@ function teamNg(ids, fmt = fmtNow()) {
   const cs = ids.map(charById);
   if (cs.some((c) => !c)) return 'キャラ情報が正しくありません';
   if (cs.some((c) => !inFormat(c, fmt))) return `${FORMATS[fmt]}では使えないキャラが入っています`;
-  if (cs.filter((c) => rarityOf(c) >= 5).length > STAR5_MAX) return '★5は1パーティに1枚までです';
+  if (highLimit() && cs.filter((c) => rarityOf(c) >= 4).length > HIGH_MAX) return '★4以上は1パーティに1枚までです';
   if (cs.some((c) => cs.some((o) => o !== c && (o.sameAs === c.id || c.sameAs === o.id)))) return '同じ人物が入っています';
   return '';
 }
@@ -4465,14 +4470,13 @@ function bindPress(el, onTap, onLong) {
 function openCharDetail(ch, back) {   // back:閉じたあとに戻る画面(ガチャから開いたとき)
   const order = picked.indexOf(ch.id), unlocked = charUnlocked(ch);
   const hide = ch.secret && !xenoKnown();
-  const clash = order < 0 && (picked.map(charById).some((o) => o && (o.sameAs === ch.id || ch.sameAs === o.id))
-    || (rarityOf(ch) >= 5 && picked.map(charById).filter((o) => o && rarityOf(o) >= 5).length >= STAR5_MAX));
+  const clash = order < 0 && (sameClash(ch, picked) || highFull(ch, picked));
   const canToggle = !back && unlocked && !(PVP.on && PVP.phase === 'ready') && (order >= 0 || (!clash && picked.length < TEAM_SIZE));
   openSheet(dispName(ch), `<div class="cdetail"><div class="crow">${iconHtml(ch, 'lg')}<div>` +
     `<div class="name">${dispName(ch)}${hide ? '' : `<span class="role">${ch.role || ''}</span>`}</div>` +
     (hide ? '' : `<div>${rarHtml(ch)}${ch.gacha ? ' <small class="sub">ガチャキャラ(アドバンスのみ)</small>' : ''}</div>`) +
     (unlocked ? '' : `<div class="sub" style="color:var(--gold)">🔒 ${unlockText(ch)}</div>`) +
-    (clash ? '<div class="sub">同じ人物なので、同じパーティには入れられない</div>' : '') +
+    (clash ? `<div class="sub">${sameClash(ch, picked) ? '同じ人物なので、同じパーティには入れられない' : '★4以上は1パーティに1枚まで(もう入っている)'}</div>` : '') +
     (hide ? '' : `<div class="stats"><span class="s-hp">HP ${ch.hp}</span>　${statLine(ch)}</div><div class="trait">${traitLine(ch)}</div>` + actionList(ch, 'div', 'sub')) +
     `</div></div>` + (canToggle ? `<div class="row"><button id="cdPick" style="border-color:var(--gold);color:var(--gold);font-weight:700">${order >= 0 ? 'パーティから外す' : `${picked.length + 1}番手に入れる`}</button></div>` : '') + (back ? '<div class="row"><button id="cdBack">◀ ガチャに戻る</button></div>' : '') + `</div>`);
   if (back) $('cdBack').onclick = () => { Sound.click(); back(); };
@@ -4793,7 +4797,7 @@ function renderFormats() {
     b.classList.toggle('picked', b.dataset.f === fmtNow());
     b.disabled = solo || (PVP.on && PVP.phase !== 'idle');
   });
-  $('formatNote').textContent = solo ? 'ソロはベーシックのみ。' : fmtNow() === 'advance' ? 'アドバンス:すべてのキャラが使える(ガチャキャラも)。★5は1パーティに1枚まで。' : 'ベーシック:ガチャキャラ以外のキャラで戦う。';
+  $('formatNote').textContent = solo ? 'ソロはベーシックのみ。' : fmtNow() === 'advance' ? 'アドバンス:すべてのキャラが使える(ガチャキャラも)。★4以上は1パーティに1枚まで。' : 'ベーシック:ガチャキャラ以外のキャラで戦う。★4以上は1パーティに1枚まで。';
   [...$('cpuPicks').children].forEach((b) => b.classList.toggle('picked', b.dataset.c === CPU_PICK));
 }
 function renderSelHead() {
@@ -4865,8 +4869,7 @@ function renderSelect() {
     b.className = 'ctile';
     if (order >= 0) b.classList.add('picked');
     const unlocked = charUnlocked(ch);
-    const clash = order < 0 && (picked.map(charById).some((o) => o && (o.sameAs === ch.id || ch.sameAs === o.id))
-      || (rarityOf(ch) >= 5 && picked.map(charById).filter((o) => o && rarityOf(o) >= 5).length >= STAR5_MAX));
+    const clash = order < 0 && (sameClash(ch, picked) || highFull(ch, picked));
     const full = order < 0 && picked.length >= TEAM_SIZE;
     const off = !unlocked || clash || full || locked;
     b.classList.toggle('off', off && order < 0);
@@ -4914,7 +4917,7 @@ function start() {
   }
   // CPUのパーティ:自分で選んだならそれ、おまかせなら区分けに合うキャラからランダム(ガチャキャラはアドバンスのときだけ)
   const pool = CHARACTERS.concat(fmtNow() === 'advance' ? ALL_CHARS.filter((c) => c.gacha) : []);
-  const foes = choosingFoe() && teamPicks.foe.length === TEAM_SIZE ? teamPicks.foe.map(charById) : shuffled(pool).slice(0, TEAM_SIZE);
+  const foes = choosingFoe() && teamPicks.foe.length === TEAM_SIZE ? teamPicks.foe.map(charById) : (() => { for (;;) { const t = shuffled(pool).slice(0, TEAM_SIZE); if (!teamNg(t.map((c) => c.id))) return t; } })();
   return startMatch(mine, foes, 'CPU');
 }
 // opt:level はCPUの深さ、read はボスが読みに頼る割合、stage はソロのステージ、noDecay は刻の抜け落ちを止める
