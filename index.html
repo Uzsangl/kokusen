@@ -3230,6 +3230,8 @@ function seal(text) {
   return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
 }
 const RULES_VER = seal(RULES_SRC);
+// 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
+const APP_VER = '0.10';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
@@ -3408,7 +3410,7 @@ async function pvpStep() {
   const foe = pvpFoe(), fp = foe ? foe.presence : null;
 
   const verNg = fp && fp.v !== RULES_VER;
-  if (verNg && PVP.phase !== 'play') { pvpStatus(`相手とゲームの版が違います(自分 ver ${RULES_VER.slice(0, 6)} / 相手 ver ${String(fp.v || '?').slice(0, 6)})。お互いにページを再読み込みして、タイトル画面の右下の ver が同じになってから入り直してください。`); return; }
+  if (verNg && PVP.phase !== 'play') { pvpStatus(`相手とゲームの版が違います(ルール番号 自分 ${RULES_VER.slice(0, 6)} / 相手 ${String(fp.v || '?').slice(0, 6)})。お互いにページを再読み込みして、タイトル画面の右下の ver が同じになってから入り直してください。`); return; }
   const kindNg = pvpKindNg(fp);
   if (kindNg && PVP.phase !== 'play') { if (selStep === 'pick' && PVP.phase === 'lobby') setStep('menu'); renderSelHead(); pvpStatus(kindNg); return; }
   if (PVP.phase === 'lobby' && foe && selStep === 'menu' && !$('select').classList.contains('hidden')) setStep('pick');   // 相手が来たら、キャラ選択へ
@@ -4843,7 +4845,8 @@ function init() {
   accInit();
   setInterval(pvpWatch, 1000);
   // タイトル画面
-  $('tVer').textContent = `ver ${RULES_VER.slice(0, 6)}`;
+  $('tVer').textContent = `ver ${APP_VER}`;
+  $('tVer').title = `ルール ${RULES_VER.slice(0, 6)}`;   // 対人の版合わせに使うルールの番号
   $('tPlay').onclick = () => { Sound.wake(); Bgm.unlock && Bgm.unlock(); showTitle(false); };
   $('toTitle').onclick = () => showTitle(true);
   // パソコン:キーボードで手を出す(1・2・3 または Q・W・E)。Escで開いている画面を閉じる
