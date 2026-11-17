@@ -3242,7 +3242,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.15';
+const APP_VER = '0.16';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
@@ -3454,8 +3454,8 @@ async function pvpStep() {
       PVP.foeAcc = v;
       if (v && S && S.teams[1]) { PVP.foeName = v.name; S.teams[1].label = v.name; render(); }
       if (!rated) { logLater(`フリー戦(レートは変わりません)${v ? `。対戦相手:${v.name}` : ''}`); return null; }   // フリー戦はレートを動かさない
-      if (v) await accRateStart(v, [PVP.teamSalt, String(t.s)].sort().join('|').slice(0, 100));
-      logLater(v ? `レート戦。対戦相手:${titleOf(v.title) ? `〔${titleOf(v.title).name}〕` : ''}${v.name}(レート${v.r})` : '相手のアカウントを確かめられなかったため、レーティングなしの対戦です');
+      const lim = !!v && await accRateStart(v, [PVP.teamSalt, String(t.s)].sort().join('|').slice(0, 100)) === 'limit';
+      logLater(lim ? `同じ相手とのレート戦は1日5回までです。この対戦ではレートは変わりません。対戦相手:${v.name}` : v ? `レート戦。対戦相手:${titleOf(v.title) ? `〔${titleOf(v.title).name}〕` : ''}${v.name}(レート${v.r})` : '相手のアカウントを確かめられなかったため、レーティングなしの対戦です');
       return v;
     });
     PVP.hist = []; PVP.matchId = rnd(); PVP.foeIds = t.ids.slice();
@@ -3887,11 +3887,13 @@ async function accRateStart(foe, key) {
       await sbFetch('/rest/v1/rpc/rate_start', { method: 'POST', body: { p_key: key, p_foe: foe.id } });
       pd.mode = 'server';
     } catch (e) {
+      if (e.code === 'KS001') pd.limit = true;   // 同じ相手とのレート戦は1日5回まで(supabase/schema.sql の7回目)
       if (!isMissingFn(e)) return;   // サーバーに断られた・つながらなかった:この対戦ではレートを動かさない
       try { await ratePatch(rateAfter(base, foe.r, 0)); pd.mode = 'legacy'; } catch (e2) { /* 保存できなければレートを動かさない */ }
     }
   })();
   await ACC.pendingP;
+  return pd.limit ? 'limit' : pd.mode;
 }
 async function accRateFinish(score) {
   const pd = ACC.pending, p = ACC.profile;
