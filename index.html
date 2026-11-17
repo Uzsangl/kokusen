@@ -874,6 +874,66 @@ const SPECIAL_CHARS = [
       paper:    { name: '流れ戻し', rate: RATE.normal, heal: 1500 } } },
 ];
 
+// ===== ガチャキャラ(仮。名前・技名はあとで決める)=====
+// ★1・★2はハズレ枠、★3はベーシックの14人並み、★4は隔絶並み、★5は1パーティに1枚まで。アドバンスでだけ使える
+const N = (name) => ({ rate: RATE.normal, name });
+const GACHA_CHARS = [
+  // --- 錨 ---
+  { id: 'g_a1', name: '錨★1', faction: '錨', rarity: 1, gacha: true, role: '(仮)', hp: 7000, atk: 1400, dfs: 1200, phys: 0.9,
+    actions: { rock: N('停止'), scissors: N('跳躍'), paper: N('遡行') } },
+  { id: 'g_a2', name: '錨★2', faction: '錨', rarity: 2, gacha: true, role: 'デカブツ', hp: 30000, atk: 700, dfs: 0, phys: 0.8,
+    actions: { rock: N('停止'), scissors: N('跳躍'), paper: N('遡行') } },
+  { id: 'g_a3a', name: '錨★3-A', faction: '錨', rarity: 3, gacha: true, role: '継承', hp: 6500, atk: 2200, dfs: 1500, phys: 1.0,
+    trait: { key: 'passStats', name: '継ぎ', desc: '倒れたとき、自分のATKとDFS(消えない強化も込み)をそのまま次の番手に足す' },
+    actions: { rock: { rate: RATE.big, name: '停止' }, scissors: { rate: RATE.normal, name: '跳躍', mods: [selfDfs(1000, 2)] }, paper: { rate: RATE.normal, name: '遡行', selfPerm: { atk: 500, dfs: 500 } } } },
+  { id: 'g_a3b', name: '錨★3-B', faction: '錨', rarity: 3, gacha: true, role: '回復耐久', hp: 15000, atk: 1500, dfs: 1900, phys: 0.95,
+    trait: { key: 'regen', name: '潮だまり', desc: 'ラリーが終わるたびにHPを400回復', heal: 400 },
+    actions: { rock: { rate: RATE.normal, name: '停止', mods: [foeAtk(500, 2)] }, scissors: N('跳躍'), paper: { rate: RATE.normal, name: '遡行', heal: 1600 } } },
+  { id: 'g_a3c', name: '錨★3-C', faction: '錨', rarity: 3, gacha: true, role: '硬い相手を割る', hp: 9000, atk: 2600, dfs: 1300, phys: 1.15,
+    actions: { rock: { rate: RATE.huge, name: '停止', up: { rate: RATE.max, when: 'foeDfsAtLeast', v: 2000, text: '相手のDFSが2000以上なら極大' } }, scissors: { rate: RATE.normal, name: '跳躍', mods: [foeDfs(800, 3)] }, paper: N('遡行') } },
+  { id: 'g_a4', name: '錨★4', faction: '錨', rarity: 4, gacha: true, role: '抜け落ち勝ち', hp: 19000, atk: 1500, dfs: 2600, phys: 0.9,
+    trait: { key: 'decayGuard', name: '錨泊', desc: '刻の抜け落ちを受けない。相手が受ける抜け落ちダメージ+50%', boost: 0.5 },
+    actions: { rock: { rate: RATE.normal, name: '停止', mods: [selfDfs(2000, 2)] }, scissors: N('跳躍'), paper: { rate: RATE.normal, name: '遡行', heal: 1800 } } },
+  // --- 零 ---
+  { id: 'g_z1', name: '零★1', faction: '零', rarity: 1, gacha: true, role: '(仮)', hp: 6000, atk: 1800, dfs: 800, phys: 0.9,
+    actions: { rock: N('停止'), scissors: N('跳躍'), paper: N('遡行') } },
+  { id: 'g_z2', name: '零★2', faction: '零', rarity: 2, gacha: true, role: '弱い時蝕', hp: 8000, atk: 1600, dfs: 1000, phys: 0.9,
+    actions: { rock: { rate: RATE.normal, name: '停止', poison: 2 }, scissors: N('跳躍'), paper: N('遡行') } },
+  { id: 'g_z3a', name: '零★3-A', faction: '零', rarity: 3, gacha: true, role: '相手全体に永続デバフ', hp: 9500, atk: 1900, dfs: 1300, phys: 0.95,
+    trait: { key: 'teamCurse', name: '呪い', desc: '技を当てるたびに、相手の控えも含めた全員のATK−150(消えない。最大−2000)', v: 150, cap: 2000 },
+    actions: { rock: N('停止'), scissors: { rate: RATE.big, name: '跳躍' }, paper: { rate: RATE.normal, name: '遡行', foeTeamMark: { stat: 'dfs', v: 200, cap: 2000 } } } },
+  { id: 'g_z3b', name: '零★3-B', faction: '零', rarity: 3, gacha: true, role: '一度だけ耐える', hp: 8000, atk: 2300, dfs: 1100, phys: 1.0,
+    trait: { key: 'secondWind', name: '立ち直り', desc: '一度だけ、倒れたときにHP30%で立ち上がる', hp: 0.3 },
+    actions: { rock: { rate: RATE.big, name: '停止' }, scissors: N('跳躍'), paper: { rate: RATE.normal, name: '遡行', heal: 600 } } },
+  { id: 'g_z3c', name: '零★3-C', faction: '零', rarity: 3, gacha: true, role: 'あいこで連勝', hp: 9000, atk: 2100, dfs: 1200, phys: 1.0,
+    trait: { key: 'drawStreak', name: '逆巻き', desc: 'あいこでも連勝が1増える' },
+    actions: { rock: N('停止'), scissors: { rate: RATE.big, name: '跳躍' }, paper: N('遡行') } },
+  { id: 'g_z4', name: '零★4', faction: '零', rarity: 4, gacha: true, role: '相手のATKで殴る', hp: 18000, atk: 1000, dfs: 1300, phys: 1.1,
+    trait: { key: 'mirrorAtk', name: '鏡写し', desc: '攻撃するとき、自分のATKの代わりに相手の今のATKを使う' },
+    actions: { rock: { rate: RATE.big, name: '停止' }, scissors: { rate: RATE.normal, name: '跳躍', mods: [{ to: 'foe', stat: 'atk', v: 500, t: 2 }] }, paper: { rate: RATE.normal, name: '遡行', heal: 1500 } } },
+  { id: 'g_z5', name: '零★5', faction: '零', rarity: 5, gacha: true, role: 'SEC', hp: 10000, atk: 2500, dfs: 1500, phys: 1.5,
+    trait: { key: 'lateBreak', name: '遅咲きの刻', desc: `場に出て10ラリー目以降、自分の${BREAK_NAME}の攻撃だけATKが10倍`, from: 10, mul: 10 },
+    actions: { rock: N('停止'), scissors: { rate: RATE.max, name: '跳躍' }, paper: { rate: RATE.normal, name: '遡行', mods: [selfDfs(1500, 2)] } } },
+  // --- 矢 ---
+  { id: 'g_y1', name: '矢★1', faction: '矢', rarity: 1, gacha: true, role: '(仮)', hp: 5500, atk: 2000, dfs: 700, phys: 0.95,
+    actions: { rock: N('停止'), scissors: N('跳躍'), paper: N('遡行') } },
+  { id: 'g_y2', name: '矢★2', faction: '矢', rarity: 2, gacha: true, role: '出だしだけ', hp: 7000, atk: 2200, dfs: 900, phys: 1.0,
+    trait: { key: 'rush', name: '出鼻', desc: '場に出て1ラリー目だけATK+800', until: 1, early: 800, from: 999, late: 0 },
+    actions: { rock: { rate: RATE.big, name: '停止' }, scissors: N('跳躍'), paper: N('遡行') } },
+  { id: 'g_y3a', name: '矢★3-A', faction: '矢', rarity: 3, gacha: true, role: '永続デバフ', hp: 8500, atk: 2400, dfs: 1100, phys: 1.0,
+    trait: { key: 'pierceMark', name: '穿ち', desc: '技を当てるたびに、場の相手のDFS−250(そのカードに消えずに残る。最大−1500)', v: 250, cap: 1500 },
+    actions: { rock: N('停止'), scissors: { rate: RATE.big, name: '跳躍' }, paper: { rate: RATE.normal, name: '遡行', mods: [foeAtk(400, 2)] } } },
+  { id: 'g_y3b', name: '矢★3-B', faction: '矢', rarity: 3, gacha: true, role: 'BREAK特化', hp: 7500, atk: 2600, dfs: 1000, phys: 1.05,
+    trait: { key: 'foresight', name: '一矢', desc: `自分の${BREAK_NAME}の攻撃はATK+2000`, add: 2000 },
+    actions: { rock: { rate: RATE.big, name: '停止' }, scissors: { rate: RATE.normal, name: '跳躍', streak: 1 }, paper: N('遡行') } },
+  { id: 'g_y3c', name: '矢★3-C', faction: '矢', rarity: 3, gacha: true, role: '連続で勝つほど強い', hp: 8000, atk: 2300, dfs: 1000, phys: 1.05,
+    trait: { key: 'winStack', name: '連射', desc: '勝つたびに次の攻撃のATK+400が重なる(負けると消える)', v: 400 },
+    actions: { rock: N('停止'), scissors: { rate: RATE.big, name: '跳躍' }, paper: N('遡行') } },
+  { id: 'g_y4', name: '矢★4', faction: '矢', rarity: 4, gacha: true, role: 'フルパワー→減速', hp: 10000, atk: 3800, dfs: 1100, phys: 1.1,
+    trait: { key: 'burnout', name: '全力', desc: '場に出て3ラリー目まで、技がすべて極大。4ラリー目からは毎ラリーATK−400(最大−2400)', until: 3, step: 400, cap: 2400 },
+    actions: { rock: { rate: RATE.huge, name: '停止' }, scissors: { rate: RATE.big, name: '跳躍' }, paper: N('遡行') } },
+];
+
 // 各陣営に★・★★・★★★の3ステージ、全9ステージ。★と★★は3対3、★★★は3対1(敵はボス1体、特性3つ)。
 // 敵の能力値はステージごとに決める。hp と atk は、下の STAGES の倍率(hp, atk)を掛けた値になる。
 // 特性の key の処理は、プレイヤーのキャラと共通(「特性」と書いた箇所)。unbreak はボス用。
@@ -1087,9 +1147,11 @@ function upActive(a, att, def, n, isBreak) {
   if (u.when === 'gainMax') return att.dfsGain >= u.v;
   if (u.when === 'inBreak') return !!isBreak;
   if (u.when === 'captured') return !!att.captured;
+  if (u.when === 'foeDfsAtLeast') return dfsOf(def, false) >= u.v;
   return false;
 }
-const rateOf = (a, att, def, n, isBreak) => (upActive(a, att, def, n, isBreak) ? a.up.rate : a.rate);
+// 特性「全力」:場に出て数ラリーの間、ダメージのある技はすべて極大
+const rateOf = (a, att, def, n, isBreak) => { const b = traitOf(att, 'burnout'); if (b && a.rate && n <= b.until) return RATE.max; return upActive(a, att, def, n, isBreak) ? a.up.rate : a.rate; };
 
 // 特性によるATKの増減(実数の足し引き)
 function traitAtk(S, att, def, isBreak) {
@@ -1101,13 +1163,20 @@ function traitAtk(S, att, def, isBreak) {
   if ((t = traitOf(att, 'foresight')) && isBreak) v += t.add;
   if ((t = traitOf(att, 'giantSlayer')) && att.giant) v += t.atk;   // 相手が1体だけのチーム(ソロのボス戦)のとき
   if ((t = traitOf(att, 'rush'))) v += att.turn <= t.until ? t.early : att.turn >= t.from ? t.late : 0;
+  if ((t = traitOf(att, 'burnout')) && att.turn > t.until) v -= Math.min(t.cap, (att.turn - t.until) * t.step);   // 全力のあとの減速
+  if ((t = traitOf(att, 'winStack'))) v += att.stackAtk || 0;                                                     // 勝つたびに重なる
   return v;
 }
 
 // 攻撃1回ぶんのダメージ。att / def は場に出ているカード
 // 掛け算するのは「ATK × ダメージ係数 × フィジカル係数 × DFS軽減」だけで、強化・弱体はすべてATKとDFSへの足し引き
 function damage(S, att, def, rate, isBreak) {
-  const atk = Math.min(ATK_MAX, Math.max(ATK_MIN, baseAtk(att) + att.atkUp + traitAtk(S, att, def, isBreak)));
+  // 特性「鏡写し」:自分のATKの代わりに、相手の今のATKで攻撃する
+  let atk = Math.max(ATK_MIN, (traitOf(att, 'mirrorAtk') ? baseAtk(def) : baseAtk(att)) + att.atkUp + traitAtk(S, att, def, isBreak));
+  // 特性「遅咲きの刻」:場に出て一定ラリー以降の BREAK だけ、ATKが何倍にもなる
+  const lb = isBreak ? traitOf(att, 'lateBreak') : null;
+  if (lb && att.turn >= lb.from) atk *= lb.mul;
+  atk = Math.min(ATK_MAX, atk);
   const ub = isBreak ? traitOf(def, 'unbreak') : null;   // 特性:BREAKの被ダメージを減らす
   const out = !def.captured ? traitOf(def, 'outside') : null;   // 特性「時の外側」
   return Math.round(atk * rate * att.ch.phys * (1 - dfsVs(att, def, isBreak) / 10000) * (ub ? 1 - ub.cut : 1) * (out ? 1 - out.cut : 1));
@@ -1137,6 +1206,17 @@ function describe(a, rate, short) {
   if (a.dispel) parts.push(short ? 'バフ消し' : '相手のバフをすべて消す');
   if (a.resetStreak) parts.push(short ? '連勝リセット' : '相手の連勝を0にする(連勝保護も無視)');
   if (a.mark) { const L = a.mark.stat === 'atk' ? 'ATK' : 'DFS'; parts.push(short ? `敵${L}−${a.mark.v}刻印` : `相手の${L}−${a.mark.v}(刻印。消えず、重ねがけで最大−${a.mark.cap})`); }
+  if (a.foeTeamMark) {   // 相手の控えも含めた全員に、消えない弱体
+    const k = a.foeTeamMark.stat === 'atk' ? 'markAtk' : 'markDfs', label = a.foeTeamMark.stat === 'atk' ? 'ATK' : 'DFS';
+    lt.cards.forEach((c) => { if (c.result !== 'lose') c[k] = Math.max(-a.foeTeamMark.cap, c[k] - a.foeTeamMark.v); });
+    S.events.push({ type: 'mod', side: 1 - side, text: `全員${label}刻印`, good: false });
+    log(`　${lt.label}の全員に${label}の刻印(${label}${l[k]})`);
+  }
+  if (a.selfPerm && w.hp > 0) {   // 自分に、消えない強化(重ねがけできる)
+    w.atkBonus += a.selfPerm.atk || 0; w.dfsBonus += a.selfPerm.dfs || 0;
+    S.events.push({ type: 'mod', side, text: 'ずっと↑', good: true });
+    log(`　${nameOf(w)}のATK+${a.selfPerm.atk || 0}・DFS+${a.selfPerm.dfs || 0}(消えない。合計ATK+${w.atkBonus}・DFS+${w.dfsBonus})`);
+  }
   if (a.team) { const L = a.team.stat === 'atk' ? 'ATK' : 'DFS'; parts.push(short ? `全員${L}+${a.team.v}` : `味方全員(控えも)の${L}+${a.team.v}(消えず、重ねがけで最大+${a.team.cap})`); }
   if (a.nextAtkUp) parts.push(short ? `次番手ATK+${a.nextAtkUp}` : `次の番手の最初の攻撃ATK+${a.nextAtkUp}`);
   if (a.nextDfsUp) parts.push(short ? `次番手DFS+${a.nextDfsUp}` : `次の番手の最初の被弾DFS+${a.nextDfsUp}`);
@@ -1260,6 +1340,16 @@ function act(S, side, hand, log, isBreak) {
       w.hp = Math.min(w.max, w.hp + Math.round(d * t.rate));
       S.hit.heal += w.hp - before;
       log(`　${nameOf(w)}は刻を喰らって${w.hp - before}回復`);
+    }
+    // 特性「呪い」:当たるたびに、相手の控えも含めた全員に消えない弱体
+    if ((t = traitOf(w, 'teamCurse')) && d > 0) {
+      lt.cards.forEach((c) => { if (c.result !== 'lose') c.markAtk = Math.max(-t.cap, c.markAtk - t.v); });
+      log(`　${lt.label}の全員にATKの刻印(ATK${l.markAtk})`);
+    }
+    // 特性「穿ち」:当たるたびに、場の相手のDFSを削る刻印
+    if ((t = traitOf(w, 'pierceMark')) && l.hp > 0 && d > 0) {
+      l.markDfs = Math.max(-t.cap, l.markDfs - t.v);
+      log(`　${nameOf(l)}にDFSの刻印(DFS${l.markDfs})`);
     }
     // 特性「霞の刻」:当たるたびに相手のATKを削る刻印
     if ((t = traitOf(w, 'hazeMark')) && l.hp > 0 && d > 0 && l.markAtk > -t.cap) {
@@ -1397,9 +1487,11 @@ function endRally(S, log, winSide) {
   // 刻の抜け落ち:長引くほど両者が削れる
   if (!S.noDecay && S.boutRally > DECAY_FROM) {
     S.teams.forEach((t, side) => {
-      const f = active(t);
+      const f = active(t), foe = active(S.teams[1 - side]);
       if (f.hp <= 0) return;
-      const d = Math.round(f.max * DECAY_STEP * (S.boutRally - DECAY_FROM));
+      const g = traitOf(f, 'decayGuard'), gf = traitOf(foe, 'decayGuard');
+      if (g) return;   // 特性「錨泊」:抜け落ちを受けない
+      const d = Math.round(f.max * DECAY_STEP * (S.boutRally - DECAY_FROM) * (gf ? 1 + gf.boost : 1));
       f.hp = Math.max(0, f.hp - d);
       S.ticks.push({ side, dmg: d, decay: true });
       log(`　刻の抜け落ち:${t.label}の${nameOf(f)}に${d}ダメージ`);
@@ -1409,6 +1501,14 @@ function endRally(S, log, winSide) {
   const sp = active(S.teams[1]), rite = traitOf(sp, 'rewindRite');
   // 期限までに倒せなかったとき(こちらが全滅していれば、巻き戻らずに負け)
   if (rite && sp.hp > 0 && sp.turn >= rite.limit && active(S.teams[0]).hp > 0) { rewindMatch(S, log); return; }
+  // 特性「立ち直り」:一度だけ、倒れたときにHPの一部で立ち上がる
+  S.teams.forEach((t, side) => {
+    const f = active(t), sw = traitOf(f, 'secondWind');
+    if (f.hp > 0 || !sw || f.revived) return;
+    f.revived = true; f.hp = Math.round(f.max * sw.hp);
+    S.events.push({ type: 'mod', side, text: '立ち直り', good: true });
+    log(`　${t.label}の${nameOf(f)}の「${sw.name}」:HP${f.hp}で立ち上がった`);
+  });
   // 特性「離脱」:倒れたとき一度だけ、別の姿で場に残る(撃破には数えない)
   S.teams.forEach((t, side) => {
     const f = active(t), dt = traitOf(f, 'detach');
@@ -1427,6 +1527,13 @@ function endRally(S, log, winSide) {
     if (ko[side] && tr && next) {
       next.atkBonus += tr.atk; next.dfsBonus += tr.dfs;
       log(`　${t.label}の${f.ch.name}の「${tr.name}」→ 次の${next.ch.name}にATK+${tr.atk}・DFS+${tr.dfs}`);
+    }
+    // 特性「継ぎ」:倒れたとき、自分のATKとDFS(消えない強化も込み)をそのまま次の番手に足す
+    const ps = traitOf(f, 'passStats');
+    if (ko[side] && ps && next) {
+      const pa = f.atk + f.atkBonus + f.teamAtk + (f.growAtk || 0), pd = f.dfs + f.dfsBonus + f.teamDfs + f.dfsGain;
+      next.atkBonus += pa; next.dfsBonus += pd;
+      log(`　${t.label}の${f.ch.name}の「${ps.name}」→ 次の${next.ch.name}にATK+${pa}・DFS+${pd}`);
     }
     // 特性「舫い」「羽渡し」:倒れたとき、控えの味方全員を強化する
     const lg = traitOf(f, 'legacy'), bench = t.cards.slice(t.idx + 1);
@@ -1481,12 +1588,23 @@ function rally(S, hand0, hand1, log) {
   const winSide = r === 0 ? -1 : r > 0 ? 0 : 1;
   if (r === 0) {
     log('あいこ');
+    // 特性「逆巻き」:あいこでも連勝が1増える
+    S.teams.forEach((t) => {
+      if (!traitOf(active(t), 'drawStreak')) return;
+      t.streak++;
+      log(`　${t.label}の${nameOf(active(t))}の「逆巻き」:あいこでも連勝+1`);
+      if (t.streak >= BREAK_STREAK) { t.streak = 0; t.breakReady = true; log(`　${t.label}が${BREAK_STREAK}連勝 → ${BREAK_NAME}!`); }
+    });
   } else {
     const side = r > 0 ? 0 : 1;
     const wt = S.teams[side], lt = S.teams[1 - side];
     if (lt.keep) { lt.keep = false; log(`　${lt.label}の連勝は途切れなかった`); }
     else lt.streak = 0;
     act(S, side, side === 0 ? hand0 : hand1, log);
+    // 特性「連射」:勝つたびに次の攻撃が強くなり、負けると消える
+    const ws = active(wt), ls = active(lt);
+    if (traitOf(ws, 'winStack') && ws.hp > 0) ws.stackAtk = (ws.stackAtk || 0) + traitOf(ws, 'winStack').v;
+    if (traitOf(ls, 'winStack')) ls.stackAtk = 0;
     if (wt.sealed) { wt.sealed = false; log(`　${wt.label}のこの勝ちは連勝に数えない`); }
     else wt.streak++;
     if (wt.streak >= BREAK_STREAK) {
