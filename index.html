@@ -2239,11 +2239,20 @@ const Sound = (() => {
     },
     // 先バレの告知音「ぽきゅん」:短い「ぽ」のあと、高く跳ね上がる「きゅん」
     pokyun() {
-      tone(620, 0.07, { type: 'sine', vol: 0.5, to: 380 });
-      tone(1240, 0.05, { type: 'triangle', vol: 0.12, to: 760 });
-      tone(900, 0.16, { type: 'sine', vol: 0.42, to: 2900, at: 0.075 });
-      tone(1800, 0.14, { type: 'triangle', vol: 0.12, to: 5200, at: 0.08 });
-      tone(2900, 0.22, { type: 'sine', vol: 0.12, to: 2500, at: 0.23 });
+      // 本体:短く下がる「ぽ」と、高く跳ね上がる「きゅん」
+      const body = (at, k) => {
+        tone(620, 0.07, { type: 'sine', vol: 0.5 * k, to: 380, at });
+        tone(900, 0.16, { type: 'sine', vol: 0.42 * k, to: 2900, at: at + 0.075 });
+        tone(1800, 0.14, { type: 'triangle', vol: 0.12 * k, to: 5200, at: at + 0.08 });
+      };
+      body(0, 1);
+      // 響き:鐘のように長く残る高い音(倍音を重ねる)
+      tone(2900, 1.6, { type: 'sine', vol: 0.16, at: 0.23 });
+      tone(4350, 1.2, { type: 'sine', vol: 0.06, at: 0.23 });
+      tone(5800, 0.8, { type: 'sine', vol: 0.03, at: 0.23 });
+      tone(1450, 1.4, { type: 'sine', vol: 0.08, at: 0.23 });
+      // こだま:だんだん小さくなって繰り返す
+      [0.18, 0.36, 0.54].forEach((d, i) => body(d, 0.38 / (i + 1)));
     },
     // 技が当たる。power は2.5(通常)〜5(極大)
     hit(power) {
@@ -3271,7 +3280,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.20';
+const APP_VER = '0.21';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
