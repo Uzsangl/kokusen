@@ -254,6 +254,13 @@
   .foot { display: flex; gap: 6px; }
   .foot button { flex: 1; padding: 5px; font-size: .72rem; }
   #logPanel { padding: 8px; }
+  #handStats { border: 1px solid var(--line); border-radius: 10px; padding: 8px; margin-bottom: 8px; font-size: .8rem; }
+  #handStats:empty { display: none; }
+  #handStats table { width: 100%; border-collapse: collapse; }
+  #handStats th, #handStats td { padding: 3px 4px; text-align: center; }
+  #handStats th:first-child, #handStats td:first-child { text-align: left; max-width: 7em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #handStats td small { color: var(--sub); font-size: .68rem; }
+  #handStats .hs-cap { color: var(--sub); font-size: .7rem; margin-top: 4px; }
   #log { max-height: 40vh; }
 
   /* 虹色の文字(BREAK・確定) */
@@ -709,7 +716,7 @@
       <span id="specBadge" class="hidden"></span>
       <button id="chain" class="hidden">続けて【始】に挑む</button>
     </div>
-    <div class="panel hidden" id="logPanel"><div id="log"></div></div>
+    <div class="panel hidden" id="logPanel"><div id="handStats"></div><div id="log"></div></div>
     <p class="credit hidden" id="bgmCredit">音楽:<a href="https://nagumorizu.com/" target="_blank" rel="noopener">なぐもりずの音楽室</a>(南雲莉翠)</p>
   </section>
 </main>
@@ -1684,6 +1691,7 @@ function breakRally(S, side, hand, log) {
   log(`— ラリー${S.rally + 1}:${S.teams[side].label}の${BREAK_NAME} —`);
   beginRally(S, log);
   S.teams[side].breakReady = false;
+  (S.bhist = S.bhist || []).push([side, hand]);   // BREAKで選んだ手(ログの集計用)
   act(S, side, hand, log, true);
   // 特性「始の刻」:BREAKするたびに、ATKがずっと上がる
   const me = active(S.teams[side]), grow = traitOf(me, 'breakGrow');
@@ -1741,7 +1749,7 @@ const beaterOf = (h) => HAND_KEYS.find((k) => HANDS[k].beats === h);   // h に�
 // 盤面のコピー(試しに1ラリー進めるため)。キャラのデータは共有し、変わる部分だけ複製する
 function cloneState(S) {
   return {
-    ...S, hit: null, ticks: [], events: [], hist: [],
+    ...S, hit: null, ticks: [], events: [], hist: [], bhist: [],
     teams: S.teams.map((t) => ({ ...t, cards: t.cards.map((c) => ({ ...c, mods: c.mods.map((m) => ({ ...m })) })) })),
   };
 }
@@ -2700,6 +2708,20 @@ function shownAtk(t, f) {
   const next = { ...f, turn: f.turn + 1 };   // 次のラリー(これから打つ一撃)で使うATKを出す。技のボタンや状態欄と同じ数え方
   return Math.min(ATK_MAX, Math.max(ATK_MIN, baseAtk(next) + traitAtk(S, next, foe, false)));
 }
+// ログの上に出す、この対戦でお互いがどの手を何回出したか(じゃんけんとBREAK)
+function renderHandStats() {
+  const el = $('handStats');
+  if (!el || !S) return;
+  const H = S.hist || [], B = S.bhist || [];
+  if (!H.length && !B.length) { el.innerHTML = ''; return; }
+  const row = (side) => {
+    const n = H.length, cnt = HAND_KEYS.map((h) => H.filter((x) => x[side] === h).length);
+    const bc = HAND_KEYS.map((h) => B.filter((x) => x[0] === side && x[1] === h).length);
+    return `<tr><td>${escHtml(S.teams[side].label)}</td>${cnt.map((c, i) => `<td>${c}<small>${n ? ` ${Math.round(c / n * 100)}%` : ''}</small>${bc[i] ? `<br><small>BREAK ${bc[i]}</small>` : ''}</td>`).join('')}</tr>`;
+  };
+  el.innerHTML = `<table><tr><th>出した手</th>${HAND_KEYS.map((h) => `<th>${HANDS[h].icon}</th>`).join('')}</tr>${row(0)}${row(1)}</table>` +
+    `<div class="hs-cap">じゃんけん${H.length}回${B.length ? `・BREAK${B.length}回` : ''}</div>`;
+}
 // 場のカードにかかっている効果の一覧。s は札に書く短い文、l は一覧に書く説明、k は up(強化)/down(弱体)/info
 function statusList(t, f) {
   const st = [], sign = (v) => (v > 0 ? '+' : '−'), L = (stat) => (stat === 'atk' ? 'ATK' : 'DFS');
@@ -2756,6 +2778,7 @@ function actHtml(card, foe, h, isBreak) {
 
 // view を渡すと、場のカードの代わりにそのカードを表示する(倒れた直後に、倒れたカードを見せ続けるため)
 function render(view) {
+  if (!$('logPanel').classList.contains('hidden')) renderHandStats();   // ログを開いているあいだは、手の集計も更新する
   const [you, cpu] = S.teams, me = view ? view[0] : active(you), foe = view ? view[1] : active(cpu);
   teamHead($('you'), you);
   teamHead($('cpu'), cpu);
@@ -3283,7 +3306,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.24';
+const APP_VER = '0.25';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
@@ -5157,6 +5180,7 @@ function init() {
   [...$('pickSide').children].forEach((b) => { b.onclick = () => { if (b.dataset.s !== pickSide) { Sound.click(); setPickSide(b.dataset.s); } }; });
   $('logBtn').onclick = () => {
     const hid = $('logPanel').classList.toggle('hidden');
+    if (!hid) renderHandStats();
     $('logBtn').textContent = hid ? 'ログを見る' : 'ログを閉じる';
   };
   FX.sound = loadOpt('kokusen.sound', true);
