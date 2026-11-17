@@ -2679,6 +2679,14 @@ function statusList(t, f) {
   if (f.dfsUp) add(`次被弾DFS+${f.dfsUp}`, `次に受ける攻撃だけ DFS+${f.dfsUp}`, 'up');
   if (t.keep) add('連勝保護', '連勝保護(次に負けても、連勝が途切れない)', 'up');
   if (t.sealed) add('連勝封じ', '連勝封じ(次に勝っても、連勝に数えない)', 'down');
+  // 特性「全力」:3ラリー目までは技がすべて極大、そのあとは毎ラリーATKが下がる
+  const bo = traitOf(f, 'burnout');
+  if (bo) {
+    const n = f.turn + 1;   // 次のラリーで、場に出て何ラリー目か
+    if (n <= bo.until) add(`全力·あと${bo.until - n + 1}`, `全力:技がすべて極大(あと${bo.until - n + 1}ラリー)`, 'up');
+    else add(`減速ATK−${Math.min(bo.cap, (n - bo.until) * bo.step)}`, `全力のあとの減速:ATK−${Math.min(bo.cap, (n - bo.until) * bo.step)}(毎ラリー−${bo.step}、最大−${bo.cap})`, 'down');
+  }
+  if (f.stackAtk) add(`連射ATK+${f.stackAtk}`, `連射:次の攻撃ATK+${f.stackAtk}(負けると消える)`, 'up');
   const rite = traitOf(f, 'rewindRite');
   if (rite) add(`巻き戻しまで${Math.max(0, rite.limit - f.turn)}`, `巻き戻しまで残り${Math.max(0, rite.limit - f.turn)}ラリー`, 'info');
   if (traitOf(f, 'weakness')) {
@@ -2701,10 +2709,9 @@ function openCardInfo(side) {
 // 技1つぶんの中身。条件を満たして格上げ中の技は hot
 function actHtml(card, foe, h, isBreak) {
   const a = card.actions[h];
-  const up = upActive(a, card, foe, card.turn + 1, isBreak);
-  // 今出せる威力:極大は赤(hot)、特大はオレンジ(warm)
-  const rate = up ? a.up.rate : a.rate || 0, hot = rate >= RATE.max, warm = !hot && rate >= RATE.huge;
-  return { hot, warm, html: `<span class="ico">${HANDS[h].icon}</span><span class="txt"><b>${HANDS[h].power}「${a.name}」</b>${describe(a, up ? a.up.rate : 0, true)}</span>` };
+  // 今出せる威力(特性「全力」などで変わる分も込み):極大は赤(hot)、特大はオレンジ(warm)
+  const rate = a.rate ? rateOf(a, card, foe, card.turn + 1, isBreak) : 0, changed = rate && rate !== a.rate, hot = rate >= RATE.max, warm = !hot && rate >= RATE.huge;
+  return { hot, warm, html: `<span class="ico">${HANDS[h].icon}</span><span class="txt"><b>${HANDS[h].power}「${a.name}」</b>${describe(a, changed ? rate : 0, true)}</span>` };
 }
 
 // view を渡すと、場のカードの代わりにそのカードを表示する(倒れた直後に、倒れたカードを見せ続けるため)
