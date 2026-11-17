@@ -3248,7 +3248,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.18';
+const APP_VER = '0.19';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
@@ -4265,7 +4265,7 @@ function renderAcct() {
       : `<span class="who">ログインすると、クリア記録とレーティングを保存できます(💠${shardCount()})</span><button id="accOpen">ログイン</button>`;
   $('accOpen').onclick = () => accOpen();
 }
-const ACC_LEGAL = '<p class="sub" style="margin-top:12px"><a href="terms.html" target="_blank" rel="noopener" style="color:var(--gold)">利用規約</a> ・ <a href="privacy.html" target="_blank" rel="noopener" style="color:var(--gold)">プライバシーポリシー</a></p>';
+const ACC_LEGAL = '<p class="sub" style="margin-top:12px"><a href="terms.html" target="_blank" rel="noopener" style="color:var(--gold)">利用規約</a> ・ <a href="privacy.html" target="_blank" rel="noopener" style="color:var(--gold)">プライバシーポリシー</a> ・ <a href="https://x.com/kokusenofficial" target="_blank" rel="noopener" style="color:var(--gold)">通報・お問い合わせ(X)</a></p>';
 function accMsg(text, err) { $('accMsg').textContent = text || ''; $('accMsg').className = 'msg' + (err ? ' err' : ''); }
 function renderAccModal() {
   const p = ACC.profile, body = $('accBody');
