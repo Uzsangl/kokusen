@@ -553,7 +553,6 @@
     <div class="opts">
       <button id="optBgm" class="hidden">曲 ON</button>
       <button id="optSound">音 ON</button>
-      <button id="optShort">演出 フル</button>
     </div>
   </header>
 
@@ -1899,8 +1898,6 @@ function applyOpts() {
   document.documentElement.style.setProperty('--spd', FX.speed);
   $('optSound').textContent = FX.sound ? '音 ON' : '音 OFF';
   $('optSound').classList.toggle('off', !FX.sound);
-  $('optShort').textContent = FX.short ? '演出 短縮' : '演出 フル';
-  $('optShort').classList.toggle('off', FX.short);
   $('optBgm').textContent = FX.bgm ? '曲 ON' : '曲 OFF';
   $('optBgm').classList.toggle('off', !FX.bgm);
   Sound.setOn(FX.sound);
@@ -4521,7 +4518,6 @@ function init() {
     $('levels').appendChild(b);
   });
   renderLevels();
-  $('optShort').onclick = () => { FX.short = !FX.short; saveOpt('kokusen.short', FX.short); applyOpts(); };
   applyOpts();
   renderMode();
   pvpInit();
