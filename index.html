@@ -4465,7 +4465,8 @@ function openGacha(results) {
   const login = shardOnAcc();
   const n = shardCount();
   const rateRows = [5, 4, 3, 2, 1].map((st) => `<tr><td>${rarHtml({ rarity: st })}</td><td>${(GACHA_RATES[st] * 100).toFixed(1)}%</td><td>${GACHA_CHARS.filter((c) => c.rarity === st).map((c) => c.name).join('・')}</td></tr>`).join('');
-  const own = GACHA_CHARS.map((c) => { const k = gachaOwned(c.id); return `<span class="${k ? '' : 'no'}">${iconHtml(c, 'sm')}${k ? `×${k}` : '−'}</span>`; }).join('');
+  const own = [...GACHA_CHARS.filter((c) => c.rarity < 5), ...GACHA_CHARS.filter((c) => c.rarity >= 5)].map((c) =>   // ★5(SEC)は最後に並べる
+ { const k = gachaOwned(c.id); return `<span class="${k ? '' : 'no'}">${iconHtml(c, 'sm')}${k ? `×${k}` : '−'}</span>`; }).join('');
   const res = results ? `<div class="gc-res">${results.map((r) => `<div class="gc-card r${r.c.rarity}">${r.fresh ? '<i class="new">NEW</i>' : ''}${iconHtml(r.c, 'lg')}<div>${rarHtml(r.c)}</div>${escHtml(r.c.name)}</div>`).join('')}</div>` : '';
   openSheet('ガチャ', `<div class="gc-top"><span>💠${SHARD_NAME}</span><b>${n}</b></div>` +
     (login ? '' : '<p class="sub" style="color:var(--gold)">ガチャはログインが必要です。カケラはオンライン対人(フリー戦・レート戦)で手に入ります。</p>') +
