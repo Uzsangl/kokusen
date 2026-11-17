@@ -429,6 +429,7 @@
   .gc-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0; }
   .gc-btns button { padding: 14px 6px; font-weight: 700; line-height: 1.3; }
   .gc-btns button small { display: block; font-weight: 400; color: var(--sub); font-size: .72rem; }
+  .gc-master { width: 100%; margin: 0 0 8px; padding: 8px; border-style: dashed; color: var(--gold); font-size: .8rem; }
   .gc-res { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 8px 0; }
   .gc-card { position: relative; border: 1px solid var(--line); border-radius: 10px; padding: 6px 2px; text-align: center; font-size: .66rem; opacity: 0; transform: scale(.6); transition: opacity .25s, transform .25s; }
   .gc-card.show { opacity: 1; transform: none; }
@@ -4435,6 +4436,7 @@ async function shardAdd(n) {
 // 確率:★5 0.1% / ★4 1%(3体で等分)/ ★3 30% / ★2 30.9% / ★1 38%。同じ★の中は等分。ダブりはそのまま数える。保証はなし
 // 持っているキャラは、アカウントの progress の stats.owned({ id: 枚数 })に保存する
 const GACHA_COST = 25, GACHA_COST11 = 250;
+const MASTER_SHARDS = 3000;   // マスターアカウントのガチャ画面のボタンで、1回に足すカケラの数
 const GACHA_RATES = { 5: 0.001, 4: 0.01, 3: 0.30, 2: 0.309, 1: 0.38 };
 const gachaOwned = (id) => (shardOnAcc() && ACC.stats && ACC.stats.owned ? Number(ACC.stats.owned[id]) || 0 : 0);
 function gachaRoll() {
@@ -4493,6 +4495,7 @@ function openGacha(results) {
   openSheet('ガチャ', `<div class="gc-top"><span>💠${SHARD_NAME}</span><b>${n}</b></div>` +
     (login ? '' : '<p class="sub" style="color:var(--gold)">ガチャはログインが必要です。カケラはオンライン対人(フリー戦・レート戦)で手に入ります。</p>') +
     `<div class="gc-btns"><button id="gc1"${login && n >= GACHA_COST ? '' : ' disabled'}>1回引く<small>💠${GACHA_COST}</small></button><button id="gc11"${login && n >= GACHA_COST11 ? '' : ' disabled'}>11回引く<small>💠${GACHA_COST11}(1回分お得)</small></button></div>` +
+    (login && IS_MASTER ? `<button id="gcMaster" class="gc-master">💠${SHARD_NAME}を${MASTER_SHARDS}個足す(マスター用)</button>` : '') +
     res +
     `<p class="sub">引いたキャラは、アドバンスで使えます(ダブりはそのまま数えます)。</p>` +
     `<details><summary class="sub">確率</summary><table class="gc-rates">${rateRows}</table><p class="sub">同じ★の中では同じ確率。11回でも保証はありません。</p></details>` +
@@ -4511,6 +4514,14 @@ function openGacha(results) {
   };
   $('gc1').onclick = () => go(1);
   $('gc11').onclick = () => go(11);
+  // マスターアカウントだけ:テスト用にカケラを足す(アカウントに保存される)
+  if (IS_MASTER && $('gcMaster')) $('gcMaster').onclick = async () => {
+    $('gcMaster').disabled = true;
+    await shardAdd(MASTER_SHARDS);
+    Sound.click();
+    renderTitleAcc(); renderAcct();
+    openGacha(results);
+  };
 }
 
 // ----- マイセット:好きなパーティ(並び順つき)を5つまで保存する -----
