@@ -518,6 +518,8 @@
   .seg { display: flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; flex: none; }
   .seg button { border: 0; border-radius: 0; padding: 6px 12px; font-size: .8rem; background: transparent; }
   .seg button.on { background: var(--gold); color: #1a1200; font-weight: 700; }
+  .seg4 button { padding: 6px 8px; font-size: .74rem; }
+  .srow:has(.seg4) { flex-wrap: wrap; gap: 6px; }
   .rtabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
   .rtabs button { padding: 4px 10px; border-radius: 12px; font-size: .8rem; }
   .rtabs button.on { background: var(--gold); color: #1a1200; font-weight: 700; border-color: var(--gold); }
@@ -2080,7 +2082,7 @@ let SILENCED = false;  // ほかのタブで開き直したため、このタブ
 let frozen = false;    // BREAKで時間が止まっている間
 
 // ----- 設定(音・演出の長さ) -----
-const FX = { speed: 1, sound: true, short: false, level: 2, bgm: true, bgmVol: 1, seVol: 1 };
+const FX = { pattern: 'normal', sakibare: true, speed: 1, sound: true, short: false, level: 2, bgm: true, bgmVol: 1, seVol: 1 };
 const REDUCE = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 function loadOpt(key, def) {
   try { const v = localStorage.getItem(key); return v === null ? def : v === '1'; } catch (e) { return def; }
@@ -2234,6 +2236,14 @@ const Sound = (() => {
         seq([1568, 1976, 2349, 2637, 3136, 3951, 4186], 0.05, { vol: 0.07, dur: 0.14, at: 0.5 });
         cymbal(0.45, 0.12);
       }
+    },
+    // 先バレの告知音「ぽきゅん」:短い「ぽ」のあと、高く跳ね上がる「きゅん」
+    pokyun() {
+      tone(620, 0.07, { type: 'sine', vol: 0.5, to: 380 });
+      tone(1240, 0.05, { type: 'triangle', vol: 0.12, to: 760 });
+      tone(900, 0.16, { type: 'sine', vol: 0.42, to: 2900, at: 0.075 });
+      tone(1800, 0.14, { type: 'triangle', vol: 0.12, to: 5200, at: 0.08 });
+      tone(2900, 0.22, { type: 'sine', vol: 0.12, to: 2500, at: 0.23 });
     },
     // 技が当たる。power は2.5(通常)〜5(極大)
     hit(power) {
@@ -2796,14 +2806,26 @@ function outcome(b) {
 
 // 予兆の強さ 0〜4。3(赤)以上は勝ち確定、4(虹)は撃破かBREAK確定。
 // 負け・あいこでも弱い予兆は出る(外れる予兆)。
+// 予兆のくじ。結果(撃破・BREAKの勝ち / ふつうの勝ち / あいこ / 負け)ごとに、[なし, 青, 好機, 激熱, 確定] の出る割合
+// 演出パターンは設定で選ぶ(結果と勝率は変わらない。予兆の出方だけが変わる)
+const FX_PATTERNS = {
+  normal: { name: 'ノーマル', note: 'バランス型', big: [0, 0, 0.25, 0.45, 0.3], win: [0.15, 0.25, 0.35, 0.25, 0], tie: [0.6, 0.25, 0.15, 0, 0], lose: [0.75, 0.2, 0.05, 0, 0] },
+  quiet: { name: '静寂', note: '予兆はめったに出ない。出たらほぼ勝ち', big: [0.05, 0, 0.15, 0.45, 0.35], win: [0.55, 0.1, 0.15, 0.2, 0], tie: [0.9, 0.07, 0.03, 0, 0], lose: [0.95, 0.05, 0, 0, 0] },
+  lively: { name: '賑やか', note: '毎回なにか光る。好機・激熱でも外れることがある', big: [0, 0, 0.15, 0.35, 0.5], win: [0.05, 0.25, 0.4, 0.3, 0], tie: [0.15, 0.42, 0.35, 0.08, 0], lose: [0.35, 0.5, 0.15, 0, 0] },
+  oneshot: { name: '一発告知', note: '途中の予兆はなし。勝つときだけ激熱か確定がいきなり出る', big: [0, 0, 0, 0.5, 0.5], win: [0.55, 0, 0, 0.45, 0], tie: [1, 0, 0, 0, 0], lose: [1, 0, 0, 0, 0] },
+};
 function pickHeat(side, o, gotBreak) {
-  const r = Math.random();
-  if (side === 0) {
-    if ((o.ko && o.boutWin === 0) || gotBreak) return r < 0.3 ? 4 : r < 0.75 ? 3 : 2;
-    return r < 0.25 ? 3 : r < 0.6 ? 2 : r < 0.85 ? 1 : 0;
-  }
-  if (side < 0) return r < 0.15 ? 2 : r < 0.4 ? 1 : 0;
-  return r < 0.05 ? 2 : r < 0.25 ? 1 : 0;
+  const pt = FX_PATTERNS[FX.pattern] || FX_PATTERNS.normal;
+  const row = side === 0 ? ((o.ko && o.boutWin === 0) || gotBreak ? pt.big : pt.win) : side < 0 ? pt.tie : pt.lose;
+  let r = Math.random();
+  for (let i = 0; i < row.length; i++) { r -= row[i]; if (r < 0) return i; }
+  return 0;
+}
+// 先バレ:手を出した瞬間に画面が赤く光り「ぽきゅん」。出たら、このラリーのじゃんけんは勝ち確定
+const SAKIBARE_RATE = 0.15;   // 自分が勝つラリーのうち、先バレが出る割合
+async function sakibareFx() {
+  flash('#ff1a2e'); shake(false); Sound.pokyun();
+  await sleep(450);
 }
 
 // リールが回り、予兆が出て、相手の手が止まるまで
@@ -3107,6 +3129,7 @@ async function normalRally(hand, cpuHand, why) {
   const reach = b.streak[0] >= BREAK_STREAK - 1 ? 0 : b.streak[1] >= BREAK_STREAK - 1 ? 1 : -1;
   const vs = `${HANDS[hand].icon} vs ${HANDS[cpuHand].icon}　`;
 
+  if (FX.sakibare && side === 0 && !S.spectate && Math.random() < SAKIBARE_RATE) await sakibareFx();
   await transformFx(o);
   await spin(hand, cpuHand, pickHeat(side, o, S.teams[0].breakReady), reach);
 
@@ -4150,7 +4173,12 @@ function openSettings() {
     <div class="srow"><div>効果音</div>${sw('sSe', FX.sound)}</div>
     <div class="srow"><div>効果音の音量</div><input type="range" id="sSeVol" min="0" max="100" value="${Math.round(FX.seVol * 100)}" aria-label="効果音の音量"></div>
     <div class="srow"><div>演出<small>短縮にすると対戦のテンポが速くなる</small></div><div class="seg"><button id="sFull" class="${FX.short ? '' : 'on'}">フル</button><button id="sShort" class="${FX.short ? 'on' : ''}">短縮</button></div></div>
+    <div class="srow"><div>演出パターン<small>${FX_PATTERNS[FX.pattern].note}</small></div><div class="seg seg4">${Object.entries(FX_PATTERNS).map(([k, v]) => `<button data-pt="${k}" class="${FX.pattern === k ? 'on' : ''}">${v.name}</button>`).join('')}</div></div>
+    <div class="srow"><div>先バレ<small>手を出した瞬間に赤く光ったら、じゃんけん勝ち確定</small></div><div style="display:flex;gap:6px;align-items:center"><button id="sPokyun" style="padding:6px 10px;white-space:nowrap">試聴</button>${sw('sSaki', FX.sakibare)}</div></div>
     <div class="srow" style="border:0"><div>クレジット</div><button id="sCredit">見る</button></div>`);
+  document.querySelectorAll('#sheetBody [data-pt]').forEach((b) => { b.onclick = () => { FX.pattern = b.dataset.pt; try { localStorage.setItem('kokusen.pattern', FX.pattern); } catch (e) { /* 保存できなくても動く */ } openSettings(); }; });
+  $('sSaki').onclick = () => { FX.sakibare = !FX.sakibare; saveOpt('kokusen.sakibare', FX.sakibare); openSettings(); };
+  $('sPokyun').onclick = () => { Sound.wake(); sakibareFx(); };
   $('sBgm').onclick = () => { FX.bgm = !FX.bgm; saveOpt('kokusen.bgm', FX.bgm); applyOpts(); openSettings(); };
   $('sSe').onclick = () => { FX.sound = !FX.sound; saveOpt('kokusen.sound', FX.sound); applyOpts(); if (FX.sound) { Sound.wake(); Sound.click(); } openSettings(); };
   $('sFull').onclick = () => { FX.short = false; saveOpt('kokusen.short', false); applyOpts(); openSettings(); };
@@ -5122,6 +5150,8 @@ function init() {
   };
   FX.sound = loadOpt('kokusen.sound', true);
   FX.short = loadOpt('kokusen.short', false);
+  FX.sakibare = loadOpt('kokusen.sakibare', true);
+  try { const pt = localStorage.getItem('kokusen.pattern'); FX.pattern = FX_PATTERNS[pt] ? pt : 'normal'; } catch (e) { FX.pattern = 'normal'; }
   FX.bgm = loadOpt('kokusen.bgm', true);
   $('optBgm').onclick = () => { FX.bgm = !FX.bgm; saveOpt('kokusen.bgm', FX.bgm); applyOpts(); };
   Bgm.init();
