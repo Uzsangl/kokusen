@@ -911,8 +911,9 @@ const GACHA_CHARS = [
   { id: 'g_z4', name: '零★4', faction: '零', rarity: 4, gacha: true, role: '相手のATKで殴る', hp: 18000, atk: 1000, dfs: 1300, phys: 1.1,
     trait: { key: 'mirrorAtk', name: '鏡写し', desc: '攻撃するとき、自分のATKの代わりに相手の今のATKを使う' },
     actions: { rock: { rate: RATE.big, name: '停止' }, scissors: { rate: RATE.normal, name: '跳躍', mods: [{ to: 'foe', stat: 'atk', v: 500, t: 2 }] }, paper: { rate: RATE.normal, name: '遡行', heal: 1500 } } },
-  { id: 'g_z5', name: '零★5', faction: '零', rarity: 5, gacha: true, role: 'SEC', hp: 10000, atk: 2500, dfs: 1500, phys: 1.5,
-    trait: { key: 'lateBreak', name: '遅咲きの刻', desc: `場に出て10ラリー目以降、自分の${BREAK_NAME}の攻撃だけATKが10倍`, from: 10, mul: 10 },
+  { id: 'g_z5', name: '零★5', faction: '零', rarity: 5, gacha: true, role: 'SEC', hp: 11500, atk: 2500, dfs: 1500, phys: 1.5,
+    traits: [{ key: 'lateBreak', name: '遅咲きの刻', desc: `場に出て10ラリー目以降、自分の${BREAK_NAME}の攻撃だけATKが10倍`, from: 10, mul: 10 },
+      { key: 'drawHeal', name: '凪の間', desc: 'あいこのたびにHP1000回復', heal: 1000 }],
     actions: { rock: N('停止'), scissors: { rate: RATE.max, name: '跳躍' }, paper: { rate: RATE.normal, name: '遡行', mods: [selfDfs(1500, 2)], keep: 1, heal: 3000 } } },
   // --- 矢 ---
   { id: 'g_y1', name: '矢★1', faction: '矢', rarity: 1, gacha: true, role: '(仮)', hp: 5500, atk: 2000, dfs: 700, phys: 0.95,
@@ -929,7 +930,7 @@ const GACHA_CHARS = [
   { id: 'g_y3c', name: '矢★3-C', faction: '矢', rarity: 3, gacha: true, role: '連続で勝つほど強い', hp: 8000, atk: 2300, dfs: 1000, phys: 1.05,
     trait: { key: 'winStack', name: '連射', desc: '勝つたびに次の攻撃のATK+400が重なる(負けると消える)', v: 400 },
     actions: { rock: N('停止'), scissors: { rate: RATE.big, name: '跳躍' }, paper: N('遡行') } },
-  { id: 'g_y4', name: '矢★4', faction: '矢', rarity: 4, gacha: true, role: 'フルパワー→減速', hp: 10000, atk: 15000, dfs: 1100, phys: 1.1,
+  { id: 'g_y4', name: '矢★4', faction: '矢', rarity: 4, gacha: true, role: 'フルパワー→減速', hp: 10000, atk: 10000, dfs: 1100, phys: 1.1,
     trait: { key: 'burnout', name: '全力', desc: '場に出て3ラリー目まで、技がすべて極大。4ラリー目からは毎ラリーATK−400(最大−2400)', until: 3, step: 400, cap: 2400 },
     actions: { rock: { rate: RATE.huge, name: '停止' }, scissors: { rate: RATE.big, name: '跳躍' }, paper: N('遡行') } },
 ];
@@ -1588,6 +1589,14 @@ function rally(S, hand0, hand1, log) {
   const winSide = r === 0 ? -1 : r > 0 ? 0 : 1;
   if (r === 0) {
     log('あいこ');
+    // 特性「凪の間」:あいこのたびに回復する
+    S.teams.forEach((t) => {
+      const c = active(t), dh = traitOf(c, 'drawHeal');
+      if (!dh || c.hp <= 0 || c.noHeal > 0 || c.hp >= c.max) return;
+      const before = c.hp; c.hp = Math.min(c.max, c.hp + dh.heal);
+      S.ticks.push({ side: S.teams.indexOf(t), heal: c.hp - before });
+      log(`　${t.label}の${nameOf(c)}の「${dh.name}」:${c.hp - before}回復`);
+    });
     // 特性「逆巻き」:あいこでも連勝が1増える
     S.teams.forEach((t) => {
       if (!traitOf(active(t), 'drawStreak')) return;
