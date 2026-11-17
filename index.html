@@ -2877,6 +2877,13 @@ async function finale() {
   } else {
     await cutin('引き分け', score, 'plain', 1200);
   }
+  // 空間のカケラ(オンライン対人だけ。観戦では増えない)
+  if (MODE === 'pvp' && !S.spectate && !S.shardDone) {
+    S.shardDone = true;
+    const n = shardReward(S), total = await shardAdd(n);
+    log(n ? `${SHARD_NAME} +${n}(所持 ${total})` : `${SHARD_NAME}:${S.resign === 'me' || S.forfeit === 1 ? 'リタイア・応答なしの負けのため、もらえません' : 'レート戦の負けでは、もらえません'}(所持 ${total})`);
+    if (n) await cutin(`${SHARD_NAME} +${n}`, `所持 ${total}`, 'gold', 1300);
+  }
   const res = rating && await rating;
   if (res) {
     const d = res.after - res.before;
@@ -3469,7 +3476,7 @@ function renderMode() {
     b.classList.toggle('picked', b.dataset.k === kindNow);
     b.disabled = PVP.phase !== 'idle' || (b.dataset.k === 'rated' && !ACC.profile);
   });
-  $('pvpKindNote').textContent = kindNow === 'rated' ? 'レート戦:勝ち負けでレートが動きます。二人ともログインして、二人ともレート戦を選んでください。' : `フリー戦:レートは動きません。ログインなしでも遊べます。${ACC.profile ? '' : '(レート戦はログインすると選べます)'}`;
+  $('pvpKindNote').textContent = kindNow === 'rated' ? `レート戦:勝ち負けでレートが動きます。二人ともログインして、二人ともレート戦を選んでください。${SHARD_NAME}は勝ち30・負け0。` : `フリー戦:レートは動きません。ログインなしでも遊べます。${SHARD_NAME}は勝ち20・負け5(リタイアの負けは0)。${ACC.profile ? '' : '(レート戦はログインすると選べます)'}`;
   $('specRoom').classList.toggle('hidden', !!PVP.room && !PVP.room.spectate);   // 観戦は、端末どうしを直接つなぐ方式のときだけ
   $('leaveRoom').classList.toggle('hidden', PVP.phase === 'idle');
   renderSelect();
@@ -3873,7 +3880,7 @@ function renderTitleAcc() {
   const p = ACC.profile;
   if (ACC.shared) { el.innerHTML = `<span></span><div class="meta">このURLではアカウントを使えません。<a href="${HOME_URL}" style="color:var(--gold)">新しいURL</a>で開いてください。</div><span></span>`; return; }
   if (!p) {
-    el.innerHTML = `<span style="font-size:28px">👤</span><div><div class="nm">ゲスト</div><div class="meta">ログインすると、クリア記録・称号・レーティングを保存できます</div></div><button id="tLogin">ログイン</button>`;
+    el.innerHTML = `<span style="font-size:28px">👤</span><div><div class="nm">ゲスト</div><div class="meta">ログインすると、クリア記録・称号・レーティングを保存できます ・ 💠${SHARD_NAME} ${shardCount()}</div></div><button id="tLogin">ログイン</button>`;
     $('tLogin').onclick = () => accOpen();
     return;
   }
@@ -3881,7 +3888,7 @@ function renderTitleAcc() {
   const stages = STAGES.filter((x) => !x.rush);
   el.innerHTML = `${fav ? iconHtml(fav, 'lg') : '<span style="font-size:28px">👤</span>'}<div><div class="nm">${titleTag(p.title)}${escHtml(p.name)}</div>
     <div><span class="rate">レート${p.rating}</span> <span style="font-size:.8rem;color:var(--sub)">(${p.wins}勝${p.losses}敗)</span></div>
-    <div class="meta">クリア ${stages.filter((x) => SOLO.cleared.includes(x.id)).length} / ${stages.length}ステージ${titleReady() ? ` ・ 称号 ${myTitles().length} / ${TITLES.length}` : ''}</div></div>
+    <div class="meta">クリア ${stages.filter((x) => SOLO.cleared.includes(x.id)).length} / ${stages.length}ステージ${titleReady() ? ` ・ 称号 ${myTitles().length} / ${TITLES.length}` : ''} ・ 💠${SHARD_NAME} ${shardCount()}</div></div>
     <button id="tAccBtn">アカウント</button>`;
   $('tAccBtn').onclick = () => accOpen();
 }
@@ -4010,10 +4017,10 @@ function renderAcct() {
     return;
   }
   el.innerHTML = p
-    ? `<span class="who">${titleTag(p.title)}<b>${escHtml(p.name)}</b> <span class="rate">レート${p.rating}</span>(${p.wins}勝${p.losses}敗)</span><button id="accOpen">アカウント</button>`
+    ? `<span class="who">${titleTag(p.title)}<b>${escHtml(p.name)}</b> <span class="rate">レート${p.rating}</span>(${p.wins}勝${p.losses}敗) 💠${shardCount()}</span><button id="accOpen">アカウント</button>`
     : ACC.session
       ? `<span class="who">ログイン中(読み込んでいます…)</span><button id="accOpen">アカウント</button>`
-      : `<span class="who">ログインすると、クリア記録とレーティングを保存できます</span><button id="accOpen">ログイン</button>`;
+      : `<span class="who">ログインすると、クリア記録とレーティングを保存できます(💠${shardCount()})</span><button id="accOpen">ログイン</button>`;
   $('accOpen').onclick = () => accOpen();
 }
 function accMsg(text, err) { $('accMsg').textContent = text || ''; $('accMsg').className = 'msg' + (err ? ' err' : ''); }
@@ -4154,6 +4161,35 @@ function openCharDetail(ch) {
     (hide ? '' : `<div class="stats"><span class="s-hp">HP ${ch.hp}</span>　${statLine(ch)}</div><div class="trait">${traitLine(ch)}</div>` + actionList(ch, 'div', 'sub')) +
     `</div></div>` + (canToggle ? `<div class="row"><button id="cdPick" style="border-color:var(--gold);color:var(--gold);font-weight:700">${order >= 0 ? 'パーティから外す' : `${picked.length + 1}番手に入れる`}</button></div>` : '') + `</div>`);
   if (canToggle) $('cdPick').onclick = () => { if (order >= 0) picked.splice(order, 1); else picked.push(ch.id); $('sheet').classList.add('hidden'); Sound.click(); renderSelect(); };
+}
+
+// ----- 空間のカケラ:オンライン対人で手に入る(のちにガチャで使う) -----
+// フリー戦:勝ち20・負け5(引き分けも5)。レート戦:勝ち30・負け0。自分のリタイアや応答なしで負けたときはもらえない。
+// ログイン中はアカウント(progress の stats.shards)、ログインしていないときは端末に貯める
+const SHARD_NAME = '空間のカケラ';
+const SHARD_KEY = 'kokusen.shards';
+const shardOnAcc = () => !!accUid() && ACC.progMode === 'table';   // アカウントに貯めるか(サーバーの表が使えるとき)
+function shardCount() {
+  if (shardOnAcc()) return Number((ACC.stats || {}).shards) || 0;
+  try { return Number(localStorage.getItem(SHARD_KEY)) || 0; } catch (e) { return 0; }
+}
+function shardReward(S) {
+  if (S.spectate) return 0;
+  const win = S.winner === 0, quit = S.resign === 'me' || S.forfeit === 1;
+  if (PVP.rated) return win ? 30 : 0;
+  return win ? 20 : quit ? 0 : 5;
+}
+async function shardAdd(n) {
+  if (!n) return shardCount();
+  if (shardOnAcc()) {
+    ACC.stats = ACC.stats || {};
+    ACC.stats.shards = (Number(ACC.stats.shards) || 0) + n;
+    try { await sbFetch(`/rest/v1/progress?id=eq.${accUid()}`, { method: 'PATCH', prefer: 'return=minimal', body: { stats: ACC.stats, updated_at: new Date().toISOString() } }); } catch (e) { /* 次に保存するときにまとめて送られる */ }
+    return ACC.stats.shards;
+  }
+  const t = shardCount() + n;
+  try { localStorage.setItem(SHARD_KEY, String(t)); } catch (e) { /* 保存できなくても動く */ }
+  return t;
 }
 
 // ----- マイセット:好きなパーティ(並び順つき)を5つまで保存する -----
