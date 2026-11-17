@@ -911,7 +911,7 @@ const GACHA_CHARS = [
   { id: 'g_z4', name: '零★4', faction: '零', rarity: 4, gacha: true, role: '相手のATKで殴る', hp: 28800, atk: 1000, dfs: 1300, phys: 1.1,
     trait: { key: 'mirrorAtk', name: '鏡写し', desc: '攻撃するとき、自分のATKの代わりに相手の今のATKを使う' },
     actions: { rock: { rate: RATE.big, name: '停止' }, scissors: { rate: RATE.normal, name: '跳躍', mods: [{ to: 'foe', stat: 'atk', v: 500, t: 2 }] }, paper: { rate: RATE.normal, name: '遡行', heal: 1500 } } },
-  { id: 'g_z5', name: '零★5', faction: '零', rarity: 5, gacha: true, role: 'SEC', hp: 11500, atk: 2500, dfs: 1500, phys: 1.5,
+  { id: 'g_z5', name: 'ゼノ【仮面】', faction: '零', rarity: 5, gacha: true, sameAs: 'rei', role: 'SEC・レイがゼノに至った姿', hp: 11500, atk: 2500, dfs: 1500, phys: 1.5,
     traits: [{ key: 'lateBreak', name: '遅咲きの刻', desc: `場に出て10ラリー目以降、自分の${BREAK_NAME}の攻撃だけATKが10倍`, from: 10, mul: 10 },
       { key: 'drawHeal', name: '凪の間', desc: 'あいこのたびにHP1000回復', heal: 1000 }],
     actions: { rock: N('停止'), scissors: { rate: RATE.max, name: '跳躍' }, paper: { rate: RATE.normal, name: '遡行', mods: [selfDfs(1500, 2)], keep: 1, heal: 3000 } } },
