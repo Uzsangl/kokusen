@@ -886,10 +886,10 @@ const GACHA_CHARS = [
   { id: 'g_a3a', name: '錨★3-A', faction: '錨', rarity: 3, gacha: true, role: '継承', hp: 6500, atk: 2200, dfs: 1500, phys: 1.0,
     trait: { key: 'passStats', name: '継ぎ', desc: '倒れたとき、自分のATKとDFS(消えない強化も込み)をそのまま次の番手に足す' },
     actions: { rock: { rate: RATE.big, name: '停止' }, scissors: { rate: RATE.normal, name: '跳躍', mods: [selfDfs(1000, 2)] }, paper: { rate: RATE.normal, name: '遡行', selfPerm: { atk: 500, dfs: 500 } } } },
-  { id: 'g_a3b', name: '錨★3-B', faction: '錨', rarity: 3, gacha: true, role: '回復耐久', hp: 15000, atk: 1500, dfs: 1900, phys: 0.95,
+  { id: 'g_a3b', name: '錨★3-B', faction: '錨', rarity: 3, gacha: true, role: '回復耐久', hp: 18600, atk: 1500, dfs: 1900, phys: 0.95,
     trait: { key: 'regen', name: '潮だまり', desc: 'ラリーが終わるたびにHPを400回復', heal: 400 },
     actions: { rock: { rate: RATE.normal, name: '停止', mods: [foeAtk(500, 2)] }, scissors: N('跳躍'), paper: { rate: RATE.normal, name: '遡行', heal: 1600 } } },
-  { id: 'g_a3c', name: '錨★3-C', faction: '錨', rarity: 3, gacha: true, role: '硬い相手を割る', hp: 9000, atk: 2600, dfs: 1300, phys: 1.15,
+  { id: 'g_a3c', name: '錨★3-C', faction: '錨', rarity: 3, gacha: true, role: '硬い相手を割る', hp: 12300, atk: 2600, dfs: 1300, phys: 1.15,
     actions: { rock: { rate: RATE.huge, name: '停止', up: { rate: RATE.max, when: 'foeDfsAtLeast', v: 2000, text: '相手のDFSが2000以上なら極大' } }, scissors: { rate: RATE.normal, name: '跳躍', mods: [foeDfs(800, 3)] }, paper: N('遡行') } },
   { id: 'g_a4', name: '錨★4', faction: '錨', rarity: 4, gacha: true, role: '抜け落ち勝ち', hp: 19000, atk: 1500, dfs: 2600, phys: 0.9,
     trait: { key: 'decayGuard', name: '錨泊', desc: '刻の抜け落ちを受けない。相手が受ける抜け落ちダメージ+50%', boost: 0.5 },
@@ -899,16 +899,16 @@ const GACHA_CHARS = [
     actions: { rock: N('停止'), scissors: N('跳躍'), paper: N('遡行') } },
   { id: 'g_z2', name: '零★2', faction: '零', rarity: 2, gacha: true, role: '弱い時蝕', hp: 8000, atk: 1600, dfs: 1000, phys: 0.9,
     actions: { rock: { rate: RATE.normal, name: '停止', poison: 2 }, scissors: N('跳躍'), paper: N('遡行') } },
-  { id: 'g_z3a', name: '零★3-A', faction: '零', rarity: 3, gacha: true, role: '相手全体に永続デバフ', hp: 9500, atk: 1900, dfs: 1300, phys: 0.95,
+  { id: 'g_z3a', name: '零★3-A', faction: '零', rarity: 3, gacha: true, role: '相手全体に永続デバフ', hp: 13500, atk: 1900, dfs: 1300, phys: 0.95,
     trait: { key: 'teamCurse', name: '呪い', desc: '技を当てるたびに、相手の控えも含めた全員のATK−150(消えない。最大−2000)', v: 150, cap: 2000 },
     actions: { rock: N('停止'), scissors: { rate: RATE.big, name: '跳躍' }, paper: { rate: RATE.normal, name: '遡行', foeTeamMark: { stat: 'dfs', v: 200, cap: 2000 } } } },
-  { id: 'g_z3b', name: '零★3-B', faction: '零', rarity: 3, gacha: true, role: '一度だけ耐える', hp: 8000, atk: 2300, dfs: 1100, phys: 1.0,
+  { id: 'g_z3b', name: '零★3-B', faction: '零', rarity: 3, gacha: true, role: '一度だけ耐える', hp: 13300, atk: 2300, dfs: 1100, phys: 1.0,
     trait: { key: 'secondWind', name: '立ち直り', desc: '一度だけ、倒れたときにHP30%で立ち上がる', hp: 0.3 },
     actions: { rock: { rate: RATE.big, name: '停止' }, scissors: N('跳躍'), paper: { rate: RATE.normal, name: '遡行', heal: 600 } } },
-  { id: 'g_z3c', name: '零★3-C', faction: '零', rarity: 3, gacha: true, role: 'あいこで連勝', hp: 9000, atk: 2100, dfs: 1200, phys: 1.0,
+  { id: 'g_z3c', name: '零★3-C', faction: '零', rarity: 3, gacha: true, role: 'あいこで連勝', hp: 17300, atk: 2100, dfs: 1200, phys: 1.0,
     trait: { key: 'drawStreak', name: '逆巻き', desc: 'あいこでも連勝が1増える' },
     actions: { rock: N('停止'), scissors: { rate: RATE.big, name: '跳躍' }, paper: N('遡行') } },
-  { id: 'g_z4', name: '零★4', faction: '零', rarity: 4, gacha: true, role: '相手のATKで殴る', hp: 18000, atk: 1000, dfs: 1300, phys: 1.1,
+  { id: 'g_z4', name: '零★4', faction: '零', rarity: 4, gacha: true, role: '相手のATKで殴る', hp: 28800, atk: 1000, dfs: 1300, phys: 1.1,
     trait: { key: 'mirrorAtk', name: '鏡写し', desc: '攻撃するとき、自分のATKの代わりに相手の今のATKを使う' },
     actions: { rock: { rate: RATE.big, name: '停止' }, scissors: { rate: RATE.normal, name: '跳躍', mods: [{ to: 'foe', stat: 'atk', v: 500, t: 2 }] }, paper: { rate: RATE.normal, name: '遡行', heal: 1500 } } },
   { id: 'g_z5', name: '零★5', faction: '零', rarity: 5, gacha: true, role: 'SEC', hp: 11500, atk: 2500, dfs: 1500, phys: 1.5,
@@ -921,13 +921,13 @@ const GACHA_CHARS = [
   { id: 'g_y2', name: '矢★2', faction: '矢', rarity: 2, gacha: true, role: '出だしだけ', hp: 7000, atk: 2200, dfs: 900, phys: 1.0,
     trait: { key: 'rush', name: '出鼻', desc: '場に出て1ラリー目だけATK+800', until: 1, early: 800, from: 999, late: 0 },
     actions: { rock: { rate: RATE.big, name: '停止' }, scissors: N('跳躍'), paper: N('遡行') } },
-  { id: 'g_y3a', name: '矢★3-A', faction: '矢', rarity: 3, gacha: true, role: '永続デバフ', hp: 8500, atk: 2400, dfs: 1100, phys: 1.0,
+  { id: 'g_y3a', name: '矢★3-A', faction: '矢', rarity: 3, gacha: true, role: '永続デバフ', hp: 16500, atk: 2400, dfs: 1100, phys: 1.0,
     trait: { key: 'pierceMark', name: '穿ち', desc: '技を当てるたびに、場の相手のDFS−250(そのカードに消えずに残る。最大−1500)', v: 250, cap: 1500 },
     actions: { rock: N('停止'), scissors: { rate: RATE.big, name: '跳躍' }, paper: { rate: RATE.normal, name: '遡行', mods: [foeAtk(400, 2)] } } },
-  { id: 'g_y3b', name: '矢★3-B', faction: '矢', rarity: 3, gacha: true, role: 'BREAK特化', hp: 7500, atk: 2600, dfs: 1000, phys: 1.05,
+  { id: 'g_y3b', name: '矢★3-B', faction: '矢', rarity: 3, gacha: true, role: 'BREAK特化', hp: 11500, atk: 2600, dfs: 1000, phys: 1.05,
     trait: { key: 'foresight', name: '一矢', desc: `自分の${BREAK_NAME}の攻撃はATK+2000`, add: 2000 },
     actions: { rock: { rate: RATE.big, name: '停止' }, scissors: { rate: RATE.normal, name: '跳躍', streak: 1 }, paper: N('遡行') } },
-  { id: 'g_y3c', name: '矢★3-C', faction: '矢', rarity: 3, gacha: true, role: '連続で勝つほど強い', hp: 8000, atk: 2300, dfs: 1000, phys: 1.05,
+  { id: 'g_y3c', name: '矢★3-C', faction: '矢', rarity: 3, gacha: true, role: '連続で勝つほど強い', hp: 15300, atk: 2300, dfs: 1000, phys: 1.05,
     trait: { key: 'winStack', name: '連射', desc: '勝つたびに次の攻撃のATK+400が重なる(負けると消える)', v: 400 },
     actions: { rock: N('停止'), scissors: { rate: RATE.big, name: '跳躍' }, paper: N('遡行') } },
   { id: 'g_y4', name: '矢★4', faction: '矢', rarity: 4, gacha: true, role: 'フルパワー→減速', hp: 10000, atk: 10000, dfs: 1100, phys: 1.1,
@@ -1207,17 +1207,8 @@ function describe(a, rate, short) {
   if (a.dispel) parts.push(short ? 'バフ消し' : '相手のバフをすべて消す');
   if (a.resetStreak) parts.push(short ? '連勝リセット' : '相手の連勝を0にする(連勝保護も無視)');
   if (a.mark) { const L = a.mark.stat === 'atk' ? 'ATK' : 'DFS'; parts.push(short ? `敵${L}−${a.mark.v}刻印` : `相手の${L}−${a.mark.v}(刻印。消えず、重ねがけで最大−${a.mark.cap})`); }
-  if (a.foeTeamMark) {   // 相手の控えも含めた全員に、消えない弱体
-    const k = a.foeTeamMark.stat === 'atk' ? 'markAtk' : 'markDfs', label = a.foeTeamMark.stat === 'atk' ? 'ATK' : 'DFS';
-    lt.cards.forEach((c) => { if (c.result !== 'lose') c[k] = Math.max(-a.foeTeamMark.cap, c[k] - a.foeTeamMark.v); });
-    S.events.push({ type: 'mod', side: 1 - side, text: `全員${label}刻印`, good: false });
-    log(`　${lt.label}の全員に${label}の刻印(${label}${l[k]})`);
-  }
-  if (a.selfPerm && w.hp > 0) {   // 自分に、消えない強化(重ねがけできる)
-    w.atkBonus += a.selfPerm.atk || 0; w.dfsBonus += a.selfPerm.dfs || 0;
-    S.events.push({ type: 'mod', side, text: 'ずっと↑', good: true });
-    log(`　${nameOf(w)}のATK+${a.selfPerm.atk || 0}・DFS+${a.selfPerm.dfs || 0}(消えない。合計ATK+${w.atkBonus}・DFS+${w.dfsBonus})`);
-  }
+  if (a.foeTeamMark) { const L = a.foeTeamMark.stat === 'atk' ? 'ATK' : 'DFS'; parts.push(short ? `敵全員${L}−${a.foeTeamMark.v}` : `相手の全員(控えも)の${L}−${a.foeTeamMark.v}(消えず、重ねがけで最大−${a.foeTeamMark.cap})`); }
+  if (a.selfPerm) parts.push(short ? `自ATK・DFS+${a.selfPerm.atk}(永続)` : `自分のATK+${a.selfPerm.atk}・DFS+${a.selfPerm.dfs}(消えず、重ねがけできる)`);
   if (a.team) { const L = a.team.stat === 'atk' ? 'ATK' : 'DFS'; parts.push(short ? `全員${L}+${a.team.v}` : `味方全員(控えも)の${L}+${a.team.v}(消えず、重ねがけで最大+${a.team.cap})`); }
   if (a.nextAtkUp) parts.push(short ? `次番手ATK+${a.nextAtkUp}` : `次の番手の最初の攻撃ATK+${a.nextAtkUp}`);
   if (a.nextDfsUp) parts.push(short ? `次番手DFS+${a.nextDfsUp}` : `次の番手の最初の被弾DFS+${a.nextDfsUp}`);
@@ -1231,7 +1222,7 @@ const FACTION_BONUS = {
   '矢': { atk: 1000, text: 'ATK+1000' },
 };
 function factionBonus(chars) {
-  if (chars.length !== TEAM_SIZE || !chars.every((ch) => ch.faction === chars[0].faction && (ch.bonusOk || CHARACTERS.some((c) => c.id === ch.id)))) return null;
+  if (chars.length !== TEAM_SIZE || !chars.every((ch) => ch.faction === chars[0].faction && (ch.bonusOk || ch.gacha || CHARACTERS.some((c) => c.id === ch.id)))) return null;
   const b = FACTION_BONUS[chars[0].faction];
   return b ? { ...b, faction: chars[0].faction } : null;
 }
@@ -1385,6 +1376,17 @@ function act(S, side, hand, log, isBreak) {
     l[k] = Math.max(-a.mark.cap, l[k] - a.mark.v);
     S.events.push({ type: 'mod', side: 1 - side, text: `${label}刻印`, good: false });
     log(`　${nameOf(l)}に${label}の刻印(${label}${l[k]})`);
+  }
+  if (a.foeTeamMark) {   // 相手の控えも含めた全員に、消えない弱体
+    const k = a.foeTeamMark.stat === 'atk' ? 'markAtk' : 'markDfs', label = a.foeTeamMark.stat === 'atk' ? 'ATK' : 'DFS';
+    lt.cards.forEach((c) => { if (c.result !== 'lose') c[k] = Math.max(-a.foeTeamMark.cap, c[k] - a.foeTeamMark.v); });
+    S.events.push({ type: 'mod', side: 1 - side, text: `全員${label}刻印`, good: false });
+    log(`　${lt.label}の全員に${label}の刻印(${label}${l[k]})`);
+  }
+  if (a.selfPerm && w.hp > 0) {   // 自分に、消えない強化(重ねがけできる)
+    w.atkBonus += a.selfPerm.atk || 0; w.dfsBonus += a.selfPerm.dfs || 0;
+    S.events.push({ type: 'mod', side, text: 'ずっと↑', good: true });
+    log(`　${nameOf(w)}のATK+${a.selfPerm.atk || 0}・DFS+${a.selfPerm.dfs || 0}(消えない。合計ATK+${w.atkBonus}・DFS+${w.dfsBonus})`);
   }
   if (a.team) {
     const k = a.team.stat === 'atk' ? 'teamAtk' : 'teamDfs', label = a.team.stat === 'atk' ? 'ATK' : 'DFS';
@@ -1778,6 +1780,10 @@ const PERSONA_OF = {
   shio: 'prey', moto: 'prey', yajiri: 'prey', tokibami: 'prey', p_tokibami: 'prey', z_mask: 'prey', a_chain: 'prey',
   kaji: 'rage', haya: 'rage', xeno_body: 'rage', p_xeno: 'rage', y_runner: 'rage', y_archer: 'rage',
   xeno_spirit: 'abyss', b_kaji: 'rage', p_kaji_shi: 'rage',
+  // ガチャキャラ(仮)
+  g_a1: 'guard', g_a2: 'guard', g_a3a: 'guard', g_a3b: 'guard', g_a3c: 'rage', g_a4: 'guard',
+  g_z1: 'rewind', g_z2: 'prey', g_z3a: 'prey', g_z3b: 'rewind', g_z3c: 'rewind', g_z4: 'sight', g_z5: 'sight',
+  g_y1: 'rage', g_y2: 'rage', g_y3a: 'prey', g_y3b: 'sight', g_y3c: 'rage', g_y4: 'rage',
 };
 // カジ【始】は残りHPで性格が変わる(激昂 → 天眼 → 捕食)。性格は裏の数値なので画面には出さない
 const personaOf = (c) => (c.ch.id === 'b_kaji_shi' ? (c.hp > c.max * 0.67 ? 'rage' : c.hp > c.max * 0.34 ? 'sight' : 'prey') : PERSONA_OF[c.ch.id] || 'guard');
@@ -4266,7 +4272,7 @@ function renderLevels() {
 // キャラ選択:陣営のボタンで、その陣営のキャラだけを並べる。選んだ3枚は上の枠に出る
 let selFaction = '錨';
 const FACTIONS = ['錨', '零', '矢', '隔絶'];   // 隔絶:解放キャラ(トキバミ・ゼノ)。カジ【始】は錨に並ぶ
-const ALL_CHARS = [...CHARACTERS, ...SPECIAL_CHARS];
+const ALL_CHARS = [...CHARACTERS, ...SPECIAL_CHARS, ...GACHA_CHARS];   // ガチャキャラはアドバンスだけで並ぶ
 // キャラの★(レアリティ)。今いるキャラは、錨・零・矢の14人が★3、隔絶とカジ【始】が★4。
 // ガチャキャラ(gacha: true)は ★1・★2 がハズレ枠、★3 がベーシック並み、★4 が隔絶並み、★5 は1パーティに1枚まで
 CHARACTERS.forEach((c) => { c.rarity = c.rarity || 3; });
