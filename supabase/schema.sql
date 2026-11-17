@@ -36,3 +36,22 @@ alter table public.profiles add column if not exists titles text[] not null defa
 
 -- ===== 3回目:お気に入りキャラ =====
 alter table public.profiles add column if not exists fav text not null default '';
+
+-- ===== 4回目:招待コード =====
+-- 招待コード:アカウントのIDから作る8文字(公開)。コードから招待した人を探すのに使う
+alter table public.profiles add column if not exists invite_code text generated always as (upper(substr(md5(id::text), 1, 8))) stored;
+create unique index if not exists profiles_invite_code on public.profiles (invite_code);
+-- 招待の記録:招待された人1人につき1行(1回しか使えない)。自分を招待はできない
+create table if not exists public.invites (
+  invitee uuid primary key references auth.users on delete cascade,
+  inviter uuid not null references auth.users on delete cascade,
+  created_at timestamptz not null default now(),
+  check (invitee <> inviter)
+);
+alter table public.invites enable row level security;
+-- 作ってから1日以内のアカウントか(サーバーの登録日時で確かめる)
+create or replace function public.is_new_account() returns boolean
+  language sql stable security definer set search_path = '' as
+  $$ select exists (select 1 from auth.users where id = auth.uid() and created_at > now() - interval '1 day') $$;
+create policy "招待:本人と招待した人だけ見られる" on public.invites for select using (auth.uid() = invitee or auth.uid() = inviter);
+create policy "招待:作って1日以内の本人だけ登録できる" on public.invites for insert with check (auth.uid() = invitee and public.is_new_account());
