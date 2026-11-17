@@ -438,7 +438,7 @@
   .gc-rates { width: 100%; font-size: .74rem; border-collapse: collapse; margin-top: 6px; }
   .gc-rates td { border-top: 1px solid var(--line); padding: 3px 4px; }
   .gc-own { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; margin-top: 6px; }
-  .gc-own span { position: relative; text-align: center; font-size: .6rem; color: var(--sub); }
+  .gc-own span { -webkit-touch-callout: none; touch-action: manipulation; cursor: pointer; position: relative; text-align: center; font-size: .6rem; color: var(--sub); }
   .gc-own .cico { width: 100%; height: auto; aspect-ratio: 1; }
   .gc-own .no .cico { filter: grayscale(1) brightness(.4); }
   #gstage { position: fixed; inset: 0; z-index: 9; background: radial-gradient(600px 500px at 50% 45%, #1a1f45, #05060d 75%); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 16px; }
@@ -4364,19 +4364,20 @@ function bindPress(el, onTap, onLong) {
   el.addEventListener('contextmenu', (e) => { e.preventDefault(); cancel(); if (!long) onLong(); long = false; });
 }
 // キャラの詳細(長押しで開く)
-function openCharDetail(ch) {
+function openCharDetail(ch, back) {   // back:閉じたあとに戻る画面(ガチャから開いたとき)
   const order = picked.indexOf(ch.id), unlocked = charUnlocked(ch);
   const hide = ch.secret && !xenoKnown();
   const clash = order < 0 && (picked.map(charById).some((o) => o && (o.sameAs === ch.id || ch.sameAs === o.id))
     || (rarityOf(ch) >= 5 && picked.map(charById).filter((o) => o && rarityOf(o) >= 5).length >= STAR5_MAX));
-  const canToggle = unlocked && !(PVP.on && PVP.phase === 'ready') && (order >= 0 || (!clash && picked.length < TEAM_SIZE));
+  const canToggle = !back && unlocked && !(PVP.on && PVP.phase === 'ready') && (order >= 0 || (!clash && picked.length < TEAM_SIZE));
   openSheet(dispName(ch), `<div class="cdetail"><div class="crow">${iconHtml(ch, 'lg')}<div>` +
     `<div class="name">${dispName(ch)}${hide ? '' : `<span class="role">${ch.role || ''}</span>`}</div>` +
     (hide ? '' : `<div>${rarHtml(ch)}${ch.gacha ? ' <small class="sub">ガチャキャラ(アドバンスのみ)</small>' : ''}</div>`) +
     (unlocked ? '' : `<div class="sub" style="color:var(--gold)">🔒 ${unlockText(ch)}</div>`) +
     (clash ? '<div class="sub">同じ人物なので、同じパーティには入れられない</div>' : '') +
     (hide ? '' : `<div class="stats"><span class="s-hp">HP ${ch.hp}</span>　${statLine(ch)}</div><div class="trait">${traitLine(ch)}</div>` + actionList(ch, 'div', 'sub')) +
-    `</div></div>` + (canToggle ? `<div class="row"><button id="cdPick" style="border-color:var(--gold);color:var(--gold);font-weight:700">${order >= 0 ? 'パーティから外す' : `${picked.length + 1}番手に入れる`}</button></div>` : '') + `</div>`);
+    `</div></div>` + (canToggle ? `<div class="row"><button id="cdPick" style="border-color:var(--gold);color:var(--gold);font-weight:700">${order >= 0 ? 'パーティから外す' : `${picked.length + 1}番手に入れる`}</button></div>` : '') + (back ? '<div class="row"><button id="cdBack">◀ ガチャに戻る</button></div>' : '') + `</div>`);
+  if (back) $('cdBack').onclick = () => { Sound.click(); back(); };
   if (canToggle) $('cdPick').onclick = () => { if (order >= 0) picked.splice(order, 1); else picked.push(ch.id); $('sheet').classList.add('hidden'); Sound.click(); renderSelect(); };
 }
 
@@ -4466,7 +4467,7 @@ function openGacha(results) {
   const n = shardCount();
   const rateRows = [5, 4, 3, 2, 1].map((st) => `<tr><td>${rarHtml({ rarity: st })}</td><td>${(GACHA_RATES[st] * 100).toFixed(1)}%</td><td>${GACHA_CHARS.filter((c) => c.rarity === st).map((c) => c.name).join('・')}</td></tr>`).join('');
   const own = [...GACHA_CHARS.filter((c) => c.rarity < 5), ...GACHA_CHARS.filter((c) => c.rarity >= 5)].map((c) =>   // ★5(SEC)は最後に並べる
- { const k = gachaOwned(c.id); return `<span class="${k ? '' : 'no'}">${iconHtml(c, 'sm')}${k ? `×${k}` : '−'}</span>`; }).join('');
+ { const k = gachaOwned(c.id); return `<span class="${k ? '' : 'no'}" data-id="${c.id}">${iconHtml(c, 'sm')}${k ? `×${k}` : '−'}</span>`; }).join('');
   const res = results ? `<div class="gc-res">${results.map((r) => `<div class="gc-card r${r.c.rarity}">${r.fresh ? '<i class="new">NEW</i>' : ''}${iconHtml(r.c, 'lg')}<div>${rarHtml(r.c)}</div>${escHtml(r.c.name)}</div>`).join('')}</div>` : '';
   openSheet('ガチャ', `<div class="gc-top"><span>💠${SHARD_NAME}</span><b>${n}</b></div>` +
     (login ? '' : '<p class="sub" style="color:var(--gold)">ガチャはログインが必要です。カケラはオンライン対人(フリー戦・レート戦)で手に入ります。</p>') +
@@ -4474,7 +4475,9 @@ function openGacha(results) {
     res +
     `<p class="sub">引いたキャラは、アドバンスで使えます(ダブりはそのまま数えます)。</p>` +
     `<details><summary class="sub">確率</summary><table class="gc-rates">${rateRows}</table><p class="sub">同じ★の中では同じ確率。11回でも保証はありません。</p></details>` +
-    `<details${results ? '' : ' open'}><summary class="sub">持っているキャラ</summary><div class="gc-own">${own}</div></details>`);
+    `<details${results ? '' : ' open'}><summary class="sub">持っているキャラ(長押しで能力)</summary><div class="gc-own">${own}</div></details>`);
+  // 持っているキャラ:長押し(PCは右クリック)で、持っていなくても能力を見られる
+  document.querySelectorAll('#sheetBody .gc-own span[data-id]').forEach((el) => bindPress(el, () => {}, () => openCharDetail(charById(el.dataset.id), () => openGacha())));
   if (!login) return;
   const go = async (t) => {
     const r = await gachaPull(t);
