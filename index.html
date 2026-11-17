@@ -104,6 +104,7 @@
   .ctile.locked .cico { filter: grayscale(1) brightness(.6); }
   .ctile .lk { position: absolute; top: 2px; right: 4px; font-size: .7rem; }
   .cdetail .crow { margin-bottom: 8px; }
+  #select, .cdetail, #sheet button { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
   .ms { display: grid; grid-template-columns: auto 1fr; gap: 6px 10px; align-items: center; border: 1px solid var(--line); border-radius: 12px; padding: 8px; margin-bottom: 8px; }
   .ms .ic { display: flex; gap: 2px; }
   .ms .ic .cico { width: 34px; height: 34px; }
@@ -4128,14 +4129,12 @@ function openCharDetail(ch) {
   const order = picked.indexOf(ch.id), unlocked = charUnlocked(ch);
   const hide = ch.secret && !xenoKnown();
   const clash = order < 0 && picked.map(charById).some((o) => o && (o.sameAs === ch.id || ch.sameAs === o.id));
-  const canToggle = unlocked && !(PVP.on && PVP.phase === 'ready') && (order >= 0 || (!clash && picked.length < TEAM_SIZE));
   openSheet(dispName(ch), `<div class="cdetail"><div class="crow">${iconHtml(ch, 'lg')}<div>` +
     `<div class="name">${dispName(ch)}${hide ? '' : `<span class="role">${ch.role || ''}</span>`}</div>` +
     (unlocked ? '' : `<div class="sub" style="color:var(--gold)">🔒 ${unlockText(ch)}</div>`) +
     (clash ? '<div class="sub">同じ人物なので、同じパーティには入れられない</div>' : '') +
     (hide ? '' : `<div class="stats"><span class="s-hp">HP ${ch.hp}</span>　${statLine(ch)}</div><div class="trait">${traitLine(ch)}</div>` + actionList(ch, 'div', 'sub')) +
-    `</div></div>` + (canToggle ? `<div class="row"><button id="cdPick" style="border-color:var(--gold);color:var(--gold);font-weight:700">${order >= 0 ? 'パーティから外す' : `${picked.length + 1}番手に入れる`}</button></div>` : '') + `</div>`);
-  if (canToggle) $('cdPick').onclick = () => { if (order >= 0) picked.splice(order, 1); else picked.push(ch.id); $('sheet').classList.add('hidden'); Sound.click(); renderSelect(); };
+    `</div></div></div>`);
 }
 
 // ----- マイセット:好きなパーティ(並び順つき)を5つまで保存する -----
