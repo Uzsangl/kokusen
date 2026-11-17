@@ -27,6 +27,7 @@
   }
   main { max-width: 640px; margin: 0 auto; }
   header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  body.in-battle #optBgm, body.in-battle #optSound { display: none; }   /* 曲と音の切り替えは、対戦画面では出さない(設定から変えられる) */
   h1 {
     font-size: 1.6rem; margin: 0; letter-spacing: .2em; font-weight: 900;
     background: linear-gradient(180deg, #fff3c4, var(--gold) 55%, #b9791a);
