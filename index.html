@@ -98,7 +98,7 @@
     -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: manipulation; }
   .ctile .cico { width: 100%; max-width: 64px; height: auto; aspect-ratio: 1; pointer-events: none; }
   .ctile .nm { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; pointer-events: none; }
-  .ctile.picked { border-color: var(--accent); border-width: 2px; box-shadow: 0 0 12px #f5c45144; }
+  .ctile.picked { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent), 0 0 12px #f5c45144; }
   .ctile .ord { position: absolute; top: 2px; left: 4px; font-style: normal; font-weight: 700; color: var(--gold); font-size: .72rem; }
   .ctile.off { opacity: .4; }
   .ctile.locked .cico { filter: grayscale(1) brightness(.6); }
@@ -120,6 +120,8 @@
   .picks button { padding: 6px 4px; font-size: .78rem; line-height: 1.3; min-height: 3.2em; }
   .picks button b { display: block; color: var(--gold); font-size: .68rem; }
   .picks button.empty { border-style: dashed; color: var(--sub); }
+  .picks .cico.ph { visibility: hidden; }
+  #bonusNote { min-height: 3em; }   /* ボーナスの説明が1行・2行で変わっても、下がずれないように */
   .role { font-size: .74rem; font-weight: 400; color: #7dd3fc; margin-left: 6px; }
   #factions { grid-template-columns: repeat(4, 1fr); gap: 6px; }
   #factions button { padding-left: 4px; padding-right: 4px; white-space: nowrap; }
@@ -4232,7 +4234,7 @@ function renderSelect() {
     const ch = charById(picked[i]);
     const b = document.createElement('button');
     b.className = ch ? '' : 'empty';
-    b.innerHTML = ch ? `<b>${i + 1}番手</b>${iconHtml(ch, 'md')}${dispName(ch)}` : `<b>${i + 1}番手</b>未選択`;
+    b.innerHTML = ch ? `<b>${i + 1}番手</b>${iconHtml(ch, 'md')}${dispName(ch)}` : `<b>${i + 1}番手</b><span class="cico md ph"></span>未選択`;
     b.disabled = !ch || locked;
     if (ch) b.onclick = () => { picked.splice(i, 1); Sound.click(); renderSelect(); };
     $('picks').appendChild(b);
