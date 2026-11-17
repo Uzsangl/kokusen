@@ -4353,7 +4353,7 @@ const charById = (id) => ALL_CHARS.find((c) => c.id === id);
 const charGroup = (ch) => ch.group || (SPECIAL_CHARS.includes(ch) ? '隔絶' : ch.faction);
 // 解放キャラを使えるか(称号を解放したアカウントでログインしているとき)
 // テスト用のマスターアカウント:メールアドレスのハッシュ(SHA-256)が MASTER_HASHES にあるアカウントは、全キャラを使える(保存はしない)
-const MASTER_HASHES = [];
+const MASTER_HASHES = ['6bc4a36350f6ff8d567a477610dca5984216523e41ce0a92245a24c207916900'];
 let IS_MASTER = false;
 async function accCheckMaster() {
   IS_MASTER = false;
