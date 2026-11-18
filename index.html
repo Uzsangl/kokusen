@@ -1190,7 +1190,7 @@ Object.assign(ENEMIES, {
     traits: [GACHA_CHARS.find((x) => x.id === 'g_z4').trait,
       { key: 'outside', name: '割れぬ鏡', desc: '被ダメージ−20%', cut: 0.2 },
       { key: 'drawHeal', name: '映し合い', desc: 'あいこのたびにHP1500回復', heal: 1500 }] }),
-  c4_nagare: gBoss('g_y4', { hp: 195990,
+  c4_nagare: gBoss('g_y4', { hp: 232800,
     traits: [{ key: 'burnout', name: '全力', desc: '場に出て5ラリー目まで、技がすべて極大。6ラリー目からは毎ラリーATK−500(最大−5000)', until: 5, step: 500, cap: 5000 },
       { key: 'pierce', name: '射抜き', desc: '相手のDFSを1000低いものとして攻撃する', v: 1000 }] }),
   c4_tomoshi: gBoss('g_a4', { hp: 282380, atk: 2600,
@@ -1938,6 +1938,9 @@ const PERSONA_OF = {
   g_a1: 'guard', g_a2: 'guard', g_a3a: 'guard', g_a3b: 'guard', g_a3c: 'rage', g_a4: 'guard',
   g_z1: 'rewind', g_z2: 'prey', g_z3a: 'prey', g_z3b: 'rewind', g_z3c: 'rewind', g_z4: 'sight', g_z5: 'sight',
   g_y1: 'rage', g_y2: 'rage', g_y3a: 'prey', g_y3b: 'sight', g_y3c: 'rage', g_y4: 'rage',
+  // 刻の回廊のボス
+  c4_toki: 'prey', c4_kagami: 'sight', c4_nagare: 'rage', c4_tomoshi: 'guard',
+  c5_xeno_body: 'rage', c5_xeno_spirit: 'abyss', c5_mask: 'sight', c5_nagare: 'rage', c5_tsuru: 'sight',
 };
 // カジ【始】は残りHPで性格が変わる(激昂 → 天眼 → 捕食)。性格は裏の数値なので画面には出さない
 const personaOf = (c) => (c.ch.id === 'b_kaji_shi' ? (c.hp > c.max * 0.67 ? 'rage' : c.hp > c.max * 0.34 ? 'sight' : 'prey') : PERSONA_OF[c.ch.id] || 'guard');
@@ -2076,7 +2079,8 @@ const PERSONA_LINES = {
   prey:   L(['同じ手だな', '続けたな？'], ['待つ', '隙を探す'], ['三度目は喰う'], ['腹が鳴る', '……いい匂いがする']),
   rage:   L(['遅い！', 'そこだ！'], ['来い', 'まだ本気じゃない'], ['ここからだ！'], ['熱い', 'ああ、もう！']),
 };
-const LINE_ALIAS = { b_tomari: 'tomari', b_rei: 'rei', b_tsuru: 'tsuru', p_xeno: 'xeno_body', b_kaji: 'kaji', p_kaji_shi: 'b_kaji_shi' };
+const LINE_ALIAS = { b_tomari: 'tomari', b_rei: 'rei', b_tsuru: 'tsuru', p_xeno: 'xeno_body', b_kaji: 'kaji', p_kaji_shi: 'b_kaji_shi',
+  c5_xeno_body: 'xeno_body', c5_xeno_spirit: 'xeno_spirit', c5_tsuru: 'tsuru' };   // 刻の回廊のボスは元のキャラのセリフ
 // トキバミは自分の声を持たず、喰った者たちの声で、過去・現在・未来を混ぜて話す(場面は分けない)
 const TOKIBAMI_VOICE = [
   'おまえは出した。おまえは出す。だから、ここにいる',
@@ -2091,7 +2095,7 @@ const pickOne = (a) => a[Math.floor(Math.random() * a.length)];
 function speak(c, mood) {
   const id = c.ch.id;
   const who = (t) => `${nameOf(c)}「${t}」`;
-  if (id === 'tokibami' || id === 'p_tokibami') return who(pickOne(TOKIBAMI_VOICE));
+  if (id === 'tokibami' || id === 'p_tokibami' || id === 'c4_toki') return who(pickOne(TOKIBAMI_VOICE));
   // 精神離脱体は、プレイヤー用ゼノでは肉体と同じカードのまま形が変わる
   const key = id === 'p_xeno' && c.form ? 'xeno_spirit' : LINE_ALIAS[id] || id;
   const set = CPU_LINES[key] || PERSONA_LINES[personaOf(c)];
@@ -3420,7 +3424,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.48';
+const APP_VER = '0.49';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
