@@ -3555,7 +3555,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.66';
+const APP_VER = '0.67';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
@@ -5141,6 +5141,23 @@ async function frLoad() {
     FR.ready = true;
   } catch (e) { if (isMissingFn(e)) FR.ready = false; }
   renderFriendBadge(); watchHostSync(); frBeat(true);
+  frReward();
+}
+// はじめてフレンドができたら、空間のカケラ200個(1アカウント1回だけ。もらったかはサーバーに記録する。SQLの9回目)
+const FRIEND_BONUS = 200;
+let frRewarding = false;
+async function frReward() {
+  if (frRewarding || !FR.list.some((f) => f.state === 'ok') || (ACC.stats && ACC.stats.friendGot) || !shardOnAcc()) return;
+  frRewarding = true;
+  try {
+    if (!(await frRpc('friend_reward'))) { ACC.stats.friendGot = 1; return; }   // もうもらっている
+    ACC.stats.friendGot = 1;
+    const total = await shardAdd(FRIEND_BONUS);
+    renderTitleAcc(); renderAcct();
+    if (S && !$('battle').classList.contains('hidden')) log(`はじめてのフレンド:${SHARD_NAME} +${FRIEND_BONUS}(所持 ${total})`);
+    else openSheet('はじめてのフレンド', `<p class="sub">はじめてフレンドができました。<br>💠${SHARD_NAME}を<b style="color:var(--gold)">${FRIEND_BONUS}個</b>プレゼント!(所持 ${total})</p>`);
+  } catch (e) { /* 関数がまだない(SQLの9回目の前)・通信の失敗:次に開いたときにもう一度 */ }
+  finally { frRewarding = false; }
 }
 function renderFriendBadge() {
   const n = FR.list.filter((f) => f.state === 'in').length, el = $('tFriendN');
@@ -5201,6 +5218,7 @@ function openFriends() {
     + (out.length ? `<h2>出した申請</h2>${out.map((f) => `<div class="fr-row">${icon(f)}<div class="fr-main"><b>${escHtml(f.name)}</b><span class="sub">承認待ち</span></div><div class="fr-btns"><button data-rm="${f.id}">取り消し</button></div></div>`).join('')}` : '')
     + `<label class="fr-opt"><input type="checkbox" id="frOff"${me.off ? ' checked' : ''}> フレンドの観戦を受け付けない</label>`
     + '<p class="sub">ソロ・CPU戦を遊んでいる間、フレンドはいつでも観戦に入れます(いつ抜けても大丈夫です)。観戦されても、記録や結果は変わりません。</p>'
+    + (ACC.stats && ACC.stats.friendGot ? '' : `<p class="sub" style="color:var(--gold)">はじめてフレンドができると、💠${SHARD_NAME}${FRIEND_BONUS}個をプレゼント(1回だけ)。</p>`)
     + '<div class="row"><button id="frReload">更新</button></div>');
   const msg = (t, err) => { $('frMsg').textContent = t; $('frMsg').className = 'msg' + (err ? ' err' : ''); };
   const act = async (fn) => { try { const t = await fn(); await frLoad(); openFriends(); if (t) setTimeout(() => msg(t), 0); } catch (e) { msg(/^KF/.test(e.code || '') || /[ぁ-んァ-ン]/.test(e.message || '') ? e.message : '通信に失敗しました', true); } };

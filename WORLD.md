@@ -550,6 +550,7 @@ ATK・HPと、ATKの増減・回復の実数は、以前の2.5倍にしてある
 - フレンドのソロ観戦:フレンドがソロ・CPU戦を遊んでいる間、一覧の「👁 観戦」でいつでも入れて、いつ抜けてもよい。途中から入ると、それまでの手を早送りで流して追いつく。遊ぶ側の操作はいらない。遊ぶ側の画面には「👁 観戦 n人(名前)」が出る。最大5人。観戦されても記録や結果は変わらない。
 - しくみ:遊ぶ側の端末が観戦用の部屋(PeerJS)を開き、毎ラリーの両方の手を送る。見る側も同じルールで計算して再生する(ルールに乱数はないので結果は同じになる)。部屋の名前はフレンドにしか読めない「観戦の鍵」から作るので、フレンド以外は入れない。フレンドを外すと鍵を作り直す。
 - 「フレンドの観戦を受け付けない」はフレンドの画面にある(最初は受け付ける)。
+- はじめてフレンドができたとき、空間のカケラ200個(1アカウント1回だけ。フレンドを外して付け直してももらえない。記録はサーバーの friend_rewards、関数 friend_reward。SQLの9回目 = `supabase/part9_friend_reward.sql`)。
 - サーバー:`supabase/schema.sql` の8回目(`supabase/part8_friends.sql` と同じ内容)。表 friend_keys・friend_links・user_status と、関数 friend_me・friend_request・friend_answer・friend_remove・friend_list・status_set・friend_watch_off。
 
 **招待コード**
