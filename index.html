@@ -494,6 +494,8 @@
   /* SEC:暗転して、10本の針が回る */
   .gsec { position: fixed; inset: 0; z-index: 8; background: #000; display: flex; align-items: center; justify-content: center; }
   .gsec.hidden { display: none; }
+  .gsec b { position: absolute; left: 0; right: 0; top: 50%; height: 100vh; margin-top: -50vh; background: #fff; animation: puchun 0.32s ease-in forwards; }
+  @keyframes puchun { 0% { transform: scale(1, 1); opacity: 0.9; } 45% { transform: scale(1, 0.004); opacity: 1; } 80% { transform: scale(0.01, 0.004); opacity: 1; } 100% { transform: scale(0, 0); opacity: 0; } }
   .gsec i { position: absolute; left: 50%; top: 50%; width: 3px; height: 34vmin; margin-left: -1.5px; background: linear-gradient(#ff2a3d, #ff2a3d00); transform-origin: 50% 0; opacity: 0; animation: secHand 1.4s ease-in forwards; }
   @keyframes secHand { 0% { opacity: 0; } 20% { opacity: 1; } 100% { opacity: 1; transform: rotate(var(--r)); } }
   .gres .gc-card { background: #0f1226ee; }
@@ -2289,6 +2291,13 @@ const Sound = (() => {
       tone(2100, 1.2, { type: 'sine', vol: 0.14, at: 0.27, vib: 6, vibDepth: 0.004 });
       tone(8400, 0.8, { type: 'sine', vol: 0.04, at: 0.27 });
     },
+    // ガチャの確定告知「プチュン」:テレビが切れるような、短く鋭い電気の音のあと無音
+    puchun() {
+      tone(2600, 0.09, { type: 'square', vol: 0.32, to: 180 });
+      tone(5200, 0.05, { type: 'sine', vol: 0.18, to: 600 });
+      noise(0.06, { type: 'highpass', freq: 3000, vol: 0.35 });
+      tone(60, 0.12, { type: 'sine', vol: 0.6, to: 30 });
+    },
     // 技が当たる。power は2.5(通常)〜5(極大)
     hit(power) {
       boom(0, 0.5 + power * 0.07, 0.25 + power * 0.04);
@@ -3329,7 +3338,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.31';
+const APP_VER = '0.32';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
@@ -4637,6 +4646,9 @@ async function gachaPull(times) {
 const GACHA_LINES = { g_a4: '灯は、消さない', g_z4: 'その力、映して返そう', g_y4: '……燃え尽きるまで、射る', g_z5: '仮面は、もういらない' };
 // ガチャの先バレ:板が出た直後(ひびを入れる前)に、赤く光って「ぽきゅん」。出たら40%で★4以上
 // ★4以上が入っているときは60%で出す(占有率)。★4以上がないときに出す割合は、「出たら40%」になるように引く回数から決める
+// ガチャの確定告知:ひびを入れるタップのどれかで「プチュン」(暗転)。出たら★4以上確定。割れる演出なしでめくる画面へ
+// ★4以上が入っているときに30%で出る(ぽきゅんとは別に引くので、両方出ることもある)
+const GACHA_PUCHUN_RATE = 0.3;
 const GACHA_POKYUN_HI = 0.6, GACHA_POKYUN_HIT = 0.4;   // HI:★4以上のときに出る割合(占有率) HIT:出たときに★4以上の割合
 function gachaPokyunRate(hasHigh, n) {
   if (hasHigh) return GACHA_POKYUN_HI;
@@ -4658,6 +4670,7 @@ function gachaShow(r) {
     $('gstage').classList.remove('hidden');
     Sound.lever();
     if (Math.random() < gachaPokyunRate(top >= 4, r.length)) setTimeout(() => sakibareFx(), 450);
+    const puchunAt = top >= 4 && Math.random() < GACHA_PUCHUN_RATE ? 1 + Math.floor(Math.random() * 3) : 0;   // 何回目のタップでプチュンするか(0=なし)
     let taps = 0, broke = false, skipped = false, busyFlip = false;
     const cardHtml = (x, i) => `<div class="gc-card r${x.c.rarity} back" data-i="${i}">${x.fresh ? '<i class="new">NEW</i>' : ''}${iconHtml(x.c, 'lg')}<div>${rarHtml(x.c)}</div><span class="nm">${escHtml(x.c.name)}</span></div>`;
     const crack = (e) => {   // タップした場所から、ひびを足す
@@ -4709,6 +4722,15 @@ function gachaShow(r) {
     pane.onclick = async (e) => {
       if (broke || skipped) return;
       taps++;
+      if (taps === puchunAt) {   // プチュン:画面が切れて暗転 → 無音 → そのままめくる画面へ
+        broke = true;
+        const g = $('gsec');
+        Bgm.duck(true); g.innerHTML = '<b></b>'; g.classList.remove('hidden'); Sound.puchun();
+        await sleep(1300);
+        g.classList.add('hidden'); g.innerHTML = ''; Bgm.duck(false);
+        if (!skipped) reveal();
+        return;
+      }
       pane.classList.remove('hit'); void pane.offsetWidth; pane.classList.add('hit');
       if (taps < 3) {
         crack(e); Sound.crack();
