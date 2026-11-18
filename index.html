@@ -3329,7 +3329,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.29';
+const APP_VER = '0.30';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
@@ -4635,6 +4635,14 @@ async function gachaPull(times) {
 // 3) ★4以上はめくると登場カットイン。SEC(★5)は暗転して10本の針が回ってから出る
 // どこでも「スキップ」で、演出を飛ばして結果だけを見られる。カードは長押しで能力を見られる
 const GACHA_LINES = { g_a4: '灯は、消さない', g_z4: 'その力、映して返そう', g_y4: '……燃え尽きるまで、射る', g_z5: '仮面は、もういらない' };
+// ガチャの先バレ:板が出た直後(ひびを入れる前)に、赤く光って「ぽきゅん」。出たら60%で★4以上
+// ★4以上が入っているときは70%で出す。★4以上がないときに出す割合は、「出たら40%」になるように引く回数から決める
+const GACHA_POKYUN_HI = 0.7, GACHA_POKYUN_HIT = 0.6;
+function gachaPokyunRate(hasHigh, n) {
+  if (hasHigh) return GACHA_POKYUN_HI;
+  const P = 1 - Math.pow(1 - GACHA_RATES[5] - GACHA_RATES[4], n);   // その回数で★4以上が1枚以上出る確率
+  return GACHA_POKYUN_HI * P * (1 - GACHA_POKYUN_HIT) / GACHA_POKYUN_HIT / (1 - P);
+}
 function gachaShow(r) {
   return new Promise((done) => {
     const top = Math.max(...r.map((x) => x.c.rarity));
@@ -4649,6 +4657,7 @@ function gachaShow(r) {
     ok.classList.add('hidden'); all.classList.add('hidden'); skip.classList.remove('hidden');
     $('gstage').classList.remove('hidden');
     Sound.lever();
+    if (Math.random() < gachaPokyunRate(top >= 4, r.length)) setTimeout(() => sakibareFx(), 450);
     let taps = 0, broke = false, skipped = false, busyFlip = false;
     const cardHtml = (x, i) => `<div class="gc-card r${x.c.rarity} back" data-i="${i}">${x.fresh ? '<i class="new">NEW</i>' : ''}${iconHtml(x.c, 'lg')}<div>${rarHtml(x.c)}</div><span class="nm">${escHtml(x.c.name)}</span></div>`;
     const crack = (e) => {   // タップした場所から、ひびを足す
