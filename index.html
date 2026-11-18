@@ -479,6 +479,7 @@
   .gc-card.back { opacity: 1; transform: none; background: linear-gradient(135deg, #1b2350, #2a1846) !important; border-color: #9fd8ff66 !important; box-shadow: none !important; }   /* 伏せている間は★が分からないように */
   .gc-card .nm { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .gc-card.back > * { visibility: hidden; }
+  .gc-card.back.sakasa::after { transform: rotate(180deg); }
   .gc-card.back::after { content: '刻'; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #9fd8ffaa; font-weight: 900; font-size: 1.4rem; }
   .gc-card.shake { animation: gcShake .5s; }
   @keyframes gcShake { 20%, 60% { transform: translateX(-4px) rotate(-3deg); } 40%, 80% { transform: translateX(4px) rotate(3deg); } }
@@ -2391,7 +2392,7 @@ const BGM_VOLUME = 0.2;
 const Bgm = (() => {
   const raw = {}, buf = {}, gain = {}, src = {}, startedAt = {}, decoding = {}, missing = {};
   let ctx = null, on = true, want = false, now = 'main', ducked = false;
-  const level = () => (ducked ? 0.04 : BGM_VOLUME) * FX.bgmVol;
+  const level = () => (ducked === 'mute' ? 0 : ducked ? 0.04 : BGM_VOLUME) * FX.bgmVol;   // 'mute' は完全に消す
   const ensure = () => (ctx || (ctx = Sound.wake()));
   function showButton() { $('optBgm').classList.remove('hidden'); $('bgmCredit').classList.remove('hidden'); }
   const loading = {};
@@ -3338,7 +3339,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.36';
+const APP_VER = '0.37';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
@@ -4639,7 +4640,7 @@ async function gachaPull(times) {
 }
 // 引いた結果を見せる:ガラスの板(一番高い★の色に光る)をタップすると割れて、アイコンが飛び出す
 // 引いた結果を見せる。
-// 1) ガラスの板は白で出る。タップするたびにひびが入り、色が上がることがある(白→金→紫→赤)。3回目で割れる
+// 1) ガラスの板は白で出る。タップするたびにひびが入り、オレンジに上がることがある(白→オレンジだけ)。3回目で割れる
 // 2) カードは伏せて並ぶ(5枚・5枚・1枚)。タップで1枚ずつめくる(「全部めくる」もある)。★4以上は震えてから光の柱
 // 3) ★4以上はめくると登場カットイン。SEC(★5)は暗転して10本の針が回ってから出る
 // どこでも「スキップ」で、演出を飛ばして結果だけを見られる。カードは長押しで能力を見られる
@@ -4652,8 +4653,11 @@ const GACHA_PUCHUN_RATE = 0.3;
 // めくりプチュン:★4以上が入っているときに10%で、何も起きない寒い演出(白いまま割れる・ぽきゅん無し)でめくる画面へ行き、
 // ★4以上のカードをめくる瞬間にプチュン → カットイン。ほかの告知とは重ならないので、ぽきゅん・プチュンは残りの90%で出す割合を上げて占有率をそのまま保つ
 const GACHA_COLD_RATE = 0.1;
-const GACHA_COLD_GOLD_RATE = 0.05;
-const GACHA_POKYUN_FLIP = 0.5;   // ぽきゅんが来て★4以上のとき、半分はめくる瞬間のプチュンで見せる(ひびのプチュンとは重ならない)   // オレンジ(金)止まりの板から、めくりプチュン。白より薄く
+const GACHA_COLD_GOLD_RATE = 0.15;   // オレンジ止まりの板(ぽきゅん無し)から、めくりプチュン
+const GACHA_POKYUN_FLIP = 0.5;   // ぽきゅんが来て★4以上のとき、半分はめくる瞬間のプチュンで見せる(ひびのプチュンとは重ならない)
+const GACHA_SAKASA_RATE = 0.05;   // ★4以上のとき、そのカードの裏の「刻」が逆さま → めくるとプチュン確定
+const GACHA_LATE_RATE = 0.2;
+const GACHA_MUTE_RATE = 0.1;      // ★4以上のとき、めくる画面になった瞬間にBGMが消える → ★4以上をめくるとプチュン確定(★4以上全体で10%)      // めくるときのプチュンのうち、触っても反応せず3秒後にプチュンする(遅れ)割合
 const GACHA_POKYUN_HI = 0.6, GACHA_POKYUN_HIT = 0.4;   // HI:★4以上のときに出る割合(占有率) HIT:出たときに★4以上の割合
 function gachaPokyunRate(hasHigh, n) {
   if (hasHigh) return GACHA_POKYUN_HI;
@@ -4663,15 +4667,17 @@ function gachaPokyunRate(hasHigh, n) {
 function gachaShow(r) {
   return new Promise((done) => {
     const top = Math.max(...r.map((x) => x.c.rarity));
-    const fin = top >= 5 ? 5 : top >= 4 ? 4 : top >= 3 ? 3 : 0;   // 最後に見せる色
-    // ひび1回目・2回目で見せる色(上がっていくだけ。結果より上の色は見せない)
-    const lv = [0, 3, 4, 5];
+    // 板の色は白とオレンジだけ(紫・赤にはしない)。★3以上が入っていればオレンジまで上がる
+    const fin = top >= 3 ? 3 : 0;
+    const lv = [0, 3];
     const fi = lv.indexOf(fin), a = Math.floor(Math.random() * (fi + 1)), b = Math.max(a, Math.floor(Math.random() * (fi + 1)));
-    // 寒い演出(実は★4以上):'w' は白のまま、'g' はオレンジ(金)止まり
+    // 寒い演出(実は★4以上):'w' は白のまま、'g' はオレンジ止まり。どちらもぽきゅん無しで、めくる瞬間にプチュン
     const cr = top >= 4 ? Math.random() : 1;
     const cold = cr < GACHA_COLD_RATE ? 'w' : cr < GACHA_COLD_RATE + GACHA_COLD_GOLD_RATE ? 'g' : '';
-    const steps = cold === 'w' ? [0, 0] : cold === 'g' ? [lv[Math.min(a, 1)], lv[Math.min(b, 1)]] : [lv[a], lv[b]];
-    const paneLv = cold === 'w' ? 0 : cold === 'g' ? 3 : fin;   // 割れるときの色
+    const steps = cold === 'w' ? [0, 0] : [lv[a], lv[b]];
+    const paneLv = cold === 'w' ? 0 : fin;   // 割れるときの色
+    // 逆さまの「刻」:★4以上のカードを1枚選んで、裏の文字を逆さまにする(めくるとプチュン確定)
+    const sakasa = top >= 4 && Math.random() < GACHA_SAKASA_RATE ? r.findIndex((x) => x.c.rarity === top) : -1;
     const pane = $('gpane'), res = $('gres'), ok = $('gOk'), all = $('gAll'), skip = $('gSkip'), crk = $('gcrk');
     pane.className = 'gpane c0'; pane.style.display = ''; crk.innerHTML = '';
     res.innerHTML = ''; res.className = 'gres' + (r.length === 1 ? ' one' : '');
@@ -4686,8 +4692,10 @@ function gachaShow(r) {
     // ひびのプチュン:めくりプチュンにならなかった残りから出して、★4以上全体の占有率を GACHA_PUCHUN_RATE に保つ
     const crackRate = GACHA_PUCHUN_RATE / keep / (1 - pkRate * GACHA_POKYUN_FLIP);
     const puchunAt = !cold && !flipPu && top >= 4 && Math.random() < crackRate ? 1 + Math.floor(Math.random() * 3) : 0;   // 何回目のタップでプチュンするか(0=なし)
-    let taps = 0, broke = false, skipped = false, busyFlip = false;
-    const cardHtml = (x, i) => `<div class="gc-card r${x.c.rarity} back" data-i="${i}">${x.fresh ? '<i class="new">NEW</i>' : ''}${iconHtml(x.c, 'lg')}<div>${rarHtml(x.c)}</div><span class="nm">${escHtml(x.c.name)}</span></div>`;
+    // BGM消え:ひびのプチュンが無かったときに出す(★4以上全体で GACHA_MUTE_RATE になるように)
+    const mute = top >= 4 && !puchunAt && Math.random() < GACHA_MUTE_RATE / (1 - GACHA_PUCHUN_RATE);
+    let taps = 0, broke = false, skipped = false, busyFlip = false, hiFlipped = 0;
+    const cardHtml = (x, i) => `<div class="gc-card r${x.c.rarity} back${i === sakasa ? ' sakasa' : ''}" data-i="${i}">${x.fresh ? '<i class="new">NEW</i>' : ''}${iconHtml(x.c, 'lg')}<div>${rarHtml(x.c)}</div><span class="nm">${escHtml(x.c.name)}</span></div>`;
     const crack = (e) => {   // タップした場所から、ひびを足す
       const rc = pane.getBoundingClientRect(), x0 = e && e.clientX ? e.clientX - rc.left : rc.width / 2, y0 = e && e.clientY ? e.clientY - rc.top : rc.height / 2;
       let h = '';
@@ -4709,9 +4717,14 @@ function gachaShow(r) {
         if (!quick) Sound.click();
       } else {
         busyFlip = true;
-        if (flipPu) await puchunFx(1000);   // めくる瞬間にプチュン
+        // めくる瞬間にプチュン:11連の2枚目以降の★4以上・逆さまの「刻」は必ず。1枚目は決めた演出どおり
+        const pu = hiFlipped > 0 || flipPu || mute || +el.dataset.i === sakasa;
+        hiFlipped++;
+        if (pu && Math.random() < GACHA_LATE_RATE) await sleep(3000);   // 遅れ:触っても反応しないまま3秒
+        if (skipped) { busyFlip = false; return; }
+        if (pu) await puchunFx(1000);
         if (rr >= 5) await secShow();
-        if (!flipPu) { el.classList.add('shake'); Sound.heart(); await sleep(500); }
+        if (!pu) { el.classList.add('shake'); Sound.heart(); await sleep(500); }
         el.classList.remove('back', 'shake'); el.classList.add('show', 'pillar');
         flash(rr >= 5 ? '#ff2a3d' : '#b57bff'); Sound.cue(rr >= 5 ? 4 : 3);
         await cutin(x.c.name, `${x.fresh ? 'NEW! ' : ''}${GACHA_LINES[x.c.id] || '★'.repeat(rr)}`, rr >= 5 ? 'evil' : 'violet', 1500);
@@ -4741,6 +4754,7 @@ function gachaShow(r) {
       res.innerHTML = r.map(cardHtml).join('');
       [...res.children].forEach((el) => bindPress(el, () => { if (!busyFlip) flip(el, false); }, () => { if (!el.classList.contains('back')) openCharDetail(r[+el.dataset.i].c, () => $('sheet').classList.add('hidden')); }));
       all.classList.remove('hidden');
+      if (mute && !skipped) Bgm.duck('mute');   // めくる画面になった瞬間にBGMが消える
     };
     pane.onclick = async (e) => {
       if (broke || skipped) return;
@@ -4765,13 +4779,18 @@ function gachaShow(r) {
       if (!skipped) reveal();
     };
     all.onclick = async () => { if (busyFlip) return; for (const el of left()) { await flip(el, false); await sleep(90); } };
-    skip.onclick = () => {
+    // スキップ:伏せたままの★4以上があれば、プチュンしてから全部表にする
+    skip.onclick = async () => {
+      if (skipped) return;
       skipped = true; broke = true;
       if (!res.children.length) reveal();
+      const hi = left().some((el) => r[+el.dataset.i].c.rarity >= 4);
+      skip.classList.add('hidden'); all.classList.add('hidden');
+      if (hi && $('gsec').classList.contains('hidden')) await puchunFx(1000);
       left().forEach((el) => flip(el, true));
       finish();
     };
-    ok.onclick = () => { $('gstage').classList.add('hidden'); pane.style.display = ''; res.innerHTML = ''; crk.innerHTML = ''; done(); };
+    ok.onclick = () => { Bgm.duck(false); $('gstage').classList.add('hidden'); pane.style.display = ''; res.innerHTML = ''; crk.innerHTML = ''; done(); };
   });
 }
 function openGacha(results) {
