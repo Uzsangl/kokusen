@@ -67,9 +67,12 @@
   .stages button.s2 b { color: #4ade80; }
   .stages button.s4, .stages button.s5 { grid-column: span 3; }
   .stages button.s0 { grid-column: 1 / -1; }
-  .corr-list { grid-template-columns: repeat(4, 1fr); }
-  .corr-list button.corr { grid-column: span 1; }
-  .corr-list .corr-h { grid-column: 1 / -1; margin: 6px 0 0; font-size: .78rem; color: var(--gold); }
+  /* 刻の回廊:1行に「回廊の名前・★2・★3・★4・★5」(縦に長くしない) */
+  .corr-list { display: grid; grid-template-columns: 3.4em repeat(4, 1fr); gap: 5px; margin-bottom: 4px; align-items: stretch; }
+  .corr-list.hidden, .stages.hidden { display: none; }
+  .corr-list button { padding: 5px 2px; font-size: .66rem; line-height: 1.25; }
+  .corr-list button b { display: block; font-size: .62rem; letter-spacing: 0; }
+  .corr-list .corr-h { margin: 0; display: flex; align-items: center; font-size: .7rem; line-height: 1.2; color: var(--gold); }
   .stages button.locked { opacity: .45; }
   .stages button.chain { opacity: .6; border-style: dashed; }
   .stages button.s0 b { color: var(--gold); }
@@ -699,8 +702,7 @@
     <div id="soloOpts" class="hidden">
       <h2>ステージ</h2>
       <div class="stages" id="stages"></div>
-      <h2>刻の回廊(アドバンス)</h2>
-      <div class="stages corr-list" id="corrStages"></div>
+      <div class="corr-list hidden" id="corrStages"></div>
       <p class="sub" id="stageNote"></p>
     </div>
     <div id="netOpts" class="hidden">
@@ -3476,7 +3478,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.50';
+const APP_VER = '0.51';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
@@ -4599,19 +4601,27 @@ async function accInit() {
   if (!ACC.session) return;
   try { await accLoadProfile(); } catch (e) { if (e.status === 401) { ACC.session = null; accStore(); SOLO.cleared = readCleared(GUEST_KEY); renderStages(); } renderAcct(); }
 }
+// ソロ:ベーシックは今までのステージ、アドバンスは刻の回廊。区分けと選んでいるステージを合わせる
+function soloFixStage() {
+  const adv = FORMAT === 'advance';
+  if (adv !== soloCorr()) SOLO.stage = adv ? 'r1_2' : 'a1';
+  $('stages').classList.toggle('hidden', adv);
+  $('corrStages').classList.toggle('hidden', !adv);
+}
 function renderStages() {
+  soloFixStage();
   [...$('stages').children, ...$('corrStages').children].forEach((b) => {
     if (!b.dataset.id) return;   // 回廊の見出し
     // 敵のアイコンも出す(★1・★2は兵士3体を小さく、★3以上はボス)。ゼノは名前が明かされるまでシルエット
     const s = STAGES.find((x) => x.id === b.dataset.id);
     const boss = `<span class="foes">${stageFoes(s).filter((f) => !f.hiddenUntilActive).map((f) => iconHtml(f, s.stars >= 3 ? 'md' : 'sm')).join('')}</span>`;
     const head = s.corridor ? '★'.repeat(s.stars) : `${s.faction} ${'★'.repeat(s.stars)}`;   // 回廊は見出しに名前があるので★だけ
-    b.innerHTML = `<b>${head}</b>${boss}${s.name}`;
+    b.innerHTML = s.corridor ? `<b>${head}</b>${s.name}` : `<b>${head}</b>${boss}${s.name}`;   // 回廊は縦に長くしないよう、敵のアイコンは出さない
     b.classList.toggle('chain', !!s.chainFrom);
     b.classList.toggle('picked', b.dataset.id === SOLO.stage);
     b.classList.toggle('cleared', SOLO.cleared.includes(b.dataset.id));
     b.classList.toggle('locked', !corrOpen(s));
-    if (!corrOpen(s)) b.innerHTML = `<b>${head}</b><span class="foes">🔒</span>${s.name}`;
+    if (!corrOpen(s)) b.innerHTML = `<b>${head}</b>🔒${s.name}`;
   });
   const st = STAGES.find((x) => x.id === SOLO.stage), foes = stageFoes(st);
   const shown = foes.filter((f) => !f.hiddenUntilActive || xenoKnown());   // ★5は、倒すまで1体に見せる
@@ -5226,9 +5236,9 @@ function renderFormats() {
   const solo = MODE === 'solo';
   [...$('formats').children].forEach((b) => {
     b.classList.toggle('picked', b.dataset.f === fmtNow());
-    b.disabled = solo || (PVP.on && PVP.phase !== 'idle');
+    b.disabled = PVP.on && PVP.phase !== 'idle';
   });
-  $('formatNote').textContent = solo ? (soloCorr() ? '刻の回廊はアドバンス:持っているガチャキャラも使える。★4以上の制限なし。' : 'ソロはベーシックのみ(刻の回廊はアドバンス)。') : fmtNow() === 'advance' ? 'アドバンス:すべてのキャラが使える(ガチャキャラも)。★4以上は1パーティに1枚まで。' : 'ベーシック:ガチャキャラ以外のキャラで戦う。★4以上は1パーティに1枚まで。';
+  $('formatNote').textContent = solo ? (soloCorr() ? '刻の回廊:持っているガチャキャラも使える。★4以上の制限なし。' : 'ソロのステージ(ガチャキャラ以外)。アドバンスにすると「刻の回廊」。') : fmtNow() === 'advance' ? 'アドバンス:すべてのキャラが使える(ガチャキャラも)。★4以上は1パーティに1枚まで。' : 'ベーシック:ガチャキャラ以外のキャラで戦う。★4以上は1パーティに1枚まで。';
   [...$('cpuPicks').children].forEach((b) => b.classList.toggle('picked', b.dataset.c === CPU_PICK));
 }
 function renderSelHead() {
@@ -5440,7 +5450,7 @@ function init() {
   if (!STAGES.some((x) => x.id === SOLO.stage)) SOLO.stage = 'a1';
   STAGES.forEach((st) => {
     // 刻の回廊は、回廊ごとに見出しを付けて別の欄に並べる
-    if (st.corridor && st.stars === 2) { const h = document.createElement('p'); h.className = 'corr-h'; h.textContent = CORRIDORS[st.corridor]; $('corrStages').appendChild(h); }
+    if (st.corridor && st.stars === 2) { const h = document.createElement('p'); h.className = 'corr-h'; h.textContent = CORRIDORS[st.corridor].replace('の回廊', ''); $('corrStages').appendChild(h); }
     const b = document.createElement('button');
     b.dataset.id = st.id;
     b.classList.add('s' + st.stars);   // ★の数で色を変える
@@ -5541,7 +5551,7 @@ function init() {
   $('toPick').onclick = () => { if (canPick()) { Sound.click(); setStep('pick'); } };
   $('toMenu').onclick = () => { if (MODE === 'pvp' && PVP.phase !== 'idle') { pvpLeave(); renderMode(); } Sound.click(); setStep('menu'); };
   $('mysetBtn').onclick = () => openMyset();
-  [...$('formats').children].forEach((b) => { b.onclick = () => { if (b.disabled) return; FORMAT = b.dataset.f; try { localStorage.setItem('kokusen.format', FORMAT); } catch (e) { /* 保存できなくても動く */ } Sound.click(); renderSelect(); }; });
+  [...$('formats').children].forEach((b) => { b.onclick = () => { if (b.disabled) return; FORMAT = b.dataset.f; try { localStorage.setItem('kokusen.format', FORMAT); } catch (e) { /* 保存できなくても動く */ } Sound.click(); if (MODE === 'solo') renderStages(); else renderSelect(); }; });
   [...$('cpuPicks').children].forEach((b) => { b.onclick = () => { CPU_PICK = b.dataset.c; try { localStorage.setItem('kokusen.cpuPick', CPU_PICK); } catch (e) { /* 保存できなくても動く */ } Sound.click(); renderSelect(); }; });
   [...$('pickSide').children].forEach((b) => { b.onclick = () => { if (b.dataset.s !== pickSide) { Sound.click(); setPickSide(b.dataset.s); } }; });
   $('logBtn').onclick = () => {
