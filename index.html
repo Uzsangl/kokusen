@@ -2954,7 +2954,8 @@ async function sakibareFx() {
 // リールが回り、予兆が出て、相手の手が止まるまで
 // BREAKの瞬間:画面のガラスにひびが走り、もう一度ひびが伸びてから、砕け散る
 // at:ひびの起点(省略すると勝負の枠の中央)、onBreak:ガラスが砕ける瞬間に呼ぶ
-async function shatter(violet, at, onBreak) {
+// instant:ひびを走らせずに、すぐ砕く(ガチャの板の3回目のタップ)
+async function shatter(violet, at, onBreak, instant) {
   // 対戦画面の真ん中(PC版は枠が分かれているので、両方の手の間)から入る
   const st = $('stage').getBoundingClientRect();
   const mid = () => { const a = center($('slotYou')), b = center($('slotCpu')); return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }; };
@@ -2975,14 +2976,16 @@ async function shatter(violet, at, onBreak) {
   const line = (pts) => `<polyline points="${pts.map((p) => p.map((v) => v.toFixed(1)).join(',')).join(' ')}"/>`;
   // 隣り合うひびを横につなぐ線(クモの巣状にする)
   const web = (k) => rays.map((r, i) => line([r[k], rays[(i + 1) % N][k]])).join('');
-  svg.setAttribute('class', 'on' + (violet ? ' violet' : ''));
-  if (!REDUCE) svg.innerHTML = rays.map((r) => line(r.slice(0, 3))).join('');
-  Sound.crack(); shake(false);
-  await sleep(280);
-  if (!REDUCE) svg.innerHTML = rays.map(line).join('') + web(2) + web(4);
-  Sound.crack(); shake(false);
-  await sleep(330);
-  svg.setAttribute('class', ''); svg.innerHTML = '';
+  if (!instant) {
+    svg.setAttribute('class', 'on' + (violet ? ' violet' : ''));
+    if (!REDUCE) svg.innerHTML = rays.map((r) => line(r.slice(0, 3))).join('');
+    Sound.crack(); shake(false);
+    await sleep(280);
+    if (!REDUCE) svg.innerHTML = rays.map(line).join('') + web(2) + web(4);
+    Sound.crack(); shake(false);
+    await sleep(330);
+    svg.setAttribute('class', ''); svg.innerHTML = '';
+  }
   if (onBreak) onBreak();
   Sound.glass(); flash('#ffffff'); shake(true);
   Particles.shards(o.x, o.y, violet ? COLORS.glassViolet : COLORS.glass);
@@ -4849,7 +4852,7 @@ function gachaShow(r, rates = GACHA_RATES) {
       broke = true;
       pane.className = `gpane c${paneLv}`;
       const at = e && e.clientX ? { x: e.clientX, y: e.clientY } : null;
-      await shatter(paneLv >= 4, at || center(pane), () => pane.classList.add('gone'));
+      await shatter(paneLv >= 4, at || center(pane), () => pane.classList.add('gone'), true);   // 3回目のタップと同時に割れる
       if (!skipped) reveal();
     };
     // 押した瞬間にプチュン:板を出さずに暗転 → そのままめくる画面へ
