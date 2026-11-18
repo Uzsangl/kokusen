@@ -1180,6 +1180,25 @@ const ENEMIES = {
 
 // ステージ。level はCPUの考え方の深さ(AI_LEVELS)、read はボスが読みに頼る割合、hp / atk は敵の能力値に掛ける倍率。
 // ソロでは刻の抜け落ちは起きない。倍率は sim で、ランダムに打ったときと「むずかしい」で打ったときの勝率を見て決めた
+// ----- 刻の回廊(アドバンスのソロ)の★4ボス -----
+// ガチャの★4とトキバミの強化個体。HPは tools/bossrate.js で「適正パーティでの勝率」を見て決める
+const gBoss = (id, o) => { const c = GACHA_CHARS.find((x) => x.id === id); return { name: c.name, faction: c.faction, hp: c.hp, atk: c.atk, dfs: c.dfs, phys: c.phys, boss: true, actions: c.actions, ...o }; };
+Object.assign(ENEMIES, {
+  c4_toki: { ...ENEMIES.tokibami, hp: 121500, atk: 4080,
+    traits: [...ENEMIES.tokibami.traits, { key: 'eatMove', name: '喰い残し', desc: '相手のカードを倒すたびに、そのカードのいちばん強い技を喰い、同じ手の技と入れ替える' }] },
+  c4_kagami: gBoss('g_z4', { hp: 80000,
+    traits: [GACHA_CHARS.find((x) => x.id === 'g_z4').trait,
+      { key: 'outside', name: '割れぬ鏡', desc: '被ダメージ−20%', cut: 0.2 },
+      { key: 'drawHeal', name: '映し合い', desc: 'あいこのたびにHP1500回復', heal: 1500 }] }),
+  c4_nagare: gBoss('g_y4', { hp: 50000,
+    traits: [{ key: 'burnout', name: '全力', desc: '場に出て5ラリー目まで、技がすべて極大。6ラリー目からは毎ラリーATK−500(最大−5000)', until: 5, step: 500, cap: 5000 },
+      { key: 'pierce', name: '射抜き', desc: '相手のDFSを1000低いものとして攻撃する', v: 1000 }] }),
+  c4_tomoshi: gBoss('g_a4', { hp: 90000, atk: 2600,
+    traits: [{ key: 'immovable', name: '灯台', desc: '被弾でDFS+500(最大+3000)', gain: 500, cap: 3000 },
+      { key: 'regen', name: '常夜の灯', desc: 'ラリーが終わるたびにHP+800', heal: 800 },
+      { key: 'unbreak', name: '消えぬ灯', desc: `${BREAK_NAME}の被ダメージ半減`, cut: 0.5 }] }),
+});
+
 const STAGES = [
   { id: 'a1', faction: '錨', stars: 1, name: '港の見回り',   foes: ['a_guard', 'a_lamp', 'a_chain'], level: 1, hp: 0.55, atk: 1.0 },
   { id: 'a2', faction: '錨', stars: 2, name: '鎖の関所',     foes: ['a_chain', 'a_guard', 'a_lamp'], level: 1, hp: 1.21, atk: 1.0 },
@@ -1644,6 +1663,17 @@ function endRally(S, log, winSide) {
       bench.forEach((c) => { c.atkBonus += lg.atk; c.dfsBonus += lg.dfs; c.max += lg.hp; c.hp += lg.hp; });
       log(`　${t.label}の${f.ch.name}の「${lg.name}」→ 控えの味方全員に` + [lg.atk && `ATK+${lg.atk}`, lg.dfs && `DFS+${lg.dfs}`, lg.hp && `最大HP+${lg.hp}`].filter(Boolean).join('・'));
     }
+  });
+
+  // 特性「喰い残し」:相手のカードを倒したら、そのカードのいちばん強い技を喰って、同じ手の自分の技と入れ替える
+  S.teams.forEach((t, side) => {
+    const f = active(t), em = traitOf(f, 'eatMove');
+    if (ko[side] || !ko[1 - side] || !em) return;
+    const prey = active(S.teams[1 - side]);
+    const h = HAND_KEYS.reduce((x, y) => ((prey.actions[y].rate || 0) > (prey.actions[x].rate || 0) ? y : x), HAND_KEYS[0]);
+    const pa = prey.actions[h];
+    f.actions = { ...f.actions, [h]: { ...pa, name: `喰・${pa.name}` } };
+    log(`　${t.label}の${f.ch.name}の「${em.name}」→ ${prey.ch.name}の「${pa.name}」を喰った(${HANDS[h].label}が「喰・${pa.name}」になる)`);
   });
 
   // 倒れた側だけが次のカードに交代する。倒した側はそのまま場に残る
@@ -3364,7 +3394,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.45';
+const APP_VER = '0.46';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
