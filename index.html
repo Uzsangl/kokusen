@@ -3329,7 +3329,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.28';
+const APP_VER = '0.29';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
@@ -4635,16 +4635,14 @@ async function gachaPull(times) {
 // 3) ★4以上はめくると登場カットイン。SEC(★5)は暗転して10本の針が回ってから出る
 // どこでも「スキップ」で、演出を飛ばして結果だけを見られる。カードは長押しで能力を見られる
 const GACHA_LINES = { g_a4: '灯は、消さない', g_z4: 'その力、映して返そう', g_y4: '……燃え尽きるまで、射る', g_z5: '仮面は、もういらない' };
-const GACHA_FAKE = 0.15;   // 金で終わるときに、途中で紫に見せる割合(ガセ)
 function gachaShow(r) {
   return new Promise((done) => {
     const top = Math.max(...r.map((x) => x.c.rarity));
     const fin = top >= 5 ? 5 : top >= 4 ? 4 : top >= 3 ? 3 : 0;   // 最後に見せる色
-    // ひび1回目・2回目で見せる色(上がっていく。たまにガセ)
+    // ひび1回目・2回目で見せる色(上がっていくだけ。結果より上の色は見せない)
     const lv = [0, 3, 4, 5];
     const fi = lv.indexOf(fin), a = Math.floor(Math.random() * (fi + 1)), b = Math.max(a, Math.floor(Math.random() * (fi + 1)));
     const steps = [lv[a], lv[b]];
-    if (fin === 3 && Math.random() < GACHA_FAKE) steps[1] = 4;
     const pane = $('gpane'), res = $('gres'), ok = $('gOk'), all = $('gAll'), skip = $('gSkip'), crk = $('gcrk');
     pane.className = 'gpane c0'; pane.style.display = ''; crk.innerHTML = '';
     res.innerHTML = ''; res.className = 'gres' + (r.length === 1 ? ' one' : '');
