@@ -447,6 +447,10 @@
   .gc-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0; }
   .gc-btns button { padding: 14px 6px; font-weight: 700; line-height: 1.3; }
   .gc-btns button small { display: block; font-weight: 400; color: var(--sub); font-size: .72rem; }
+  .gc-sim { margin: 4px 0 10px; padding: 8px 10px; border: 1px dashed var(--line); border-radius: 10px; }
+  .gc-sim > span { display: block; margin: 2px 0 0; font-size: .74rem; }
+  .gc-sim .gc-btns { margin: 6px 0 0; }
+  .gc-sim .gc-btns button { padding: 10px 6px; }
   .gc-master { width: 100%; margin: 0 0 8px; padding: 8px; border-style: dashed; color: var(--gold); font-size: .8rem; }
   /* 結果は5枚・5枚・1枚の並び(1回なら真ん中に1枚) */
   .gc-res, .gres { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin: 8px 0; }
@@ -3339,7 +3343,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.38';
+const APP_VER = '0.39';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
@@ -4620,10 +4624,16 @@ const GACHA_COST = 25, GACHA_COST11 = 250;
 const MASTER_SHARDS = 3000;   // マスターアカウントのガチャ画面のボタンで、1回に足すカケラの数
 const GACHA_RATES = { 5: 0.001, 4: 0.01, 3: 0.30, 2: 0.309, 1: 0.38 };
 const gachaOwned = (id) => (shardOnAcc() && ACC.stats && ACC.stats.owned ? Number(ACC.stats.owned[id]) || 0 : 0);
-function gachaRoll() {
+// お試しガチャ(無料・キャラは手に入らない・だれでも回せる)の確率。演出を味わってもらうため本番より高い。画面には出さない
+const GACHA_SIM_RATES = (() => {
+  const hi = { 5: 0.003, 4: 0.03, 3: GACHA_RATES[3] };
+  const rest = 1 - hi[5] - hi[4] - hi[3], low = GACHA_RATES[2] + GACHA_RATES[1];
+  return { ...hi, 2: rest * GACHA_RATES[2] / low, 1: rest * GACHA_RATES[1] / low };
+})();
+function gachaRoll(rates = GACHA_RATES) {
   let r = Math.random();
   for (const star of [5, 4, 3, 2, 1]) {
-    r -= GACHA_RATES[star];
+    r -= rates[star];
     if (r < 0 || star === 1) { const pool = GACHA_CHARS.filter((c) => c.rarity === star); return pool[Math.floor(Math.random() * pool.length)]; }
   }
 }
@@ -4661,15 +4671,15 @@ const GACHA_MUTE_RATE = 0.1;      // ★4以上のとき、めくる画面にな
 const GACHA_WHITE_POKYUN = 0.01;  // 白発展+ぽきゅん:★4以上の1%だけ。白のまま割れるのにぽきゅんが来たら★4以上確定(外れの白にはぽきゅんを出さない)
 const GACHA_POKYUN_HI = 0.6, GACHA_POKYUN_HIT = 0.4;   // HI:★4以上のときに出る割合(占有率) HIT:出たときに★4以上の割合
 // 外れのぽきゅんは★3が入っている(オレンジまで上がる)ときだけ出す。白で割れる外れにはぽきゅんを出さない
-function gachaPokyunRate(hasHigh, n, has3) {
+function gachaPokyunRate(hasHigh, n, has3, R = GACHA_RATES) {
   if (hasHigh) return GACHA_POKYUN_HI;
   if (!has3) return 0;
-  const p45 = GACHA_RATES[5] + GACHA_RATES[4];
+  const p45 = R[5] + R[4];
   const P = 1 - Math.pow(1 - p45, n);   // その回数で★4以上が1枚以上出る確率
-  const P3 = Math.pow(1 - p45, n) - Math.pow(1 - p45 - GACHA_RATES[3], n);   // ★3は入るが★4以上は入らない確率
+  const P3 = Math.pow(1 - p45, n) - Math.pow(1 - p45 - R[3], n);   // ★3は入るが★4以上は入らない確率
   return GACHA_POKYUN_HI * P * (1 - GACHA_POKYUN_HIT) / GACHA_POKYUN_HIT / P3;
 }
-function gachaShow(r) {
+function gachaShow(r, rates = GACHA_RATES) {
   return new Promise((done) => {
     const top = Math.max(...r.map((x) => x.c.rarity));
     // 板の色は白とオレンジだけ(紫・赤にはしない)。★3以上が入っていればオレンジまで上がる
@@ -4693,7 +4703,7 @@ function gachaShow(r) {
     Sound.lever();
     const keep = top >= 4 ? 1 - GACHA_COLD_RATE - GACHA_COLD_GOLD_RATE - GACHA_WHITE_POKYUN : 1;   // 寒い演出のぶんを除いた残り
     // 白発展+ぽきゅんのぶんを引いて、★4以上全体のぽきゅん占有率を保つ
-    const pkRate = top >= 4 ? (GACHA_POKYUN_HI - GACHA_WHITE_POKYUN) / keep : gachaPokyunRate(false, r.length, top >= 3);
+    const pkRate = top >= 4 ? (GACHA_POKYUN_HI - GACHA_WHITE_POKYUN) / keep : gachaPokyunRate(false, r.length, top >= 3, rates);
     const pk = cold === 'wp' || (!cold && Math.random() < pkRate);
     if (pk) setTimeout(() => sakibareFx(), 450);
     const flipPu = !!cold || (pk && top >= 4 && Math.random() < GACHA_POKYUN_FLIP);   // めくる瞬間にプチュン
@@ -4801,23 +4811,34 @@ function gachaShow(r) {
     ok.onclick = () => { Bgm.duck(false); $('gstage').classList.add('hidden'); pane.style.display = ''; res.innerHTML = ''; crk.innerHTML = ''; done(); };
   });
 }
-function openGacha(results) {
+function openGacha(results, sim) {
   const login = shardOnAcc();
   const n = shardCount();
   const rateRows = [5, 4, 3, 2, 1].map((st) => `<tr><td>${rarHtml({ rarity: st })}</td><td>${(GACHA_RATES[st] * 100).toFixed(1)}%</td><td>${GACHA_CHARS.filter((c) => c.rarity === st).map((c) => c.name).join('・')}</td></tr>`).join('');
   const own = [...GACHA_CHARS.filter((c) => c.rarity < 5), ...GACHA_CHARS.filter((c) => c.rarity >= 5)].map((c) =>   // ★5(SEC)は最後に並べる
  { const k = gachaOwned(c.id); return `<span class="${k ? '' : 'no'}" data-id="${c.id}">${iconHtml(c, 'sm')}${k ? `×${k}` : '−'}</span>`; }).join('');
-  const res = results ? `<div class="gc-res">${results.map((r, i) => `<div class="gc-card show r${r.c.rarity}" data-i="${i}">${r.fresh ? '<i class="new">NEW</i>' : ''}${iconHtml(r.c, 'lg')}<div>${rarHtml(r.c)}</div>${escHtml(r.c.name)}</div>`).join('')}</div>` : '';
+  const res = results ? (sim ? '<p class="sub" style="color:var(--gold)">お試しの結果(キャラは手に入りません)</p>' : '') + `<div class="gc-res">${results.map((r, i) => `<div class="gc-card show r${r.c.rarity}" data-i="${i}">${r.fresh ? '<i class="new">NEW</i>' : ''}${iconHtml(r.c, 'lg')}<div>${rarHtml(r.c)}</div>${escHtml(r.c.name)}</div>`).join('')}</div>` : '';
   openSheet('ガチャ', `<div class="gc-top"><span>💠${SHARD_NAME}</span><b>${n}</b></div>` +
     (login ? '' : '<p class="sub" style="color:var(--gold)">ガチャはログインが必要です。カケラはオンライン対人(フリー戦・レート戦)で手に入ります。</p>') +
     `<div class="gc-btns"><button id="gc1"${login && n >= GACHA_COST ? '' : ' disabled'}>1回引く<small>💠${GACHA_COST}</small></button><button id="gc11"${login && n >= GACHA_COST11 ? '' : ' disabled'}>11回引く<small>💠${GACHA_COST11}(1回分お得)</small></button></div>` +
+    `<div class="gc-sim"><b>🎲 お試しガチャ</b><span class="sub">無料で何回でも。演出だけ楽しめます(キャラは手に入りません)</span><div class="gc-btns"><button id="gs1">1回 お試し</button><button id="gs11">11回 お試し</button></div></div>` +
     (login && IS_MASTER ? `<button id="gcMaster" class="gc-master">💠${SHARD_NAME}を${MASTER_SHARDS}個足す(マスター用)</button>` : '') +
     res +
-    `<p class="sub">引いたキャラは、アドバンスで使えます(ダブりはそのまま数えます)。</p>` +
+    (sim ? '' : `<p class="sub">引いたキャラは、アドバンスで使えます(ダブりはそのまま数えます)。</p>`) +
     `<details><summary class="sub">確率</summary><table class="gc-rates">${rateRows}</table><p class="sub">同じ★の中では同じ確率。11回でも保証はありません。</p></details>` +
     `<details${results ? '' : ' open'}><summary class="sub">持っているキャラ(長押しで能力)</summary><div class="gc-own">${own}</div></details>`);
   // 引いた結果:長押しで能力
-  if (results) document.querySelectorAll('#sheetBody .gc-res .gc-card').forEach((el) => bindPress(el, () => {}, () => openCharDetail(results[+el.dataset.i].c, () => openGacha(results))));
+  if (results) document.querySelectorAll('#sheetBody .gc-res .gc-card').forEach((el) => bindPress(el, () => {}, () => openCharDetail(results[+el.dataset.i].c, () => openGacha(results, sim))));
+  // お試しガチャ:だれでも、無料で。持ち物には何も足さない
+  const trial = async (t) => {
+    const r = Array.from({ length: t }, () => ({ c: gachaRoll(GACHA_SIM_RATES), fresh: false }));
+    $('sheet').classList.add('hidden');
+    await gachaShow(r, GACHA_SIM_RATES);
+    openGacha(r, true);
+    document.querySelectorAll('#sheetBody .gc-card').forEach((el) => el.classList.add('show'));
+  };
+  $('gs1').onclick = () => trial(1);
+  $('gs11').onclick = () => trial(11);
   // 持っているキャラ:長押し(PCは右クリック)で、持っていなくても能力を見られる
   document.querySelectorAll('#sheetBody .gc-own span[data-id]').forEach((el) => bindPress(el, () => {}, () => openCharDetail(charById(el.dataset.id), () => openGacha())));
   if (!login) return;
