@@ -3364,7 +3364,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.43';
+const APP_VER = '0.44';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
@@ -4686,6 +4686,7 @@ const GACHA_PUCHUN_RATE = 0.3;
 const GACHA_COLD_RATE = 0.1;
 const GACHA_COLD_GOLD_RATE = 0.15;   // オレンジ止まりの板(ぽきゅん無し)から、めくりプチュン
 const GACHA_POKYUN_FLIP = 0.5;   // ぽきゅんが来て★4以上のとき、半分はめくる瞬間のプチュンで見せる(ひびのプチュンとは重ならない)
+const GACHA_INSTANT_RATE = 0.1;   // 「引く」を押した瞬間にプチュン → 板なしでめくる画面へ(★4以上の10%。ほかの板の演出とは重ならない)
 const GACHA_SAKASA_RATE = 0.15;   // ★4以上のとき、そのカードの裏の「刻」が逆さま → めくるとプチュン確定
 const GACHA_LATE_RATE = 0.2;      // めくるときのプチュンのうち、触っても反応せず3秒後にプチュンする(遅れ)割合
 const GACHA_MUTE_RATE = 0.25;     // ★4以上のとき、めくる画面になった瞬間にBGMが消える → ★4以上をめくるとプチュン確定(★4以上全体で25%)
@@ -4709,7 +4710,9 @@ function gachaShow(r, rates = GACHA_RATES) {
     const fi = lv.indexOf(fin), a = Math.floor(Math.random() * (fi + 1)), b = Math.max(a, Math.floor(Math.random() * (fi + 1)));
     // 寒い演出(実は★4以上):'w' は白のまま、'g' はオレンジ止まり。どちらもぽきゅん無しで、めくる瞬間にプチュン
     // 'wp' は白のままぽきゅんが来る(とても薄い・★4以上確定)
-    const cr = top >= 4 ? Math.random() : 1;
+    const instant = top >= 4 && Math.random() < GACHA_INSTANT_RATE;   // 押した瞬間にプチュン
+    // 残りの演出の割合は「★4以上全体に対して」の値のまま保つ(instant のぶんを先に除いて引く)
+    const cr = top >= 4 ? (instant ? 1 : Math.random() * (1 - GACHA_INSTANT_RATE)) : 1;
     const cold = cr < GACHA_COLD_RATE ? 'w' : cr < GACHA_COLD_RATE + GACHA_COLD_GOLD_RATE ? 'g' : cr < GACHA_COLD_RATE + GACHA_COLD_GOLD_RATE + GACHA_WHITE_POKYUN ? 'wp' : '';
     const white = cold === 'w' || cold === 'wp';
     const steps = white ? [0, 0] : [lv[a], lv[b]];
@@ -4722,16 +4725,16 @@ function gachaShow(r, rates = GACHA_RATES) {
     ok.classList.add('hidden'); all.classList.add('hidden'); skip.classList.remove('hidden');
     $('gstage').classList.remove('hidden');
     $('gTrial').classList.toggle('hidden', rates !== GACHA_SIM_RATES);   // お試し中は、結果を閉じるまで表示
-    Sound.lever();
-    const keep = top >= 4 ? 1 - GACHA_COLD_RATE - GACHA_COLD_GOLD_RATE - GACHA_WHITE_POKYUN : 1;   // 寒い演出のぶんを除いた残り
+    if (!instant) Sound.lever();
+    const keep = top >= 4 ? 1 - GACHA_INSTANT_RATE - GACHA_COLD_RATE - GACHA_COLD_GOLD_RATE - GACHA_WHITE_POKYUN : 1;   // 寒い演出のぶんを除いた残り
     // 白発展+ぽきゅんのぶんを引いて、★4以上全体のぽきゅん占有率を保つ
     const pkRate = top >= 4 ? (GACHA_POKYUN_HI - GACHA_WHITE_POKYUN) / keep : gachaPokyunRate(false, r.length, top >= 3, rates);
-    const pk = cold === 'wp' || (!cold && Math.random() < pkRate);
+    const pk = !instant && (cold === 'wp' || (!cold && Math.random() < pkRate));
     if (pk) setTimeout(() => sakibareFx(), 450);
     const flipPu = !!cold || (pk && top >= 4 && Math.random() < GACHA_POKYUN_FLIP);   // めくる瞬間にプチュン
     // ひびのプチュン:めくりプチュンにならなかった残りから出して、★4以上全体の占有率を GACHA_PUCHUN_RATE に保つ
     const crackRate = GACHA_PUCHUN_RATE / keep / (1 - pkRate * GACHA_POKYUN_FLIP);
-    const puchunAt = !cold && !flipPu && top >= 4 && Math.random() < crackRate ? 1 + Math.floor(Math.random() * 3) : 0;   // 何回目のタップでプチュンするか(0=なし)
+    const puchunAt = !instant && !cold && !flipPu && top >= 4 && Math.random() < crackRate ? 1 + Math.floor(Math.random() * 3) : 0;   // 何回目のタップでプチュンするか(0=なし)
     // BGM消え:ひびのプチュンが無かったときに出す(★4以上全体で GACHA_MUTE_RATE になるように)
     const mute = top >= 4 && !puchunAt && Math.random() < GACHA_MUTE_RATE / (1 - GACHA_PUCHUN_RATE);
     let taps = 0, broke = false, skipped = false, busyFlip = false, hiFlipped = 0;
@@ -4818,6 +4821,11 @@ function gachaShow(r, rates = GACHA_RATES) {
       await shatter(paneLv >= 4, at || center(pane), () => pane.classList.add('gone'));
       if (!skipped) reveal();
     };
+    // 押した瞬間にプチュン:板を出さずに暗転 → そのままめくる画面へ
+    if (instant) {
+      broke = true; pane.style.display = 'none';
+      puchunFx(1300).then(() => { if (!skipped) reveal(); });
+    }
     all.onclick = async () => { if (busyFlip) return; for (const el of left()) { await flip(el, false); await sleep(90); } };
     // スキップ:伏せたままの★4以上があれば、プチュンしてから全部表にする
     skip.onclick = async () => {
@@ -4867,6 +4875,7 @@ function openGacha(results, sim) {
   if (results) document.querySelectorAll('#sheetBody .gc-res .gc-card').forEach((el) => bindPress(el, () => {}, () => openCharDetail(results[+el.dataset.i].c, () => openGacha(results, sim))));
   // お試しガチャ:だれでも、無料で。持ち物には何も足さない
   const trial = async (t) => {
+    if (!(await askConfirm(`🎲 お試しガチャを<b>${t}回</b>引きます。<br>よろしいですか?<small>無料・キャラは手に入りません</small>`, '引く'))) return;
     const r = Array.from({ length: t }, () => ({ c: gachaRoll(GACHA_SIM_RATES), fresh: false }));
     $('sheet').classList.add('hidden');
     await gachaShow(r, GACHA_SIM_RATES);
