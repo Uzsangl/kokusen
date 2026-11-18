@@ -3338,7 +3338,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.34';
+const APP_VER = '0.35';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
@@ -4652,7 +4652,8 @@ const GACHA_PUCHUN_RATE = 0.3;
 // めくりプチュン:★4以上が入っているときに10%で、何も起きない寒い演出(白いまま割れる・ぽきゅん無し)でめくる画面へ行き、
 // ★4以上のカードをめくる瞬間にプチュン → カットイン。ほかの告知とは重ならないので、ぽきゅん・プチュンは残りの90%で出す割合を上げて占有率をそのまま保つ
 const GACHA_COLD_RATE = 0.1;
-const GACHA_COLD_GOLD_RATE = 0.05;   // オレンジ(金)止まりの板から、めくりプチュン。白より薄く
+const GACHA_COLD_GOLD_RATE = 0.05;
+const GACHA_POKYUN_FLIP = 0.5;   // ぽきゅんが来て★4以上のとき、半分はめくる瞬間のプチュンで見せる(ひびのプチュンとは重ならない)   // オレンジ(金)止まりの板から、めくりプチュン。白より薄く
 const GACHA_POKYUN_HI = 0.6, GACHA_POKYUN_HIT = 0.4;   // HI:★4以上のときに出る割合(占有率) HIT:出たときに★4以上の割合
 function gachaPokyunRate(hasHigh, n) {
   if (hasHigh) return GACHA_POKYUN_HI;
@@ -4678,8 +4679,13 @@ function gachaShow(r) {
     $('gstage').classList.remove('hidden');
     Sound.lever();
     const keep = top >= 4 ? 1 - GACHA_COLD_RATE - GACHA_COLD_GOLD_RATE : 1;   // 寒い演出のぶんを除いた残り
-    if (!cold && Math.random() < gachaPokyunRate(top >= 4, r.length) / keep) setTimeout(() => sakibareFx(), 450);
-    const puchunAt = !cold && top >= 4 && Math.random() < GACHA_PUCHUN_RATE / keep ? 1 + Math.floor(Math.random() * 3) : 0;   // 何回目のタップでプチュンするか(0=なし)
+    const pkRate = gachaPokyunRate(top >= 4, r.length) / keep;
+    const pk = !cold && Math.random() < pkRate;
+    if (pk) setTimeout(() => sakibareFx(), 450);
+    const flipPu = !!cold || (pk && top >= 4 && Math.random() < GACHA_POKYUN_FLIP);   // めくる瞬間にプチュン
+    // ひびのプチュン:めくりプチュンにならなかった残りから出して、★4以上全体の占有率を GACHA_PUCHUN_RATE に保つ
+    const crackRate = GACHA_PUCHUN_RATE / keep / (1 - pkRate * GACHA_POKYUN_FLIP);
+    const puchunAt = !cold && !flipPu && top >= 4 && Math.random() < crackRate ? 1 + Math.floor(Math.random() * 3) : 0;   // 何回目のタップでプチュンするか(0=なし)
     let taps = 0, broke = false, skipped = false, busyFlip = false;
     const cardHtml = (x, i) => `<div class="gc-card r${x.c.rarity} back" data-i="${i}">${x.fresh ? '<i class="new">NEW</i>' : ''}${iconHtml(x.c, 'lg')}<div>${rarHtml(x.c)}</div><span class="nm">${escHtml(x.c.name)}</span></div>`;
     const crack = (e) => {   // タップした場所から、ひびを足す
@@ -4703,9 +4709,9 @@ function gachaShow(r) {
         if (!quick) Sound.click();
       } else {
         busyFlip = true;
-        if (cold) await puchunFx(1000);   // めくる瞬間にプチュン
+        if (flipPu) await puchunFx(1000);   // めくる瞬間にプチュン
         if (rr >= 5) await secShow();
-        if (!cold) { el.classList.add('shake'); Sound.heart(); await sleep(500); }
+        if (!flipPu) { el.classList.add('shake'); Sound.heart(); await sleep(500); }
         el.classList.remove('back', 'shake'); el.classList.add('show', 'pillar');
         flash(rr >= 5 ? '#ff2a3d' : '#b57bff'); Sound.cue(rr >= 5 ? 4 : 3);
         await cutin(x.c.name, `${x.fresh ? 'NEW! ' : ''}${GACHA_LINES[x.c.id] || '★'.repeat(rr)}`, rr >= 5 ? 'evil' : 'violet', 1500);
