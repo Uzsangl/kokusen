@@ -3364,7 +3364,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.44';
+const APP_VER = '0.45';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
@@ -4736,7 +4736,8 @@ function gachaShow(r, rates = GACHA_RATES) {
     const crackRate = GACHA_PUCHUN_RATE / keep / (1 - pkRate * GACHA_POKYUN_FLIP);
     const puchunAt = !instant && !cold && !flipPu && top >= 4 && Math.random() < crackRate ? 1 + Math.floor(Math.random() * 3) : 0;   // 何回目のタップでプチュンするか(0=なし)
     // BGM消え:ひびのプチュンが無かったときに出す(★4以上全体で GACHA_MUTE_RATE になるように)
-    const mute = top >= 4 && !puchunAt && Math.random() < GACHA_MUTE_RATE / (1 - GACHA_PUCHUN_RATE);
+    // 違和感どうしは重ならない:逆さまの「刻」が出ているときはBGM消えを出さない(そのぶん割合を上げて、★4以上全体で GACHA_MUTE_RATE に保つ)
+    const mute = top >= 4 && !puchunAt && sakasa < 0 && Math.random() < GACHA_MUTE_RATE / (1 - GACHA_PUCHUN_RATE) / (1 - GACHA_SAKASA_RATE);
     let taps = 0, broke = false, skipped = false, busyFlip = false, hiFlipped = 0;
     const cardHtml = (x, i) => `<div class="gc-card r${x.c.rarity} back${i === sakasa ? ' sakasa' : ''}" data-i="${i}">${x.fresh ? '<i class="new">NEW</i>' : ''}${iconHtml(x.c, 'lg')}<div>${rarHtml(x.c)}</div><span class="nm">${escHtml(x.c.name)}</span></div>`;
     const crack = (e) => {   // タップした場所から、ひびを足す
