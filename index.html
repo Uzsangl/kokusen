@@ -487,6 +487,16 @@
   .askc-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .askc-btns button { padding: 12px 6px; font-weight: 700; }
   .askc-btns .yes { border-color: var(--gold); color: var(--gold); }
+  .fr-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+  .fr-main { flex: 1; min-width: 0; font-size: .82rem; line-height: 1.45; }
+  .fr-main .sub { margin-left: 6px; font-size: .74rem; }
+  .fr-on { font-size: .74rem; color: var(--sub); }
+  .fr-on.on { color: #4ade80; }
+  .fr-btns { display: flex; gap: 6px; }
+  .fr-btns button { padding: 6px 10px; font-size: .78rem; }
+  .fr-btns .fr-x { padding: 6px 9px; }
+  .fr-opt { display: flex; align-items: center; gap: 8px; margin: 12px 0 2px; font-size: .84rem; }
+  .fr-opt input { width: auto; }
   .gc-sim { margin: 4px 0 10px; padding: 8px 10px; border: 1px dashed var(--line); border-radius: 10px; }
   .gc-sim > span { display: block; margin: 2px 0 0; font-size: .74rem; }
   .gc-sim .gc-btns { margin: 6px 0 0; }
@@ -698,7 +708,7 @@
   <!-- タイトル画面 -->
   <section id="title">
     <div class="tbg" aria-hidden="true"><img src="icons/rei.webp" alt=""><img src="icons/kaji.webp" alt=""><img src="icons/tsuru.webp" alt=""></div>
-    <div class="ttop"><button class="ib" id="tMail" aria-label="メールボックス">✉<i class="badge hidden" id="tMailN"></i></button><button class="ib" id="tRank" aria-label="ランキング">🏆</button><button class="ib" id="tSet" aria-label="設定">⚙</button></div>
+    <div class="ttop"><button class="ib" id="tFriend" aria-label="フレンド">👥<i class="badge hidden" id="tFriendN"></i></button><button class="ib" id="tMail" aria-label="メールボックス">✉<i class="badge hidden" id="tMailN"></i></button><button class="ib" id="tRank" aria-label="ランキング">🏆</button><button class="ib" id="tSet" aria-label="設定">⚙</button></div>
     <div class="tlogo"><img src="img/logo.webp" alt="刻戦 KOKUSEN" width="720" height="636"></div>
     <div class="tplay">
       <button id="tPlay" class="btn-play">プレイ</button>
@@ -711,7 +721,7 @@
 
   <section id="select" class="panel hidden">
     <div class="selL">
-    <div class="seltop"><button id="toTitle" class="back">◀ タイトルへ</button><span></span><button class="ib" id="selRank" aria-label="ランキング">🏆</button><button class="ib" id="selTitles" aria-label="称号一覧">🎖</button></div>
+    <div class="seltop"><button id="toTitle" class="back">◀ タイトルへ</button><span></span><button class="ib" id="selFriend" aria-label="フレンド">👥</button><button class="ib" id="selRank" aria-label="ランキング">🏆</button><button class="ib" id="selTitles" aria-label="称号一覧">🎖</button></div>
     <div class="acct" id="acct"></div>
     <h2>対戦相手</h2>
     <div class="levels" id="modes"></div>
@@ -3038,8 +3048,9 @@ function render(view) {
   $('retry').classList.toggle('hidden', !S.over || !!S.spectate);
   // 観戦者の人数(プレイヤーにも見せる)。ホストは自分で数え、相手は相手の知らせを見る
   const fpSp = PVP.on && !S.spectate && pvpFoe() ? Number(pvpFoe().presence.sp) || 0 : 0;
-  const nSpec = PVP.on && !S.spectate ? Math.max(PVP.room && PVP.room.specCount ? PVP.room.specCount() : 0, fpSp) : 0;
-  $('specBadge').textContent = S.spectate ? '👁 観戦中' : `👁 観戦 ${nSpec}人`;
+  const wn = !PVP.on && !S.spectate ? whViewers() : [];   // ソロ・CPU戦を見ているフレンド
+  const nSpec = PVP.on && !S.spectate ? Math.max(PVP.room && PVP.room.specCount ? PVP.room.specCount() : 0, fpSp) : wn.length;
+  $('specBadge').textContent = S.spectate ? (FW.on ? `👁 ${FW.who}さんを観戦中` : '👁 観戦中') : `👁 観戦 ${nSpec}人` + (wn.length ? `(${wn.join('・')})` : '');
   $('specBadge').classList.toggle('hidden', !(S.spectate || nSpec > 0) || $('battle').classList.contains('hidden'));
 }
 const setResult = (t) => { $('result').textContent = t; };
@@ -3391,6 +3402,7 @@ async function finale() {
 
 // hand は自分の手、cpuHand は相手の手。why はCPUがその手を選んだ理由(対人戦では null)
 async function normalRally(hand, cpuHand, why) {
+  if (!PVP.on && !S.spectate) whRec({ t: 'r', a: hand, b: cpuHand });   // フレンドの観戦用
   const b = before();
   const r = rally(S, hand, cpuHand, logLater);
   if (why) logLater(`　${why}`);
@@ -3426,8 +3438,8 @@ async function normalRally(hand, cpuHand, why) {
     setStage('heat4', '');
     $('cue').innerHTML = S.spectate ? `<span class="rainbow">${escHtml(S.teams[0].label)}の${BREAK_NAME}!</span>` : `<span class="rainbow">${BREAK_NAME}! 好きな手を選べ</span>`;
     setResult(S.spectate ? `${S.teams[0].label}が手を選んでいます…` : `${BREAK_NAME}! 好きな手が確定で通る`);
-  } else if (S.teams[1].breakReady && !PVP.on) {
-    await cpuBreak();   // 対人戦では、相手が手を選ぶのを待つ
+  } else if (S.teams[1].breakReady && !PVP.on && !S.spectate) {
+    await cpuBreak();   // 対人戦・観戦では、相手の手(記録)を待つ
   }
 }
 
@@ -3441,6 +3453,7 @@ async function captureFx(o) {
 
 async function playerBreak(hand) {
   S.breaks = (S.breaks || 0) + 1;   // 称号用
+  if (!PVP.on && !S.spectate) whRec({ t: 'b', s: 0, h: hand });
   const b = before();
   breakRally(S, 0, hand, logLater);
   const o = outcome(b);
@@ -3468,6 +3481,7 @@ async function cpuBreak(forced) {
   await cutin(BREAK_NAME, '相手の時間だけが動く', 'violet', 1000);
   const b = before();
   const h = forced || (S.cpuLevel >= 2 ? aiBreakHand(S, 1) : pickBreakHand(S, 1));
+  if (!PVP.on && !S.spectate) whRec({ t: 'b', s: 1, h });
   breakRally(S, 1, h, logLater);
   const o = outcome(b);
   await transformFx(o);
@@ -3541,7 +3555,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.65';
+const APP_VER = '0.66';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
@@ -3807,7 +3821,7 @@ function pvpWatch() {
 // 不戦勝・不戦敗で試合を終える。side:勝った側(0=自分、1=相手)
 // リタイア:確認してから負けにする。オンライン対人では相手に知らせ、相手の勝ちになる
 function askResign() {
-  if (S && S.spectate) { specStop(); return; }
+  if (S && S.spectate) { if (FW.on) fwStop(); else specStop(); return; }
   if (!S || S.over) return;
   const canRetry = MODE !== 'pvp' && LAST_MATCH;   // 再挑戦はCPU戦とソロだけ(対人は相手がいるため)
   openSheet('リタイア', `<p>${canRetry ? '同じチーム・同じ相手で最初からやり直すか、リタイアして負けにするかを選んでください。' : `この対戦をリタイアしますか? あなたの負けになります。${MODE === 'pvp' && PVP.foeAcc && PVP.rated ? 'レート戦なので、負けとして記録されます。' : ''}`}</p>
@@ -3831,6 +3845,7 @@ async function endByResign(who) {
   if (!S || S.over) return;
   S.over = true; S.winner = who === 'me' ? 1 : 0; S.resign = who;
   if (PVP.on && !S.spectate) { PVP.hist.push({ t: 'end', w: S.winner, why: 'rs' }); pvpSpecSync(); }
+  if (!PVP.on && !S.spectate) whRec({ t: 'end', w: S.winner, why: 'rs' });
   S.teams.forEach((t) => { t.breakReady = false; });
   freeze(false);
   if (who === 'me' && MODE === 'pvp' && PVP.phase === 'play') pvpPublish({ rs: PVP.n });   // 相手の画面も終わらせる
@@ -4103,6 +4118,7 @@ async function accLoadProfile(name) {
   ACC.stats = { ...server.stats };
   setTimeout(accCheckMaster, 0);   // 記録を読んだあとに、マスター用の補充を確かめる
   setTimeout(inviteCollect, 300);   // 招待した人が増えていたら、ボーナスを受け取る
+  setTimeout(frLoad, 500);   // フレンドと、ソロ観戦の受け付け
   let moved = false;
   try { moved = localStorage.getItem('kokusen.guestMoved') === '1'; } catch (e) { /* 読めなければ未移行として扱う */ }
   const guest = created && !moved ? readCleared(GUEST_KEY) : [];
@@ -4260,6 +4276,7 @@ async function accDelete() {
 async function accSignOut() {
   try { await sbFetch('/auth/v1/logout', { method: 'POST' }); } catch (e) { /* サーバー側が失敗しても、この端末ではログアウトする */ }
   ACC.session = null; ACC.profile = null; accStore(); renderAcct();
+  FR.me = null; FR.list = []; watchHostClose(); renderFriendBadge();
   SOLO.cleared = readCleared(GUEST_KEY);   // ゲストの記録に戻す
   renderStages();
 }
@@ -5110,6 +5127,210 @@ function openGacha(results, sim) {
   };
 }
 
+// ===== フレンド(ログインが必要)=====
+// フレンドコードで申請し、相手が承認するとフレンド(30人まで)。一覧で、ログイン中かどうかと今の状況が見られる。
+// フレンドがソロ・CPU戦を遊んでいる間は、いつ入っても、いつ抜けても観戦できる。サーバーの表と関数は supabase/schema.sql の8回目
+const FR = { me: null, list: [], ready: null };
+const ONLINE_MS = 150000;   // 最後に動いてから2分半以内なら「ログイン中」
+const frRpc = (name, body) => sbFetch(`/rest/v1/rpc/${name}`, { method: 'POST', body: body || {} });
+async function frLoad() {
+  if (!accUid()) { FR.me = null; FR.list = []; renderFriendBadge(); return; }
+  try {
+    FR.me = await frRpc('friend_me');
+    FR.list = (await frRpc('friend_list')) || [];
+    FR.ready = true;
+  } catch (e) { if (isMissingFn(e)) FR.ready = false; }
+  renderFriendBadge(); watchHostSync(); frBeat(true);
+}
+function renderFriendBadge() {
+  const n = FR.list.filter((f) => f.state === 'in').length, el = $('tFriendN');
+  if (el) { el.textContent = n; el.classList.toggle('hidden', !n); }
+}
+// 今の状況(フレンドの一覧に出る)。w:1 なら観戦できる
+function frStatus() {
+  if (!S || S.over || $('battle').classList.contains('hidden')) return { m: 'menu' };
+  if (S.spectate) return { m: 'watch' };
+  if (MODE === 'pvp') return { m: 'pvp' };
+  const w = WH.open ? 1 : 0;
+  return S.stage ? { m: 'solo', s: S.stage.id, w } : { m: 'cpu', w };
+}
+function frStatusText(st) {
+  if (!st || !st.m) return '';
+  if (st.m === 'solo') {
+    const x = STAGES.find((y) => y.id === st.s);
+    return x ? `ソロ:${x.corridor ? CORRIDORS[x.corridor] : x.rush ? x.name : x.faction} ${x.rush ? '' : '★'.repeat(x.stars) + `「${x.name}」`}に挑戦中` : 'ソロに挑戦中';
+  }
+  return { cpu: 'CPUと対戦中', pvp: 'オンライン対人中', watch: '観戦中', menu: 'メニュー' }[st.m] || '';
+}
+const frOnline = (f) => f.seen && Date.now() - new Date(f.seen).getTime() < ONLINE_MS;
+function frAgo(t) {
+  const m = Math.floor((Date.now() - new Date(t).getTime()) / 60000);
+  return m < 60 ? `${Math.max(1, m)}分前` : m < 1440 ? `${Math.floor(m / 60)}時間前` : `${Math.floor(m / 1440)}日前`;
+}
+// ページを開いている間、1分ごとに「今の状況」を知らせる(ログイン中の表示に使う)。対戦の始まり・終わりにもすぐ知らせる
+let frBeatAt = 0, frBeatSt = '';
+async function frBeat(force) {
+  if (!accUid() || FR.ready === false) return;
+  const st = frStatus(), k = JSON.stringify(st), now = Date.now();
+  if (!force && k === frBeatSt && now - frBeatAt < 55000) return;
+  frBeatAt = now; frBeatSt = k;
+  try { await frRpc('status_set', { p_st: st }); } catch (e) { if (isMissingFn(e)) FR.ready = false; }
+}
+setInterval(() => { if (!document.hidden) frBeat(false); }, 5000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) frBeat(true); });
+
+function openFriends() {
+  if (!accUid()) { openSheet('フレンド', '<p class="sub">フレンドを使うには、ログインが必要です。</p>'); return; }
+  if (FR.ready === false) { openSheet('フレンド', '<p class="sub">フレンドを使うには、管理者がSupabaseで準備のSQL(8回目)を実行する必要があります。</p>'); return; }
+  const me = FR.me || {};
+  const icon = (f) => { const c = f.fav && charById(f.fav); return c ? iconHtml(c, 'sm') : '<span class="cico sm none">?</span>'; };
+  const rows = (state) => FR.list.filter((f) => f.state === state);
+  const friends = rows('ok').sort((a, b) => (frOnline(b) - frOnline(a)) || (new Date(b.seen || 0) - new Date(a.seen || 0)));
+  const fRow = (f) => {
+    const on = frOnline(f), st = f.st || {};
+    const canWatch = on && f.key && st.w && (st.m === 'solo' || st.m === 'cpu');
+    return `<div class="fr-row">${icon(f)}<div class="fr-main"><b>${titleTag(f.title)}${escHtml(f.name)}</b><span class="sub">レート${f.rating}</span><br>`
+      + `<span class="fr-on${on ? ' on' : ''}">${on ? '● ログイン中' : '○ ' + (f.seen ? frAgo(f.seen) : 'まだ遊んでいない')}</span>${on && frStatusText(st) ? `<span class="sub"> ・${escHtml(frStatusText(st))}</span>` : ''}</div>`
+      + `<div class="fr-btns">${canWatch ? `<button data-watch="${f.id}">👁 観戦</button>` : ''}<button class="fr-x" data-rm="${f.id}" aria-label="フレンドを外す">✕</button></div></div>`;
+  };
+  const inn = rows('in'), out = rows('out');
+  openSheet('フレンド', `<p class="sub" style="margin:0">あなたのフレンドコード:<b style="color:var(--gold);font-size:1.1rem;letter-spacing:.1em">${escHtml(me.code || '…')}</b> <button id="frCopy" style="padding:4px 10px">コピー</button></p>`
+    + `<div class="row"><input id="frCode" maxlength="8" placeholder="相手のフレンドコード" autocomplete="off" style="text-transform:uppercase"><button id="frAdd" style="flex:none;white-space:nowrap">申請</button></div><p class="msg" id="frMsg"></p>`
+    + (inn.length ? `<h2>届いた申請</h2>${inn.map((f) => `<div class="fr-row">${icon(f)}<div class="fr-main"><b>${escHtml(f.name)}</b><span class="sub">レート${f.rating}</span></div><div class="fr-btns"><button data-ok="${f.id}">承認</button><button data-ng="${f.id}">断る</button></div></div>`).join('')}` : '')
+    + `<h2>フレンド(${friends.length}/30)</h2>` + (friends.length ? friends.map(fRow).join('') : '<p class="sub">まだいません。フレンドコードを送り合って申請してください。</p>')
+    + (out.length ? `<h2>出した申請</h2>${out.map((f) => `<div class="fr-row">${icon(f)}<div class="fr-main"><b>${escHtml(f.name)}</b><span class="sub">承認待ち</span></div><div class="fr-btns"><button data-rm="${f.id}">取り消し</button></div></div>`).join('')}` : '')
+    + `<label class="fr-opt"><input type="checkbox" id="frOff"${me.off ? ' checked' : ''}> フレンドの観戦を受け付けない</label>`
+    + '<p class="sub">ソロ・CPU戦を遊んでいる間、フレンドはいつでも観戦に入れます(いつ抜けても大丈夫です)。観戦されても、記録や結果は変わりません。</p>'
+    + '<div class="row"><button id="frReload">更新</button></div>');
+  const msg = (t, err) => { $('frMsg').textContent = t; $('frMsg').className = 'msg' + (err ? ' err' : ''); };
+  const act = async (fn) => { try { const t = await fn(); await frLoad(); openFriends(); if (t) setTimeout(() => msg(t), 0); } catch (e) { msg(/^KF/.test(e.code || '') || /[ぁ-んァ-ン]/.test(e.message || '') ? e.message : '通信に失敗しました', true); } };
+  $('frCopy').onclick = () => { try { navigator.clipboard.writeText(me.code || ''); msg('コピーしました'); } catch (e) { /* コピーできなくても動く */ } };
+  $('frAdd').onclick = () => act(async () => {
+    const c = $('frCode').value.trim().toUpperCase();
+    if (!/^[A-Z0-9]{8}$/.test(c)) throw new Error('フレンドコードは8文字です');
+    const r = await frRpc('friend_request', { p_code: c });
+    return r === 'ok' ? 'フレンドになりました' : r === 'already' ? 'もうフレンドです' : '申請しました。相手が承認するとフレンドになります';
+  });
+  document.querySelectorAll('#sheetBody [data-ok]').forEach((b) => { b.onclick = () => act(async () => { await frRpc('friend_answer', { p_from: b.dataset.ok, p_ok: true }); return 'フレンドになりました'; }); });
+  document.querySelectorAll('#sheetBody [data-ng]').forEach((b) => { b.onclick = () => act(async () => { await frRpc('friend_answer', { p_from: b.dataset.ng, p_ok: false }); return '申請を断りました'; }); });
+  document.querySelectorAll('#sheetBody [data-rm]').forEach((b) => {
+    b.onclick = async () => {
+      const f = FR.list.find((x) => x.id === b.dataset.rm);
+      if (f && f.state === 'ok' && !(await askConfirm(`<b>${escHtml(f.name)}</b>さんをフレンドから外します。<br>よろしいですか?`, '外す'))) return;
+      act(async () => { await frRpc('friend_remove', { p_other: b.dataset.rm }); return f && f.state === 'ok' ? 'フレンドから外しました' : '申請を取り消しました'; });
+    };
+  });
+  document.querySelectorAll('#sheetBody [data-watch]').forEach((b) => { b.onclick = () => { const f = FR.list.find((x) => x.id === b.dataset.watch); if (f) fwStart(f); }; });
+  $('frOff').onchange = () => act(async () => { await frRpc('friend_watch_off', { p_off: $('frOff').checked }); return $('frOff').checked ? 'フレンドの観戦を受け付けないようにしました' : 'フレンドの観戦を受け付けます'; });
+  $('frReload').onclick = () => act(async () => '');
+}
+function frToast(t) { log(t); flushLog(); setResult(t); if (!S || $('battle').classList.contains('hidden')) openSheet('観戦', `<p class="sub">${escHtml(t)}</p>`); }
+
+// ----- フレンドのソロ観戦:遊ぶ側(部屋を開いて、記録を送る) -----
+// 部屋の名前は、フレンドにしか読めない「観戦の鍵」から作る。鍵がないと部屋を見つけられないので、フレンド以外は入れない
+const WH = { peer: null, key: '', open: false, specs: [], snap: null, hist: [], id: '' };
+async function watchHostSync() {
+  const key = accUid() && FR.ready && FR.me && !FR.me.off ? FR.me.key : '';
+  if (!key) { watchHostClose(); return; }
+  if (WH.peer && WH.key === key) return;
+  watchHostClose();
+  if (!(window.Peer || await loadScript('vendor/peerjs.min.js')) || !window.Peer) return;
+  WH.key = key;
+  const p = WH.peer = new window.Peer('kokusen-watch-' + key.toLowerCase());
+  p.on('open', () => { if (WH.peer === p) { WH.open = true; frBeat(true); } });
+  p.on('connection', (c) => {
+    if (WH.specs.length >= SPEC_MAX) { c.on('open', () => { try { c.send({ full: 1 }); } catch (e) { /* 閉じるだけ */ } setTimeout(() => c.close(), 300); }); return; }
+    WH.specs.push(c);
+    const drop = () => { WH.specs = WH.specs.filter((x) => x !== c); if (S && !S.spectate) render(); };
+    c.on('open', () => { whSend(c); if (S && !S.spectate) render(); });
+    c.on('close', drop); c.on('error', drop);
+  });
+  p.on('disconnected', () => { if (WH.peer === p) { try { p.reconnect(); } catch (e) { /* つながらなければ次の更新で作り直す */ } } });
+  p.on('error', (e) => { if (WH.peer === p && e.type === 'unavailable-id') { WH.open = false; } });   // 別のタブで開いているときは、そちらが受け付ける
+}
+function watchHostClose() {
+  try { if (WH.peer) WH.peer.destroy(); } catch (e) { /* すでに閉じている */ }
+  Object.assign(WH, { peer: null, key: '', open: false, specs: [] });
+}
+const whSend = (c) => { try { if (c.open) c.send({ spec: WH.snap || { v: RULES_VER, wait: 1 } }); } catch (e) { /* 送れなければ次の更新で送る */ } };
+const whViewers = () => WH.specs.filter((c) => c.open).map((c) => String((c.metadata && c.metadata.name) || 'フレンド').replace(/[\u0000-\u001f]/g, '').slice(0, 12));
+function whStart(mine, theirs, opt) {
+  const p = ACC.profile;
+  WH.id = Math.random().toString(36).slice(2); WH.hist = [];
+  WH.snap = { v: RULES_VER, solo: 1, id: WH.id, team: mine.map((c) => c.id), stage: opt.stage ? opt.stage.id : null, foes: opt.stage ? null : theirs.map((c) => c.id), level: opt.level || FX.level, name: p ? String(p.name).slice(0, 12) : 'フレンド', hist: WH.hist };
+  WH.specs.forEach(whSend); setTimeout(() => frBeat(true), 0);
+}
+function whRec(e) { if (!WH.snap) return; WH.hist.push(e); WH.specs.forEach(whSend); }
+
+// ----- フレンドのソロ観戦:見る側 -----
+const FW = { on: false, peer: null, snap: null, id: null, n: 0, who: '' };
+async function fwStart(f) {
+  fwStop(true);
+  if (PVP.spec) specStop();
+  if (PVP.on && PVP.phase !== 'idle') pvpLeave();
+  if (MODE === 'pvp') { MODE = 'cpu'; PVP.on = false; renderMode(); }
+  if (!(window.Peer || await loadScript('vendor/peerjs.min.js')) || !window.Peer) { frToast('この端末では観戦できません'); return; }
+  Object.assign(FW, { on: true, snap: null, id: null, n: 0, who: String(f.name).slice(0, 12) });
+  $('sheet').classList.add('hidden');
+  const me = FW.peer = new window.Peer();
+  const myName = ACC.profile ? String(ACC.profile.name).slice(0, 12) : 'フレンド';
+  me.on('open', () => {
+    const c = me.connect('kokusen-watch-' + String(f.key).toLowerCase(), { reliable: true, serialization: 'json', metadata: { spec: 1, name: myName } });
+    c.on('data', (d) => {
+      if (!d || typeof d !== 'object' || FW.peer !== me) return;
+      if (d.full) { frToast('観戦できるのは5人までです。いっぱいでした'); fwStop(true); return; }
+      if (d.spec && typeof d.spec === 'object') { FW.snap = d.spec; fwShow(); }
+    });
+    c.on('close', () => { if (FW.peer === me) frToast(`${FW.who}さんとの接続が切れました`); });
+  });
+  me.on('error', (e) => { if (FW.peer !== me) return; frToast(e.type === 'peer-unavailable' ? `${FW.who}さんは今、観戦を受け付けていません` : `つながりませんでした(${e.type})`); fwStop(true); });
+}
+let fwBusy = false;
+async function fwShow() {
+  if (!FW.on || !FW.snap) return;
+  const snap = FW.snap;
+  if (snap.v !== RULES_VER) { frToast('ゲームの版が違うため観戦できません。ページを再読み込みしてください'); fwStop(true); return; }
+  if (snap.wait || !Array.isArray(snap.team)) { if (!S || !S.spectate || S.over) frToast(`${FW.who}さんの次の対戦を待っています…`); return; }
+  if (fwBusy) return;
+  const team = snap.team.map(charById), st = snap.stage ? STAGES.find((x) => x.id === snap.stage) : null;
+  const foes = st ? null : (snap.foes || []).map(charById);
+  if (team.length !== TEAM_SIZE || team.some((c) => !c) || (!st && (!foes || foes.length !== TEAM_SIZE || foes.some((c) => !c)))) { frToast('対戦の情報を読めませんでした'); return; }
+  const hist = Array.isArray(snap.hist) ? snap.hist : [];
+  const name = String(snap.name || FW.who).replace(/[\u0000-\u001f]/g, '').slice(0, 12);
+  fwBusy = true;
+  try {
+    // 新しい対戦:最初から作り直し、ここまでの記録を早送りで流す(途中から入っても追いつく)
+    if (snap.id !== FW.id || !S || !S.spectate) {
+      FW.id = snap.id; FW.n = 0;
+      const o = { spectate: true, label0: name };
+      if (st) await startMatch(team, stageFoes(st), '敵', { ...o, level: st.level, read: st.read, stage: st, noDecay: true });
+      else await startMatch(team, foes, 'CPU', { ...o, level: snap.level });
+      const fast = hist.slice(0, Math.max(0, hist.length - 1));   // 最後の1つだけは演出つきで見せる
+      for (const e of fast) specApply(e, true);
+      FW.n = fast.length;
+      flushLog(); render();
+    }
+    while (FW.n < hist.length && S && S.spectate && !S.over && FW.on) {
+      const e = hist[FW.n++];
+      busy = true;
+      try { await specApply(e, false); } finally { busy = false; flushLog(); render(); }
+    }
+  } finally { fwBusy = false; }
+  if (FW.snap !== snap) fwShow();   // 演出中に届いた記録
+}
+function fwStop(quiet) {
+  const was = FW.on;
+  FW.on = false;
+  try { if (FW.peer) FW.peer.destroy(); } catch (e) { /* すでに閉じている */ }
+  FW.peer = null; FW.snap = null; FW.id = null;
+  if (was && S && S.spectate && !PVP.spec) {
+    S.over = true; clearTimeout(tickTimer); Aura.stop(); Bgm.play('menu');
+    $('battle').classList.add('hidden'); $('select').classList.remove('hidden'); document.body.classList.remove('in-battle');
+    renderMode();
+  }
+  frBeat(true);
+}
+
 // ----- メールボックス:運営からのお知らせとプレゼント(ログインが必要)-----
 // メールはここに書いて公開する(全員に同じものが届く)。id は一度使ったら変えない。
 // gift:{ shards: 空間のカケラの数, chars: [ガチャキャラのid] }。until:受け取り期限(この日の終わりまで。なしなら期限なし)
@@ -5440,6 +5661,7 @@ async function startMatch(mine, theirs, foeLabel, opt = {}) {
   S.bossRead = opt.read || 0;
   S.stage = opt.stage || null;
   S.noDecay = !!opt.noDecay;
+  if (!S.spectate && !PVP.on) whStart(mine, theirs, opt); else WH.snap = null;   // フレンドの観戦用の記録を始める
   $('log').innerHTML = '';
   logBuf = [];
   freeze(false);
@@ -5554,6 +5776,8 @@ function init() {
   $('tRule').onclick = () => openRulebook();
   $('tRank').onclick = openRanking;
   $('tMail').onclick = () => { Sound.click(); openMail(); };
+  $('tFriend').onclick = () => { Sound.click(); openFriends(); };
+  $('selFriend').onclick = () => { Sound.click(); openFriends(); };
   $('tTitles').onclick = openTitles;
   $('tGacha').onclick = () => openGacha();
   $('sheetClose').onclick = () => $('sheet').classList.add('hidden');
