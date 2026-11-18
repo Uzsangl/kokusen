@@ -3478,7 +3478,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.57';
+const APP_VER = '0.58';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
@@ -5052,6 +5052,7 @@ function openGacha(results, sim) {
 // gift:{ shards: 空間のカケラの数, chars: [ガチャキャラのid] }。until:受け取り期限(この日の終わりまで。なしなら期限なし)
 // 読んだメールは progress の stats.mailRead、受け取ったプレゼントは stats.mailGot に保存する
 const MAILS = [
+  { id: 'm002', date: '2026-11-18', title: '刻の回廊 実装記念', body: 'アドバンスのソロ「刻の回廊」を実装しました。\nソロで区分けを「アドバンス」にすると挑めます。\n実装を記念して、空間のカケラ550個をお届けします。', gift: { shards: 550 } },
   { id: 'm001', date: '2026-11-17', title: 'テストプレゼント', body: 'メールボックスのテストです。\n空間のカケラ400個をお届けします。', gift: { shards: 400 } },
 ];
 const mailLive = () => MAILS.filter((m) => !m.until || new Date() <= new Date(m.until + 'T23:59:59'));
