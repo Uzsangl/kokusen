@@ -173,6 +173,19 @@
   #battle .boutinfo.hint { font-size: .85rem; }
   @keyframes hintPulse { 50% { opacity: .55; } }
   @media (prefers-reduced-motion: reduce) { .boutinfo.hint { animation: none; } }
+  /* あとひと刻:ガラスの破片が下から上へ立ちのぼるオーラ(画面の左右の端) */
+  #aura { position: fixed; inset: 0; z-index: 5; pointer-events: none; overflow: hidden; opacity: 0; transition: opacity .6s; }
+  #aura.on { opacity: 1; }
+  #aura::before { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 38vh; background: radial-gradient(70% 100% at 50% 100%, #f5c45133, transparent 70%); animation: auraGlow 1.6s ease-in-out infinite alternate; }
+  #aura i { position: absolute; top: 100%; display: block; background: linear-gradient(160deg, #ffffffee, #bfe6ff99 45%, #f5c45188); box-shadow: 0 0 10px #ffe9a8aa; animation: auraRise linear forwards; will-change: transform, opacity; }
+  @keyframes auraRise {
+    0% { transform: translate(0, 0) rotate(0deg); opacity: 0; }
+    12% { opacity: .95; }
+    70% { opacity: .8; }
+    100% { transform: translate(var(--dx), -118vh) rotate(var(--rot)); opacity: 0; }
+  }
+  @keyframes auraGlow { from { opacity: .5; } to { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { #aura { display: none; } }
   .status { min-height: 1.3em; font-size: .85rem; color: var(--accent); }
   ul.actions { list-style: none; padding: 0; margin: 6px 0 0; font-size: .82rem; }
   ul.actions li { padding: 2px 0; border-top: 1px dashed var(--line); }
@@ -788,6 +801,7 @@
 
 <!-- ガチャの演出:ガラスの板が割れて、中からアイコンが出てくる -->
 <div id="gstage" class="hidden"><div id="gTrial" class="gtrial hidden">🎲 お試しガチャ<small>キャラは手に入りません</small></div><button id="gSkip">スキップ ▶▶</button><div class="gpane" id="gpane"><svg class="gcrk" id="gcrk"></svg><span>TAP</span></div><div class="gres" id="gres"></div><div class="gbtns"><button id="gAll" class="hidden">全部めくる</button><button id="gOk" class="hidden">OK</button></div><div class="gsec hidden" id="gsec"></div></div>
+<div id="aura" aria-hidden="true"></div>
 <div id="fx" aria-hidden="true">
   <canvas id="particles"></canvas>
   <div id="flash"></div>
@@ -2654,11 +2668,40 @@ function climaxReady() {
   const hp = left.reduce((s, c) => s + c.hp, 0), max = cards.reduce((s, c) => s + c.max, 0);
   return PVP.on ? left.length <= 1 : hp <= max * 0.25;
 }
+// あとひと刻のオーラ:ガラスの破片が画面の左右の端を、下から上へ立ちのぼる。決着がつくか、対戦画面を出ると止まる
+const Aura = (() => {
+  let timer = null;
+  function shard() {
+    const box = $('aura'), d = document.createElement('i');
+    const x = Math.random() < 0.5 ? Math.random() * 9 - 2 : 93 + Math.random() * 9;   // 文字に重ならないよう、画面の左右の端だけ
+    const w = 5 + Math.random() * 15, h = w * (1 + Math.random() * 1.6), dur = 2.2 + Math.random() * 2.4;
+    const p = () => `${Math.round(Math.random() * 100)}% ${Math.round(Math.random() * 100)}%`;   // とがった破片の形
+    d.style.cssText = `left:${x}%;width:${w}px;height:${h}px;animation-duration:${dur}s;--dx:${Math.round((Math.random() - 0.5) * 30)}px;--rot:${Math.round((Math.random() - 0.5) * 720)}deg;clip-path:polygon(${Math.round(Math.random() * 100)}% 0%, 100% ${p().split(' ')[1]}, ${p().split(' ')[0]} 100%, 0% ${Math.round(Math.random() * 100)}%)`;
+    box.appendChild(d);
+    setTimeout(() => d.remove(), dur * 1000 + 100);
+  }
+  return {
+    start() {
+      if (timer || FX.short || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
+      $('aura').classList.add('on');
+      timer = setInterval(() => {
+        if (!S || S.over || $('battle').classList.contains('hidden')) { Aura.stop(); return; }
+        shard(); if (Math.random() < 0.6) shard();
+      }, 130);
+    },
+    stop() {
+      clearInterval(timer); timer = null;
+      $('aura').classList.remove('on');
+      setTimeout(() => { if (!timer) $('aura').innerHTML = ''; }, 700);
+    },
+  };
+})();
 // 条件を満たしたら、「あとひと刻!」のカットインと同時に曲を切り替える(1試合に1回)
 async function climaxFx() {
   if (!climaxReady()) return;
   S.climax = true;
   Bgm.switchTo('climax');
+  Aura.start();
   flash('#ffd24a'); shake(false); Sound.cue(3);
   await cutin('あとひと刻!', '決着は目の前', 'gold', 1400);
 }
@@ -3478,7 +3521,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.59';
+const APP_VER = '0.60';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
