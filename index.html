@@ -67,12 +67,10 @@
   .stages button.s2 b { color: #4ade80; }
   .stages button.s4, .stages button.s5 { grid-column: span 3; }
   .stages button.s0 { grid-column: 1 / -1; }
-  /* 刻の回廊:1行に「回廊の名前・★2・★3・★4・★5」(縦に長くしない) */
-  .corr-list { display: grid; grid-template-columns: 3.4em repeat(4, 1fr); gap: 5px; margin-bottom: 4px; align-items: stretch; }
-  .corr-list.hidden, .stages.hidden { display: none; }
-  .corr-list button { padding: 5px 2px; font-size: .66rem; line-height: 1.25; }
-  .corr-list button b { display: block; font-size: .62rem; letter-spacing: 0; }
-  .corr-list .corr-h { margin: 0; display: flex; align-items: center; font-size: .7rem; line-height: 1.2; color: var(--gold); }
+  .corr-list { grid-template-columns: repeat(4, 1fr); }
+  .corr-list button.corr { grid-column: span 1; }
+  .corr-list .corr-h { grid-column: 1 / -1; margin: 6px 0 0; font-size: .78rem; color: var(--gold); }
+  .stages.hidden { display: none; }
   .stages button.locked { opacity: .45; }
   .stages button.chain { opacity: .6; border-style: dashed; }
   .stages button.s0 b { color: var(--gold); }
@@ -702,7 +700,7 @@
     <div id="soloOpts" class="hidden">
       <h2>ステージ</h2>
       <div class="stages" id="stages"></div>
-      <div class="corr-list hidden" id="corrStages"></div>
+      <div class="stages corr-list hidden" id="corrStages"></div>
       <p class="sub" id="stageNote"></p>
     </div>
     <div id="netOpts" class="hidden">
@@ -3478,7 +3476,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.51';
+const APP_VER = '0.52';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
@@ -4616,12 +4614,12 @@ function renderStages() {
     const s = STAGES.find((x) => x.id === b.dataset.id);
     const boss = `<span class="foes">${stageFoes(s).filter((f) => !f.hiddenUntilActive).map((f) => iconHtml(f, s.stars >= 3 ? 'md' : 'sm')).join('')}</span>`;
     const head = s.corridor ? '★'.repeat(s.stars) : `${s.faction} ${'★'.repeat(s.stars)}`;   // 回廊は見出しに名前があるので★だけ
-    b.innerHTML = s.corridor ? `<b>${head}</b>${s.name}` : `<b>${head}</b>${boss}${s.name}`;   // 回廊は縦に長くしないよう、敵のアイコンは出さない
+    b.innerHTML = `<b>${head}</b>${boss}${s.name}`;
     b.classList.toggle('chain', !!s.chainFrom);
     b.classList.toggle('picked', b.dataset.id === SOLO.stage);
     b.classList.toggle('cleared', SOLO.cleared.includes(b.dataset.id));
     b.classList.toggle('locked', !corrOpen(s));
-    if (!corrOpen(s)) b.innerHTML = `<b>${head}</b>🔒${s.name}`;
+    if (!corrOpen(s)) b.innerHTML = `<b>${head}</b><span class="foes">🔒</span>${s.name}`;
   });
   const st = STAGES.find((x) => x.id === SOLO.stage), foes = stageFoes(st);
   const shown = foes.filter((f) => !f.hiddenUntilActive || xenoKnown());   // ★5は、倒すまで1体に見せる
@@ -5450,7 +5448,7 @@ function init() {
   if (!STAGES.some((x) => x.id === SOLO.stage)) SOLO.stage = 'a1';
   STAGES.forEach((st) => {
     // 刻の回廊は、回廊ごとに見出しを付けて別の欄に並べる
-    if (st.corridor && st.stars === 2) { const h = document.createElement('p'); h.className = 'corr-h'; h.textContent = CORRIDORS[st.corridor].replace('の回廊', ''); $('corrStages').appendChild(h); }
+    if (st.corridor && st.stars === 2) { const h = document.createElement('p'); h.className = 'corr-h'; h.textContent = CORRIDORS[st.corridor]; $('corrStages').appendChild(h); }
     const b = document.createElement('button');
     b.dataset.id = st.id;
     b.classList.add('s' + st.stars);   // ★の数で色を変える
