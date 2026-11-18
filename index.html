@@ -275,7 +275,7 @@
   }
   .act { border: 1px dashed var(--line); background: #0f1228; color: var(--sub); }
   /* 手のボタンと相手の技は、あとひと刻のガラスの破片(#aura、z-index 5)よりも手前に出す(破片はボタンの後ろを通る) */
-  #battle .hands button, #battle .act { position: relative; z-index: 6; }
+  #battle .hands button, #battle .act, #logBtn, #resign { position: relative; z-index: 6; }   /* 「ログを見る」「リタイア」も手前 */
   .ico { font-size: 1.5rem; flex: none; }
   .txt { min-width: 0; color: var(--sub); }
   .txt b { display: block; color: var(--text); font-size: .72rem; }
@@ -3557,7 +3557,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.68';
+const APP_VER = '0.69';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
