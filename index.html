@@ -3356,7 +3356,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.41';
+const APP_VER = '0.42';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
@@ -4678,9 +4678,9 @@ const GACHA_PUCHUN_RATE = 0.3;
 const GACHA_COLD_RATE = 0.1;
 const GACHA_COLD_GOLD_RATE = 0.15;   // オレンジ止まりの板(ぽきゅん無し)から、めくりプチュン
 const GACHA_POKYUN_FLIP = 0.5;   // ぽきゅんが来て★4以上のとき、半分はめくる瞬間のプチュンで見せる(ひびのプチュンとは重ならない)
-const GACHA_SAKASA_RATE = 0.05;   // ★4以上のとき、そのカードの裏の「刻」が逆さま → めくるとプチュン確定
+const GACHA_SAKASA_RATE = 0.15;   // ★4以上のとき、そのカードの裏の「刻」が逆さま → めくるとプチュン確定
 const GACHA_LATE_RATE = 0.2;      // めくるときのプチュンのうち、触っても反応せず3秒後にプチュンする(遅れ)割合
-const GACHA_MUTE_RATE = 0.1;      // ★4以上のとき、めくる画面になった瞬間にBGMが消える → ★4以上をめくるとプチュン確定(★4以上全体で10%)
+const GACHA_MUTE_RATE = 0.25;     // ★4以上のとき、めくる画面になった瞬間にBGMが消える → ★4以上をめくるとプチュン確定(★4以上全体で25%)
 const GACHA_WHITE_POKYUN = 0.01;  // 白発展+ぽきゅん:★4以上の1%だけ。白のまま割れるのにぽきゅんが来たら★4以上確定(外れの白にはぽきゅんを出さない)
 const GACHA_POKYUN_HI = 0.6, GACHA_POKYUN_HIT = 0.4;   // HI:★4以上のときに出る割合(占有率) HIT:出たときに★4以上の割合
 // 外れのぽきゅんは★3が入っている(オレンジまで上がる)ときだけ出す。白で割れる外れにはぽきゅんを出さない
