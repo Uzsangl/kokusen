@@ -489,6 +489,9 @@
   @keyframes gcShake { 20%, 60% { transform: translateX(-4px) rotate(-3deg); } 40%, 80% { transform: translateX(4px) rotate(3deg); } }
   .gc-card.pillar { box-shadow: 0 0 0 2px #b57bff, 0 -40px 50px -10px #b57bffcc, 0 0 30px #b57bffcc; }
   .gc-card.r5.pillar { box-shadow: 0 0 0 2px #ff2a3d, 0 -50px 60px -10px #ff2a3dee, 0 0 40px #ff2a3dee; }
+  .gtrial { position: absolute; top: 12px; left: 12px; padding: 5px 10px; border: 1px solid var(--gold); border-radius: 8px; color: var(--gold); font-size: .8rem; font-weight: 700; background: #05060dcc; z-index: 2; line-height: 1.25; }
+  .gtrial small { display: block; font-weight: 400; font-size: .64rem; color: var(--sub); }
+  .gtrial.hidden { display: none; }
   #gSkip { position: absolute; top: 12px; right: 12px; padding: 6px 12px; font-size: .8rem; z-index: 2; }
   .gbtns { display: flex; gap: 8px; }
   .gpane { position: relative; }
@@ -768,7 +771,7 @@
   </div>
 
 <!-- ガチャの演出:ガラスの板が割れて、中からアイコンが出てくる -->
-<div id="gstage" class="hidden"><button id="gSkip">スキップ ▶▶</button><div class="gpane" id="gpane"><svg class="gcrk" id="gcrk"></svg><span>TAP</span></div><div class="gres" id="gres"></div><div class="gbtns"><button id="gAll" class="hidden">全部めくる</button><button id="gOk" class="hidden">OK</button></div><div class="gsec hidden" id="gsec"></div></div>
+<div id="gstage" class="hidden"><div id="gTrial" class="gtrial hidden">🎲 お試しガチャ<small>キャラは手に入りません</small></div><button id="gSkip">スキップ ▶▶</button><div class="gpane" id="gpane"><svg class="gcrk" id="gcrk"></svg><span>TAP</span></div><div class="gres" id="gres"></div><div class="gbtns"><button id="gAll" class="hidden">全部めくる</button><button id="gOk" class="hidden">OK</button></div><div class="gsec hidden" id="gsec"></div></div>
 <div id="fx" aria-hidden="true">
   <canvas id="particles"></canvas>
   <div id="flash"></div>
@@ -3343,7 +3346,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.39';
+const APP_VER = '0.40';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
@@ -4700,6 +4703,7 @@ function gachaShow(r, rates = GACHA_RATES) {
     res.innerHTML = ''; res.className = 'gres' + (r.length === 1 ? ' one' : '');
     ok.classList.add('hidden'); all.classList.add('hidden'); skip.classList.remove('hidden');
     $('gstage').classList.remove('hidden');
+    $('gTrial').classList.toggle('hidden', rates !== GACHA_SIM_RATES);   // お試し中は、結果を閉じるまで表示
     Sound.lever();
     const keep = top >= 4 ? 1 - GACHA_COLD_RATE - GACHA_COLD_GOLD_RATE - GACHA_WHITE_POKYUN : 1;   // 寒い演出のぶんを除いた残り
     // 白発展+ぽきゅんのぶんを引いて、★4以上全体のぽきゅん占有率を保つ
