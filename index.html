@@ -3476,7 +3476,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.52';
+const APP_VER = '0.53';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
@@ -3930,7 +3930,7 @@ function readCleared(key) {
 function writeCleared(key, list) { try { localStorage.setItem(key, JSON.stringify(list)); } catch (e) { /* 保存できなくても動く */ } }
 // 刻の回廊:★2はいつでも、★3以降は同じ回廊のひとつ前の段をクリアしていれば挑める
 const corrPrev = (st) => st && st.corridor && st.stars > 2 ? STAGES.find((x) => x.corridor === st.corridor && x.stars === st.stars - 1) : null;
-const corrOpen = (st) => { const p = corrPrev(st); return !p || SOLO.cleared.includes(p.id); };
+const corrOpen = (st) => { const p = corrPrev(st); return !p || SOLO.cleared.includes(p.id) || IS_MASTER; };   // マスターは全部開いている
 function soloClear(id) {
   const fresh = !SOLO.cleared.includes(id);
   if (fresh) SOLO.cleared.push(id);
@@ -4708,7 +4708,7 @@ async function accCheckMaster() {
     ACC.stats.masterGrant1 = 1;
     await shardAdd(10000);
   }
-  if (IS_MASTER) { try { renderSelect(); renderTitleAcc(); renderAcct(); } catch (e) { /* 画面がまだなくてもよい */ } }
+  if (IS_MASTER) { try { renderStages(); renderTitleAcc(); renderAcct(); } catch (e) { /* 画面がまだなくてもよい */ } }
 }
 const charUnlocked = (ch) => IS_MASTER || (ch.gacha ? gachaOwned(ch.id) > 0 : !ch.unlock || myTitles().includes(ch.unlock));
 // 解放キャラの条件の書き方(隠し称号は、解放するまで名前を伏せる)
