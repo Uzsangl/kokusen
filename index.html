@@ -3338,7 +3338,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.33';
+const APP_VER = '0.34';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
@@ -4652,6 +4652,7 @@ const GACHA_PUCHUN_RATE = 0.3;
 // めくりプチュン:★4以上が入っているときに10%で、何も起きない寒い演出(白いまま割れる・ぽきゅん無し)でめくる画面へ行き、
 // ★4以上のカードをめくる瞬間にプチュン → カットイン。ほかの告知とは重ならないので、ぽきゅん・プチュンは残りの90%で出す割合を上げて占有率をそのまま保つ
 const GACHA_COLD_RATE = 0.1;
+const GACHA_COLD_GOLD_RATE = 0.05;   // オレンジ(金)止まりの板から、めくりプチュン。白より薄く
 const GACHA_POKYUN_HI = 0.6, GACHA_POKYUN_HIT = 0.4;   // HI:★4以上のときに出る割合(占有率) HIT:出たときに★4以上の割合
 function gachaPokyunRate(hasHigh, n) {
   if (hasHigh) return GACHA_POKYUN_HI;
@@ -4665,16 +4666,18 @@ function gachaShow(r) {
     // ひび1回目・2回目で見せる色(上がっていくだけ。結果より上の色は見せない)
     const lv = [0, 3, 4, 5];
     const fi = lv.indexOf(fin), a = Math.floor(Math.random() * (fi + 1)), b = Math.max(a, Math.floor(Math.random() * (fi + 1)));
-    const cold = top >= 4 && Math.random() < GACHA_COLD_RATE;   // 寒い演出(実は★4以上)
-    const steps = cold ? [0, 0] : [lv[a], lv[b]];
-    const paneLv = cold ? 0 : fin;   // 割れるときの色
+    // 寒い演出(実は★4以上):'w' は白のまま、'g' はオレンジ(金)止まり
+    const cr = top >= 4 ? Math.random() : 1;
+    const cold = cr < GACHA_COLD_RATE ? 'w' : cr < GACHA_COLD_RATE + GACHA_COLD_GOLD_RATE ? 'g' : '';
+    const steps = cold === 'w' ? [0, 0] : cold === 'g' ? [lv[Math.min(a, 1)], lv[Math.min(b, 1)]] : [lv[a], lv[b]];
+    const paneLv = cold === 'w' ? 0 : cold === 'g' ? 3 : fin;   // 割れるときの色
     const pane = $('gpane'), res = $('gres'), ok = $('gOk'), all = $('gAll'), skip = $('gSkip'), crk = $('gcrk');
     pane.className = 'gpane c0'; pane.style.display = ''; crk.innerHTML = '';
     res.innerHTML = ''; res.className = 'gres' + (r.length === 1 ? ' one' : '');
     ok.classList.add('hidden'); all.classList.add('hidden'); skip.classList.remove('hidden');
     $('gstage').classList.remove('hidden');
     Sound.lever();
-    const keep = top >= 4 ? 1 - GACHA_COLD_RATE : 1;   // 寒い演出のぶんを除いた残り
+    const keep = top >= 4 ? 1 - GACHA_COLD_RATE - GACHA_COLD_GOLD_RATE : 1;   // 寒い演出のぶんを除いた残り
     if (!cold && Math.random() < gachaPokyunRate(top >= 4, r.length) / keep) setTimeout(() => sakibareFx(), 450);
     const puchunAt = !cold && top >= 4 && Math.random() < GACHA_PUCHUN_RATE / keep ? 1 + Math.floor(Math.random() * 3) : 0;   // 何回目のタップでプチュンするか(0=なし)
     let taps = 0, broke = false, skipped = false, busyFlip = false;
