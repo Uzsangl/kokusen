@@ -71,7 +71,7 @@ function play(api, party, F, hard) {
     else if (side === 1) api.breakRally(S, 1, api.aiBreakHand(S, 1), noLog);
     else api.rally(S, hard ? api.aiHand(S, 0, 3).hand : api.randomHand(), api.aiHand(S, 1, F.level).hand, noLog);
   }
-  return S.winner === 0;
+  return S.winner === 0 ? S.rally : 0;   // 勝ったら、かかったラリー数(負けは0)
 }
 
 if (!isMainThread) {
@@ -83,7 +83,7 @@ if (!isMainThread) {
   const out = jobs.map(({ ids, games, modes }) => {
     const party = ids.map((id) => byId[id]);
     const r = {};
-    for (const m of modes) { let w = 0; for (let i = 0; i < games; i++) if (play(api, party, F, m === 'hard')) w++; r[m] = w; }
+    for (const m of modes) { let w = 0, wr = 0; for (let i = 0; i < games; i++) { const x = play(api, party, F, m === 'hard'); if (x) { w++; wr += x; } } r[m] = w; r[m + 'R'] = wr; }
     return { ids, games, ...r };
   });
   parentPort.postMessage(out);
@@ -112,7 +112,8 @@ if (!isMainThread) {
       const oo = { ...o, hpMul };
       const r = await runAll(ids.map((x) => ({ ids: x, games: o.final, modes: ['hard'] })), oo);
       r.sort((a, b) => b.hard - a.hard);
-      return { r, rate: r.reduce((s, x) => s + x.hard, 0) / (r.length * o.final) };
+      const wins = r.reduce((s, x) => s + x.hard, 0), wr = r.reduce((s, x) => s + x.hardR, 0);
+      return { r, rate: wins / (r.length * o.final), wins, avgR: wins ? wr / wins : 0 };
     };
     const show = (F2) => F2.foes.map((f) => `${f.name}(HP${f.hp} ATK${f.atk} DFS${f.dfs} フィジカル${f.phys})`).join(' / ');
     let topIds;
@@ -126,21 +127,21 @@ if (!isMainThread) {
       let lo = 0.3, hi = 4, best = null;
       for (let it = 0; it < 7; it++) {
         const m = Math.sqrt(lo * hi);
-        const { rate } = await step3(topIds, o.hpMul * m);
-        console.log(`   HP×${(o.hpMul * m).toFixed(2)} → ${(rate * 100).toFixed(1)}%`);
-        if (!best || Math.abs(rate * 100 - o.target) < Math.abs(best.rate * 100 - o.target)) best = { m, rate };
+        const { rate, avgR } = await step3(topIds, o.hpMul * m);
+        console.log(`   HP×${(o.hpMul * m).toFixed(2)} → ${(rate * 100).toFixed(2)}%`);
+        if (!best || Math.abs(rate * 100 - o.target) < Math.abs(best.rate * 100 - o.target)) best = { m, rate, avgR };
         if (rate * 100 > o.target) lo = m; else hi = m;
       }
       const F2 = makeFoes(api, { ...o, hpMul: o.hpMul * best.m });
-      console.log(`★ 目標${o.target}% → HPの倍率を${best.m.toFixed(2)}倍(${show(F2)})で ${(best.rate * 100).toFixed(1)}%  (${sec()})`);
+      console.log(`★ 目標${o.target}% → HPの倍率を${best.m.toFixed(2)}倍(${show(F2)})で ${(best.rate * 100).toFixed(2)}%(勝った試合の平均 ${best.avgR.toFixed(0)}ラリー)  (${sec()})`);
       return;
     }
     if (topIds) {
-      const { r, rate } = await step3(topIds, o.hpMul);
+      const { r, rate, wins, avgR } = await step3(topIds, o.hpMul);
       console.log(`敵: ${show(makeFoes(api, o))}`);
       if (o.verbose) r.forEach((x) => console.log(`   ${name(x.ids)}  ${(x.hard / o.final * 100).toFixed(1)}%`));
       else console.log(`   最も勝てた:${name(r[0].ids)} ${(r[0].hard / o.final * 100).toFixed(1)}%`);
-      console.log(`★ 勝率(適正パーティの平均): ${(rate * 100).toFixed(1)}%  (${sec()})`);
+      console.log(`★ 勝率(適正パーティの平均): ${(rate * 100).toFixed(2)}%  勝った試合 ${wins}回・平均 ${avgR.toFixed(0)}ラリー  (${sec()})`);
       return;
     }
     console.log(`敵: ${F.foes.map((f) => `${f.name}(HP${f.hp} ATK${f.atk} DFS${f.dfs} フィジカル${f.phys})`).join(' / ')}  CPU深さ${F.level} 読み${Math.round(F.read * 100)}%`);

@@ -1184,16 +1184,16 @@ const ENEMIES = {
 // ガチャの★4とトキバミの強化個体。HPは tools/bossrate.js で「適正パーティでの勝率」を見て決める
 const gBoss = (id, o) => { const c = GACHA_CHARS.find((x) => x.id === id); return { name: c.name, faction: c.faction, hp: c.hp, atk: c.atk, dfs: c.dfs, phys: c.phys, boss: true, actions: c.actions, ...o }; };
 Object.assign(ENEMIES, {
-  c4_toki: { ...ENEMIES.tokibami, hp: 121500, atk: 4080,
+  c4_toki: { ...ENEMIES.tokibami, hp: 169680, atk: 4080,
     traits: [...ENEMIES.tokibami.traits, { key: 'eatMove', name: '喰い残し', desc: '相手のカードを倒すたびに、そのカードのいちばん強い技を喰い、同じ手の技と入れ替える' }] },
-  c4_kagami: gBoss('g_z4', { hp: 80000,
+  c4_kagami: gBoss('g_z4', { hp: 295120,
     traits: [GACHA_CHARS.find((x) => x.id === 'g_z4').trait,
       { key: 'outside', name: '割れぬ鏡', desc: '被ダメージ−20%', cut: 0.2 },
       { key: 'drawHeal', name: '映し合い', desc: 'あいこのたびにHP1500回復', heal: 1500 }] }),
-  c4_nagare: gBoss('g_y4', { hp: 50000,
+  c4_nagare: gBoss('g_y4', { hp: 195990,
     traits: [{ key: 'burnout', name: '全力', desc: '場に出て5ラリー目まで、技がすべて極大。6ラリー目からは毎ラリーATK−500(最大−5000)', until: 5, step: 500, cap: 5000 },
       { key: 'pierce', name: '射抜き', desc: '相手のDFSを1000低いものとして攻撃する', v: 1000 }] }),
-  c4_tomoshi: gBoss('g_a4', { hp: 90000, atk: 2600,
+  c4_tomoshi: gBoss('g_a4', { hp: 282380, atk: 2600,
     traits: [{ key: 'immovable', name: '灯台', desc: '被弾でDFS+500(最大+3000)', gain: 500, cap: 3000 },
       { key: 'regen', name: '常夜の灯', desc: 'ラリーが終わるたびにHP+800', heal: 800 },
       { key: 'unbreak', name: '消えぬ灯', desc: `${BREAK_NAME}の被ダメージ半減`, cut: 0.5 }] }),
@@ -1201,17 +1201,17 @@ Object.assign(ENEMIES, {
 // ----- 刻の回廊の★5ボス -----
 Object.assign(ENEMIES, {
   // ゼノ(ソロの強化個体):巻き戻しの儀は7ラリー
-  c5_xeno_body: { ...ENEMIES.xeno_body },
-  c5_xeno_spirit: { ...ENEMIES.xeno_spirit, traits: ENEMIES.xeno_spirit.traits.map((t) => (t.key === 'rewindRite' ? { ...t, desc: '7ラリーで倒せないと刻が巻き戻る', limit: 7 } : t)) },
-  c5_mask: gBoss('g_z5', { hp: 60000,
+  c5_xeno_body: { ...ENEMIES.xeno_body, hp: 20900, phys: 1.8 },
+  c5_xeno_spirit: { ...ENEMIES.xeno_spirit, hp: 41800, phys: 1.7, traits: ENEMIES.xeno_spirit.traits.map((t) => (t.key === 'rewindRite' ? { ...t, desc: '7ラリーで倒せないと刻が巻き戻る(巻き戻るのはゼノだけ。こちらは今のまま)', limit: 7, keepMe: true } : t)) },
+  c5_mask: gBoss('g_z5', { hp: 318000, phys: 1.8,
     traits: [{ key: 'lateBreak', name: '遅咲きの刻', desc: `場に出て6ラリー目以降、自分の${BREAK_NAME}の攻撃だけATKが10倍`, from: 6, mul: 10 },
       { key: 'drawHeal', name: '凪の間', desc: 'あいこのたびにHP2000回復', heal: 2000 },
       { key: 'outside', name: '仮面の外側', desc: '被ダメージ−20%', cut: 0.2 }] }),
-  c5_nagare: gBoss('g_y4', { name: 'ナガレ【フルパワー】', hp: 120000,
+  c5_nagare: gBoss('g_y4', { name: 'ナガレ【フルパワー】', hp: 264000, phys: 1.5,
     traits: [{ key: 'burnout', name: '全力・極', desc: '技がずっとすべて極大(減速しない)', until: 9999, step: 0, cap: 0 },
       { key: 'pierce', name: '射抜き', desc: '相手のDFSを1000低いものとして攻撃する', v: 1000 },
       { key: 'selfBurn', name: '燃え尽き', desc: 'ラリーが終わるたびに自分のHPが3000削れる', dmg: 3000 }] }),
-  c5_tsuru: { ...ENEMIES.b_tsuru, name: 'ツル', hp: 100000, atk: 3600,
+  c5_tsuru: { ...ENEMIES.b_tsuru, name: 'ツル', hp: 230000, atk: 3600, phys: 1.5,
     traits: [...ENEMIES.b_tsuru.traits, { key: 'backwaterSteps', name: '背水・見', desc: '残りHPが75%・50%・25%を切るたびにATK+1000(最大+3000)', steps: [0.75, 0.5, 0.25], add: 1000 }] },
 });
 
@@ -1573,16 +1573,17 @@ function undyingCheck(S, c, isBreak, side, log) {
 function rewindMatch(S, log) {
   S.rewinds = (S.rewinds || 0) + 1;
   const me = S.teams[0], foe = S.teams[1];
+  const keepMe = (traitOf(active(foe), 'rewindRite') || {}).keepMe;   // こちらは巻き戻らない(刻の回廊のゼノ)
   const fresh = newMatch(me.cards.map((c) => c.ch), foe.cards.map((c) => c.ch));
   const bi = foe.idx - 1;   // 肉体の位置(精神離脱体のひとつ前)
-  Object.assign(me, { idx: 0, wins: bi, streak: 0, breakReady: false, sealed: false, keep: false, cards: fresh.teams[0].cards });
+  if (!keepMe) Object.assign(me, { idx: 0, wins: bi, streak: 0, breakReady: false, sealed: false, keep: false, cards: fresh.teams[0].cards });
   foe.cards[bi] = fresh.teams[1].cards[bi]; foe.cards[bi + 1] = fresh.teams[1].cards[bi + 1];
   Object.assign(foe, { idx: bi, wins: 0, streak: 0, breakReady: false, sealed: false, keep: false });
   const body = foe.cards[bi];
   body.dfs = Math.round(body.ch.dfs / Math.pow(2, S.rewinds));
   S.boutRally = 0;
   S.events.push({ type: 'rewind', dfs: body.dfs });
-  log(`　刻が戦いの前に巻き戻された(${S.rewinds}回目)。${nameOf(body)}のDFSは${body.dfs}に下がった`);
+  log(`　刻が戦いの前に巻き戻された(${S.rewinds}回目)。${keepMe ? 'こちらは巻き戻らず、今のまま。' : ''}${nameOf(body)}のDFSは${body.dfs}に下がった`);
 }
 
 // 相手(side の反対側)の場のカードのバフをすべて消す。特性「不動」で上がったDFSも消える
@@ -3419,7 +3420,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.47';
+const APP_VER = '0.48';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
