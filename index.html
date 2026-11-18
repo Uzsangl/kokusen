@@ -187,10 +187,14 @@
   @keyframes auraEdge { from { opacity: .55; } to { opacity: 1; } }
   @keyframes auraSurge { 0% { opacity: 1; box-shadow: inset 30px 0 40px -12px #ffe9a8, inset -30px 0 40px -12px #ffe9a8, inset 0 -50px 70px -24px #ff9d2e; } 100% { opacity: .7; } }
   @keyframes auraFlame { 0%, 100% { transform: scaleY(.85) scaleX(1); opacity: .7; } 50% { transform: scaleY(1.1) scaleX(1.2); opacity: 1; } }
+  /* 下の真ん中寄りから、弧をえがいて画面の端へ寄りながら上がっていく(横のずれ --sx が (1-t)² で 0 に近づく) */
   @keyframes auraRise {
-    0% { transform: translate(0, 0) rotate(0deg); opacity: 0; }
-    12% { opacity: .95; }
-    70% { opacity: .8; }
+    0% { transform: translate(var(--sx), 0) rotate(0deg); opacity: 0; }
+    12% { opacity: .55; }
+    20% { transform: translate(calc(var(--sx) * .64), -24vh) rotate(calc(var(--rot) * .2)); }
+    40% { transform: translate(calc(var(--sx) * .36), -48vh) rotate(calc(var(--rot) * .4)); }
+    60% { transform: translate(calc(var(--sx) * .16), -71vh) rotate(calc(var(--rot) * .6)); opacity: .5; }
+    80% { transform: translate(calc(var(--sx) * .04), -95vh) rotate(calc(var(--rot) * .8)); }
     100% { transform: translate(var(--dx), -118vh) rotate(var(--rot)); opacity: 0; }
   }
   @keyframes auraGlow { from { opacity: .5; } to { opacity: 1; } }
@@ -2683,9 +2687,10 @@ const Aura = (() => {
   function shard(spark) {
     const box = $('aura'), d = document.createElement('i');
     const x = Math.random() < 0.5 ? Math.random() * 9 - 2 : 93 + Math.random() * 9;   // 文字に重ならないよう、画面の左右の端だけ
-    const w = 5 + Math.random() * 15, h = w * (1 + Math.random() * 1.6), dur = 2.2 + Math.random() * 2.4;
+    const w = 5 + Math.random() * 15, h = w * (1 + Math.random() * 1.6), dur = 4 + Math.random() * 3;   // ゆっくり
+    const sx = (x < 50 ? 1 : -1) * (8 + Math.random() * 10);   // 出だしは真ん中寄り(vw)。上がるにつれて端へ
     const p = () => `${Math.round(Math.random() * 100)}% ${Math.round(Math.random() * 100)}%`;   // とがった破片の形
-    d.style.cssText = `left:${x}%;width:${w}px;height:${h}px;animation-duration:${dur}s;--dx:${Math.round((Math.random() - 0.5) * 30)}px;--rot:${Math.round((Math.random() - 0.5) * 720)}deg;clip-path:polygon(${Math.round(Math.random() * 100)}% 0%, 100% ${p().split(' ')[1]}, ${p().split(' ')[0]} 100%, 0% ${Math.round(Math.random() * 100)}%)`;
+    d.style.cssText = `left:${x}%;width:${w}px;height:${h}px;animation-duration:${dur}s;--sx:${sx.toFixed(1)}vw;--dx:${Math.round((Math.random() - 0.5) * 30)}px;--rot:${Math.round((Math.random() - 0.5) * 720)}deg;clip-path:polygon(${Math.round(Math.random() * 100)}% 0%, 100% ${p().split(' ')[1]}, ${p().split(' ')[0]} 100%, 0% ${Math.round(Math.random() * 100)}%)`;
     if (spark) { d.className = 'spark'; d.style.width = d.style.height = `${2 + Math.random() * 4}px`; d.style.clipPath = 'none'; }   // 小さな光の粒
     box.appendChild(d);
     setTimeout(() => d.remove(), dur * 1000 + 100);
@@ -3536,7 +3541,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.63';
+const APP_VER = '0.64';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
