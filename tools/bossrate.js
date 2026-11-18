@@ -56,7 +56,7 @@ function makeFoes(api, o) {
     const [id, hp = 1, atk = 1, dfs = 1, phys] = spec.split(':');
     const base = api.ENEMIES[id] ? { ...api.ENEMIES[id], id } : all.find((c) => c.id === id);
     if (!base) throw new Error('キャラが見つからない: ' + id);
-    return { ...base, id: 'foe_' + id, hp: r10(base.hp * +hp * o.hpMul), atk: r10(base.atk * +atk), dfs: r10(base.dfs * +dfs), phys: phys ? +phys : base.phys };
+    return { ...base, id: 'foe_' + id, hp: r10(base.hp * +hp * o.hpMul), atk: r10(base.atk * +atk), dfs: base.dfs ? r10(base.dfs * +dfs) : 0, phys: phys ? +phys : base.phys };
   });
   return { foes, level: o.level, read: o.read };
 }
