@@ -187,15 +187,15 @@
   @keyframes auraEdge { from { opacity: .55; } to { opacity: 1; } }
   @keyframes auraSurge { 0% { opacity: 1; box-shadow: inset 30px 0 40px -12px #ffe9a8, inset -30px 0 40px -12px #ffe9a8, inset 0 -50px 70px -24px #ff9d2e; } 100% { opacity: .7; } }
   @keyframes auraFlame { 0%, 100% { transform: scaleY(.85) scaleX(1); opacity: .7; } 50% { transform: scaleY(1.1) scaleX(1.2); opacity: 1; } }
-  /* 下の真ん中寄りから、弧をえがいて画面の端へ寄りながら上がっていく(横のずれ --sx が (1-t)² で 0 に近づく) */
+  /* 下の真ん中寄りから、弧をえがいて画面の端へ寄りながら上がっていく(横のずれ --sx が (1-t)² で 0 に近づく)。上に行くほど細くなる */
   @keyframes auraRise {
-    0% { transform: translate(var(--sx), 0) rotate(0deg); opacity: 0; }
+    0% { transform: translate(var(--sx), 0) rotate(0deg) scale(1, 1); opacity: 0; }
     12% { opacity: .55; }
-    20% { transform: translate(calc(var(--sx) * .64), -24vh) rotate(calc(var(--rot) * .2)); }
-    40% { transform: translate(calc(var(--sx) * .36), -48vh) rotate(calc(var(--rot) * .4)); }
-    60% { transform: translate(calc(var(--sx) * .16), -71vh) rotate(calc(var(--rot) * .6)); opacity: .5; }
-    80% { transform: translate(calc(var(--sx) * .04), -95vh) rotate(calc(var(--rot) * .8)); }
-    100% { transform: translate(var(--dx), -118vh) rotate(var(--rot)); opacity: 0; }
+    20% { transform: translate(calc(var(--sx) * .64), -24vh) rotate(calc(var(--rot) * .2)) scale(.85, .95); }
+    40% { transform: translate(calc(var(--sx) * .36), -48vh) rotate(calc(var(--rot) * .4)) scale(.68, .9); }
+    60% { transform: translate(calc(var(--sx) * .16), -71vh) rotate(calc(var(--rot) * .6)) scale(.5, .85); opacity: .5; }
+    80% { transform: translate(calc(var(--sx) * .04), -95vh) rotate(calc(var(--rot) * .8)) scale(.34, .8); }
+    100% { transform: translate(var(--dx), -118vh) rotate(var(--rot)) scale(.2, .75); opacity: 0; }
   }
   @keyframes auraGlow { from { opacity: .5; } to { opacity: 1; } }
   @media (prefers-reduced-motion: reduce) { #aura { display: none; } }
@@ -3541,7 +3541,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.64';
+const APP_VER = '0.65';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
