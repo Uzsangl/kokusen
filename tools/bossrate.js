@@ -123,8 +123,8 @@ if (!isMainThread) {
     if (o.target != null) {
       if (!topIds) { console.log('--target は --load と一緒に使う(先に --save で適正パーティを作る)'); return; }
       // HPの倍率を二分探索で合わせる(HPを上げるほど勝率は下がる)
-      let lo = 0.4, hi = 2.5, best = null;
-      for (let it = 0; it < 6; it++) {
+      let lo = 0.3, hi = 4, best = null;
+      for (let it = 0; it < 7; it++) {
         const m = Math.sqrt(lo * hi);
         const { rate } = await step3(topIds, o.hpMul * m);
         console.log(`   HP×${(o.hpMul * m).toFixed(2)} → ${(rate * 100).toFixed(1)}%`);
