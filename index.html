@@ -782,6 +782,7 @@
       <div id="accBody"></div>
       <p class="msg" id="accMsg" aria-live="polite"></p>
       <div class="row"><button id="accClose">閉じる</button></div>
+      <div id="accDel"></div>
     </div>
   </div>
 
@@ -3477,7 +3478,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.54';
+const APP_VER = '0.55';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
@@ -4520,8 +4521,9 @@ function renderAccModal() {
             ? `<label for="invCode">招待コードを入れる(アカウントを作って1日以内・1回だけ)</label><input id="invCode" maxlength="8" autocomplete="off" style="text-transform:uppercase"><div class="row"><button id="invGo">招待コードを使う</button></div>`
             : (ACC.stats && ACC.stats.inviteUsed ? '<p class="sub">招待コードは使用済みです。</p>' : ''))
         : '<p class="sub">招待コードを使うには、管理者がSupabaseで準備のSQL(4回目)を実行する必要があります。</p>'}
-      ${ACC_LEGAL}
-      <h2 style="margin-top:14px">アカウントの削除</h2>${ACC.delAsk
+      ${ACC_LEGAL}`;
+    // アカウントの削除は、間違えて押さないように「閉じる」よりも下(いちばん下)に置く
+    $('accDel').innerHTML = `<h2 style="margin-top:28px">アカウントの削除</h2>${ACC.delAsk
         ? `<p class="sub" style="margin:0;color:#ff8a8a">本当に削除しますか? レート・戦績・称号・クリア記録・${SHARD_NAME}・手に入れたキャラがすべて消え、元に戻せません。</p><div class="row"><button id="accDelYes" style="border-color:#ff5a5a;color:#ff8a8a">削除する</button><button id="accDelNo">やめる</button></div>`
         : '<p class="sub" style="margin:0">アカウントと、サーバーに保存した記録をすべて消します。</p><div class="row"><button id="accDelAsk">アカウントを削除する</button></div>'}`;
     if ($('accDelAsk')) $('accDelAsk').onclick = () => { ACC.delAsk = true; accMsg(''); renderAccModal(); };
@@ -4551,6 +4553,7 @@ function renderAccModal() {
     return;
   }
   const signup = ACC.tab === 'signup';
+  $('accDel').innerHTML = '';   // ログインしていないときは削除の欄を出さない
   body.innerHTML = `<div class="levels"><button id="accTabIn" class="${signup ? '' : 'picked'}">ログイン</button><button id="accTabUp" class="${signup ? 'picked' : ''}">新規登録</button></div>
     <label for="accEmail">メールアドレス</label><input id="accEmail" type="email" autocomplete="email" inputmode="email">
     <label for="accPass">パスワード(6文字以上)</label><input id="accPass" type="password" autocomplete="${signup ? 'new-password' : 'current-password'}">
