@@ -1262,15 +1262,15 @@ const STAGES = [
   { id: 'r2_2', corridor: 2, faction: '鏡', stars: 2, name: '欠けた映し身',   foes: ['c2_2a', 'c2_2b', 'c2_2c'], level: 3, hp: 1, atk: 1 },
   { id: 'r2_3', corridor: 2, faction: '鏡', stars: 3, name: '合わせ鏡の間',   foes: ['c3_ai'], level: 4, read: 0.35, hp: 1, atk: 1 },
   { id: 'r2_4', corridor: 2, faction: '鏡', stars: 4, name: '鏡の奥',         foes: ['c4_kagami'], level: 4, read: 0.35, hp: 1, atk: 1, bgm: 'cirque', reward: [200, 20] },
-  { id: 'r2_5', corridor: 2, faction: '鏡', stars: 5, name: '仮面の向こう',   foes: ['c5_mask'], level: 4, read: 0.5, hp: 1, atk: 1, bgm: 'xeno', reward: [1000, 40] },
+  { id: 'r2_5', corridor: 2, faction: '鏡', stars: 5, name: '仮面の向こう',   foes: ['c5_mask'], level: 4, read: 0.5, hp: 1, atk: 1, bgm: 'majo', reward: [1000, 40] },
   { id: 'r3_2', corridor: 3, faction: '流星', stars: 2, name: '星屑の通り道', foes: ['c2_3a', 'c2_3b', 'c2_3c'], level: 3, hp: 1, atk: 1 },
   { id: 'r3_3', corridor: 3, faction: '流星', stars: 3, name: '止まらぬ連射', foes: ['c3_ebira'], level: 4, read: 0.6, hp: 1, atk: 1 },
   { id: 'r3_4', corridor: 3, faction: '流星', stars: 4, name: '流れ星の尾',   foes: ['c4_nagare'], level: 4, read: 0.35, hp: 1, atk: 1, bgm: 'cirque', reward: [200, 20] },
-  { id: 'r3_5', corridor: 3, faction: '流星', stars: 5, name: '燃え尽きる星', foes: ['c5_nagare'], level: 4, read: 0.5, hp: 1, atk: 1, reward: [1000, 40] },
+  { id: 'r3_5', corridor: 3, faction: '流星', stars: 5, name: '燃え尽きる星', foes: ['c5_nagare'], level: 4, read: 0.5, hp: 1, atk: 1, bgm: 'xeno', reward: [1000, 40] },
   { id: 'r4_2', corridor: 4, faction: '灯と天眼', stars: 2, name: '灯を待つ者',   foes: ['c2_4a', 'c2_4b', 'c2_4c'], level: 3, hp: 1, atk: 1 },
   { id: 'r4_3', corridor: 4, faction: '灯と天眼', stars: 3, name: '満ち潮の番人', foes: ['c3_iso'], level: 4, read: 0.35, hp: 1, atk: 1 },
   { id: 'r4_4', corridor: 4, faction: '灯と天眼', stars: 4, name: '消えぬ灯',     foes: ['c4_tomoshi'], level: 4, read: 0.35, hp: 1, atk: 1, bgm: 'cirque', reward: [200, 20] },
-  { id: 'r4_5', corridor: 4, faction: '灯と天眼', stars: 5, name: '天眼の果て',   foes: ['c5_tsuru'], level: 4, read: 0.6, hp: 1, atk: 1, reward: [1000, 40] },
+  { id: 'r4_5', corridor: 4, faction: '灯と天眼', stars: 5, name: '天眼の果て',   foes: ['c5_tsuru'], level: 4, read: 0.6, hp: 1, atk: 1, bgm: 'majo', reward: [1000, 40] },
 ];
 // ステージの敵を、倍率を掛けた能力値で作る(元のデータは書き換えない)
 function stageFoes(stage) {
@@ -2512,7 +2512,7 @@ const Sound = (() => {
 // main は対戦中の曲、climax は決着が近いときの曲。ファイルが読めなければ何もせず、「曲」ボタンも出さない。
 // main:対戦中、climax:決着が近いとき、xeno:★5の肉体戦。tick(時計の音)はファイルではなく合成する
 // title:タイトル画面(climax と同じ曲)、menu:メニュー(キャラ選択)、toki:★★★★ トキバミ戦(天使迎撃戦)
-const BGM_TRACKS = { main: 'bgm/The-Battle-of-Beliefs.mp3', climax: 'bgm/Sign-of-Victory.mp3', xeno: 'bgm/Devine-Fencer.mp3', title: 'bgm/Sign-of-Victory.mp3', menu: 'bgm/Important-Thing.mp3', toki: 'bgm/Tenshi-Geigekisen.mp3', cirque: 'bgm/Le-Cirque-du-Diable.mp3' };
+const BGM_TRACKS = { main: 'bgm/The-Battle-of-Beliefs.mp3', climax: 'bgm/Sign-of-Victory.mp3', xeno: 'bgm/Devine-Fencer.mp3', title: 'bgm/Sign-of-Victory.mp3', menu: 'bgm/Important-Thing.mp3', toki: 'bgm/Tenshi-Geigekisen.mp3', cirque: 'bgm/Le-Cirque-du-Diable.mp3', majo: 'bgm/Kokuyoku-no-Majo.mp3' };
 const BGM_VOLUME = 0.2;
 // 曲は、効果音と同じ仕組み(WebAudio)で鳴らす。
 // iPhoneでは <audio> での再生がうまくいかないことがあり、効果音だけ鳴って曲が鳴らなかったため。
@@ -3478,7 +3478,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.56';
+const APP_VER = '0.57';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
