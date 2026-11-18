@@ -1285,7 +1285,7 @@ const STAGES = [
   { id: 'r2_2', corridor: 2, faction: '鏡', stars: 2, name: '欠けた映し身',   foes: ['c2_2a', 'c2_2b', 'c2_2c'], level: 3, hp: 1, atk: 1 },
   { id: 'r2_3', corridor: 2, faction: '鏡', stars: 3, name: '合わせ鏡の間',   foes: ['c3_ai'], level: 4, read: 0.35, hp: 1, atk: 1 },
   { id: 'r2_4', corridor: 2, faction: '鏡', stars: 4, name: '鏡の奥',         foes: ['c4_kagami'], level: 4, read: 0.35, hp: 1, atk: 1, bgm: 'cirque', reward: [200, 20] },
-  { id: 'r2_5', corridor: 2, faction: '鏡', stars: 5, name: '仮面の向こう',   foes: ['c5_mask'], level: 4, read: 0.5, hp: 1, atk: 1, bgm: 'xeno', reward: [1000, 40] },
+  { id: 'r2_5', corridor: 2, faction: '鏡', stars: 5, name: '仮面の向こう',   foes: ['c5_mask'], level: 4, read: 0.5, hp: 1, atk: 1, bgm: 'xeno', climaxOk: true, reward: [1000, 40] },
   { id: 'r3_2', corridor: 3, faction: '流星', stars: 2, name: '星屑の通り道', foes: ['c2_3a', 'c2_3b', 'c2_3c'], level: 3, hp: 1, atk: 1 },
   { id: 'r3_3', corridor: 3, faction: '流星', stars: 3, name: '止まらぬ連射', foes: ['c3_ebira'], level: 4, read: 0.6, hp: 1, atk: 1 },
   { id: 'r3_4', corridor: 3, faction: '流星', stars: 4, name: '流れ星の尾',   foes: ['c4_nagare'], level: 4, read: 0.35, hp: 1, atk: 1, bgm: 'cirque', reward: [200, 20] },
@@ -3536,7 +3536,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.62';
+const APP_VER = '0.63';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
