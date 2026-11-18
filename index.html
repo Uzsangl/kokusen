@@ -67,6 +67,10 @@
   .stages button.s2 b { color: #4ade80; }
   .stages button.s4, .stages button.s5 { grid-column: span 3; }
   .stages button.s0 { grid-column: 1 / -1; }
+  .corr-list { grid-template-columns: repeat(4, 1fr); }
+  .corr-list button.corr { grid-column: span 1; }
+  .corr-list .corr-h { grid-column: 1 / -1; margin: 6px 0 0; font-size: .78rem; color: var(--gold); }
+  .stages button.locked { opacity: .45; }
   .stages button.chain { opacity: .6; border-style: dashed; }
   .stages button.s0 b { color: var(--gold); }
   .stages button.s5 b { color: #ff2a3d; text-shadow: 0 0 10px #ff2a3d99; }
@@ -695,6 +699,8 @@
     <div id="soloOpts" class="hidden">
       <h2>ステージ</h2>
       <div class="stages" id="stages"></div>
+      <h2>刻の回廊(アドバンス)</h2>
+      <div class="stages corr-list" id="corrStages"></div>
       <p class="sub" id="stageNote"></p>
     </div>
     <div id="netOpts" class="hidden">
@@ -1215,6 +1221,18 @@ Object.assign(ENEMIES, {
     traits: [...ENEMIES.b_tsuru.traits, { key: 'backwaterSteps', name: '背水・見', desc: '残りHPが75%・50%・25%を切るたびにATK+1000(最大+3000)', steps: [0.75, 0.5, 0.25], add: 1000 }] },
 });
 
+// ----- 刻の回廊の★2(ガチャのハズレ3体)・★3(ガチャの★3を強化した1体) -----
+const gFoe = (id, hp, atk, phys) => { const c = GACHA_CHARS.find((x) => x.id === id); return { name: c.name, faction: c.faction, hp, atk, dfs: c.dfs, phys: phys || c.phys, actions: c.actions, ...(c.trait ? { trait: c.trait } : {}), ...(c.traits ? { traits: c.traits } : {}) }; };
+Object.assign(ENEMIES, {
+  c2_1a: gFoe('g_a1', 28000, 2100), c2_1b: gFoe('g_z1', 24000, 2700), c2_1c: gFoe('g_y1', 22000, 3000),
+  c2_2a: gFoe('g_z1', 18000, 2700), c2_2b: gFoe('g_z2', 24000, 2400), c2_2c: gFoe('g_a2', 90000, 1050),
+  c2_3a: gFoe('g_y1', 13750, 3000), c2_3b: gFoe('g_y2', 17500, 3300), c2_3c: gFoe('g_z2', 20000, 2400),
+  c2_4a: gFoe('g_a1', 21000, 2100), c2_4b: gFoe('g_a2', 90000, 1050), c2_4c: gFoe('g_y2', 21000, 3300),
+  c3_mata: gFoe('g_z3b', 107530, 6440), c3_ai: gFoe('g_z3c', 119080, 5670), c3_ebira: gFoe('g_y3c', 240820, 3680, 3), c3_iso: gFoe('g_a3b', 175770, 5400),
+});
+// 刻の回廊の名前(stage.corridor の番号)
+const CORRIDORS = { 1: '刻喰いの回廊', 2: '鏡の回廊', 3: '流星の回廊', 4: '灯と天眼の回廊' };
+
 const STAGES = [
   { id: 'a1', faction: '錨', stars: 1, name: '港の見回り',   foes: ['a_guard', 'a_lamp', 'a_chain'], level: 1, hp: 0.55, atk: 1.0 },
   { id: 'a2', faction: '錨', stars: 2, name: '鎖の関所',     foes: ['a_chain', 'a_guard', 'a_lamp'], level: 1, hp: 1.21, atk: 1.0 },
@@ -1233,6 +1251,24 @@ const STAGES = [
   // ボスラッシュ:★★★の3体 → ★★★★ → ★★★★★ を続けて戦う。ボスを1体倒すごとに、こちらは全回復する。
   // rushHp は、ゼノ以外のボスのHPの倍率。「むずかしい」で5連勝できる率が約0.01%になるように決めた
   { id: 'rush', faction: '連戦', stars: 0, name: 'ボスラッシュ1', rush: ['a3', 'z3', 'y3', 't4', 'x5'], rushHp: 0.28, level: 4, read: 0.35, hp: 1.0, atk: 1.0 },
+  // ----- 刻の回廊(アドバンスのソロ)。★2 → ★3 → ★4 → ★5 の順に、前の段をクリアすると次に挑める -----
+  // reward:[初回クリア, 2回目以降] の空間のカケラ。勝率は tools/bossrate.js で、適正パーティ5通り(tools/parties/fixed5.json)で測った
+  { id: 'r1_2', corridor: 1, faction: '刻喰い', stars: 2, name: '抜け落ちた者たち', foes: ['c2_1a', 'c2_1b', 'c2_1c'], level: 3, hp: 1, atk: 1 },
+  { id: 'r1_3', corridor: 1, faction: '刻喰い', stars: 3, name: '喰われ損ね',       foes: ['c3_mata'], level: 4, read: 0.35, hp: 1, atk: 1 },
+  { id: 'r1_4', corridor: 1, faction: '刻喰い', stars: 4, name: '喰い残しの淵',     foes: ['c4_toki'], level: 4, read: 0.35, hp: 1, atk: 1, bgm: 'toki', reward: [200, 20] },
+  { id: 'r1_5', corridor: 1, faction: '刻喰い', stars: 5, name: '巻き戻らぬ刻',     foes: ['c5_xeno_body', 'c5_xeno_spirit'], level: 4, read: 1.0, hp: 1, atk: 1, bgm: 'xeno', reward: [1000, 40] },
+  { id: 'r2_2', corridor: 2, faction: '鏡', stars: 2, name: '欠けた映し身',   foes: ['c2_2a', 'c2_2b', 'c2_2c'], level: 3, hp: 1, atk: 1 },
+  { id: 'r2_3', corridor: 2, faction: '鏡', stars: 3, name: '合わせ鏡の間',   foes: ['c3_ai'], level: 4, read: 0.35, hp: 1, atk: 1 },
+  { id: 'r2_4', corridor: 2, faction: '鏡', stars: 4, name: '鏡の奥',         foes: ['c4_kagami'], level: 4, read: 0.35, hp: 1, atk: 1, reward: [200, 20] },
+  { id: 'r2_5', corridor: 2, faction: '鏡', stars: 5, name: '仮面の向こう',   foes: ['c5_mask'], level: 4, read: 0.5, hp: 1, atk: 1, bgm: 'xeno', reward: [1000, 40] },
+  { id: 'r3_2', corridor: 3, faction: '流星', stars: 2, name: '星屑の通り道', foes: ['c2_3a', 'c2_3b', 'c2_3c'], level: 3, hp: 1, atk: 1 },
+  { id: 'r3_3', corridor: 3, faction: '流星', stars: 3, name: '止まらぬ連射', foes: ['c3_ebira'], level: 4, read: 0.6, hp: 1, atk: 1 },
+  { id: 'r3_4', corridor: 3, faction: '流星', stars: 4, name: '流れ星の尾',   foes: ['c4_nagare'], level: 4, read: 0.35, hp: 1, atk: 1, reward: [200, 20] },
+  { id: 'r3_5', corridor: 3, faction: '流星', stars: 5, name: '燃え尽きる星', foes: ['c5_nagare'], level: 4, read: 0.5, hp: 1, atk: 1, reward: [1000, 40] },
+  { id: 'r4_2', corridor: 4, faction: '灯と天眼', stars: 2, name: '灯を待つ者',   foes: ['c2_4a', 'c2_4b', 'c2_4c'], level: 3, hp: 1, atk: 1 },
+  { id: 'r4_3', corridor: 4, faction: '灯と天眼', stars: 3, name: '満ち潮の番人', foes: ['c3_iso'], level: 4, read: 0.35, hp: 1, atk: 1 },
+  { id: 'r4_4', corridor: 4, faction: '灯と天眼', stars: 4, name: '消えぬ灯',     foes: ['c4_tomoshi'], level: 4, read: 0.35, hp: 1, atk: 1, reward: [200, 20] },
+  { id: 'r4_5', corridor: 4, faction: '灯と天眼', stars: 5, name: '天眼の果て',   foes: ['c5_tsuru'], level: 4, read: 0.6, hp: 1, atk: 1, reward: [1000, 40] },
 ];
 // ステージの敵を、倍率を掛けた能力値で作る(元のデータは書き換えない)
 function stageFoes(stage) {
@@ -1939,6 +1975,9 @@ const PERSONA_OF = {
   g_z1: 'rewind', g_z2: 'prey', g_z3a: 'prey', g_z3b: 'rewind', g_z3c: 'rewind', g_z4: 'sight', g_z5: 'sight',
   g_y1: 'rage', g_y2: 'rage', g_y3a: 'prey', g_y3b: 'sight', g_y3c: 'rage', g_y4: 'rage',
   // 刻の回廊のボス
+  c2_1a: 'guard', c2_1b: 'rewind', c2_1c: 'rage', c2_2a: 'rewind', c2_2b: 'prey', c2_2c: 'guard',
+  c2_3a: 'rage', c2_3b: 'rage', c2_3c: 'prey', c2_4a: 'guard', c2_4b: 'guard', c2_4c: 'rage',
+  c3_mata: 'rewind', c3_ai: 'rewind', c3_ebira: 'rage', c3_iso: 'guard',
   c4_toki: 'prey', c4_kagami: 'sight', c4_nagare: 'rage', c4_tomoshi: 'guard',
   c5_xeno_body: 'rage', c5_xeno_spirit: 'abyss', c5_mask: 'sight', c5_nagare: 'rage', c5_tsuru: 'sight',
 };
@@ -2173,11 +2212,16 @@ const ICON_IDS = new Set(['kaji', 'tomari', 'mio', 'moyai', 'shio', 'rei', 'haji
   'tsuru', 'haya', 'yajiri', 'hane', 'tokibami', 'xeno_body', 'xeno_spirit', 'kaji_shi',
   'g_a1', 'g_a2', 'g_a3a', 'g_a3b', 'g_a3c', 'g_a4', 'g_z1', 'g_z2', 'g_z3a', 'g_z3b', 'g_z3c', 'g_z4', 'g_z5', 'g_y1', 'g_y2', 'g_y3a', 'g_y3b', 'g_y3c', 'g_y4',
   'a_guard', 'a_chain', 'a_lamp', 'z_mask', 'z_wind', 'z_sand', 'y_runner', 'y_archer', 'y_seer']);
-const ICON_ALIAS = { b_tomari: 'tomari', b_rei: 'rei', b_tsuru: 'tsuru', p_tokibami: 'tokibami', p_xeno: 'xeno_body', b_kaji: 'kaji', b_kaji_shi: 'kaji_shi', p_kaji_shi: 'kaji_shi' };
+const ICON_ALIAS = { b_tomari: 'tomari', b_rei: 'rei', b_tsuru: 'tsuru', p_tokibami: 'tokibami', p_xeno: 'xeno_body', b_kaji: 'kaji', b_kaji_shi: 'kaji_shi', p_kaji_shi: 'kaji_shi',
+  // 刻の回廊の敵は、元のキャラのアイコン
+  c2_1a: 'g_a1', c2_1b: 'g_z1', c2_1c: 'g_y1', c2_2a: 'g_z1', c2_2b: 'g_z2', c2_2c: 'g_a2', c2_3a: 'g_y1', c2_3b: 'g_y2', c2_3c: 'g_z2', c2_4a: 'g_a1', c2_4b: 'g_a2', c2_4c: 'g_y2',
+  c3_mata: 'g_z3b', c3_ai: 'g_z3c', c3_ebira: 'g_y3c', c3_iso: 'g_a3b',
+  c4_toki: 'tokibami', c4_kagami: 'g_z4', c4_nagare: 'g_y4', c4_tomoshi: 'g_a4',
+  c5_xeno_body: 'xeno_body', c5_xeno_spirit: 'xeno_spirit', c5_mask: 'g_z5', c5_nagare: 'g_y4', c5_tsuru: 'tsuru' };
 const ICON_FACTION = { '錨': 'f-anchor', '零': 'f-zero', '矢': 'f-arrow' };
 function iconHtml(ch, size) {
   const id = ICON_ALIAS[ch.id] || ch.id;
-  const cls = `cico ${size} ${ch.id === 'g_z5' ? 'f-none' : ICON_FACTION[ch.faction] || 'f-none'}`;   // ゼノ【仮面】はゼノ・トキバミと同じ灰色の枠
+  const cls = `cico ${size} ${ch.id === 'g_z5' || ch.id === 'c5_mask' ? 'f-none' : ICON_FACTION[ch.faction] || 'f-none'}`;   // ゼノ【仮面】はゼノ・トキバミと同じ灰色の枠
   if (!ICON_IDS.has(id)) return `<span class="${cls} none" aria-hidden="true">${ch.name[0]}</span>`;
   const secret = ch.secret && !xenoKnown();
   return `<img class="${cls}${secret ? ' secret' : ''}" src="icons/${id}.webp" alt="" aria-hidden="true" width="192" height="192">`;
@@ -2902,7 +2946,7 @@ function render(view) {
   stageSide($('hpCpu'), cpu, foe);
   const n = S.boutRally + 1, decay = n > DECAY_FROM;
   // ★5:精神離脱体がHP1になったあとは、やることを常に出しておく
-  const hint = S.breakHint && !S.over && active(S.teams[1]).ch.id === 'xeno_spirit';
+  const hint = S.breakHint && !S.over && ['xeno_spirit', 'c5_xeno_spirit'].includes(active(S.teams[1]).ch.id);
   $('boutInfo').textContent = S.over ? '' : hint ? `${BREAK_NAME}で刻を巻き戻せ!` : `交代から${n}ラリー目` + (decay ? '　刻の抜け落ち!' : n === DECAY_FROM ? '　次から刻の抜け落ち' : '');
   $('boutInfo').className = 'boutinfo' + (hint ? ' hint' : decay ? ' warn' : '');
 
@@ -3195,7 +3239,7 @@ async function aftermath(o) {
   const w = o.boutWin;
   // ★5:肉体を倒しきると、時間が止まり、精神離脱体が現れる
   // (相打ちで同時に倒れたときも、ここを通す)
-  if (o.cards[1].ch.id === 'xeno_body' && o.cards[1].hp <= 0 && !S.over) {
+  if (['xeno_body', 'c5_xeno_body'].includes(o.cards[1].ch.id) && o.cards[1].hp <= 0 && !S.over) {
     Particles.crumble(panelOf(1).getBoundingClientRect(), COLORS.violet);
     Bgm.switchTo('tick');
     freeze(true); flash('#3a0010'); shake(true); Sound.breakIn();
@@ -3248,8 +3292,16 @@ async function finale() {
       render();
       if (first) { flash('#ffffff'); await cutin('その名は、ゼノ', '始まりの前に在ったもの', 'evil', 2200); }
     }
+    const firstClear = S.stage && !SOLO.cleared.includes(S.stage.id);
     if (S.stage) soloClear(S.stage.id);
     await cutin('勝利', S.stage ? `${S.stage.name} クリア ${score}` : `刻は、あなたの側に確定した ${score}`, 'rainbow', 1900);
+    // 刻の回廊の★4・★5:クリアで空間のカケラ(初回は多め)
+    if (S.stage && S.stage.reward && !S.shardDone) {
+      S.shardDone = true;
+      const n = S.stage.reward[firstClear ? 0 : 1], total = await shardAdd(n);
+      log(`${SHARD_NAME} +${n}(${firstClear ? '初回クリア' : 'クリア'}・所持 ${total})`);
+      await cutin(`${SHARD_NAME} +${n}`, `${firstClear ? '初回クリア! ' : ''}所持 ${total}`, 'gold', 1500);
+    }
   } else if (S.winner === 1) {
     Sound.defeat(); Particles.shower(COLORS.violet, 80);
     await cutin('敗北', `刻は、相手の側に確定した ${score}`, 'violet', 1600);
@@ -3424,7 +3476,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.49';
+const APP_VER = '0.50';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
@@ -3876,6 +3928,9 @@ function readCleared(key) {
   try { const v = JSON.parse(localStorage.getItem(key) || '[]'); return Array.isArray(v) ? v.filter((id) => STAGES.some((x) => x.id === id)) : []; } catch (e) { return []; }
 }
 function writeCleared(key, list) { try { localStorage.setItem(key, JSON.stringify(list)); } catch (e) { /* 保存できなくても動く */ } }
+// 刻の回廊:★2はいつでも、★3以降は同じ回廊のひとつ前の段をクリアしていれば挑める
+const corrPrev = (st) => st && st.corridor && st.stars > 2 ? STAGES.find((x) => x.corridor === st.corridor && x.stars === st.stars - 1) : null;
+const corrOpen = (st) => { const p = corrPrev(st); return !p || SOLO.cleared.includes(p.id); };
 function soloClear(id) {
   const fresh = !SOLO.cleared.includes(id);
   if (fresh) SOLO.cleared.push(id);
@@ -4148,7 +4203,7 @@ async function accSignOut() {
 // 称号の一覧(50個)を決めるまでは、画面に出さず、解放もしない
 const TITLES_ON = true;
 const TITLE_TIERS = { 1: '#38bdf8', 2: '#4ade80', 3: '#f5c451', 4: '#b57bff', 5: '#ff2a3d' };
-const SOLO_STAGES = () => STAGES.filter((x) => !x.rush && !['k4', 'k5'].includes(x.id)).map((x) => x.id);   // 「刻の覇者」は最初の11ステージ
+const SOLO_STAGES = () => STAGES.filter((x) => !x.rush && !x.corridor && !['k4', 'k5'].includes(x.id)).map((x) => x.id);   // 「刻の覇者」は最初の11ステージ
 const hasClear = (c, ...ids) => ids.every((id) => c.cleared.includes(id));
 // c:{ cleared, wins, rating, stats }。stats は progress 表に保存している数え上げ
 const st = (c, k) => c.stats[k] || 0;
@@ -4545,14 +4600,18 @@ async function accInit() {
   try { await accLoadProfile(); } catch (e) { if (e.status === 401) { ACC.session = null; accStore(); SOLO.cleared = readCleared(GUEST_KEY); renderStages(); } renderAcct(); }
 }
 function renderStages() {
-  [...$('stages').children].forEach((b) => {
+  [...$('stages').children, ...$('corrStages').children].forEach((b) => {
+    if (!b.dataset.id) return;   // 回廊の見出し
     // 敵のアイコンも出す(★1・★2は兵士3体を小さく、★3以上はボス)。ゼノは名前が明かされるまでシルエット
     const s = STAGES.find((x) => x.id === b.dataset.id);
     const boss = `<span class="foes">${stageFoes(s).filter((f) => !f.hiddenUntilActive).map((f) => iconHtml(f, s.stars >= 3 ? 'md' : 'sm')).join('')}</span>`;
-    b.innerHTML = `<b>${s.faction} ${'★'.repeat(s.stars)}</b>${boss}${s.name}`;
+    const head = s.corridor ? '★'.repeat(s.stars) : `${s.faction} ${'★'.repeat(s.stars)}`;   // 回廊は見出しに名前があるので★だけ
+    b.innerHTML = `<b>${head}</b>${boss}${s.name}`;
     b.classList.toggle('chain', !!s.chainFrom);
     b.classList.toggle('picked', b.dataset.id === SOLO.stage);
     b.classList.toggle('cleared', SOLO.cleared.includes(b.dataset.id));
+    b.classList.toggle('locked', !corrOpen(s));
+    if (!corrOpen(s)) b.innerHTML = `<b>${head}</b><span class="foes">🔒</span>${s.name}`;
   });
   const st = STAGES.find((x) => x.id === SOLO.stage), foes = stageFoes(st);
   const shown = foes.filter((f) => !f.hiddenUntilActive || xenoKnown());   // ★5は、倒すまで1体に見せる
@@ -4561,6 +4620,9 @@ function renderStages() {
     ? `${st.faction} ${'★'.repeat(st.stars)}「${st.name}」 敵:${shown.map(dispName).join('・')}(ボス1体と3対1)。${'★'.repeat(from.stars)}「${from.name}」をクリアした直後だけ、結果画面の「続けて【始】に挑む」から、同じパーティで挑めます(全回復します)。`
     : st.rush
     ? `連戦「${st.name}」 ★★★のボス3体 → ★★★★ → ★★★★★ を、3対1で続けて戦います(ゼノ以外のボスのHPは通常の28%)。ボスを1体倒すごとに、こちらは全回復して1番手から出直します。最高記録:${SOLO.rush} / ${st.rush.length}体`
+    : st.corridor
+    ? `${CORRIDORS[st.corridor]} ${'★'.repeat(st.stars)}「${st.name}」 ` + (corrOpen(st) ? `敵:${shown.map(dispName).join('・')}` + (foes.length === 1 ? '(1体と3対1)' : foes.length === 3 ? '(3対3)' : '') : `ひとつ前の ${'★'.repeat(st.stars - 1)}「${corrPrev(st).name}」をクリアすると挑めます`)
+      + `。アドバンス(持っているガチャキャラも使える。★4以上の制限なし)。` + (st.reward ? `クリアで💠${SHARD_NAME}:初回${st.reward[0]}個、2回目から${st.reward[1]}個。` : '') + 'ソロでは刻の抜け落ちは起きません。'
     : `${st.faction} ${'★'.repeat(st.stars)}「${st.name}」 敵:${shown.map(dispName).join('・')}`
     + (foes.every((f) => f.boss) ? '(ボス1体と3対1)' : '(3対3)') + `。CPUの考え方:${AI_LEVELS[st.level].name}。ソロでは刻の抜け落ちは起きません。`;
   renderSelect();
@@ -4593,7 +4655,8 @@ const sameClash = (ch, ids) => ids.map(charById).some((o) => o && (o.sameAs === 
 const FORMATS = { basic: 'ベーシック', advance: 'アドバンス' };
 let FORMAT = 'basic';
 try { const f = localStorage.getItem('kokusen.format'); if (FORMATS[f]) FORMAT = f; } catch (e) { /* 読めなければベーシック */ }
-const fmtNow = () => (MODE === 'solo' ? 'basic' : FORMAT);
+const soloCorr = () => { const st = STAGES.find((x) => x.id === SOLO.stage); return !!(st && st.corridor); };
+const fmtNow = () => (MODE === 'solo' ? (soloCorr() ? 'advance' : 'basic') : FORMAT);
 const inFormat = (ch, fmt = fmtNow()) => fmt === 'advance' || !ch.gacha;
 // そのパーティがルールに合っているか(区分け・★5は1枚まで・同じ人物は1枚)。合っていなければ理由
 function teamNg(ids, fmt = fmtNow()) {
@@ -5155,7 +5218,7 @@ function pvpKindNg(fp) {
 }
 // 相手を決める画面の「キャラを選ぶ」を押せるか
 function canPick() {
-  if (MODE === 'solo') { const st = STAGES.find((x) => x.id === SOLO.stage); return !!st && !st.chainFrom; }
+  if (MODE === 'solo') { const st = STAGES.find((x) => x.id === SOLO.stage); return !!st && !st.chainFrom && corrOpen(st); }
   if (MODE === 'pvp') { const f = pvpFoe(); return PVP.phase !== 'idle' && !PVP.spec && !!f && !pvpKindNg(f.presence); }
   return true;
 }
@@ -5165,7 +5228,7 @@ function renderFormats() {
     b.classList.toggle('picked', b.dataset.f === fmtNow());
     b.disabled = solo || (PVP.on && PVP.phase !== 'idle');
   });
-  $('formatNote').textContent = solo ? 'ソロはベーシックのみ。' : fmtNow() === 'advance' ? 'アドバンス:すべてのキャラが使える(ガチャキャラも)。★4以上は1パーティに1枚まで。' : 'ベーシック:ガチャキャラ以外のキャラで戦う。★4以上は1パーティに1枚まで。';
+  $('formatNote').textContent = solo ? (soloCorr() ? '刻の回廊はアドバンス:持っているガチャキャラも使える。★4以上の制限なし。' : 'ソロはベーシックのみ(刻の回廊はアドバンス)。') : fmtNow() === 'advance' ? 'アドバンス:すべてのキャラが使える(ガチャキャラも)。★4以上は1パーティに1枚まで。' : 'ベーシック:ガチャキャラ以外のキャラで戦う。★4以上は1パーティに1枚まで。';
   [...$('cpuPicks').children].forEach((b) => b.classList.toggle('picked', b.dataset.c === CPU_PICK));
 }
 function renderSelHead() {
@@ -5173,7 +5236,7 @@ function renderSelHead() {
   $('pickInfo').textContent = pickInfoText();
   $('toMenu').textContent = MODE === 'pvp' ? '◀ 部屋を出る' : '◀ 戻る';
   $('toPick').disabled = !canPick();
-  $('toPick').textContent = MODE === 'pvp' && !canPick() ? (PVP.phase === 'idle' ? '合言葉で部屋に入ってください' : '相手を待っています…') : MODE === 'solo' && !canPick() ? 'このステージは直接挑めません' : 'キャラを選ぶ ▶';
+  $('toPick').textContent = MODE === 'pvp' && !canPick() ? (PVP.phase === 'idle' ? '合言葉で部屋に入ってください' : '相手を待っています…') : MODE === 'solo' && !canPick() ? (corrOpen(STAGES.find((x) => x.id === SOLO.stage)) ? 'このステージは直接挑めません' : 'ひとつ前の段をクリアすると挑めます') : 'キャラを選ぶ ▶';
 }
 function renderSelect() {
   if (!$('select').dataset.step) $('select').dataset.step = selStep;
@@ -5280,7 +5343,7 @@ function start() {
   const mine = teamPicks.me.map((id) => charById(id));
   if (MODE === 'solo') {
     const st = STAGES.find((x) => x.id === SOLO.stage);
-    if (st.chainFrom) return;   // 直後にしか挑めないステージは、ここからは始めない
+    if (st.chainFrom || !corrOpen(st)) return;   // 直後にしか挑めないステージ・前の段が未クリアの回廊は、ここからは始めない
     return startSolo(mine, st);
   }
   // CPUのパーティ:自分で選んだならそれ、おまかせなら区分けに合うキャラからランダム(ガチャキャラはアドバンスのときだけ)
@@ -5376,11 +5439,14 @@ function init() {
   try { SOLO.stage = localStorage.getItem('kokusen.stage') || 'a1'; SOLO.cleared = readCleared(GUEST_KEY); SOLO.rush = Number(localStorage.getItem('kokusen.rush')) || 0; } catch (e) { /* 保存できなくても動く */ }
   if (!STAGES.some((x) => x.id === SOLO.stage)) SOLO.stage = 'a1';
   STAGES.forEach((st) => {
+    // 刻の回廊は、回廊ごとに見出しを付けて別の欄に並べる
+    if (st.corridor && st.stars === 2) { const h = document.createElement('p'); h.className = 'corr-h'; h.textContent = CORRIDORS[st.corridor]; $('corrStages').appendChild(h); }
     const b = document.createElement('button');
     b.dataset.id = st.id;
     b.classList.add('s' + st.stars);   // ★の数で色を変える
+    if (st.corridor) b.classList.add('corr');
     b.onclick = () => { SOLO.stage = st.id; try { localStorage.setItem('kokusen.stage', st.id); } catch (e) { /* 保存できなくても動く */ } renderStages(); };
-    $('stages').appendChild(b);
+    $(st.corridor ? 'corrStages' : 'stages').appendChild(b);
   });
   renderStages();
   try { const v = JSON.parse(localStorage.getItem('kokusen.vol') || 'null'); if (v) { FX.bgmVol = +v.b >= 0 ? +v.b : 1; FX.seVol = +v.s >= 0 ? +v.s : 1; } } catch (e) { /* 保存できなくても動く */ }
