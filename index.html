@@ -1270,7 +1270,7 @@ Object.assign(ENEMIES, {
       { key: 'selfBurn', name: '燃え尽き', desc: 'ラリーが終わるたびに自分のHPが3000削れる', dmg: 3000 }] }),
   // 天眼の果ては2形態:第1形態は「天眼の弦」のツル・天眼(HPだけ120000)。倒すと目隠しを外して、第2形態のツルになる
   c5_tsuru1: { ...ENEMIES.b_tsuru, hp: 120000 },
-  c5_tsuru: { ...ENEMIES.b_tsuru, name: 'ツル', hp: 180000, atk: 3600, phys: 2.0, hiddenUntilActive: true,
+  c5_tsuru: { ...ENEMIES.b_tsuru, name: 'ツル', hp: 180000, atk: 3600, dfs: 5500, phys: 2.0, hiddenUntilActive: true,
     actions: { ...ENEMIES.b_tsuru.actions, scissors: { name: '先読み', rate: RATE.normal, breakNow: 1 } },   // チョキで勝つと BREAK 確定
     traits: [...ENEMIES.b_tsuru.traits, { key: 'backwaterSteps', name: '背水・見', desc: '残りHPが75%・50%・25%を切るたびにATK+1000(最大+3000)', steps: [0.75, 0.5, 0.25], add: 1000 },
       { key: 'lastPierce', name: '見切り', desc: '残りHPが25%以下のとき、相手のDFSを0として攻撃する', below: 0.25 }] },
@@ -3614,7 +3614,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.81';
+const APP_VER = '0.82';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
