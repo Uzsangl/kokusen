@@ -1260,7 +1260,8 @@ Object.assign(ENEMIES, {
       { key: 'selfBurn', name: '燃え尽き', desc: 'ラリーが終わるたびに自分のHPが3000削れる', dmg: 3000 }] }),
   c5_tsuru: { ...ENEMIES.b_tsuru, name: 'ツル', hp: 230000, atk: 3600, phys: 2.0,
     actions: { ...ENEMIES.b_tsuru.actions, scissors: { name: '先読み', rate: RATE.normal, breakNow: 1 } },   // チョキで勝つと BREAK 確定
-    traits: [...ENEMIES.b_tsuru.traits, { key: 'backwaterSteps', name: '背水・見', desc: '残りHPが75%・50%・25%を切るたびにATK+1000(最大+3000)', steps: [0.75, 0.5, 0.25], add: 1000 }] },
+    traits: [...ENEMIES.b_tsuru.traits, { key: 'backwaterSteps', name: '背水・見', desc: '残りHPが75%・50%・25%を切るたびにATK+1000(最大+3000)', steps: [0.75, 0.5, 0.25], add: 1000 },
+      { key: 'lastPierce', name: '見切り', desc: '残りHPが25%以下のとき、相手のDFSを0として攻撃する', below: 0.25 }] },
 });
 
 // ----- 刻の回廊の★2(ガチャのハズレ3体)・★3(ガチャの★3を強化した1体) -----
@@ -1348,7 +1349,11 @@ const giantDfs = (c) => { const t = traitOf(c, 'giantSlayer'); return t && c.gia
 const traitDfs = (c) => { const t = traitOf(c, 'backwaterAll'); return t && c.hp <= c.max * t.below ? t.add : 0; };
 const dfsOf = (def, isBreak) => (isBreak ? 0 : Math.min(DFS_MAX, baseDfs(def) + def.dfsUp + giantDfs(def) + traitDfs(def)));
 // 攻撃する側から見た相手のDFS(特性「貫き」はDFSを一定量無視する)
-const dfsVs = (att, def, isBreak) => { const p = traitOf(att, 'pierce'); return Math.max(0, dfsOf(def, isBreak) - (p && !traitOf(def, 'hardshell') ? p.v : 0)); };
+const dfsVs = (att, def, isBreak) => {
+  const z = traitOf(att, 'lastPierce');   // 特性「見切り」:自分の残りHPが少ないとき、相手のDFSを0として攻撃する
+  if (z && att.hp <= att.max * z.below) return 0;
+  const p = traitOf(att, 'pierce'); return Math.max(0, dfsOf(def, isBreak) - (p && !traitOf(def, 'hardshell') ? p.v : 0));
+};
 
 // 必殺技の格上げ条件(up)を満たしているか。n はそのカードが場に出て何ラリー目か
 function upActive(a, att, def, n, isBreak) {
@@ -3563,7 +3568,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.71';
+const APP_VER = '0.72';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
