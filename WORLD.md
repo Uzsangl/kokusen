@@ -540,7 +540,7 @@ ATK・HPと、ATKの増減・回復の実数は、以前の2.5倍にしてある
 - 対人の版合わせは、これとは別にルール部分から自動で作る番号(`RULES_VER`)で行う。ver の文字を長押しすると見られる。
 
 **CPU戦・対人の曲**
-- 設定の「CPU戦・対人の曲」で、Sign of Victory とメニュー画面の曲以外から選べる(The Battle of Beliefs・Devine Fencer・天使迎撃戦・Le Cirque du Diable・黒翼の魔女。メニュー画面の曲 Important Thing は入れない)。最初は The Battle of Beliefs。端末に保存する(`kokusen.battleBgm`)。
+- 設定の「CPU戦・対人の曲」で、Sign of Victory とメニュー画面の曲以外から選べる(The Battle of Beliefs・Devine Fencer・天使迎撃戦・Le Cirque du Diable・黒翼の魔女。メニュー画面の曲 Important Thing は入れない)。黒翼の魔女は、刻の回廊★5のツル(天眼の果て)を倒すと選べる(それまでは選択肢に「★5ツルを倒すと解放」と出て選べない)。最初は The Battle of Beliefs。端末に保存する(`kokusen.battleBgm`)。
 - どの曲でも、あとひと刻からは Sign of Victory に切り替わる。ソロ(今までのステージ・刻の回廊)はステージごとの曲のまま。
 
 **メールボックス**

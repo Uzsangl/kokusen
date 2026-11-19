@@ -3580,7 +3580,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.77';
+const APP_VER = '0.78';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
@@ -4485,7 +4485,7 @@ function openSettings() {
   openSheet('⚙ 設定', `
     <div class="srow"><div>BGM<small>曲を流す</small></div>${sw('sBgm', FX.bgm)}</div>
     <div class="srow"><div>BGMの音量</div><input type="range" id="sBgmVol" min="0" max="100" value="${Math.round(FX.bgmVol * 100)}" aria-label="BGMの音量"></div>
-    <div class="srow"><div>CPU戦・対人の曲<small>あとひと刻からは Sign of Victory</small></div><select id="sBattleBgm" aria-label="CPU戦・対人の曲">${BATTLE_BGM_CHOICES.map(([k, n]) => `<option value="${k}"${FX.battleBgm === k ? ' selected' : ''}>${n}</option>`).join('')}</select></div>
+    <div class="srow"><div>CPU戦・対人の曲<small>あとひと刻からは Sign of Victory</small></div><select id="sBattleBgm" aria-label="CPU戦・対人の曲">${BATTLE_BGM_CHOICES.map(([k, n]) => `<option value="${k}"${battleBgmNow() === k ? ' selected' : ''}${bgmOpen(k) ? '' : ' disabled'}>${n}${bgmOpen(k) ? '' : '(★5ツルを倒すと解放)'}</option>`).join('')}</select></div>
     <div class="srow"><div>効果音</div>${sw('sSe', FX.sound)}</div>
     <div class="srow"><div>効果音の音量</div><input type="range" id="sSeVol" min="0" max="100" value="${Math.round(FX.seVol * 100)}" aria-label="効果音の音量"></div>
     <div class="srow"><div>演出<small>短縮にすると対戦のテンポが速くなる</small></div><div class="seg"><button id="sFull" class="${FX.short ? '' : 'on'}">フル</button><button id="sShort" class="${FX.short ? 'on' : ''}">短縮</button></div></div>
@@ -4498,7 +4498,7 @@ function openSettings() {
   $('sSe').onclick = () => { FX.sound = !FX.sound; saveOpt('kokusen.sound', FX.sound); applyOpts(); if (FX.sound) { Sound.wake(); Sound.click(); } openSettings(); };
   $('sFull').onclick = () => { FX.short = false; saveOpt('kokusen.short', false); applyOpts(); openSettings(); };
   $('sShort').onclick = () => { FX.short = true; saveOpt('kokusen.short', true); applyOpts(); openSettings(); };
-  $('sBattleBgm').onchange = (e) => { FX.battleBgm = BATTLE_BGM_CHOICES.some(([k]) => k === e.target.value) ? e.target.value : 'main'; try { localStorage.setItem('kokusen.battleBgm', FX.battleBgm); } catch (err) { /* 保存できなくても動く */ } };
+  $('sBattleBgm').onchange = (e) => { FX.battleBgm = BATTLE_BGM_CHOICES.some(([k]) => k === e.target.value) && bgmOpen(e.target.value) ? e.target.value : 'main'; try { localStorage.setItem('kokusen.battleBgm', FX.battleBgm); } catch (err) { /* 保存できなくても動く */ } };
   $('sBgmVol').oninput = (e) => { FX.bgmVol = e.target.value / 100; saveVol(); Bgm.setVol(); };
   $('sSeVol').oninput = (e) => { FX.seVol = e.target.value / 100; saveVol(); Sound.setVol(); };
   $('sSeVol').onchange = () => { Sound.wake(); Sound.click(); };
@@ -4508,6 +4508,10 @@ function openSettings() {
     <h3>通信</h3><p>PeerJS(MIT License)/ Supabase</p>`);
 }
 // CPU戦・対人で流す曲(設定で選べる)。あとひと刻からは、どの曲でも Sign of Victory に切り替わる。ソロはステージごとの曲のまま
+// 黒翼の魔女は、刻の回廊★5のツル(天眼の果て)を倒すと選べる
+const BGM_LOCK = { majo: 'r4_5' };
+const bgmOpen = (k) => !BGM_LOCK[k] || IS_MASTER || SOLO.cleared.includes(BGM_LOCK[k]);
+const battleBgmNow = () => (bgmOpen(FX.battleBgm) ? FX.battleBgm : 'main');
 const BATTLE_BGM_CHOICES = [['main', 'The Battle of Beliefs(いつもの曲)'], ['xeno', 'Devine Fencer'], ['toki', '天使迎撃戦'], ['cirque', 'Le Cirque du Diable'], ['majo', '黒翼の魔女']];   // メニュー画面の曲(Important Thing)は入れない
 function saveVol() { try { localStorage.setItem('kokusen.vol', JSON.stringify({ b: FX.bgmVol, s: FX.seVol })); } catch (e) { /* 保存できなくても動く */ } }
 // ルールブック
@@ -5725,7 +5729,7 @@ async function startMatch(mine, theirs, foeLabel, opt = {}) {
   busy = true;
   render();
   Sound.wake();
-  Bgm.play(opt.stage ? opt.stage.bgm || 'main' : FX.battleBgm || 'main');   // ソロはステージの曲、CPU戦・対人は設定の曲
+  Bgm.play(opt.stage ? opt.stage.bgm || 'main' : battleBgmNow());   // ソロはステージの曲、CPU戦・対人は設定の曲
   Aura.stop();
   if (opt.stage && opt.stage.aura) setTimeout(() => Aura.start(opt.stage.aura), 50);   // ★5ツル戦:初めから赤いオーラ
   Sound.cue(2);
