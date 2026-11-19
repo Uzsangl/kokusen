@@ -1268,7 +1268,9 @@ Object.assign(ENEMIES, {
     traits: [{ key: 'burnout', name: '全力・極', desc: '技がずっとすべて極大(減速しない)', until: 9999, step: 0, cap: 0 },
       { key: 'pierce', name: '射抜き', desc: '相手のDFSを1000低いものとして攻撃する', v: 1000 },
       { key: 'selfBurn', name: '燃え尽き', desc: 'ラリーが終わるたびに自分のHPが3000削れる', dmg: 3000 }] }),
-  c5_tsuru: { ...ENEMIES.b_tsuru, name: 'ツル', hp: 230000, atk: 3600, phys: 2.0,
+  // 天眼の果ては2形態:第1形態は「天眼の弦」のツル・天眼(HPだけ120000)。倒すと目隠しを外して、第2形態のツルになる
+  c5_tsuru1: { ...ENEMIES.b_tsuru, hp: 120000 },
+  c5_tsuru: { ...ENEMIES.b_tsuru, name: 'ツル', hp: 180000, atk: 3600, phys: 2.0, hiddenUntilActive: true,
     actions: { ...ENEMIES.b_tsuru.actions, scissors: { name: '先読み', rate: RATE.normal, breakNow: 1 } },   // チョキで勝つと BREAK 確定
     traits: [...ENEMIES.b_tsuru.traits, { key: 'backwaterSteps', name: '背水・見', desc: '残りHPが75%・50%・25%を切るたびにATK+1000(最大+3000)', steps: [0.75, 0.5, 0.25], add: 1000 },
       { key: 'lastPierce', name: '見切り', desc: '残りHPが25%以下のとき、相手のDFSを0として攻撃する', below: 0.25 }] },
@@ -1321,7 +1323,7 @@ const STAGES = [
   { id: 'r4_2', corridor: 4, faction: '灯と天眼', stars: 2, name: '灯を待つ者',   foes: ['c2_4a', 'c2_4b', 'c2_4c'], level: 3, hp: 1, atk: 1 },
   { id: 'r4_3', corridor: 4, faction: '灯と天眼', stars: 3, name: '満ち潮の番人', foes: ['c3_iso'], level: 4, read: 0.35, hp: 1, atk: 1 },
   { id: 'r4_4', corridor: 4, faction: '灯と天眼', stars: 4, name: '消えぬ灯',     foes: ['c4_tomoshi'], level: 4, read: 0.35, hp: 1, atk: 1, bgm: 'cirque', reward: [200, 20] },
-  { id: 'r4_5', corridor: 4, faction: '灯と天眼', stars: 5, name: '天眼の果て',   foes: ['c5_tsuru'], level: 4, read: 0.6, hp: 1, atk: 1, bgm: 'majo', aura: 'red', reward: [1000, 40] },
+  { id: 'r4_5', corridor: 4, faction: '灯と天眼', stars: 5, name: '天眼の果て',   foes: ['c5_tsuru1', 'c5_tsuru'], level: 4, read: 0.6, hp: 1, atk: 1, bgm: 'xeno', climaxOk: true, reward: [1000, 40] },
 ];
 // ステージの敵を、倍率を掛けた能力値で作る(元のデータは書き換えない)
 function stageFoes(stage) {
@@ -2041,7 +2043,7 @@ const PERSONA_OF = {
   c2_3a: 'rage', c2_3b: 'rage', c2_3c: 'prey', c2_4a: 'guard', c2_4b: 'guard', c2_4c: 'rage',
   c3_mata: 'rewind', c3_ai: 'rewind', c3_ebira: 'rage', c3_iso: 'guard',
   c4_toki: 'prey', c4_kagami: 'sight', c4_nagare: 'rage', c4_tomoshi: 'guard',
-  c5_xeno_body: 'rage', c5_xeno_spirit: 'abyss', c5_mask: 'sight', c5_nagare: 'rage', c5_tsuru: 'sight',
+  c5_xeno_body: 'rage', c5_xeno_spirit: 'abyss', c5_mask: 'sight', c5_nagare: 'rage', c5_tsuru: 'sight', c5_tsuru1: 'sight',
 };
 // カジ【始】は残りHPで性格が変わる(激昂 → 天眼 → 捕食)。性格は裏の数値なので画面には出さない
 const personaOf = (c) => (c.ch.id === 'b_kaji_shi' ? (c.hp > c.max * 0.67 ? 'rage' : c.hp > c.max * 0.34 ? 'sight' : 'prey') : PERSONA_OF[c.ch.id] || 'guard');
@@ -2181,7 +2183,7 @@ const PERSONA_LINES = {
   rage:   L(['遅い！', 'そこだ！'], ['来い', 'まだ本気じゃない'], ['ここからだ！'], ['熱い', 'ああ、もう！']),
 };
 const LINE_ALIAS = { b_tomari: 'tomari', b_rei: 'rei', b_tsuru: 'tsuru', p_xeno: 'xeno_body', b_kaji: 'kaji', p_kaji_shi: 'b_kaji_shi',
-  c5_xeno_body: 'xeno_body', c5_xeno_spirit: 'xeno_spirit', c5_tsuru: 'tsuru' };   // 刻の回廊のボスは元のキャラのセリフ
+  c5_xeno_body: 'xeno_body', c5_xeno_spirit: 'xeno_spirit', c5_tsuru: 'tsuru', c5_tsuru1: 'tsuru' };   // 刻の回廊のボスは元のキャラのセリフ
 // トキバミは自分の声を持たず、喰った者たちの声で、過去・現在・未来を混ぜて話す(場面は分けない)
 const TOKIBAMI_VOICE = [
   'おまえは出した。おまえは出す。だから、ここにいる',
@@ -2279,7 +2281,7 @@ const ICON_ALIAS = { b_tomari: 'tomari', b_rei: 'rei', b_tsuru: 'tsuru', p_tokib
   c2_1a: 'g_a1', c2_1b: 'g_z1', c2_1c: 'g_y1', c2_2a: 'g_z1', c2_2b: 'g_z2', c2_2c: 'g_a2', c2_3a: 'g_y1', c2_3b: 'g_y2', c2_3c: 'g_z2', c2_4a: 'g_a1', c2_4b: 'g_a2', c2_4c: 'g_y2',
   c3_mata: 'g_z3b', c3_ai: 'g_z3c', c3_ebira: 'g_y3c', c3_iso: 'g_a3b',
   c4_toki: 'tokibami', c4_kagami: 'g_z4', c4_nagare: 'g_y4', c4_tomoshi: 'g_a4',
-  c5_xeno_body: 'xeno_body', c5_xeno_spirit: 'xeno_spirit', c5_mask: 'g_z5', c5_nagare: 'g_y4', c5_tsuru: 'tsuru' };
+  c5_xeno_body: 'xeno_body', c5_xeno_spirit: 'xeno_spirit', c5_mask: 'g_z5', c5_nagare: 'g_y4', c5_tsuru: 'tsuru', c5_tsuru1: 'tsuru' };
 const ICON_FACTION = { '錨': 'f-anchor', '零': 'f-zero', '矢': 'f-arrow' };
 function iconHtml(ch, size) {
   const id = ICON_ALIAS[ch.id] || ch.id;
@@ -3371,6 +3373,16 @@ async function aftermath(o) {
     render();
     return;
   }
+  // ★5天眼の果て:第1形態(ツル・天眼)を倒すと、目隠しを外して第2形態のツルになる。曲は黒翼の魔女、赤いオーラが流れ始める
+  if (o.cards[1].ch.id === 'c5_tsuru1' && o.cards[1].hp <= 0 && !S.over) {
+    Particles.crumble(panelOf(1).getBoundingClientRect(), COLORS.crimsonViolet);
+    flash('#b3001b'); shake(true); Sound.breakIn();
+    Bgm.switchTo('majo');
+    await cutin('目隠しをハズすわ', '', 'red', 2000);
+    Aura.start(S.climax ? 'gold' : 'red');
+    render();
+    return;
+  }
   if (w >= 0) Particles.crumble(panelOf(1 - w).getBoundingClientRect(), COLORS.sand);
   Sound.ko(o.boutWin === 0);
   const sub = w === 0 ? `${o.names[1]}を倒した` : w === 1 ? `${o.names[0]}が倒れた` : `${o.names[0]}と${o.names[1]}が同時に倒れた`;
@@ -3602,7 +3614,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.80';
+const APP_VER = '0.81';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
