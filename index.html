@@ -2533,6 +2533,16 @@ const Sound = (() => {
       cymbal(0.88, 0.14);
     },
     // BREAKの一撃
+    // ゼノ【仮面】の十の跳躍(ATK10倍のBREAK):腹に響く重低音。2回に分けてどしんと沈む
+    deepHit() {
+      tone(48, 1.8, { type: 'sine', vol: 1.0, to: 22 });
+      tone(96, 1.2, { type: 'triangle', vol: 0.5, to: 40 });
+      tone(72, 1.4, { type: 'sawtooth', vol: 0.12, to: 30 });
+      noise(1.4, { type: 'lowpass', freq: 380, to: 60, vol: 0.9 });
+      tone(40, 1.6, { type: 'sine', vol: 0.8, to: 18, at: 0.32 });
+      noise(1.0, { type: 'lowpass', freq: 240, to: 50, vol: 0.6, at: 0.32 });
+      tone(55, 2.2, { type: 'sine', vol: 0.35, at: 0.6, trem: 9, tremDepth: 0.6 });   // 余韻:低く震えながら消える
+    },
     breakHit() {
       boom(0, 1, 0.9);
       noise(0.9, { vol: 0.5, freq: 5000, to: 150 });
@@ -2767,6 +2777,7 @@ const COLORS = {
   violet: ['#8b6cff', '#c9b8ff', '#4f3bd1'],
   rainbow: ['#ff4d5e', '#f5c451', '#4ade80', '#38bdf8', '#8b6cff', '#ffffff'],
   sand: ['#d8c9a3', '#bfae86', '#8f8160'],
+  crimsonViolet: ['#ff2a3d', '#b3001b', '#ff5470', '#8b6cff', '#5b2bd1', '#c084fc', '#3a0a5c'],   // 十の跳躍(10倍BREAK)の破片
   glass: ['rgba(255,255,255,.55)', 'rgba(190,230,255,.5)', 'rgba(255,255,255,.3)', 'rgba(245,196,81,.45)'],
   glassViolet: ['rgba(255,255,255,.5)', 'rgba(170,140,255,.55)', 'rgba(120,90,230,.4)'],
 };
@@ -2806,6 +2817,13 @@ const Particles = (() => {
         const x = Math.random() * innerWidth, y = Math.random() * innerHeight;
         const a = Math.atan2(y - cy, x - cx), v = 2 + Math.random() * 7;
         add({ tri: true, x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 2, g: 0.45, life: 45 + Math.random() * 35, s: 7 + Math.random() * 20, r: Math.random() * 6, vr: (Math.random() - 0.5) * 0.4, c: pick(colors) });
+      }
+    },
+    // 一点からガラスの破片が飛び散る(回りながら落ちる三角形)
+    glassBurst(x, y, n, colors, power = 10) {
+      for (let i = 0; i < n; i++) {
+        const a = Math.random() * Math.PI * 2, v = Math.random() * power + 2;
+        add({ tri: true, x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 3, g: 0.32, life: 50 + Math.random() * 40, s: 5 + Math.random() * 16, r: Math.random() * 6, vr: (Math.random() - 0.5) * 0.5, c: pick(colors) });
       }
     },
     // 一点から飛び散る
@@ -3226,12 +3244,16 @@ async function strike(side, hand, a, o, isBreak) {
   if (rate >= RATE.max) { Sound.cue(3); await cutin(a.name, RATE_LABEL[rate], 'red', 650); }
   else if (kill) { Sound.cue(2); await cutin(a.name, `${HANDS[hand].power}の一撃`, 'gold', 700); }
   setStage(mine ? 'win' : 'lose', `${HANDS[hand].power}「${a.name}」`);
-  flash(isBreak ? '#ffffff' : mine ? '#f5c451' : '#8b6cff');
+  // ゼノ【仮面】の十の跳躍が、遅咲きの刻(ATK10倍)のBREAKで出たとき:赤と紫のガラスの破片と重低音
+  const att = o.cards[side], lb = isBreak && hand === 'scissors' ? traitOf(att, 'lateBreak') : null;
+  const tenJump = !!(lb && att.turn >= lb.from && dealt > 0);
+  flash(tenJump ? '#b3001b' : isBreak ? '#ffffff' : mine ? '#f5c451' : '#8b6cff');
   shake(big);
-  if (isBreak) Sound.breakHit(); else if (dealt > 0) Sound.hit(hits); else if (!mine) Sound.lose();
+  if (tenJump) Sound.deepHit(); else if (isBreak) Sound.breakHit(); else if (dealt > 0) Sound.hit(hits); else if (!mine) Sound.lose();
   if ((o.hit && o.hit.heal) || (!dealt && (a.heal || a.atkUp || a.dfsUp))) Sound.heal();
   const c = center(panelOf(1 - side));
-  if (dealt > 0 || isBreak) Particles.burst(c.x, c.y, isBreak ? 120 : 20 + hits * 12, isBreak ? COLORS.rainbow : mine ? COLORS.gold : COLORS.violet, isBreak ? 12 : 5 + hits);
+  if (tenJump) { Particles.glassBurst(c.x, c.y, 140, COLORS.crimsonViolet, 13); setTimeout(() => { flash('#5b2bd1'); Particles.glassBurst(c.x, c.y, 60, COLORS.crimsonViolet, 8); }, 320); }
+  else if (dealt > 0 || isBreak) Particles.burst(c.x, c.y, isBreak ? 120 : 20 + hits * 12, isBreak ? COLORS.rainbow : mine ? COLORS.gold : COLORS.violet, isBreak ? 12 : 5 + hits);
   // このラリーを戦ったカードのまま描く。倒れたカードは、HPゲージが空になっていくところを見せる
   render(o.cards); flushLog(); pops(o, big);
   if (kill) {
@@ -3580,7 +3602,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.79';
+const APP_VER = '0.80';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
