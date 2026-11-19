@@ -1323,7 +1323,7 @@ const STAGES = [
   { id: 'r4_2', corridor: 4, faction: '灯と天眼', stars: 2, name: '灯を待つ者',   foes: ['c2_4a', 'c2_4b', 'c2_4c'], level: 3, hp: 1, atk: 1 },
   { id: 'r4_3', corridor: 4, faction: '灯と天眼', stars: 3, name: '満ち潮の番人', foes: ['c3_iso'], level: 4, read: 0.35, hp: 1, atk: 1 },
   { id: 'r4_4', corridor: 4, faction: '灯と天眼', stars: 4, name: '消えぬ灯',     foes: ['c4_tomoshi'], level: 4, read: 0.35, hp: 1, atk: 1, bgm: 'cirque', reward: [200, 20] },
-  { id: 'r4_5', corridor: 4, faction: '灯と天眼', stars: 5, name: '天眼の果て',   foes: ['c5_tsuru1', 'c5_tsuru'], level: 4, read: 0.6, hp: 1, atk: 1, bgm: 'xeno', climaxOk: true, reward: [1000, 40] },
+  { id: 'r4_5', corridor: 4, faction: '灯と天眼', stars: 5, name: '天眼の果て',   foes: ['c5_tsuru1', 'c5_tsuru'], level: 4, read: 0.6, hp: 1, atk: 1, bgm: 'xeno', bgm2: 'majo', climaxOk: true, reward: [1000, 40] },
 ];
 // ステージの敵を、倍率を掛けた能力値で作る(元のデータは書き換えない)
 function stageFoes(stage) {
@@ -3377,7 +3377,7 @@ async function aftermath(o) {
   if (o.cards[1].ch.id === 'c5_tsuru1' && o.cards[1].hp <= 0 && !S.over) {
     Particles.crumble(panelOf(1).getBoundingClientRect(), COLORS.crimsonViolet);
     flash('#b3001b'); shake(true); Sound.breakIn();
-    Bgm.switchTo('majo');
+    Bgm.switchTo(S.stage.bgm2 || 'majo');
     await cutin('目隠しをハズすわ', '', 'red', 2000);
     Aura.start(S.climax ? 'gold' : 'red');
     render();
@@ -3614,7 +3614,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.83';
+const APP_VER = '0.84';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
@@ -5765,6 +5765,7 @@ async function startMatch(mine, theirs, foeLabel, opt = {}) {
   Sound.wake();
   Bgm.play(opt.stage ? opt.stage.bgm || 'main' : battleBgmNow());   // ソロはステージの曲、CPU戦・対人は設定の曲
   Aura.stop();
+  if (opt.stage && opt.stage.bgm2) Bgm.prepare(opt.stage.bgm2);   // 途中で切り替える曲(天眼の果ての第2形態)は、先に読み込んでおく(切り替えた瞬間に無音にならないように)
   if (opt.stage && opt.stage.aura) setTimeout(() => Aura.start(opt.stage.aura), 50);   // ★5ツル戦:初めから赤いオーラ
   Sound.cue(2);
   if (S.stage && S.stage.id === 'x5') {
