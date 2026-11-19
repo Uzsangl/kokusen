@@ -184,6 +184,14 @@
   #aura .flame.l { left: -4vw; } #aura .flame.r { right: -4vw; animation-delay: -1.3s; }
   #aura i { position: absolute; top: 100%; display: block; background: linear-gradient(160deg, #fff6d0, #f5c451 45%, #ff9d2e); box-shadow: 0 0 10px #f5c451, 0 0 18px #ff9d2e88; animation: auraRise linear forwards; will-change: transform, opacity; }
   #aura i.spark { border-radius: 50%; background: #fff6d0; box-shadow: 0 0 6px #ffe9a8, 0 0 12px #f5c451; }
+  /* 赤い版(★5ツル戦は、初めから禍々しい深い赤のオーラが流れる。あとひと刻で金色に変わる) */
+  #aura.red::before { height: 55vh; background: radial-gradient(70% 100% at 50% 100%, #6e000eaa, #2a000566 45%, transparent 75%); animation-duration: 2.4s; }
+  #aura.red::after { box-shadow: inset 22px 0 40px -12px #7a0012cc, inset -22px 0 40px -12px #7a0012cc, inset 0 -40px 70px -24px #4a0008ee; animation-duration: 1.8s; }
+  #aura.red.surge::after { animation: auraSurgeRed .9s ease-out; }
+  #aura.red .flame { background: linear-gradient(to top, #5c000dcc, #8b001466 40%, transparent); filter: blur(14px); }
+  #aura.red i { background: linear-gradient(160deg, #c2182b, #7a0012 50%, #2a0005); box-shadow: 0 0 8px #8b0014cc, 0 0 16px #3a000899; }
+  #aura.red i.spark { background: #ff3b4e; box-shadow: 0 0 6px #b3001b, 0 0 12px #5c000d; }
+  @keyframes auraSurgeRed { 0% { opacity: 1; box-shadow: inset 36px 0 50px -12px #a3001a, inset -36px 0 50px -12px #a3001a, inset 0 -60px 80px -24px #6e000e; } 100% { opacity: .7; } }
   @keyframes auraEdge { from { opacity: .55; } to { opacity: 1; } }
   @keyframes auraSurge { 0% { opacity: 1; box-shadow: inset 30px 0 40px -12px #ffe9a8, inset -30px 0 40px -12px #ffe9a8, inset 0 -50px 70px -24px #ff9d2e; } 100% { opacity: .7; } }
   @keyframes auraFlame { 0%, 100% { transform: scaleY(.85) scaleX(1); opacity: .7; } 50% { transform: scaleY(1.1) scaleX(1.2); opacity: 1; } }
@@ -1312,7 +1320,7 @@ const STAGES = [
   { id: 'r4_2', corridor: 4, faction: '灯と天眼', stars: 2, name: '灯を待つ者',   foes: ['c2_4a', 'c2_4b', 'c2_4c'], level: 3, hp: 1, atk: 1 },
   { id: 'r4_3', corridor: 4, faction: '灯と天眼', stars: 3, name: '満ち潮の番人', foes: ['c3_iso'], level: 4, read: 0.35, hp: 1, atk: 1 },
   { id: 'r4_4', corridor: 4, faction: '灯と天眼', stars: 4, name: '消えぬ灯',     foes: ['c4_tomoshi'], level: 4, read: 0.35, hp: 1, atk: 1, bgm: 'cirque', reward: [200, 20] },
-  { id: 'r4_5', corridor: 4, faction: '灯と天眼', stars: 5, name: '天眼の果て',   foes: ['c5_tsuru'], level: 4, read: 0.6, hp: 1, atk: 1, bgm: 'majo', reward: [1000, 40] },
+  { id: 'r4_5', corridor: 4, faction: '灯と天眼', stars: 5, name: '天眼の果て',   foes: ['c5_tsuru'], level: 4, read: 0.6, hp: 1, atk: 1, bgm: 'majo', aura: 'red', reward: [1000, 40] },
 ];
 // ステージの敵を、倍率を掛けた能力値で作る(元のデータは書き換えない)
 function stageFoes(stage) {
@@ -2721,7 +2729,9 @@ const Aura = (() => {
   }
   let tick = 0;
   return {
-    start() {
+    // theme:'gold'(あとひと刻)/ 'red'(★5ツル戦の初めから)。すでに流れていれば色だけ変える
+    start(theme = 'gold') {
+      $('aura').classList.toggle('red', theme === 'red');
       if (timer || FX.short || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
       $('aura').classList.add('on');
       $('aura').innerHTML = '<b class="flame l"></b><b class="flame r"></b>';
@@ -3569,7 +3579,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.73';
+const APP_VER = '0.75';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
@@ -5711,6 +5721,8 @@ async function startMatch(mine, theirs, foeLabel, opt = {}) {
   render();
   Sound.wake();
   Bgm.play((opt.stage && opt.stage.bgm) || 'main');
+  Aura.stop();
+  if (opt.stage && opt.stage.aura) setTimeout(() => Aura.start(opt.stage.aura), 50);   // ★5ツル戦:初めから赤いオーラ
   Sound.cue(2);
   if (S.stage && S.stage.id === 'x5') {
     Sound.breakIn();
