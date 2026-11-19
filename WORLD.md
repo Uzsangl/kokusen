@@ -539,6 +539,10 @@ ATK・HPと、ATKの増減・回復の実数は、以前の2.5倍にしてある
 - タイトル画面の右下に `ver 0.10` のように出す(`index.html` の `APP_VER`)。公開版を更新するたびに 0.01 ずつ上げる(0.10 → 0.11 → 0.12 …)。
 - 対人の版合わせは、これとは別にルール部分から自動で作る番号(`RULES_VER`)で行う。ver の文字を長押しすると見られる。
 
+**CPU戦・対人の曲**
+- 設定の「CPU戦・対人の曲」で、Sign of Victory 以外の曲から選べる(The Battle of Beliefs・Devine Fencer・天使迎撃戦・Le Cirque du Diable・黒翼の魔女・Important Thing)。最初は The Battle of Beliefs。端末に保存する(`kokusen.battleBgm`)。
+- どの曲でも、あとひと刻からは Sign of Victory に切り替わる。ソロ(今までのステージ・刻の回廊)はステージごとの曲のまま。
+
 **メールボックス**
 - タイトル画面の右上「✉」。ログインが必要。未読やまだ受け取っていないプレゼントがあると赤い数字が付く。
 - メールは `index.html` の `MAILS` に書いて公開する(全員に同じものが届く)。お知らせ(文章だけ)と、プレゼント(空間のカケラ・ガチャキャラ)。受け取り期限 `until` も付けられる。プレゼントは1アカウント1回(progress の stats.mailGot)、既読は stats.mailRead。

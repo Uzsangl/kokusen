@@ -508,6 +508,7 @@
   .fr-btns .fr-x { padding: 6px 9px; }
   .fr-opt { display: flex; align-items: center; gap: 8px; margin: 12px 0 2px; font-size: .84rem; }
   .fr-opt input { width: auto; }
+  .srow select { max-width: 55%; padding: 6px 8px; border-radius: 8px; background: #1b2042; color: var(--text); border: 1px solid var(--line); font: inherit; font-size: .8rem; }
   .gc-sim { margin: 4px 0 10px; padding: 8px 10px; border: 1px dashed var(--line); border-radius: 10px; }
   .gc-sim > span { display: block; margin: 2px 0 0; font-size: .74rem; }
   .gc-sim .gc-btns { margin: 6px 0 0; }
@@ -2294,7 +2295,7 @@ let SILENCED = false;  // ほかのタブで開き直したため、このタブ
 let frozen = false;    // BREAKで時間が止まっている間
 
 // ----- 設定(音・演出の長さ) -----
-const FX = { pattern: 'normal', sakibare: true, speed: 1, sound: true, short: false, level: 2, bgm: true, bgmVol: 1, seVol: 1 };
+const FX = { pattern: 'normal', sakibare: true, speed: 1, sound: true, short: false, level: 2, bgm: true, bgmVol: 1, seVol: 1, battleBgm: 'main' };
 const REDUCE = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 function loadOpt(key, def) {
   try { const v = localStorage.getItem(key); return v === null ? def : v === '1'; } catch (e) { return def; }
@@ -3579,7 +3580,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.75';
+const APP_VER = '0.76';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
@@ -4484,6 +4485,7 @@ function openSettings() {
   openSheet('⚙ 設定', `
     <div class="srow"><div>BGM<small>曲を流す</small></div>${sw('sBgm', FX.bgm)}</div>
     <div class="srow"><div>BGMの音量</div><input type="range" id="sBgmVol" min="0" max="100" value="${Math.round(FX.bgmVol * 100)}" aria-label="BGMの音量"></div>
+    <div class="srow"><div>CPU戦・対人の曲<small>あとひと刻からは Sign of Victory</small></div><select id="sBattleBgm" aria-label="CPU戦・対人の曲">${BATTLE_BGM_CHOICES.map(([k, n]) => `<option value="${k}"${FX.battleBgm === k ? ' selected' : ''}>${n}</option>`).join('')}</select></div>
     <div class="srow"><div>効果音</div>${sw('sSe', FX.sound)}</div>
     <div class="srow"><div>効果音の音量</div><input type="range" id="sSeVol" min="0" max="100" value="${Math.round(FX.seVol * 100)}" aria-label="効果音の音量"></div>
     <div class="srow"><div>演出<small>短縮にすると対戦のテンポが速くなる</small></div><div class="seg"><button id="sFull" class="${FX.short ? '' : 'on'}">フル</button><button id="sShort" class="${FX.short ? 'on' : ''}">短縮</button></div></div>
@@ -4496,14 +4498,17 @@ function openSettings() {
   $('sSe').onclick = () => { FX.sound = !FX.sound; saveOpt('kokusen.sound', FX.sound); applyOpts(); if (FX.sound) { Sound.wake(); Sound.click(); } openSettings(); };
   $('sFull').onclick = () => { FX.short = false; saveOpt('kokusen.short', false); applyOpts(); openSettings(); };
   $('sShort').onclick = () => { FX.short = true; saveOpt('kokusen.short', true); applyOpts(); openSettings(); };
+  $('sBattleBgm').onchange = (e) => { FX.battleBgm = BATTLE_BGM_CHOICES.some(([k]) => k === e.target.value) ? e.target.value : 'main'; try { localStorage.setItem('kokusen.battleBgm', FX.battleBgm); } catch (err) { /* 保存できなくても動く */ } };
   $('sBgmVol').oninput = (e) => { FX.bgmVol = e.target.value / 100; saveVol(); Bgm.setVol(); };
   $('sSeVol').oninput = (e) => { FX.seVol = e.target.value / 100; saveVol(); Sound.setVol(); };
   $('sSeVol').onchange = () => { Sound.wake(); Sound.click(); };
   $('sCredit').onclick = () => openSheet('クレジット', `
-    <h3>音楽</h3><p><a href="https://nagumorizu.com/" target="_blank" rel="noopener" style="color:var(--gold)">なぐもりずの音楽室</a>(南雲莉翠)<br>The Battle of Beliefs / Sign of Victory / Devine Fencer / Important Thing / 天使迎撃戦</p>
+    <h3>音楽</h3><p><a href="https://nagumorizu.com/" target="_blank" rel="noopener" style="color:var(--gold)">なぐもりずの音楽室</a>(南雲莉翠)<br>The Battle of Beliefs / Sign of Victory / Devine Fencer / Important Thing / 天使迎撃戦 / Le Cirque du Diable / 黒翼の魔女</p>
     <h3>効果音</h3><p>ゲーム内で合成</p>
     <h3>通信</h3><p>PeerJS(MIT License)/ Supabase</p>`);
 }
+// CPU戦・対人で流す曲(設定で選べる)。あとひと刻からは、どの曲でも Sign of Victory に切り替わる。ソロはステージごとの曲のまま
+const BATTLE_BGM_CHOICES = [['main', 'The Battle of Beliefs(いつもの曲)'], ['xeno', 'Devine Fencer'], ['toki', '天使迎撃戦'], ['cirque', 'Le Cirque du Diable'], ['majo', '黒翼の魔女'], ['menu', 'Important Thing']];
 function saveVol() { try { localStorage.setItem('kokusen.vol', JSON.stringify({ b: FX.bgmVol, s: FX.seVol })); } catch (e) { /* 保存できなくても動く */ } }
 // ルールブック
 const RULEBOOK = {
@@ -5720,7 +5725,7 @@ async function startMatch(mine, theirs, foeLabel, opt = {}) {
   busy = true;
   render();
   Sound.wake();
-  Bgm.play((opt.stage && opt.stage.bgm) || 'main');
+  Bgm.play(opt.stage ? opt.stage.bgm || 'main' : FX.battleBgm || 'main');   // ソロはステージの曲、CPU戦・対人は設定の曲
   Aura.stop();
   if (opt.stage && opt.stage.aura) setTimeout(() => Aura.start(opt.stage.aura), 50);   // ★5ツル戦:初めから赤いオーラ
   Sound.cue(2);
@@ -5895,6 +5900,7 @@ function init() {
   };
   FX.sound = loadOpt('kokusen.sound', true);
   FX.short = loadOpt('kokusen.short', false);
+  try { const v = localStorage.getItem('kokusen.battleBgm'); if (BATTLE_BGM_CHOICES.some(([k]) => k === v)) FX.battleBgm = v; } catch (e) { /* 読めなければいつもの曲 */ }
   FX.sakibare = loadOpt('kokusen.sakibare', true);
   try { const pt = localStorage.getItem('kokusen.pattern'); FX.pattern = FX_PATTERNS[pt] ? pt : 'normal'; } catch (e) { FX.pattern = 'normal'; }
   FX.bgm = loadOpt('kokusen.bgm', true);

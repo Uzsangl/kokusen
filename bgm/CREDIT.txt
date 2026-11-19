@@ -9,7 +9,7 @@ YouTube: https://www.youtube.com/@nagumorizu
 -------------------------------------------------
 ゲームタイトル：刻戦
 使用楽曲タイトル：
-  The Battle of Beliefs(対戦中の曲)        bgm/The-Battle-of-Beliefs.mp3
+  The Battle of Beliefs(対戦中の曲。CPU戦・対人は設定でほかの曲にも変えられる)        bgm/The-Battle-of-Beliefs.mp3
   Sign of Victory(決着が近いとき・タイトル画面の曲) bgm/Sign-of-Victory.mp3
   Devine Fencer(ソロ★5 ゼノ・肉体戦、刻の回廊★5 ゼノ・ゼノ【仮面】・ナガレ【フルパワー】戦の曲)  bgm/Devine-Fencer.mp3
   Important Thing(メニュー画面の曲)        bgm/Important-Thing.mp3
