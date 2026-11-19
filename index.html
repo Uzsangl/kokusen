@@ -3580,7 +3580,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.76';
+const APP_VER = '0.77';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
@@ -4508,7 +4508,7 @@ function openSettings() {
     <h3>通信</h3><p>PeerJS(MIT License)/ Supabase</p>`);
 }
 // CPU戦・対人で流す曲(設定で選べる)。あとひと刻からは、どの曲でも Sign of Victory に切り替わる。ソロはステージごとの曲のまま
-const BATTLE_BGM_CHOICES = [['main', 'The Battle of Beliefs(いつもの曲)'], ['xeno', 'Devine Fencer'], ['toki', '天使迎撃戦'], ['cirque', 'Le Cirque du Diable'], ['majo', '黒翼の魔女'], ['menu', 'Important Thing']];
+const BATTLE_BGM_CHOICES = [['main', 'The Battle of Beliefs(いつもの曲)'], ['xeno', 'Devine Fencer'], ['toki', '天使迎撃戦'], ['cirque', 'Le Cirque du Diable'], ['majo', '黒翼の魔女']];   // メニュー画面の曲(Important Thing)は入れない
 function saveVol() { try { localStorage.setItem('kokusen.vol', JSON.stringify({ b: FX.bgmVol, s: FX.seVol })); } catch (e) { /* 保存できなくても動く */ } }
 // ルールブック
 const RULEBOOK = {
