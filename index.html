@@ -3580,7 +3580,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.78';
+const APP_VER = '0.79';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
@@ -4485,7 +4485,7 @@ function openSettings() {
   openSheet('⚙ 設定', `
     <div class="srow"><div>BGM<small>曲を流す</small></div>${sw('sBgm', FX.bgm)}</div>
     <div class="srow"><div>BGMの音量</div><input type="range" id="sBgmVol" min="0" max="100" value="${Math.round(FX.bgmVol * 100)}" aria-label="BGMの音量"></div>
-    <div class="srow"><div>CPU戦・対人の曲<small>あとひと刻からは Sign of Victory</small></div><select id="sBattleBgm" aria-label="CPU戦・対人の曲">${BATTLE_BGM_CHOICES.map(([k, n]) => `<option value="${k}"${battleBgmNow() === k ? ' selected' : ''}${bgmOpen(k) ? '' : ' disabled'}>${n}${bgmOpen(k) ? '' : '(★5ツルを倒すと解放)'}</option>`).join('')}</select></div>
+    <div class="srow"><div>CPU戦・対人の曲<small>あとひと刻からは Sign of Victory</small></div><select id="sBattleBgm" aria-label="CPU戦・対人の曲">${BATTLE_BGM_CHOICES.map(([k, n]) => `<option value="${k}"${battleBgmNow() === k ? ' selected' : ''}${bgmOpen(k) ? '' : ' disabled'}>${n}${bgmOpen(k) ? '' : '(アドバンス★5「天眼の果て」クリアで解放)'}</option>`).join('')}</select></div>
     <div class="srow"><div>効果音</div>${sw('sSe', FX.sound)}</div>
     <div class="srow"><div>効果音の音量</div><input type="range" id="sSeVol" min="0" max="100" value="${Math.round(FX.seVol * 100)}" aria-label="効果音の音量"></div>
     <div class="srow"><div>演出<small>短縮にすると対戦のテンポが速くなる</small></div><div class="seg"><button id="sFull" class="${FX.short ? '' : 'on'}">フル</button><button id="sShort" class="${FX.short ? 'on' : ''}">短縮</button></div></div>
