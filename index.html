@@ -1259,6 +1259,7 @@ Object.assign(ENEMIES, {
       { key: 'pierce', name: '射抜き', desc: '相手のDFSを1000低いものとして攻撃する', v: 1000 },
       { key: 'selfBurn', name: '燃え尽き', desc: 'ラリーが終わるたびに自分のHPが3000削れる', dmg: 3000 }] }),
   c5_tsuru: { ...ENEMIES.b_tsuru, name: 'ツル', hp: 230000, atk: 3600, phys: 2.0,
+    actions: { ...ENEMIES.b_tsuru.actions, scissors: { name: '先読み', rate: RATE.normal, breakNow: 1 } },   // チョキで勝つと BREAK 確定
     traits: [...ENEMIES.b_tsuru.traits, { key: 'backwaterSteps', name: '背水・見', desc: '残りHPが75%・50%・25%を切るたびにATK+1000(最大+3000)', steps: [0.75, 0.5, 0.25], add: 1000 }] },
 });
 
@@ -1413,6 +1414,7 @@ function describe(a, rate, short) {
   if (a.cleanse) parts.push(short ? 'デバフ・時蝕解除' : '自分のデバフと時蝕を消す');
   if (a.cure) parts.push(short ? '時蝕解除' : '自分の時蝕を消す');
   if (a.streak) parts.push(short ? `連勝+${a.streak}` : `自分の連勝+${a.streak}`);
+  if (a.breakNow) parts.push(short ? `${BREAK_NAME}確定` : `勝つと${BREAK_NAME}確定`);
   if (a.seal) parts.push(short ? '連勝封じ' : '相手の次の勝ちを連勝に数えない(連勝封じ)');
   if (a.keep) parts.push(short ? '連勝保護' : '次に負けても連勝が途切れない(連勝保護)');
   if (a.noheal) parts.push(short ? `回復封じ${a.noheal}` : `相手の回復を${a.noheal}ラリー封じる`);
@@ -1627,6 +1629,7 @@ function act(S, side, hand, log, isBreak) {
     log(`　${nameOf(l)}は時蝕を受けた(毎ラリー${l.poisonDmg}${stack ? `、重ねがけ${l.poisonStacks}回目` : ''})`);
   }
   if (a.streak) wt.streak += a.streak;
+  if (a.breakNow && !isBreak && w.hp > 0) wt.forceBreak = true;   // この技で勝つと、連勝の数に関係なく BREAK
   if (a.resetStreak) { lt.streak = 0; lt.keep = false; log(`　${lt.label}の連勝が0に戻された`); }
   if (a.seal) lt.sealed = true;
   if (a.keep) wt.keep = true;
@@ -1848,7 +1851,10 @@ function rally(S, hand0, hand1, log) {
     if (traitOf(ls, 'winStack')) ls.stackAtk = 0;
     if (wt.sealed) { wt.sealed = false; log(`　${wt.label}のこの勝ちは連勝に数えない`); }
     else wt.streak++;
-    if (wt.streak >= BREAK_STREAK) {
+    if (wt.forceBreak) {   // 「BREAK確定」の技で勝った(連勝封じがかかっていても BREAK になる)
+      wt.forceBreak = false; wt.streak = 0; wt.breakReady = true;
+      log(`　${wt.label}の${nameOf(active(wt))}の「${active(wt).actions[side === 0 ? hand0 : hand1].name}」→ ${BREAK_NAME}確定!`);
+    } else if (wt.streak >= BREAK_STREAK) {
       wt.streak = 0;
       wt.breakReady = true;
       log(`　${wt.label}が${BREAK_STREAK}連勝 → ${BREAK_NAME}!`);
@@ -3557,7 +3563,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.70';
+const APP_VER = '0.71';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
