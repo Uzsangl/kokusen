@@ -2685,6 +2685,7 @@ const Bgm = (() => {
     // 最初に画面を触ったとき:音を出せる状態にして、最初の曲の変換を始めておく
     // 曲のデータを先に用意しておく(流すのは play のとき)
     prepare(name) { if (ensure()) decode(name); },
+    ready(name) { return ensure() ? decode(name) : Promise.resolve(null); },   // その曲の変換が終わるまで待つ
     // 最初に画面に触れたとき:止まっている音を動かし、流したい曲があれば流す(ブラウザは、触れる前の再生を止めるため)
     unlock() {
       if (!ensure()) return;
@@ -3626,7 +3627,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.87';
+const APP_VER = '0.88';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
@@ -5770,6 +5771,8 @@ function openMyset() {
 let selStep = 'menu';
 function setStep(st) {
   selStep = st;
+  // 対戦で流す曲を、キャラを選んでいる間に先に読み込んでおく(大きい曲は、対戦開始から読むと数秒無音になる)
+  if (st === 'pick') { const sst = MODE === 'solo' && STAGES.find((x) => x.id === SOLO.stage); Bgm.prepare(sst ? sst.bgm || 'main' : battleBgmNow()); }
   $('select').dataset.step = st;
   window.scrollTo(0, 0);
   renderSelect();
@@ -5966,7 +5969,7 @@ async function startMatch(mine, theirs, foeLabel, opt = {}) {
   Sound.wake();
   Bgm.play(opt.stage ? opt.stage.bgm || 'main' : battleBgmNow());   // ソロはステージの曲、CPU戦・対人は設定の曲
   Aura.stop();
-  if (opt.stage && opt.stage.bgm2) Bgm.prepare(opt.stage.bgm2);   // 途中で切り替える曲(天眼の果ての第2形態)は、先に読み込んでおく(切り替えた瞬間に無音にならないように)
+  if (opt.stage && opt.stage.bgm2) Bgm.ready(opt.stage.bgm || 'main').then(() => Bgm.prepare(opt.stage.bgm2));   // 途中で切り替える曲(天眼の果ての第2形態)は、最初の曲が鳴ってから読み込んでおく(同時に読むと最初の曲が遅れる)
   if (opt.stage && opt.stage.aura) setTimeout(() => Aura.start(opt.stage.aura), 50);   // ★5ツル戦:初めから赤いオーラ
   Sound.cue(2);
   if (S.stage && S.stage.id === 'x5') {
