@@ -3626,7 +3626,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.86';
+const APP_VER = '0.87';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
@@ -3924,7 +3924,7 @@ function rankBox(dr) {
     + `BAN:あなた ${D.ban ? ic(D.ban) : '未定'} ／ 相手 ${D.bans ? ic(D.bans.foe) : D.foeBanSeal ? '決定済み' : '未定'}<br>`
     + `相手が取ったキャラ:${D.foePicks.length ? D.foePicks.map(ic).join(' ') : 'まだなし'}<br>`
     + (seq ? `取る順番:${seq}<br>` : '')
-    + `<span class="dturn">${turn}</span>`;
+    + `<span class="dturn">${turn}</span><br><small>★4以上は1体まで・同じ人物は1体まで${FORMAT === 'basic' ? '・ガチャキャラなし' : ''}</small>`;
 }
 // 1試合が終わったときの3本勝負の記録。引き分けは同じ試合をやり直す。リタイア・応答なしは3本勝負ごと負け
 function rankAfterGame(S) {
@@ -4002,7 +4002,7 @@ async function pvpStep() {
     PVP.foeAccP = reuse || accVerifyFoe(fp.acc).then(async (v) => {
       if (!rated) { logLater(`フリー戦(レートは変わりません)${v ? `。対戦相手:${v.name}` : ''}`); return null; }   // フリー戦はレートを動かさない
       const lim = !!v && await accRateStart(v, [PVP.teamSalt, String(t.s)].sort().join('|').slice(0, 100)) === 'limit';
-      logLater(lim ? `同じ相手とのレート戦は1日5回までです。この対戦ではレートは変わりません。対戦相手:${v.name}` : v ? `レート戦。対戦相手:${titleOf(v.title) ? `〔${titleOf(v.title).name}〕` : ''}${v.name}(レート${v.r})` : '相手のアカウントを確かめられなかったため、レーティングなしの対戦です');
+      logLater(lim ? `同じ相手とのランク戦でレートが動くのは1日5回までです。この対戦ではレートは変わりません。対戦相手:${v.name}` : v ? `ランク戦。対戦相手:${titleOf(v.title) ? `〔${titleOf(v.title).name}〕` : ''}${v.name}(レート${v.r})` : '相手のアカウントを確かめられなかったため、レーティングなしの対戦です');
       return v;
     });
     if (PVP.rank) PVP.rank.accP = PVP.foeAccP;
@@ -4233,7 +4233,7 @@ function renderMode() {
   $('rankFind').classList.toggle('hidden', !ranked || PVP.phase !== 'idle');
   $('rankFind').disabled = !PVP.room;
   $('rankFind').textContent = RANK.searching ? '探すのをやめる' : '相手を探す';
-  $('pvpKindNote').textContent = kindNow === 'rated' ? `ランク戦:レートの近い相手と自動で当たる3本勝負(ベーシック→アドバンス→ベーシック)。毎試合、お互いにBANを1体ずつ出してから、交互にキャラを取り合う(持っているキャラだけ)。3本勝負の勝ち負けでレートが1回動く(勝つと+1のボーナス)。${SHARD_NAME}は1試合ごとに勝ち30・負け0。` : `フリー戦:レートは動きません。ログインなしでも遊べます。${SHARD_NAME}は勝ち20・負け5(リタイアの負けは0)。${ACC.profile ? '' : '(ランク戦はログインすると選べます)'}`;
+  $('pvpKindNote').textContent = kindNow === 'rated' ? `ランク戦:レートの近い相手と自動で当たる3本勝負(ベーシック→アドバンス→ベーシック)。毎試合、お互いにBANを1体ずつ出してから、交互にキャラを取り合う(持っているキャラだけ・★4以上は1体まで)。くわしくはルールブックの「ランク戦」。3本勝負の勝ち負けでレートが1回動く(勝つと+1のボーナス)。${SHARD_NAME}は1試合ごとに勝ち30・負け0。` : `フリー戦:レートは動きません。ログインなしでも遊べます。${SHARD_NAME}は勝ち20・負け5(リタイアの負けは0)。${ACC.profile ? '' : '(ランク戦はログインすると選べます)'}`;
   $('specRoom').classList.toggle('hidden', ranked || (!!PVP.room && !PVP.room.spectate));   // 観戦は、端末どうしを直接つなぐ方式のときだけ
   $('leaveRoom').classList.toggle('hidden', PVP.phase === 'idle');
   renderSelect();
@@ -4751,10 +4751,17 @@ const RULEBOOK = {
     <h3>ボス</h3><p>ボスは、こちらの手の癖を読んでくる。同じ手ばかり出していると狙われる。</p>
     <h3>ボスラッシュ</h3><p>ボスと続けて戦う。ボスを1体倒すごとに、味方は全回復して1番手から出直す。</p>
     <h3>その他</h3><p>ソロでは「刻の抜け落ち」は起きない。クリアしたステージには印が付く。</p>`,
-  '対人': `<h3>オンライン対人</h3><p>相手と同じ合言葉を入れて部屋に入り、お互いにキャラを選んで「準備完了」を押すと対戦が始まる。</p>
-    <h3>レーティング</h3><p>2人ともログインしていると、勝敗でレートが動く(最初は1500)。強い相手に勝つほど大きく上がる。</p>
-    <h3>切断・放置</h3><p>相手の応答が60秒ないと不戦勝。レーティング戦の途中で抜けると負けになる。</p>
+  '対人': `<h3>フリー戦</h3><p>相手と同じ合言葉を入れて部屋に入り、お互いにキャラを選んで「準備完了」を押すと対戦が始まる。レートは動かない。ログインなしでも遊べる。</p>
+    <h3>パーティのルール</h3><p>★4以上は1パーティに1体まで。同じ人物は1パーティに1体まで。ベーシックではガチャキャラは使えない。</p>
+    <h3>切断・放置</h3><p>相手の応答が60秒ないと不戦勝。ランク戦の途中で抜けると負けになる。</p>
     <h3>版の確認</h3><p>相手とゲームの版が違うと対戦できない。「版が違います」と出たら、お互いにページを開き直す。</p>`,
+  'ランク戦': `<h3>始め方</h3><p>ログインして「ランク戦」→「相手を探す」。レートの近い相手と自動で当たる(待つほど、レートの離れた相手とも当たりやすくなる)。</p>
+    <h3>3本勝負</h3><p>第1戦ベーシック → 第2戦アドバンス → 第3戦ベーシック。先に2勝した方の勝ち。引き分けはその試合をやり直す。リタイア・応答なしは3本勝負ごと負け。</p>
+    <h3>BAN</h3><p>毎試合、最初にお互い1体ずつBANする(同時に決めるので、相手のBANは決めたあとに分かる)。BANされたキャラは、その試合では二人とも使えない。持っていないキャラもBANできる。</p>
+    <h3>取り合い</h3><p>交互に1体ずつ取る。順番は 先 → 後 → 後 → 先 → 先 → 後。先に取る側は試合ごとに入れ替わる。相手が取ったキャラは使えない。取れるのは持っているキャラだけ。</p>
+    <h3>パーティのルール</h3><p>★4以上は1パーティに1体まで。同じ人物は1体まで。第1戦・第3戦(ベーシック)ではガチャキャラは使えない。ルールに合わないキャラは、自分の番でも選べなくなる。</p>
+    <h3>並べ替え</h3><p>3体ずつ取り終えたら、取った3体を出す順に並べて「準備完了」。</p>
+    <h3>レート</h3><p>3本勝負の結果で1回だけ動く。奪い合い(強い相手に勝つほど大きく上がる)に加えて、勝った方は+1。同じ相手とレートが動くのは1日5回まで。空間のカケラは1試合ごとに勝ち30・負け0。</p>`,
 };
 function openRulebook(tab = '基本') {
   openSheet('📖 ルールブック', `<div class="rtabs">${Object.keys(RULEBOOK).map((k) => `<button data-k="${k}" class="${k === tab ? 'on' : ''}">${k}</button>`).join('')}</div>${RULEBOOK[tab]}`);
@@ -5330,7 +5337,7 @@ function openGacha(results, sim) {
  { const k = gachaOwned(c.id); return `<span class="${k ? '' : 'no'}" data-id="${c.id}">${iconHtml(c, 'sm')}${k ? `×${k}` : '−'}</span>`; }).join('');
   const res = results ? (sim ? '<p class="sub" style="color:var(--gold)">お試しの結果(キャラは手に入りません)</p>' : '') + `<div class="gc-res">${results.map((r, i) => `<div class="gc-card show r${r.c.rarity}" data-i="${i}">${r.fresh ? '<i class="new">NEW</i>' : ''}${iconHtml(r.c, 'lg')}<div>${rarHtml(r.c)}</div>${escHtml(r.c.name)}</div>`).join('')}</div>` : '';
   openSheet('ガチャ', `<div class="gc-top"><span>💠${SHARD_NAME}</span><b>${n}</b></div>` +
-    (login ? '' : '<p class="sub" style="color:var(--gold)">ガチャはログインが必要です。カケラはオンライン対人(フリー戦・レート戦)で手に入ります。</p>') +
+    (login ? '' : '<p class="sub" style="color:var(--gold)">ガチャはログインが必要です。カケラはオンライン対人(フリー戦・ランク戦)で手に入ります。</p>') +
     `<div class="gc-btns"><button id="gc1"${login && n >= GACHA_COST ? '' : ' disabled'}>1回引く<small>💠${GACHA_COST}</small></button><button id="gc11"${login && n >= GACHA_COST11 ? '' : ' disabled'}>11回引く<small>💠${GACHA_COST11}(1回分お得)</small></button></div>` +
     `<div class="gc-sim"><b>🎲 お試しガチャ</b><span class="sub">無料で何回でも。演出だけ楽しめます(キャラは手に入りません)</span><div class="gc-btns"><button id="gs1">1回 お試し</button><button id="gs11">11回 お試し</button></div></div>` +
     (login && IS_MASTER ? `<button id="gcMaster" class="gc-master">💠${SHARD_NAME}を${MASTER_SHARDS}個足す(マスター用)</button>` : '') +
