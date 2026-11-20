@@ -109,6 +109,11 @@
   .ctile.off { opacity: .4; }
   .ctile.locked .cico { filter: grayscale(1) brightness(.6); }
   .ctile .lk { position: absolute; top: 2px; right: 4px; font-size: .7rem; }
+  .ctile .dtag { position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%); font-size: .6rem; font-weight: 700; padding: 0 5px; border-radius: 4px; background: #b3001b; color: #fff; white-space: nowrap; }
+  .ctile .dtag.foe { background: #3a4a8a; }
+  .draftbox { border: 1px solid var(--gold); border-radius: 10px; padding: 8px 10px; margin: 0 0 8px; font-size: .8rem; line-height: 1.6; }
+  .draftbox .dturn { font-weight: 700; color: var(--gold); }
+  .draftbox .cico { vertical-align: middle; }
   .ctile .rar { font-size: .55rem; letter-spacing: -.05em; line-height: 1; pointer-events: none; }
   .rar.r1, .rar.r2 { color: #9aa0b4; } .rar.r3 { color: #f5c451; } .rar.r4 { color: #b57bff; } .rar.r5 { color: #ff2a3d; }
   #pickSide button.picked[data-s="foe"] { border-color: #ff8a95; color: #ff8a95; box-shadow: 0 0 12px #ff4d5e44; }
@@ -753,13 +758,14 @@
       <p class="sub" id="stageNote"></p>
     </div>
     <div id="netOpts" class="hidden">
-      <div class="levels" id="pvpKinds" style="grid-template-columns:1fr 1fr"><button data-k="rated">レート戦</button><button data-k="free">フリー戦</button></div>
+      <div class="levels" id="pvpKinds" style="grid-template-columns:1fr 1fr"><button data-k="rated">ランク戦</button><button data-k="free">フリー戦</button></div>
       <p class="sub" id="pvpKindNote"></p>
       <div class="roomrow">
         <input id="roomCode" inputmode="numeric" maxlength="12" placeholder="合言葉(例:1234)" autocomplete="off">
         <button id="joinRoom">部屋に入る</button>
         <button id="specRoom">観戦する</button>
         <button id="leaveRoom" class="hidden">出る</button>
+        <button id="rankFind" class="hidden" style="grid-column:1/-1">相手を探す</button>
       </div>
       <p class="sub" id="netStatus"></p>
       <p class="sub" id="netDebug"></p>
@@ -769,6 +775,7 @@
     <div class="selR">
     <div class="picktop"><button id="toMenu" class="back">◀ 戻る</button><span id="pickInfo"></span><button id="mysetBtn">★ マイセット</button></div>
     <p class="sub" id="pickNet"></p>
+    <div id="draftBox" class="draftbox hidden"></div>
     <div class="levels hidden" id="pickSide" style="grid-template-columns:1fr 1fr;margin-bottom:6px"><button data-s="me">あなたのパーティ</button><button data-s="foe">CPUのパーティ</button></div>
     <h2><span id="pickTitle">出す順に3枚選ぶ</span> <small class="hint">長押しで詳細</small></h2>
     <div class="picks" id="picks"></div>
@@ -3093,6 +3100,7 @@ function render(view) {
   $('resign').classList.toggle('hidden', S.over && !S.spectate);
   $('resign').textContent = S.spectate ? '観戦をやめる' : 'リタイア';
   $('retry').classList.toggle('hidden', !S.over || !!S.spectate);
+  $('retry').textContent = MODE === 'pvp' && PVP.rank ? (PVP.rank.over ? 'ランク戦を終える' : '次の試合へ') : 'キャラ選択に戻る';
   // 観戦者の人数(プレイヤーにも見せる)。ホストは自分で数え、相手は相手の知らせを見る
   const fpSp = PVP.on && !S.spectate && pvpFoe() ? Number(pvpFoe().presence.sp) || 0 : 0;
   const wn = !PVP.on && !S.spectate ? whViewers() : [];   // ソロ・CPU戦を見ているフレンド
@@ -3411,9 +3419,10 @@ async function finale() {
   if (!S.recorded) { S.recorded = true; accRecordMatch(S); }
   // オンライン対人のレーティング(1試合に1回だけ)。演出を待たずに、決着した時点で保存を始める
   let rating = null;
-  if (MODE === 'pvp' && PVP.foeAccP && !S.rated && !S.spectate) {
+  if (MODE === 'pvp' && PVP.rank && !S.spectate && !S.rankDone) { S.rankDone = true; rankAfterGame(S); }
+  if (MODE === 'pvp' && PVP.foeAccP && !S.rated && !S.spectate && (!PVP.rank || PVP.rank.over)) {
     S.rated = true;
-    const score = S.winner === 0 ? 1 : S.winner === 1 ? 0 : 0.5;
+    const score = PVP.rank ? (PVP.rank.win === 0 ? 1 : 0) : S.winner === 0 ? 1 : S.winner === 1 ? 0 : 0.5;
     rating = PVP.foeAccP.then((v) => (v ? accRateFinish(score) : null));
   }
   if (S.spectate) {
@@ -3452,6 +3461,7 @@ async function finale() {
     log(n ? `${SHARD_NAME} +${n}(所持 ${total})` : `${SHARD_NAME}:${S.resign === 'me' || S.forfeit === 1 ? 'リタイア・応答なしの負けのため、もらえません' : 'レート戦の負けでは、もらえません'}(所持 ${total})`);
     if (n) await cutin(`${SHARD_NAME} +${n}`, `所持 ${total}`, 'gold', 1300);
   }
+  if (MODE === 'pvp' && PVP.rank && !S.spectate) await rankSeriesFx(S);
   const res = rating && await rating;
   if (res) {
     const d = res.after - res.before;
@@ -3616,7 +3626,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.85';
+const APP_VER = '0.86';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
@@ -3751,13 +3761,13 @@ async function pvpInit() {
 }
 
 // 合言葉を入れて部屋に入る
-function pvpJoin() {
-  const code = $('roomCode').value.trim();
+function pvpJoin(codeArg) {
+  const code = codeArg || $('roomCode').value.trim();
   if (!/^[0-9a-zA-Z]{2,12}$/.test(code)) { pvpStatus('合言葉は、英数字2〜12文字で入れてください。'); return; }
   if (PVP.room && PVP.room.join && (PVP.code !== code || !PVP.room.connected())) PVP.room.join(code);   // 直接つなぐ方式では、ここで部屋を開く・参加する
   if (PVP.kind === 'rated' && !ACC.profile) PVP.kind = 'free';   // レート戦はログインが必要
   PVP.code = code; PVP.phase = 'lobby'; PVP.n = 0; PVP.foeTeamSeal = null; PVP.foeSeal = {};
-  pvpPublish({ g: code, v: RULES_VER, ts: null, t: null, n: null, c: null, r: null, b: null, last: null, nm: ACC.profile ? String(ACC.profile.name).slice(0, 12) : null, k: PVP.kind, fm: FORMAT, acc: ACC.profile ? { id: ACC.profile.id } : null });
+  pvpPublish({ g: code, v: RULES_VER, ts: null, t: null, n: null, c: null, r: null, b: null, last: null, d: null, nm: ACC.profile ? String(ACC.profile.name).slice(0, 12) : null, k: PVP.kind, fm: FORMAT, acc: ACC.profile ? { id: ACC.profile.id } : null });
   pvpStep();
   renderSelect();
 }
@@ -3771,9 +3781,171 @@ function pvpReady() {
 }
 function pvpLeave() {
   PVP.phase = 'idle'; PVP.code = ''; PVP.applying = false;
-  pvpPublish({ g: null, ts: null, t: null, n: null, c: null, r: null, b: null, last: null, acc: null, ff: null, rs: null });
+  if (PVP.rank) { FORMAT = PVP.rank.fmt0; PVP.rank = null; PVP.draft = null; }
+  pvpPublish({ g: null, ts: null, t: null, n: null, c: null, r: null, b: null, last: null, d: null, acc: null, ff: null, rs: null });
   if (PVP.room && PVP.room.leave) PVP.room.leave();
   renderSelect();
+}
+
+// ----- ランク戦:自動で相手を探す → 毎試合BAN1体ずつ・交互にピック → 3本勝負(ベーシック→アドバンス→ベーシック) -----
+const RANK_FMTS = ['basic', 'advance', 'basic'];
+const RANK_SEQ = 'FOOFFO';   // ピックの順番(F=先に取る側・O=後の側)。先に取る側は試合ごとに入れ替わる
+const RANK = { searching: false, timer: 0, t0: 0 };
+function rankDraftReset() { PVP.draft = { ban: null, banSalt: rnd(), foeBanSeal: null, bans: null, picks: [], foePicks: [], first: null, orderInit: false, err: '' }; }
+async function rankFind() {
+  if (!ACC.profile || RANK.searching || PVP.phase !== 'idle') return;
+  RANK.searching = true; RANK.t0 = Date.now(); renderMode();
+  pvpStatus('相手を探しています…');
+  const tick = async () => {
+    if (!RANK.searching) return;
+    let code = null;
+    try { code = await sbFetch('/rest/v1/rpc/rank_find', { method: 'POST', body: {} }); } catch (e) {
+      RANK.searching = false; renderMode();
+      pvpStatus(isMissingFn(e) ? 'ランク戦の準備が、サーバーでまだできていません(SQLの10回目が必要です)。' : '相手を探せませんでした。通信の状態を確かめて、もう一度押してください。');
+      return;
+    }
+    if (!RANK.searching) { sbFetch('/rest/v1/rpc/rank_leave', { method: 'POST', body: {} }).catch(() => null); return; }
+    if (typeof code === 'string' && /^[0-9A-Z]{4,11}$/.test(code)) { RANK.searching = false; rankStart(code); return; }
+    pvpStatus(`相手を探しています…(${Math.round((Date.now() - RANK.t0) / 1000)}秒)`);
+    RANK.timer = setTimeout(tick, 2000);
+  };
+  tick();
+}
+function rankCancel() {
+  if (!RANK.searching) return;
+  RANK.searching = false; clearTimeout(RANK.timer);
+  sbFetch('/rest/v1/rpc/rank_leave', { method: 'POST', body: {} }).catch(() => null);
+  renderMode();
+  pvpStatus('相手を探すのをやめました。');
+}
+function rankStart(code) {
+  PVP.rank = { g: 0, w: [0, 0], ds: 0, over: false, win: -1, fmt0: FORMAT, accP: null };
+  PVP.kind = 'rated'; FORMAT = RANK_FMTS[0]; rankDraftReset();
+  Sound.click();
+  pvpJoin('r' + code);
+  renderMode();
+}
+// 今の段階:'ban'(BANを選ぶ)→ 'pick'(交互に取る)→ 'order'(出す順番を決める)
+function rankStage() {
+  const D = PVP.draft;
+  if (!D || !D.bans) return 'ban';
+  return D.picks.length + D.foePicks.length < TEAM_SIZE * 2 ? 'pick' : 'order';
+}
+function rankMyTurn() {
+  const D = PVP.draft, t = D.picks.length + D.foePicks.length;
+  return D.first !== null && t < RANK_SEQ.length && (RANK_SEQ[t] === 'F') === D.first;
+}
+const rankBanned = (id) => !!PVP.draft.bans && (PVP.draft.bans.me === id || PVP.draft.bans.foe === id);
+function rankPublish() {
+  const D = PVP.draft, R = PVP.rank;
+  pvpPublish({ d: { ds: R.ds, b: D.ban ? seal(D.banSalt + '|' + R.ds + '|' + D.ban) : null, br: D.ban && D.foeBanSeal ? { id: D.ban, s: D.banSalt } : null, p: D.picks.slice() } });
+}
+// 相手のピックが正しいか(区分け・BAN・取り合い・★4以上1枚・順番)
+function rankFoePicksNg(list) {
+  const D = PVP.draft;
+  if (!Array.isArray(list) || list.length > TEAM_SIZE || new Set(list).size !== list.length) return true;
+  for (let i = 0; i < list.length; i++) {
+    const c = charById(list[i]);
+    if (!c || !inFormat(c, FORMAT) || rankBanned(c.id) || D.picks.includes(c.id) || teamNg(list.slice(0, i + 1), FORMAT)) return true;
+  }
+  const pre = RANK_SEQ.slice(0, D.picks.length + list.length), foeL = D.first ? 'O' : 'F';
+  return pre.split('').filter((x) => x === foeL).length !== list.length;
+}
+function rankDraftStep(fp) {
+  const R = PVP.rank, D = PVP.draft;
+  if (!D) return;
+  if (!PVP.my.d || PVP.my.d.ds !== R.ds) rankPublish();
+  const fd = fp && fp.d && fp.d.ds === R.ds ? fp.d : null;
+  const done = () => { renderSelect(); };
+  if (!fp || !fd) { pvpStatus(fp ? '相手が前の試合の画面にいます。相手を待っています…' : '相手を待っています…'); return done(); }
+  if (D.first === null && fp.acc && ACC.profile) D.first = (String(ACC.profile.id) < String(fp.acc.id)) !== (R.g % 2 === 1);
+  if (!D.bans) {
+    if (fd.b && !D.foeBanSeal) { D.foeBanSeal = fd.b; if (D.ban) rankPublish(); }
+    if (!D.ban) { pvpStatus(`BANするキャラを1体選んでください(相手もこの試合で使えなくなります)。${D.foeBanSeal ? '相手は選び終わっています。' : ''}`); return done(); }
+    if (!D.foeBanSeal) { pvpStatus('相手がBANを選んでいます…'); return done(); }
+    const br = fd.br;
+    if (!br || typeof br.id !== 'string') { pvpStatus('相手のBANを待っています…'); return done(); }
+    const c = charById(br.id);
+    if (seal(br.s + '|' + R.ds + '|' + br.id) !== D.foeBanSeal || !c || !inFormat(c, FORMAT)) { pvpStatus('相手のBANの情報が正しくありません。部屋を出てください。'); D.err = 'ng'; return done(); }
+    D.bans = { me: D.ban, foe: br.id };
+    Sound.click();
+  }
+  const fl = Array.isArray(fd.p) ? fd.p.map(String) : [];
+  if (D.first === null) { pvpStatus('相手のアカウントを確かめています…'); return done(); }
+  if (rankFoePicksNg(fl) || fl.length < D.foePicks.length) { pvpStatus('相手のピックの情報が正しくありません。部屋を出てください。'); return done(); }
+  if (fl.length > D.foePicks.length) Sound.click();
+  D.foePicks = fl;
+  const st = rankStage();
+  if (st === 'pick') pvpStatus(rankMyTurn() ? `あなたの番です。キャラを1体取ってください(あと${TEAM_SIZE - D.picks.length}体)。` : '相手がキャラを選んでいます…');
+  else pvpStatus('取り合いが終わりました。出す順番を決めて「準備完了」を押してください(下の3枚を押すと外せます)。');
+  done();
+}
+// キャラのボタンの状態(ランク戦のBAN・ピック中)
+function rankTileState(ch, dr) {
+  const D = PVP.draft;
+  if (dr === 'order') return { off: !D.picks.includes(ch.id) || PVP.phase !== 'lobby', tag: rankBanned(ch.id) ? 'BAN' : D.foePicks.includes(ch.id) ? '相手' : '', foe: D.foePicks.includes(ch.id) };
+  if (dr === 'ban') return { off: !!D.ban, tag: D.ban === ch.id ? 'BAN' : '' };
+  if (rankBanned(ch.id)) return { off: true, tag: 'BAN' };
+  if (D.foePicks.includes(ch.id)) return { off: true, tag: '相手', foe: true };
+  if (D.picks.includes(ch.id)) return { off: false, tag: '' };
+  const ng = !charUnlocked(ch) || !rankMyTurn() || D.picks.length >= TEAM_SIZE || !!teamNg(D.picks.concat(ch.id), FORMAT);
+  return { off: ng, tag: '' };
+}
+async function rankTap(ch, dt) {
+  const D = PVP.draft, dr = rankStage();
+  if (dt && dt.off) { openCharDetail(ch); return; }
+  if (dr === 'ban') {
+    if (D.ban) return;
+    if (!await askConfirm(`<b>${dispName(ch)}</b>をBANしますか?<br>この試合では、二人とも使えなくなります。`, 'BANする')) return;
+    if (D.ban || PVP.draft !== D) return;
+    D.ban = ch.id;
+  } else if (dr === 'pick') {
+    if (D.picks.includes(ch.id) || !rankMyTurn()) return;
+    if (!await askConfirm(`<b>${dispName(ch)}</b>を取りますか?<br>取ったキャラは、相手は使えなくなります。`, '取る')) return;
+    if (PVP.draft !== D || !rankMyTurn() || rankTileState(ch, 'pick').off) return;
+    D.picks.push(ch.id);
+  } else return;
+  Sound.click();
+  rankPublish();
+  pvpStep();
+  renderSelect();
+}
+// キャラ選択の上の、ランク戦の案内
+function rankBox(dr) {
+  const box = $('draftBox');
+  if (!box) return;
+  const R = PVP.rank, D = PVP.draft;
+  box.classList.toggle('hidden', !(MODE === 'pvp' && R && D && PVP.phase !== 'idle'));
+  if (box.classList.contains('hidden')) return;
+  const ic = (id) => { const c = charById(id); return c ? `${iconHtml(c, 'sm')}${dispName(c)}` : ''; };
+  const turn = dr === 'ban' ? (D.ban ? 'BAN決定。相手を待っています' : 'BANを1体選ぶ') : dr === 'pick' ? (rankMyTurn() ? 'あなたの番:1体取る' : '相手の番') : dr === 'order' ? '出す順番を決める' : '準備完了';
+  const seq = D.first === null ? '' : RANK_SEQ.split('').map((x, i) => { const me = (x === 'F') === D.first, t = D.picks.length + D.foePicks.length; return `<span style="${i === t && dr === 'pick' ? 'color:var(--gold);font-weight:700' : i < t ? 'opacity:.45' : ''}">${me ? 'あなた' : '相手'}</span>`; }).join(' → ');
+  box.innerHTML = `<b>ランク戦 第${R.g + 1}戦(${FORMATS[FORMAT]})</b>　戦績 あなた ${R.w[0]} - ${R.w[1]} 相手<br>`
+    + `BAN:あなた ${D.ban ? ic(D.ban) : '未定'} ／ 相手 ${D.bans ? ic(D.bans.foe) : D.foeBanSeal ? '決定済み' : '未定'}<br>`
+    + `相手が取ったキャラ:${D.foePicks.length ? D.foePicks.map(ic).join(' ') : 'まだなし'}<br>`
+    + (seq ? `取る順番:${seq}<br>` : '')
+    + `<span class="dturn">${turn}</span>`;
+}
+// 1試合が終わったときの3本勝負の記録。引き分けは同じ試合をやり直す。リタイア・応答なしは3本勝負ごと負け
+function rankAfterGame(S) {
+  const R = PVP.rank;
+  R.ds++;
+  if (S.resign || S.forfeit != null) { R.over = true; R.win = S.winner; return; }
+  if (S.winner >= 0) { R.w[S.winner]++; R.g++; }
+  if (R.w[0] >= 2 || R.w[1] >= 2) { R.over = true; R.win = R.w[0] >= 2 ? 0 : 1; }
+  else if (R.g >= RANK_FMTS.length) R.g = RANK_FMTS.length - 1;
+}
+async function rankSeriesFx(S) {
+  const R = PVP.rank, sc = `${R.w[0]} - ${R.w[1]}`;
+  if (R.over) {
+    log(`=== ランク戦 ${R.win === 0 ? '勝利' : '敗北'}(${sc}) ===`);
+    if (R.win === 0) { Sound.fanfare(); Particles.shower(COLORS.rainbow, 160); }
+    await cutin(R.win === 0 ? 'ランク戦 勝利' : 'ランク戦 敗北', `3本勝負 ${sc}${S.resign || S.forfeit != null ? '(リタイア・応答なし)' : ''}`, R.win === 0 ? 'rainbow' : 'violet', 1800);
+  } else {
+    log(S.winner === -1 ? `ランク戦:引き分けのため、第${R.g + 1}戦をやり直します(${sc})` : `ランク戦:${sc}。次は第${R.g + 1}戦(${FORMATS[RANK_FMTS[R.g]]})`);
+    await cutin(S.winner === -1 ? 'もう一度' : `第${R.g + 1}戦へ`, `戦績 ${sc}・次は${FORMATS[RANK_FMTS[R.g]]}`, 'gold', 1400);
+  }
+  render();
 }
 
 // 対戦中、今のラリーが誰の番か。'pick'=お互いに手を選ぶ、'mine'=自分のBREAK、'foe'=相手のBREAK
@@ -3800,6 +3972,7 @@ async function pvpStep() {
   if (kindNg && PVP.phase !== 'play') { if (selStep === 'pick' && PVP.phase === 'lobby') setStep('menu'); renderSelHead(); pvpStatus(kindNg); return; }
   if (PVP.phase === 'lobby' && foe && selStep === 'menu' && !$('select').classList.contains('hidden')) setStep('pick');   // 相手が来たら、キャラ選択へ
   else if (PVP.phase === 'lobby' || PVP.phase === 'ready') renderSelHead();
+  if (PVP.phase === 'lobby' && PVP.rank) { rankDraftStep(fp); return; }
   if (PVP.phase === 'lobby') { pvpStatus(foe ? '相手が部屋にいます。キャラを選んで「準備完了」を押してください。' : `合言葉「${PVP.code}」で相手を待っています。相手にも同じ合言葉を入れてもらってください。`); return; }
 
   if (PVP.phase === 'ready') {
@@ -3812,26 +3985,28 @@ async function pvpStep() {
     const t = fp.t;
     if (!t || !Array.isArray(t.ids)) { pvpStatus('相手の準備を待っています…'); return; }
     const chars = t.ids.map((id) => charById(id));
-    if (seal(t.s + '|' + t.ids.join(',')) !== PVP.foeTeamSeal || chars.length !== TEAM_SIZE || chars.some((c) => !c) || new Set(t.ids).size !== TEAM_SIZE || teamNg(t.ids, FORMAT)) {
+    if (seal(t.s + '|' + t.ids.join(',')) !== PVP.foeTeamSeal || chars.length !== TEAM_SIZE || chars.some((c) => !c) || new Set(t.ids).size !== TEAM_SIZE || teamNg(t.ids, FORMAT) || (PVP.rank && t.ids.slice().sort().join() !== PVP.draft.foePicks.slice().sort().join())) {
       pvpStatus('相手のキャラ情報が正しくありません。部屋を出て、入り直してください。'); return;
     }
     PVP.phase = 'play'; PVP.n = 0; PVP.hand = null; PVP.foeSeal = {};
     // レーティング戦:お互いにログインしていて、別のアカウントどうしのときだけ
     // 相手が名乗ったアカウントは、サーバーに保存されている情報で確かめる(名前・称号・レートは相手の申告を使わない)
     PVP.foeAcc = null;
-    ACC.pending = null;
+    if (!(PVP.rank && PVP.rank.accP)) ACC.pending = null;   // ランク戦の2試合目からは、1試合目に始めたレーティングを続けて使う
     // 相手の名前:まず相手が名乗った名前を出し、アカウントを確かめられたらサーバーの名前に置き換える
     const said = typeof fp.nm === 'string' ? fp.nm.replace(/[\u0000-\u001f]/g, '').slice(0, 12) : '';
     PVP.foeName = said;
     const rated = PVP.rated = PVP.kind === 'rated' && fp.k === 'rated';
-    PVP.foeAccP = accVerifyFoe(fp.acc).then(async (v) => {
-      PVP.foeAcc = v;
-      if (v && S && S.teams[1]) { PVP.foeName = v.name; S.teams[1].label = v.name; render(); }
+    // ランク戦の2試合目からは、1試合目に始めたレーティングをそのまま使う(3本勝負で1回だけ動かす)
+    const reuse = PVP.rank && PVP.rank.accP;
+    PVP.foeAccP = reuse || accVerifyFoe(fp.acc).then(async (v) => {
       if (!rated) { logLater(`フリー戦(レートは変わりません)${v ? `。対戦相手:${v.name}` : ''}`); return null; }   // フリー戦はレートを動かさない
       const lim = !!v && await accRateStart(v, [PVP.teamSalt, String(t.s)].sort().join('|').slice(0, 100)) === 'limit';
       logLater(lim ? `同じ相手とのレート戦は1日5回までです。この対戦ではレートは変わりません。対戦相手:${v.name}` : v ? `レート戦。対戦相手:${titleOf(v.title) ? `〔${titleOf(v.title).name}〕` : ''}${v.name}(レート${v.r})` : '相手のアカウントを確かめられなかったため、レーティングなしの対戦です');
       return v;
     });
+    if (PVP.rank) PVP.rank.accP = PVP.foeAccP;
+    accVerifyFoe(fp.acc).then((v) => { PVP.foeAcc = v; if (v && S && S.teams[1]) { PVP.foeName = v.name; S.teams[1].label = v.name; render(); } });
     PVP.hist = []; PVP.matchId = rnd(); PVP.foeIds = t.ids.slice();
     pvpSpecSync();
     await startMatch(PVP.team.map((id) => charById(id)), chars, said || '相手');
@@ -3885,7 +4060,7 @@ function askResign() {
   if (S && S.spectate) { if (FW.on) fwStop(); else specStop(); return; }
   if (!S || S.over) return;
   const canRetry = MODE !== 'pvp' && LAST_MATCH;   // 再挑戦はCPU戦とソロだけ(対人は相手がいるため)
-  openSheet('リタイア', `<p>${canRetry ? '同じチーム・同じ相手で最初からやり直すか、リタイアして負けにするかを選んでください。' : `この対戦をリタイアしますか? あなたの負けになります。${MODE === 'pvp' && PVP.foeAcc && PVP.rated ? 'レート戦なので、負けとして記録されます。' : ''}`}</p>
+  openSheet('リタイア', `<p>${canRetry ? '同じチーム・同じ相手で最初からやり直すか、リタイアして負けにするかを選んでください。' : `この対戦をリタイアしますか? あなたの負けになります。${MODE === 'pvp' && PVP.rank ? 'ランク戦なので、この3本勝負の負けになります。' : MODE === 'pvp' && PVP.foeAcc && PVP.rated ? 'ランク戦なので、負けとして記録されます。' : ''}`}</p>
     ${canRetry ? '<div class="row"><button id="rsRetry" style="border-color:var(--gold);color:var(--gold);font-weight:700">再挑戦</button></div>' : ''}
     <div class="row"><button id="rsYes" style="border-color:#ff4d5e;color:#ff8a95;font-weight:700">リタイアする</button></div>`);
   $('rsYes').onclick = () => { $('sheet').classList.add('hidden'); endByResign('me'); };
@@ -4042,6 +4217,7 @@ function renderMode() {
   $('soloOpts').classList.toggle('hidden', MODE !== 'solo');
   $('netOpts').classList.toggle('hidden', MODE !== 'pvp');
   if (PVP.on && !PVP.room) pvpStatus('この画面では、オンライン対人は使えません。公開サイト版(https://uzsangl.github.io/kokusen/)を、二人とも開いてください。');
+  else if (PVP.on && PVP.phase === 'idle' && PVP.kind === 'rated' && ACC.profile) { if (!RANK.searching) pvpStatus('「相手を探す」を押すと、レートの近い相手を自動で探します。'); }
   else if (PVP.on && PVP.phase === 'idle') pvpStatus('相手と決めた合言葉を入れて、「部屋に入る」を押してください。対戦を見るだけなら「観戦する」。');
   $('roomCode').disabled = $('joinRoom').disabled = !PVP.room || PVP.phase !== 'idle';
   $('specRoom').disabled = !PVP.room || PVP.phase !== 'idle';
@@ -4051,8 +4227,14 @@ function renderMode() {
     b.classList.toggle('picked', b.dataset.k === kindNow);
     b.disabled = PVP.phase !== 'idle' || (b.dataset.k === 'rated' && !ACC.profile);
   });
-  $('pvpKindNote').textContent = kindNow === 'rated' ? `レート戦:勝ち負けでレートが動きます。二人ともログインして、二人ともレート戦を選んでください。${SHARD_NAME}は勝ち30・負け0。` : `フリー戦:レートは動きません。ログインなしでも遊べます。${SHARD_NAME}は勝ち20・負け5(リタイアの負けは0)。${ACC.profile ? '' : '(レート戦はログインすると選べます)'}`;
-  $('specRoom').classList.toggle('hidden', !!PVP.room && !PVP.room.spectate);   // 観戦は、端末どうしを直接つなぐ方式のときだけ
+  // ランク戦は合言葉ではなく、自動で相手を探す
+  const ranked = kindNow === 'rated';
+  ['roomCode', 'joinRoom'].forEach((id) => $(id).classList.toggle('hidden', ranked));
+  $('rankFind').classList.toggle('hidden', !ranked || PVP.phase !== 'idle');
+  $('rankFind').disabled = !PVP.room;
+  $('rankFind').textContent = RANK.searching ? '探すのをやめる' : '相手を探す';
+  $('pvpKindNote').textContent = kindNow === 'rated' ? `ランク戦:レートの近い相手と自動で当たる3本勝負(ベーシック→アドバンス→ベーシック)。毎試合、お互いにBANを1体ずつ出してから、交互にキャラを取り合う(持っているキャラだけ)。3本勝負の勝ち負けでレートが1回動く(勝つと+1のボーナス)。${SHARD_NAME}は1試合ごとに勝ち30・負け0。` : `フリー戦:レートは動きません。ログインなしでも遊べます。${SHARD_NAME}は勝ち20・負け5(リタイアの負けは0)。${ACC.profile ? '' : '(ランク戦はログインすると選べます)'}`;
+  $('specRoom').classList.toggle('hidden', ranked || (!!PVP.room && !PVP.room.spectate));   // 観戦は、端末どうしを直接つなぐ方式のときだけ
   $('leaveRoom').classList.toggle('hidden', PVP.phase === 'idle');
   renderSelect();
 }
@@ -4244,7 +4426,7 @@ async function accAddStat(key, n = 1) {
 // base は対戦前の自分の記録 { rating, wins, losses }。score:勝ち1、引き分け0.5、負け0
 function rateAfter(base, foeRating, score) {
   const expect = 1 / (1 + Math.pow(10, (foeRating - base.rating) / 400));
-  return { rating: Math.max(100, Math.round(base.rating + RATING_K * (score - expect))), wins: base.wins + (score === 1 ? 1 : 0), losses: base.losses + (score === 0 ? 1 : 0) };
+  return { rating: Math.max(100, Math.round(base.rating + RATING_K * (score - expect)) + (score === 1 ? 1 : 0)), wins: base.wins + (score === 1 ? 1 : 0), losses: base.losses + (score === 0 ? 1 : 0) };
 }
 // 切断対策:レーティング戦が始まった時点で、先に「負け」として保存しておく。
 // 決着すれば正しい結果に直すので、途中でページを閉じたり接続を切ったりすると負けのまま残る
@@ -5588,16 +5770,16 @@ function setStep(st) {
 // 選んだ相手の説明(キャラ選択の上に出す)
 function pickInfoText() {
   if (MODE === 'solo') { const st = STAGES.find((x) => x.id === SOLO.stage); return st ? `ソロ:${st.rush ? st.name : `${st.faction}${'★'.repeat(st.stars)}「${st.name}」`}` : 'ソロ'; }
-  if (MODE === 'pvp') { const f = pvpFoe(); const nm = f && f.presence && typeof f.presence.nm === 'string' ? f.presence.nm.slice(0, 12) : ''; const kd = `${PVP.kind === 'rated' ? 'レート戦' : 'フリー戦'}・${FORMATS[FORMAT]}`; return f ? `${kd}:${nm || '相手(ゲスト)'}` : `${kd}:合言葉「${PVP.code}」`; }
+  if (MODE === 'pvp') { const f = pvpFoe(); const nm = f && f.presence && typeof f.presence.nm === 'string' ? f.presence.nm.slice(0, 12) : ''; const kd = PVP.rank ? `ランク戦 第${PVP.rank.g + 1}戦・${FORMATS[FORMAT]}` : `${PVP.kind === 'rated' ? 'ランク戦' : 'フリー戦'}・${FORMATS[FORMAT]}`; return f ? `${kd}:${nm || '相手(ゲスト)'}` : `${kd}:合言葉「${PVP.code}」`; }
   return `CPU(${AI_LEVELS[FX.level].name})・${FORMATS[fmtNow()]}${choosingFoe() ? '・相手も選ぶ' : ''}`;
 }
 // レート戦・フリー戦がそろっているか。そろっていなければ理由を返す
 function pvpKindNg(fp) {
   if (!fp || !fp.k) return '';
-  if (fp.fm && fp.fm !== FORMAT) return `相手は「${FORMATS[fp.fm] || fp.fm}」を選んでいます。部屋を出て、ベーシック/アドバンスをそろえて入り直してください。`;
-  if (fp.k !== PVP.kind) return fp.k === 'rated' ? '相手は「レート戦」を選んでいます。部屋を出て、同じ種類にそろえて入り直してください。' : '相手は「フリー戦」を選んでいます。部屋を出て、同じ種類にそろえて入り直してください。';
-  if (PVP.kind === 'rated' && !fp.acc) return '相手がログインしていません。レート戦は、二人ともログインが必要です。';
-  if (PVP.kind === 'rated' && ACC.profile && fp.acc && fp.acc.id === ACC.profile.id) return '同じアカウントどうしでは、レート戦はできません。';
+  if (fp.fm && fp.fm !== FORMAT && !PVP.rank) return `相手は「${FORMATS[fp.fm] || fp.fm}」を選んでいます。部屋を出て、ベーシック/アドバンスをそろえて入り直してください。`;
+  if (fp.k !== PVP.kind) return fp.k === 'rated' ? '相手は「ランク戦」を選んでいます。部屋を出て、同じ種類にそろえて入り直してください。' : '相手は「フリー戦」を選んでいます。部屋を出て、同じ種類にそろえて入り直してください。';
+  if (PVP.kind === 'rated' && !fp.acc) return '相手がログインしていません。ランク戦は、二人ともログインが必要です。';
+  if (PVP.kind === 'rated' && ACC.profile && fp.acc && fp.acc.id === ACC.profile.id) return '同じアカウントどうしでは、ランク戦はできません。';
   return '';
 }
 // 相手を決める画面の「キャラを選ぶ」を押せるか
@@ -5620,7 +5802,7 @@ function renderSelHead() {
   $('pickInfo').textContent = pickInfoText();
   $('toMenu').textContent = MODE === 'pvp' ? '◀ 部屋を出る' : '◀ 戻る';
   $('toPick').disabled = !canPick();
-  $('toPick').textContent = MODE === 'pvp' && !canPick() ? (PVP.phase === 'idle' ? '合言葉で部屋に入ってください' : '相手を待っています…') : MODE === 'solo' && !canPick() ? (corrOpen(STAGES.find((x) => x.id === SOLO.stage)) ? 'このステージは直接挑めません' : 'ひとつ前の段をクリアすると挑めます') : 'キャラを選ぶ ▶';
+  $('toPick').textContent = MODE === 'pvp' && !canPick() ? (PVP.phase === 'idle' ? (PVP.kind === 'rated' && ACC.profile ? '「相手を探す」で相手を見つけてください' : '合言葉で部屋に入ってください') : '相手を待っています…') : MODE === 'solo' && !canPick() ? (corrOpen(STAGES.find((x) => x.id === SOLO.stage)) ? 'このステージは直接挑めません' : 'ひとつ前の段をクリアすると挑めます') : 'キャラを選ぶ ▶';
 }
 function renderSelect() {
   if (!$('select').dataset.step) $('select').dataset.step = selStep;
@@ -5636,6 +5818,12 @@ function renderSelect() {
   });
   $('pickTitle').textContent = choosingFoe() ? `${pickSide === 'me' ? 'あなた' : 'CPU'}が出す順に3枚選ぶ` : '出す順に3枚選ぶ';
   const locked = PVP.on && PVP.phase === 'ready';
+  // ランク戦のBAN・ピック中か('ban' / 'pick' / 'order')
+  const dr = MODE === 'pvp' && PVP.rank && PVP.draft && PVP.phase === 'lobby' ? rankStage() : null;
+  if (dr === 'ban' || dr === 'pick') picked = PVP.draft.picks.slice();
+  if (dr === 'order' && !PVP.draft.orderInit) { PVP.draft.orderInit = true; picked = PVP.draft.picks.slice(); }
+  rankBox(dr);
+  if (dr) $('pickTitle').textContent = dr === 'ban' ? 'BANするキャラを1体選ぶ' : dr === 'pick' ? '交互に1体ずつ取る(3体)' : '取った3体を出す順に並べる';
   // 選んだ3枚(押すと外す)
   $('picks').innerHTML = '';
   for (let i = 0; i < TEAM_SIZE; i++) {
@@ -5643,7 +5831,7 @@ function renderSelect() {
     const b = document.createElement('button');
     b.className = ch ? '' : 'empty';
     b.innerHTML = ch ? `<b>${i + 1}番手</b>${iconHtml(ch, 'md')}${dispName(ch)}` : `<b>${i + 1}番手</b><span class="cico md ph"></span>未選択`;
-    b.disabled = !ch || locked;
+    b.disabled = !ch || locked || (!!dr && dr !== 'order');
     if (ch) b.onclick = () => { picked.splice(i, 1); Sound.click(); renderSelect(); };
     $('picks').appendChild(b);
   }
@@ -5686,12 +5874,15 @@ function renderSelect() {
     const unlocked = charUnlocked(ch);
     const clash = order < 0 && (sameClash(ch, picked) || highFull(ch, picked));
     const full = order < 0 && picked.length >= TEAM_SIZE;
-    const off = !unlocked || clash || full || locked;
+    const dt = dr ? rankTileState(ch, dr) : null;   // ランク戦:BAN・相手が取った・番ではない など
+    const off = dt ? dt.off : !unlocked || clash || full || locked;
     b.classList.toggle('off', off && order < 0);
     b.classList.toggle('locked', !unlocked);
-    b.innerHTML = `${order >= 0 ? `<i class="ord">${order + 1}</i>` : ''}${unlocked ? '' : '<span class="lk">🔒</span>'}${iconHtml(ch, 'lg')}${ch.secret && !xenoKnown() && !unlocked ? '' : rarHtml(ch)}<span class="nm">${dispName(ch)}</span>`;
+    b.innerHTML = `${order >= 0 ? `<i class="ord">${order + 1}</i>` : ''}${unlocked ? '' : '<span class="lk">🔒</span>'}${iconHtml(ch, 'lg')}${ch.secret && !xenoKnown() && !unlocked ? '' : rarHtml(ch)}<span class="nm">${dispName(ch)}</span>${dt && dt.tag ? `<span class="dtag${dt.foe ? ' foe' : ''}">${dt.tag}</span>` : ''}`;
     b.setAttribute('aria-label', `${dispName(ch)}${order >= 0 ? `(${order + 1}番手)` : ''}。長押しで詳細`);
     const tap = () => {
+      if (dr && dr !== 'order') { rankTap(ch, dt); return; }   // ランク戦のBAN・ピック
+      if (dr === 'order' && !PVP.draft.picks.includes(ch.id)) { openCharDetail(ch); return; }   // 並べ替えは、自分が取った3体だけ
       if (!unlocked) { openCharDetail(ch); return; }          // 鍵つきは、押すと解放条件を見せる
       if (locked) return;
       if (order >= 0) picked.splice(order, 1);
@@ -5716,8 +5907,9 @@ function renderSelect() {
       : full ? (MODE === 'solo' ? 'この順番でステージに挑む' : 'この順番で対戦開始') : `あと${TEAM_SIZE - picked.length}枚選ぶ`;
   } else {
     // オンライン対人:部屋に入ってからキャラを決める。決めたあとは選び直せない
-    $('start').disabled = !full || PVP.phase !== 'lobby';
-    $('start').textContent = PVP.phase === 'idle' ? '先に合言葉で部屋に入る' : PVP.phase === 'ready' ? '準備完了。相手を待っています…' : full ? '準備完了' : `あと${TEAM_SIZE - picked.length}枚選ぶ`;
+    const dr2 = PVP.rank && PVP.draft && PVP.phase === 'lobby' ? rankStage() : null;
+    $('start').disabled = !full || PVP.phase !== 'lobby' || (!!dr2 && dr2 !== 'order');
+    $('start').textContent = dr2 === 'ban' ? 'BANするキャラを選ぶ' : dr2 === 'pick' ? 'キャラを取り合っています' : PVP.phase === 'idle' ? '先に合言葉で部屋に入る' : PVP.phase === 'ready' ? '準備完了。相手を待っています…' : full ? '準備完了' : `あと${TEAM_SIZE - picked.length}枚選ぶ`;
   }
 }
 
@@ -5784,7 +5976,7 @@ async function startMatch(mine, theirs, foeLabel, opt = {}) {
     await cutin('トキバミ', '止めておいてくれて、ありがとう', 'violet', 1500);
   } else {
     if (S.spectate) await cutin('観戦', `${S.teams[0].label} vs ${S.teams[1].label}`, 'gold', 1200);
-    else if (PVP.on) await cutin(`VS ${PVP.foeName || '相手(ゲスト)'}`, `${PVP.rated ? 'レート戦' : 'フリー戦'}　${active(S.teams[0]).ch.name} vs ${active(S.teams[1]).ch.name}`, PVP.rated ? 'evil' : 'gold', 1400);
+    else if (PVP.on) await cutin(`VS ${PVP.foeName || '相手(ゲスト)'}`, `${PVP.rank ? `ランク戦 第${PVP.rank.g + 1}戦` : PVP.rated ? 'ランク戦' : 'フリー戦'}　${active(S.teams[0]).ch.name} vs ${active(S.teams[1]).ch.name}`, PVP.rated ? 'evil' : 'gold', 1400);
     else await cutin('開戦', `${active(S.teams[0]).ch.name} vs ${active(S.teams[1]).ch.name}`, 'gold', 900);
   }
   busy = false;
@@ -5814,14 +6006,16 @@ function init() {
     $('battle').classList.add('hidden');
     $('select').classList.remove('hidden');
     document.body.classList.remove('in-battle');
-    if (PVP.on) { PVP.phase = 'idle'; pvpJoin(); renderMode(); }   // 同じ合言葉のまま、もう一度キャラ選びから
+    if (PVP.on && PVP.rank && PVP.rank.over) { pvpLeave(); renderMode(); setStep('menu'); showNewTitles(); return; }   // ランク戦の3本勝負が終わった
+    if (PVP.on && PVP.rank) { FORMAT = RANK_FMTS[PVP.rank.g]; rankDraftReset(); PVP.phase = 'idle'; pvpJoin(PVP.code); renderMode(); }   // 次の試合:BAN・ピックから
+    else if (PVP.on) { PVP.phase = 'idle'; pvpJoin(); renderMode(); }   // 同じ合言葉のまま、もう一度キャラ選びから
     setStep('pick');
     showNewTitles();   // 対戦中に解放した称号を知らせる
   };
   MODES.forEach(([label, m]) => {
     const b = document.createElement('button');
     b.textContent = label;
-    b.onclick = () => { if (PVP.spec) specStop(); else if (PVP.on && m !== 'pvp' && PVP.phase !== 'idle') pvpLeave(); MODE = m; PVP.on = m === 'pvp'; renderMode(); };
+    b.onclick = () => { if (PVP.spec) specStop(); else if (PVP.on && m !== 'pvp' && PVP.phase !== 'idle') pvpLeave(); if (m !== 'pvp') rankCancel(); MODE = m; PVP.on = m === 'pvp'; renderMode(); };
     $('modes').appendChild(b);
   });
   try { SOLO.stage = localStorage.getItem('kokusen.stage') || 'a1'; SOLO.cleared = readCleared(GUEST_KEY); SOLO.rush = Number(localStorage.getItem('kokusen.rush')) || 0; } catch (e) { /* 保存できなくても動く */ }
@@ -5926,7 +6120,8 @@ function init() {
   $('joinRoom').onclick = () => { pvpJoin(); renderMode(); };
   $('leaveRoom').onclick = () => { if (PVP.spec) specStop(); else pvpLeave(); renderMode(); };
   $('specRoom').onclick = () => specStart();
-  [...$('pvpKinds').children].forEach((b) => { b.onclick = () => { if (b.disabled) return; PVP.kind = b.dataset.k; try { localStorage.setItem('kokusen.pvpKind', PVP.kind); } catch (e) { /* 保存できなくても動く */ } Sound.click(); renderMode(); }; });
+  $('rankFind').onclick = () => { Sound.click(); if (RANK.searching) rankCancel(); else rankFind(); };
+  [...$('pvpKinds').children].forEach((b) => { b.onclick = () => { if (b.disabled) return; if (b.dataset.k !== 'rated') rankCancel(); PVP.kind = b.dataset.k; try { localStorage.setItem('kokusen.pvpKind', PVP.kind); } catch (e) { /* 保存できなくても動く */ } Sound.click(); renderMode(); }; });
   try { const k = localStorage.getItem('kokusen.pvpKind'); if (k === 'rated' || k === 'free') PVP.kind = k; } catch (e) { /* 読めなければフリー戦 */ }
   $('toPick').onclick = () => { if (canPick()) { Sound.click(); setStep('pick'); } };
   $('toMenu').onclick = () => { if (MODE === 'pvp' && PVP.phase !== 'idle') { pvpLeave(); renderMode(); } Sound.click(); setStep('menu'); };
