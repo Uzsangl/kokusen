@@ -1380,6 +1380,7 @@ const STAGES = [
   { id: 'k5', faction: '錨', stars: 5, name: '始まり', foes: ['b_kaji_shi'], level: 4, read: 0.6, hp: 1.0, atk: 1.0, bgm: 'xeno', chainFrom: 'k4' },
   // ボスラッシュ:★★★の3体 → ★★★★ → ★★★★★ を続けて戦う。ボスを1体倒すごとに、こちらは全回復する。
   // rushHp は、ゼノ以外のボスのHPの倍率。「むずかしい」で5連勝できる率が約0.01%になるように決めた
+  { id: 'kr', faction: '刻練', stars: 0, name: '百刻スコアアタック', kr: true, level: 2, read: 0.2, hp: 1.0, atk: 1.0 },
   { id: 'rush', faction: '連戦', stars: 0, name: 'ボスラッシュ1', rush: ['a3', 'z3', 'y3', 't4', 'x5'], rushHp: 0.28, level: 4, read: 0.35, hp: 1.0, atk: 1.0 },
   // ----- 刻の回廊(アドバンスのソロ)。★2 → ★3 → ★4 → ★5 の順に、前の段をクリアすると次に挑める -----
   // reward:[初回クリア, 2回目以降] の空間のカケラ。勝率は tools/bossrate.js で、適正パーティ5通り(tools/parties/fixed5.json)で測った
@@ -1401,7 +1402,57 @@ const STAGES = [
   { id: 'r4_5', corridor: 4, faction: '灯と天眼', stars: 5, name: '天眼の果て',   foes: ['c5_tsuru1', 'c5_tsuru'], level: 4, read: 0.6, hp: 1, atk: 1, bgm: 'xeno', bgm2: 'majo', climaxOk: true, reward: [1000, 40] },
 ];
 // ステージの敵を、倍率を掛けた能力値で作る(元のデータは書き換えない)
+// ----- 刻練場(百刻スコアアタック) -----
+// 4層で1区切り(4層目がボス層で敵1体、ほかは敵3体)。ボスを倒すと全回復(40層まで)。敵は層ごとの決まりでLvを決め、Lvごとの候補から抽選する
+const KR_RENAME = { a_guard: '錨門の盾持ち', a_lamp: '錨門の灯持ち', a_chain: '錨門の鎖持ち', z_mask: '零門の面打ち', z_wind: '零門の巻き手', z_sand: '零門の砂読み', y_runner: '矢門の早駆け', y_archer: '矢門の射手', y_seer: '矢門の占い見習い' };
+// Lvごとの候補。[もとの★(1か2、3はボス), 倍率, 敵の一覧, HP上限]
+const KR_LV = {
+  1: [1, 0.6, ['a_guard', 'a_lamp', 'z_mask', 'z_sand', 'y_runner']],
+  2: [1, 0.8, ['a_chain', 'z_wind', 'y_archer', 'y_seer', 'a_guard']],
+  3: [1, 1.0, ['a_lamp', 'a_chain', 'z_mask', 'z_wind', 'y_archer']],
+  4: [1, 1.4, ['a_guard', 'z_sand', 'z_wind', 'y_runner', 'y_seer']],
+  5: [2, 1.0, ['a_guard', 'a_chain', 'z_mask', 'z_sand', 'y_runner']],
+  6: [2, 1.2, ['a_lamp', 'z_wind', 'y_archer', 'y_seer', 'a_chain']],
+  7: [3, 1.0, ['b_tomari', 'b_rei', 'b_tsuru', 'a_guard', 'y_runner'], 9000],
+  8: [0, 1.0, ['k_hare', 'k_yuragi', 'k_urei'], 11000],
+  9: [0, 1.0, ['k_isami', 'k_setsuna', 'k_osore'], 13000],
+  10: [0, 1.0, ['k_utsuro'], 15000],
+};
+// 層の決まり:[最後の層, 通常層のLv(配列ならその範囲からランダム), ボス層のLv]
+const KR_RULES = [[8, [1, 2], 5], [16, 3, 6], [24, 4, 7], [32, 4, 8], [36, 5, 9], [40, 5, 10], [Infinity, 5, 9]];
+const KR_HEAL_UNTIL = 40, KR_GOAL = 40;
+function krRand(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+function krEnemy(lv, id) {
+  const [star, mul, , cap] = KR_LV[lv];
+  let e;
+  if (star === 0) e = { ...[...CHARACTERS, ...SPECIAL_CHARS].find((c) => c.id === id) };
+  else {
+    const bossId = ['b_tomari', 'b_rei', 'b_tsuru'].includes(id);
+    const sv = star === 3 && !bossId ? 2 : star;   // Lv7の兵は、★2の兵を1.5倍にしたもの
+    const st = STAGES.find((x) => !x.corridor && !x.rush && !x.kr && x.stars === sv && x.foes && x.foes.includes(id));
+    e = { ...stageFoes(st).find((f) => f.id === id) };
+    const m = star === 3 && !bossId ? 1.5 : mul;
+    e.hp = Math.max(1, Math.round(e.hp * m / 10) * 10); e.atk = Math.max(1, Math.round(e.atk * m / 10) * 10);
+  }
+  if (KR_RENAME[id]) e.name = KR_RENAME[id];
+  if (cap) e.hp = lv >= 8 ? cap : Math.min(e.hp, cap);   // Lv8〜10はHPを上限にそろえる
+  e.krLv = lv;
+  return e;
+}
+// 敵の並び。seed が同じなら同じ並びになる(観戦で同じ試合を再生するため)
+function krFoes(seed, layers = 120) {
+  const rnd = krRand(seed), pick = (a) => a[Math.floor(rnd() * a.length)], out = [];
+  for (let L = 1; L <= layers; L++) {
+    const rule = KR_RULES.find((r) => L <= r[0]), boss = L % 4 === 0;
+    const lvs = boss ? [rule[2]] : [0, 1, 2].map(() => (Array.isArray(rule[1]) ? pick(rule[1]) : rule[1]));
+    lvs.forEach((lv) => out.push({ ...krEnemy(lv, pick(KR_LV[lv][2])), krLayer: L, krBoss: boss }));
+  }
+  return out;
+}
+// 何層まで突破したか(その層の敵を全部倒した層の数)
+const krCleared = (S) => { const t = S.teams[1], dead = t.cards.filter((c) => c.result === 'lose').length; let L = 0; for (const c of t.cards.slice(0, dead)) L = c.ch.krLayer; const nx = t.cards[dead]; return nx && nx.ch.krLayer === L ? L - 1 : L; };
 function stageFoes(stage) {
+  if (stage.kr) return krFoes(1, 4);   // 画面の説明用(実際の試合は startSolo で抽選する)
   // ボスラッシュ:元のステージの強さのまま並べる。read は、そのボスが読みに頼る割合
   if (stage.rush) return stage.rush.flatMap((sid) => { const sub = STAGES.find((x) => x.id === sid); return stageFoes(sub).map((f) => ({ ...f, rush: true, read: sub.read, hp: sid === 'x5' ? f.hp : Math.max(1, Math.round(f.hp * stage.rushHp / 10) * 10) })); });   // ゼノだけは通常の強さのまま
   return stage.foes.map((id) => {
@@ -1427,14 +1478,14 @@ const baseAtk = (c) => Math.min(ATK_MAX, Math.max(ATK_MIN, c.atk + c.atkBonus + 
 const baseDfs = (c) => {
   const v = c.dfs + c.dfsGain + c.dfsBonus + c.teamDfs + c.markDfs + (c.facDfs || 0) + modSum(c, 'dfs');
   // 特性「鋼の刻」:DFSはデバフや刻印で下がらない
-  return Math.max(0, Math.min(DFS_MAX, traitOf(c, 'hardshell') ? Math.max(c.dfs, v) : v));
+  return Math.max(0, Math.min(c.dfsCap || DFS_MAX, traitOf(c, 'hardshell') ? Math.max(c.dfs, v) : v));
 };
 // 攻撃を受けるときのDFS。BREAK中の攻撃は DFS を 0 として扱う
 // 特性「一点留め」など:相手のチームが1体だけのとき(ソロのボス戦)のDFSの上乗せ。S.giant は、相手が1体のチームの側
 const giantDfs = (c) => { const t = traitOf(c, 'giantSlayer'); return t && c.giant ? t.dfs : 0; };
 // 特性「背水・始」:残りHPが一定以下でDFSも上がる
 const traitDfs = (c) => { const t = traitOf(c, 'backwaterAll'), w = traitOf(c, 'sway'); return (t && c.hp <= c.max * t.below ? t.add : 0) + (w ? (c.turn % 2 === 1 ? -w.minus : w.dfs) : 0); };
-const dfsOf = (def, isBreak) => (isBreak ? 0 : Math.min(DFS_MAX, baseDfs(def) + def.dfsUp + giantDfs(def) + traitDfs(def)));
+const dfsOf = (def, isBreak) => (isBreak ? 0 : Math.min(def.dfsCap || DFS_MAX, baseDfs(def) + def.dfsUp + giantDfs(def) + traitDfs(def)));
 // 攻撃する側から見た相手のDFS(特性「貫き」はDFSを一定量無視する)
 const dfsVs = (att, def, isBreak) => {
   const z = traitOf(att, 'lastPierce');   // 特性「見切り」:自分の残りHPが少ないとき、相手のDFSを0として攻撃する
@@ -1686,7 +1737,7 @@ function act(S, side, hand, log, isBreak) {
     // 特性「不動」:攻撃を受けるたびに硬くなる
     if ((t = traitOf(l, 'immovable')) && l.hp > 0 && !traitOf(l, 'void')) { l.dfsGain = Math.min(t.cap, l.dfsGain + t.gain); trig(l, 'immovable'); }
     // 特性「刻喰い」:当てたダメージの一部を回復する(回復封じ中は回復しない)
-    if ((t = traitOf(w, 'devour')) && d > 0 && w.noHeal <= 0 && w.hp < w.max) {
+    if ((t = traitOf(w, 'devour')) && d > 0 && w.noHeal <= 0 && w.hp < w.max && !(S.kr && side === 0)) {
       trig(w, 'devour');
       const before = w.hp;
       w.hp = Math.min(w.max, w.hp + Math.round(d * t.rate));
@@ -1712,7 +1763,8 @@ function act(S, side, hand, log, isBreak) {
       log(`　${nameOf(l)}にATKの刻印(ATK${l.markAtk})`);
     }
   }
-  if (a.heal && w.noHeal > 0) log(`　${nameOf(w)}は回復を封じられている`);
+  if (a.heal && S.kr && side === 0) log(`　刻練場では、こちらは回復できない`);
+  else if (a.heal && w.noHeal > 0) log(`　${nameOf(w)}は回復を封じられている`);
   else if (a.heal && w.hp > 0) {   // 「時の報い」などで倒れたカードは回復しない
     const before = w.hp;
     w.hp = Math.min(w.max, w.hp + a.heal);
@@ -1859,7 +1911,7 @@ function endRally(S, log, winSide) {
       log(`　${t.label}の${nameOf(f)}は時蝕で${f.poisonDmg}ダメージ`);
       if (f.poison === 0) { f.poisonDmg = 0; f.poisonStacks = 0; }
     }
-    if ((tr = traitOf(f, 'regen')) && f.hp > 0 && f.hp < f.max && f.noHeal <= 0) {
+    if ((tr = traitOf(f, 'regen')) && f.hp > 0 && f.hp < f.max && f.noHeal <= 0 && !(S.kr && side === 0)) {
       const before = f.hp;
       f.hp = Math.min(f.max, f.hp + tr.heal);
       S.ticks.push({ side, heal: f.hp - before });
@@ -1906,7 +1958,7 @@ function endRally(S, log, winSide) {
   // 特性「立ち直り」:一度だけ、倒れたときにHPの一部で立ち上がる
   S.teams.forEach((t, side) => {
     const f = active(t), sw = traitOf(f, 'secondWind');
-    if (f.hp > 0 || !sw || f.revived) return;
+    if (f.hp > 0 || !sw || f.revived || (S.kr && side === 0)) return;
     f.revived = true; f.hp = Math.round(f.max * sw.hp); trig(f, 'secondWind');
     S.events.push({ type: 'mod', side, text: '立ち直り', good: true });
     log(`　${t.label}の${nameOf(f)}の「${sw.name}」:HP${f.hp}で立ち上がった`);
@@ -2004,6 +2056,12 @@ function endRally(S, log, winSide) {
     log(`　${nameOf(fallen)}を倒した。こちらは全回復して、1番手から出直す`);
   }
 
+  // 刻練場:ボス層(4層ごと)の敵を倒したら、こちらは全回復(40層まで)。倒れたカードは戻らない
+  if (S.kr && ko[1] && fallen && fallen.ch.krBoss && fallen.ch.krLayer <= KR_HEAL_UNTIL && nextFoe) {
+    a.cards.forEach((c) => { if (c.result !== 'lose' && c.hp > 0) Object.assign(c, { hp: c.max, poison: 0, poisonDmg: 0, poisonStacks: 0 }); });
+    S.events.push({ type: 'krHeal', layer: fallen.ch.krLayer });
+    log(`　${fallen.ch.krLayer}層を突破。こちらは全回復した`);
+  }
   const out = S.teams.map((t) => t.idx >= t.cards.length);
   if (out[0] || out[1]) {
     // 全員倒れた側の負け。同時に全滅したら、このラリーのじゃんけんに勝った側の勝ち(あいこなら引き分け)
@@ -2028,7 +2086,7 @@ function rallyCore(S, hand0, hand1, log) {
     // 特性「凪の間」:あいこのたびに回復する
     S.teams.forEach((t) => {
       const c = active(t), dh = traitOf(c, 'drawHeal');
-      if (!dh || c.hp <= 0 || c.noHeal > 0 || c.hp >= c.max) return;
+      if (!dh || c.hp <= 0 || c.noHeal > 0 || c.hp >= c.max || (S.kr && t === S.teams[0])) return;
       const before = c.hp; c.hp = Math.min(c.max, c.hp + dh.heal); trig(c, 'drawHeal');
       S.ticks.push({ side: S.teams.indexOf(t), heal: c.hp - before });
       log(`　${t.label}の${nameOf(c)}の「${dh.name}」:${c.hp - before}回復`);
@@ -2470,7 +2528,7 @@ const $ = (id) => document.getElementById(id);
 // ソロのボスは元のキャラの絵を使う。絵がないキャラは名前の頭文字を出す。
 // ゼノは名前が明かされるまでシルエットにする。
 const ICON_IDS = new Set(['kaji', 'tomari', 'mio', 'moyai', 'shio', 'rei', 'hajime', 'uro', 'moto', 'kasumi',
-  'tsuru', 'haya', 'yajiri', 'hane', 'tokibami', 'xeno_body', 'xeno_spirit', 'kaji_shi', 'tsuru2', 'yugake', 'awai',
+  'tsuru', 'haya', 'yajiri', 'hane', 'tokibami', 'xeno_body', 'xeno_spirit', 'kaji_shi', 'tsuru2', 'yugake', 'awai', 'k_hare', 'k_urei', 'k_yuragi', 'k_setsuna', 'k_isami', 'k_osore',
   'g_a1', 'g_a2', 'g_a3a', 'g_a3b', 'g_a3c', 'g_a4', 'g_z1', 'g_z2', 'g_z3a', 'g_z3b', 'g_z3c', 'g_z4', 'g_z5', 'g_y1', 'g_y2', 'g_y3a', 'g_y3b', 'g_y3c', 'g_y4',
   'a_guard', 'a_chain', 'a_lamp', 'z_mask', 'z_wind', 'z_sand', 'y_runner', 'y_archer', 'y_seer']);
 const ICON_ALIAS = { p_tsuru_ten: 'tsuru2', p_awai: 'awai', b_tomari: 'tomari', b_rei: 'rei', b_tsuru: 'tsuru', p_tokibami: 'tokibami', p_xeno: 'xeno_body', b_kaji: 'kaji', b_kaji_shi: 'kaji_shi', p_kaji_shi: 'kaji_shi',
@@ -3142,7 +3200,9 @@ const rushCount = (t) => t.cards.filter((c) => c.result === 'lose' && c.ch.id !=
 function teamHead(el, t) {
   const mark = { win: '○', lose: '×', draw: '△' };
   const rush = S.stage && S.stage.rush && t === S.teams[1];
-  const chips = rush ? `<span class="chip on">${dispName(active(t).ch)}</span><span class="chip">${rushCount(t) + (S.over && S.winner === 0 ? 0 : 1)} / ${S.stage.rush.length}体目</span>` : t.cards.map((c, i) => {
+  const kr = S.kr && t === S.teams[1];
+  const krNow = kr && active(t).ch;
+  const chips = kr ? `<span class="chip on">${dispName(krNow)}(Lv${krNow.krLv})</span><span class="chip">第${krNow.krLayer}層${krNow.krBoss ? '・ボス' : ''}</span>` : rush ? `<span class="chip on">${dispName(active(t).ch)}</span><span class="chip">${rushCount(t) + (S.over && S.winner === 0 ? 0 : 1)} / ${S.stage.rush.length}体目</span>` : t.cards.map((c, i) => {
     if (c.ch.hiddenUntilActive && i > t.idx) return '';   // ★5の精神離脱体は、出てくるまで隠す
     const cls = c.result === 'lose' ? 'chip ko' : i === t.idx && !c.result ? 'chip on' : 'chip';
     return `<span class="${cls}">${dispName(c.ch)}${c.result ? mark[c.result] : ''}</span>`;
@@ -3151,7 +3211,7 @@ function teamHead(el, t) {
   const streak = t.breakReady
     ? `<span class="break">${BREAK_NAME}!</span>`
     : '●'.repeat(t.streak) + '○'.repeat(Math.max(0, BREAK_STREAK - t.streak)) + (reach ? ' リーチ!' : '');
-  el.innerHTML = `<div class="head"><span>${escHtml(t.label)}${t === S.teams[1] && !PVP.on ? `(${S.stage ? (S.stage.rush ? '連戦' : '★'.repeat(S.stage.stars)) : AI_LEVELS[S.cpuLevel].name})` : ''} <span class="score">撃破${t.wins}</span></span>
+  el.innerHTML = `<div class="head"><span>${escHtml(t.label)}${t === S.teams[1] && !PVP.on ? `(${S.stage ? (S.stage.rush ? '連戦' : S.stage.kr ? '刻練場' : '★'.repeat(S.stage.stars)) : AI_LEVELS[S.cpuLevel].name})` : ''} <span class="score">撃破${t.wins}</span></span>
     <span class="streak${reach ? ' reach' : ''}">${streak}</span></div>
     <div class="chips">${chips}</div>`;
 }
@@ -3540,6 +3600,11 @@ async function stageFx(o) {
       await cutin('精神離脱', `${e.side === 0 ? 'こちら' : '相手'}のゼノが、肉体を捨てて場に残る`, 'evil', 1300);
       render();
     }
+    if (e.type === 'krHeal') {   // 刻練場:ボス層を突破して全回復
+      flash('#4ade80'); Sound.heal();
+      await cutin(`${e.layer}層 突破`, e.layer >= KR_GOAL ? '百刻を制した! ここからは全回復なし' : '味方が全回復した', 'gold', 1300);
+      render();
+    }
     if (e.type === 'rushHeal') {
       const next = active(S.teams[1]);
       flash('#4ade80'); Sound.heal();
@@ -3613,6 +3678,15 @@ async function traitFx() {
 const ENTRY_TRAITS = ['burnout', 'rush', 'enterDispel', 'giantSlayer'];
 async function entryFx() {
   if (!S || S.over) return;
+  // 刻練場:新しい層に入ったら、層の番号を出す
+  if (S.kr) {
+    const f = active(S.teams[1]).ch;
+    if (f.krLayer !== S.krShownLayer) {
+      S.krShownLayer = f.krLayer;
+      Sound.cue(f.krBoss ? 3 : 1);
+      await cutin(`第${f.krLayer}層`, f.krBoss ? `ボス:${dispName(f)}(Lv${f.krLv})` : `敵 ${S.teams[1].cards.filter((c) => c.ch.krLayer === f.krLayer).length}体`, f.krBoss ? 'evil' : 'gold', f.krBoss ? 1300 : 900);
+    }
+  }
   for (const t of S.teams) {
     const c = active(t);
     if (!c || c.hp <= 0) continue;
@@ -3663,6 +3737,21 @@ async function finale() {
   log(`=== ${msg} ${S.rally}ラリー ===`);
   setResult(msg);
   render();
+  // 刻練場:撃破数(スコア)・突破した層・累計撃破数を残す
+  if (S.kr && !S.spectate && !S.krSaved) {
+    S.krSaved = true;
+    const kills = S.teams[0].wins, layers = krCleared(S);
+    const best = Number(localStorage.getItem('kokusen.krBest') || 0), tot = Number(localStorage.getItem('kokusen.krTotal') || 0) + kills;
+    try { localStorage.setItem('kokusen.krBest', String(Math.max(best, kills))); localStorage.setItem('kokusen.krTotal', String(tot)); } catch (e) { /* 保存できなくても動く */ }
+    if (ACC.stats && ACC.progMode === 'table') {
+      const s2 = ACC.stats;
+      s2.krTotal = (s2.krTotal || 0) + kills; s2.krBest = Math.max(s2.krBest || 0, layers); s2.krKills = Math.max(s2.krKills || 0, kills);
+      sbFetch(`/rest/v1/progress?id=eq.${accUid()}`, { method: 'PATCH', prefer: 'return=minimal', body: { stats: s2 } }).catch(() => null);
+    }
+    log(`刻練場:${kills}体撃破・${layers}層突破(最高 ${Math.max(best, kills)}体・累計 ${ACC.stats && ACC.progMode === 'table' ? ACC.stats.krTotal : tot}体)`);
+    flushLog();
+    await cutin(`${kills}体撃破`, `${layers}層突破${kills > best ? '・自己ベスト!' : ''}`, kills > best ? 'rainbow' : 'gold', 1800);
+  }
   // ボスラッシュ:何体倒せたかの最高記録を残す
   if (S.stage && S.stage.rush) {
     const n = rushCount(S.teams[1]);
@@ -3883,7 +3972,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '1.11';
+const APP_VER = '1.12';
 // ----- 古い版で遊び続けさせない -----
 // 公開中の版は version.json に書く(APP_VER を上げるときに一緒に上げる)。起動時・画面に戻ったとき・5分おきに確かめ、
 // 新しい版があれば、対戦中なら決着を待ってから、閉じられない「更新してください」の画面を出す
@@ -4824,7 +4913,7 @@ async function accSignOut() {
 // 称号の一覧(50個)を決めるまでは、画面に出さず、解放もしない
 const TITLES_ON = true;
 const TITLE_TIERS = { 1: '#38bdf8', 2: '#4ade80', 3: '#f5c451', 4: '#b57bff', 5: '#ff2a3d' };
-const SOLO_STAGES = () => STAGES.filter((x) => !x.rush && !x.corridor && !['k4', 'k5'].includes(x.id)).map((x) => x.id);   // 「刻の覇者」は最初の11ステージ
+const SOLO_STAGES = () => STAGES.filter((x) => !x.rush && !x.kr && !x.corridor && !['k4', 'k5'].includes(x.id)).map((x) => x.id);   // 「刻の覇者」は最初の11ステージ
 const hasClear = (c, ...ids) => ids.every((id) => c.cleared.includes(id));
 // c:{ cleared, wins, rating, stats }。stats は progress 表に保存している数え上げ
 const st = (c, k) => c.stats[k] || 0;
@@ -4988,7 +5077,7 @@ function renderTitleAcc() {
     return;
   }
   const fav = favChar(p);
-  const stages = STAGES.filter((x) => !x.rush);
+  const stages = STAGES.filter((x) => !x.rush && !x.kr);
   el.innerHTML = `${fav ? iconHtml(fav, 'lg') : '<span style="font-size:28px">👤</span>'}<div><div class="nm">${titleTag(p.title)}${escHtml(p.name)}</div>
     <div><span class="rate">レート${p.rating}</span> <span style="font-size:.8rem;color:var(--sub)">(${p.wins}勝${p.losses}敗)</span></div>
     <div class="meta">クリア ${stages.filter((x) => SOLO.cleared.includes(x.id)).length} / ${stages.length}ステージ${titleReady() ? ` ・ 称号 ${myTitles().length} / ${TITLES.length}` : ''} ・ 💠${SHARD_NAME} ${shardCount()}</div></div>
@@ -5275,6 +5364,8 @@ function renderStages() {
   const from = st.chainFrom && STAGES.find((x) => x.id === st.chainFrom);
   $('stageNote').textContent = from
     ? `${st.faction} ${'★'.repeat(st.stars)}「${st.name}」 敵:${shown.map(dispName).join('・')}(ボス1体と3対1)。${'★'.repeat(from.stars)}「${from.name}」をクリアした直後だけ、結果画面の「続けて【始】に挑む」から、同じパーティで挑めます(全回復します)。`
+    : st.kr
+    ? `刻練場「${st.name}」 弱めの門下生が次々と出てくる。こちらのHPは引き継いだまま、全滅するまで戦い続けて撃破数を競う。4層ごとにボス層があり、ボスを倒すと全回復(40層まで)。40層(100体)の突破が目標。こちらは回復できず、DFSは5000まで。パーティはアドバンスで組む(★4以上は1体まで)。最高記録:${Number(localStorage.getItem('kokusen.krBest') || 0)}体・累計 ${(ACC.stats && ACC.stats.krTotal) || Number(localStorage.getItem('kokusen.krTotal') || 0)}体`
     : st.rush
     ? `連戦「${st.name}」 ★★★のボス3体 → ★★★★ → ★★★★★ を、3対1で続けて戦います(ゼノ以外のボスのHPは通常の28%)。ボスを1体倒すごとに、こちらは全回復して1番手から出直します。最高記録:${SOLO.rush} / ${st.rush.length}体`
     : st.corridor
@@ -5304,7 +5395,8 @@ const rarityOf = (ch) => ch.rarity || 3;
 const rarHtml = (ch) => `<span class="rar r${rarityOf(ch)}">${'★'.repeat(rarityOf(ch))}</span>`;
 // ★4以上は1パーティに1枚まで(ソロは除く。ソロのボス攻略では隔絶やカジ【始】を組み合わせてよい)
 const HIGH_MAX = 1;
-const highLimit = () => MODE !== 'solo';
+const krSel = () => { const st = typeof SOLO !== 'undefined' && STAGES.find((x) => x.id === SOLO.stage); return !!(st && st.kr); };   // 刻練場を選んでいるか
+const highLimit = () => MODE !== 'solo' || krSel();   // 刻練場は★4以上1体まで
 // その枚数制限で、このキャラをもう入れられないか
 const highFull = (ch, ids) => highLimit() && rarityOf(ch) >= 4 && ids.map(charById).filter((o) => o && rarityOf(o) >= 4).length >= HIGH_MAX;
 const sameClash = (ch, ids) => ids.map(charById).some((o) => o && (o.sameAs === ch.id || ch.sameAs === o.id));
@@ -5313,7 +5405,7 @@ const FORMATS = { basic: 'ベーシック', advance: 'アドバンス' };
 let FORMAT = 'basic';
 try { const f = localStorage.getItem('kokusen.format'); if (FORMATS[f]) FORMAT = f; } catch (e) { /* 読めなければベーシック */ }
 const soloCorr = () => { const st = STAGES.find((x) => x.id === SOLO.stage); return !!(st && st.corridor); };
-const fmtNow = () => (MODE === 'solo' ? (soloCorr() ? 'advance' : 'basic') : FORMAT);
+const fmtNow = () => (MODE === 'solo' ? (soloCorr() || krSel() ? 'advance' : 'basic') : FORMAT);   // 刻練場はアドバンスで組む
 const inFormat = (ch, fmt = fmtNow()) => fmt === 'advance' || (!ch.gacha && !ch.adv);
 // そのパーティがルールに合っているか(区分け・★5は1枚まで・同じ人物は1枚)。合っていなければ理由
 function teamNg(ids, fmt = fmtNow()) {
@@ -5886,7 +5978,7 @@ const whViewers = () => WH.specs.filter((c) => c.open && !c.audit).map((c) => St
 function whStart(mine, theirs, opt) {
   const p = ACC.profile;
   WH.id = Math.random().toString(36).slice(2); WH.hist = [];
-  WH.snap = { v: RULES_VER, solo: 1, id: WH.id, team: mine.map((c) => c.id), stage: opt.stage ? opt.stage.id : null, foes: opt.stage ? null : theirs.map((c) => c.id), level: opt.level || FX.level, name: p ? String(p.name).slice(0, 12) : 'フレンド', hist: WH.hist };
+  WH.snap = { v: RULES_VER, solo: 1, id: WH.id, team: mine.map((c) => c.id), stage: opt.stage ? opt.stage.id : null, seed: opt.krSeed || 0, foes: opt.stage ? null : theirs.map((c) => c.id), level: opt.level || FX.level, name: p ? String(p.name).slice(0, 12) : 'フレンド', hist: WH.hist };
   WH.specs.forEach(whSend); setTimeout(() => frBeat(true), 0);
 }
 function whRec(e) { if (!WH.snap) return; WH.hist.push(e); WH.specs.forEach(whSend); }
@@ -5932,7 +6024,7 @@ async function fwShow() {
     if (snap.id !== FW.id || !S || !S.spectate) {
       FW.id = snap.id; FW.n = 0;
       const o = { spectate: true, label0: name };
-      if (st) await startMatch(team, stageFoes(st), '敵', { ...o, level: st.level, read: st.read, stage: st, noDecay: true });
+      if (st) await startMatch(team, st.kr ? krFoes(snap.seed || 0) : stageFoes(st), '敵', { ...o, level: st.level, read: st.read, stage: st, noDecay: true, krSeed: snap.seed || 0 });
       else await startMatch(team, foes, 'CPU', { ...o, level: snap.level });
       const fast = hist.slice(0, Math.max(0, hist.length - 1));   // 最後の1つだけは演出つきで見せる
       for (const e of fast) specApply(e, true);
@@ -6290,7 +6382,10 @@ function start() {
   return startMatch(mine, foes, 'CPU');
 }
 // opt:level はCPUの深さ、read はボスが読みに頼る割合、stage はソロのステージ、noDecay は刻の抜け落ちを止める
-const startSolo = (mine, st) => startMatch(mine, stageFoes(st), '敵', { level: st.level, read: st.read, stage: st, noDecay: true });
+const startSolo = (mine, st, seed) => {
+  const sd = st.kr ? (seed != null ? seed : Math.floor(Math.random() * 2147483647)) : 0;   // 刻練場:敵の並びを決める種
+  return startMatch(mine, st.kr ? krFoes(sd) : stageFoes(st), '敵', { level: st.level, read: st.read, stage: st, noDecay: true, krSeed: sd });
+};
 let LAST_MATCH = null;   // 再挑戦用:直前に始めた対戦の中身
 async function startMatch(mine, theirs, foeLabel, opt = {}) {
   LAST_MATCH = { mine, theirs, foeLabel, opt };
@@ -6302,6 +6397,7 @@ async function startMatch(mine, theirs, foeLabel, opt = {}) {
   S.bossRead = opt.read || 0;
   S.stage = opt.stage || null;
   S.noDecay = !!opt.noDecay;
+  if (opt.stage && opt.stage.kr) { S.kr = true; S.krSeed = opt.krSeed; S.teams[0].cards.forEach((c) => { c.dfsCap = 5000; }); }   // 刻練場:こちらのDFSは5000まで
   if (!S.spectate && !PVP.on) whStart(mine, theirs, opt); else WH.snap = null;   // フレンドの観戦用の記録を始める
   $('log').innerHTML = '';
   logBuf = [];
