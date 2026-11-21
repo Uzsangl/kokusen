@@ -2308,10 +2308,10 @@ const $ = (id) => document.getElementById(id);
 // ソロのボスは元のキャラの絵を使う。絵がないキャラは名前の頭文字を出す。
 // ゼノは名前が明かされるまでシルエットにする。
 const ICON_IDS = new Set(['kaji', 'tomari', 'mio', 'moyai', 'shio', 'rei', 'hajime', 'uro', 'moto', 'kasumi',
-  'tsuru', 'haya', 'yajiri', 'hane', 'tokibami', 'xeno_body', 'xeno_spirit', 'kaji_shi', 'tsuru2',
+  'tsuru', 'haya', 'yajiri', 'hane', 'tokibami', 'xeno_body', 'xeno_spirit', 'kaji_shi', 'tsuru2', 'yugake', 'awai',
   'g_a1', 'g_a2', 'g_a3a', 'g_a3b', 'g_a3c', 'g_a4', 'g_z1', 'g_z2', 'g_z3a', 'g_z3b', 'g_z3c', 'g_z4', 'g_z5', 'g_y1', 'g_y2', 'g_y3a', 'g_y3b', 'g_y3c', 'g_y4',
   'a_guard', 'a_chain', 'a_lamp', 'z_mask', 'z_wind', 'z_sand', 'y_runner', 'y_archer', 'y_seer']);
-const ICON_ALIAS = { p_tsuru_ten: 'tsuru2', b_tomari: 'tomari', b_rei: 'rei', b_tsuru: 'tsuru', p_tokibami: 'tokibami', p_xeno: 'xeno_body', b_kaji: 'kaji', b_kaji_shi: 'kaji_shi', p_kaji_shi: 'kaji_shi',
+const ICON_ALIAS = { p_tsuru_ten: 'tsuru2', p_awai: 'awai', b_tomari: 'tomari', b_rei: 'rei', b_tsuru: 'tsuru', p_tokibami: 'tokibami', p_xeno: 'xeno_body', b_kaji: 'kaji', b_kaji_shi: 'kaji_shi', p_kaji_shi: 'kaji_shi',
   // 刻の回廊の敵は、元のキャラのアイコン
   c2_1a: 'g_a1', c2_1b: 'g_z1', c2_1c: 'g_y1', c2_2a: 'g_z1', c2_2b: 'g_z2', c2_2c: 'g_a2', c2_3a: 'g_y1', c2_3b: 'g_y2', c2_3c: 'g_z2', c2_4a: 'g_a1', c2_4b: 'g_a2', c2_4c: 'g_y2',
   c3_mata: 'g_z3b', c3_ai: 'g_z3c', c3_ebira: 'g_y3c', c3_iso: 'g_a3b',
@@ -3655,7 +3655,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.89';
+const APP_VER = '0.90';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
