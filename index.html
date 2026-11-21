@@ -744,7 +744,7 @@
     <div class="acct" id="acct"></div>
     <h2>対戦相手</h2>
     <div class="levels" id="modes"></div>
-    <div class="levels" id="formats" style="grid-template-columns:1fr 1fr"><button data-f="basic">ベーシック</button><button data-f="advance">アドバンス</button></div>
+    <div class="levels" id="formats" style="grid-template-columns:1fr 1fr"><button data-f="basic">ベーシック</button><button data-f="advance">アドバンス</button><button data-f="kr" class="hidden">スコアアタック</button></div>
     <p class="sub" id="formatNote"></p>
     <div id="cpuOpts">
       <h2>CPUの強さ</h2>
@@ -4004,7 +4004,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '1.19';
+const APP_VER = '1.20';
 // ----- 古い版で遊び続けさせない -----
 // 公開中の版は version.json に書く(APP_VER を上げるときに一緒に上げる)。起動時・画面に戻ったとき・5分おきに確かめ、
 // 新しい版があれば、対戦中なら決着を待ってから、閉じられない「更新してください」の画面を出す
@@ -5389,6 +5389,7 @@ async function accInit() {
 // ソロ:ベーシックは今までのステージ、アドバンスは刻の回廊。区分けと選んでいるステージを合わせる
 function soloFixStage() {
   const adv = FORMAT === 'advance';
+  if (krSel()) { $('stages').classList.add('hidden'); $('corrStages').classList.add('hidden'); return; }   // スコアアタックは一覧を出さない
   if (adv !== soloCorr()) SOLO.stage = adv ? 'r1_2' : 'a1';
   $('stages').classList.toggle('hidden', adv);
   $('corrStages').classList.toggle('hidden', !adv);
@@ -6293,11 +6294,14 @@ function canPick() {
 }
 function renderFormats() {
   const solo = MODE === 'solo';
+  // ソロのときだけ「スコアアタック」(刻練場)のボタンを並べる
+  $('formats').style.gridTemplateColumns = solo ? '1fr 1fr 1fr' : '1fr 1fr';
   [...$('formats').children].forEach((b) => {
-    b.classList.toggle('picked', b.dataset.f === fmtNow());
+    b.classList.toggle('hidden', b.dataset.f === 'kr' && !solo);
+    b.classList.toggle('picked', solo && krSel() ? b.dataset.f === 'kr' : b.dataset.f === fmtNow());
     b.disabled = PVP.on && PVP.phase !== 'idle';
   });
-  $('formatNote').textContent = solo ? (soloCorr() ? '刻の回廊:持っているガチャキャラも使える。★4以上の制限なし。' : 'ソロのステージ(ガチャキャラ以外)。アドバンスにすると「刻の回廊」。') : fmtNow() === 'advance' ? 'アドバンス:すべてのキャラが使える(ガチャキャラも)。★4以上は1パーティに1枚まで。' : 'ベーシック:ガチャキャラ以外のキャラで戦う。★4以上は1パーティに1枚まで。';
+  $('formatNote').textContent = solo && krSel() ? 'スコアアタック:刻練場で、何体倒せるかに挑む。パーティはアドバンスで組む(★4以上は1体まで)。' : solo ? (soloCorr() ? '刻の回廊:持っているガチャキャラも使える。★4以上の制限なし。' : 'ソロのステージ(ガチャキャラ以外)。アドバンスにすると「刻の回廊」。') : fmtNow() === 'advance' ? 'アドバンス:すべてのキャラが使える(ガチャキャラも)。★4以上は1パーティに1枚まで。' : 'ベーシック:ガチャキャラ以外のキャラで戦う。★4以上は1パーティに1枚まで。';
   [...$('cpuPicks').children].forEach((b) => b.classList.toggle('picked', b.dataset.c === CPU_PICK));
 }
 function renderSelHead() {
@@ -6533,6 +6537,7 @@ function init() {
   try { SOLO.stage = localStorage.getItem('kokusen.stage') || 'a1'; SOLO.cleared = readCleared(GUEST_KEY); SOLO.rush = Number(localStorage.getItem('kokusen.rush')) || 0; } catch (e) { /* 保存できなくても動く */ }
   if (!STAGES.some((x) => x.id === SOLO.stage)) SOLO.stage = 'a1';
   STAGES.forEach((st) => {
+    if (st.kr) return;   // 刻練場は「スコアアタック」のボタンから選ぶ
     // 刻の回廊は、回廊ごとに見出しを付けて別の欄に並べる
     if (st.corridor && st.stars === 2) { const h = document.createElement('p'); h.className = 'corr-h'; h.textContent = CORRIDORS[st.corridor]; $('corrStages').appendChild(h); }
     const b = document.createElement('button');
@@ -6638,7 +6643,11 @@ function init() {
   $('toPick').onclick = () => { if (canPick()) { Sound.click(); setStep('pick'); } };
   $('toMenu').onclick = () => { if (MODE === 'pvp' && PVP.phase !== 'idle') { pvpLeave(); renderMode(); } Sound.click(); setStep('menu'); };
   $('mysetBtn').onclick = () => openMyset();
-  [...$('formats').children].forEach((b) => { b.onclick = () => { if (b.disabled) return; FORMAT = b.dataset.f; try { localStorage.setItem('kokusen.format', FORMAT); } catch (e) { /* 保存できなくても動く */ } Sound.click(); if (MODE === 'solo') renderStages(); else renderSelect(); }; });
+  [...$('formats').children].forEach((b) => { b.onclick = () => { if (b.disabled) return;
+    // スコアアタック:ステージを刻練場にする(FORMAT は変えない)。ほかを押したら、その一覧の最初のステージに戻す
+    if (b.dataset.f === 'kr') { SOLO.stage = 'kr'; try { localStorage.setItem('kokusen.stage', 'kr'); } catch (e) { /* 保存できなくても動く */ } Sound.click(); renderStages(); return; }
+    if (krSel()) SOLO.stage = b.dataset.f === 'advance' ? 'r1_2' : 'a1';
+    FORMAT = b.dataset.f; try { localStorage.setItem('kokusen.format', FORMAT); } catch (e) { /* 保存できなくても動く */ } Sound.click(); if (MODE === 'solo') renderStages(); else renderSelect(); }; });
   [...$('cpuPicks').children].forEach((b) => { b.onclick = () => { CPU_PICK = b.dataset.c; try { localStorage.setItem('kokusen.cpuPick', CPU_PICK); } catch (e) { /* 保存できなくても動く */ } Sound.click(); renderSelect(); }; });
   [...$('pickSide').children].forEach((b) => { b.onclick = () => { if (b.dataset.s !== pickSide) { Sound.click(); setPickSide(b.dataset.s); } }; });
   $('logBtn').onclick = () => {
