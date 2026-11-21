@@ -1092,7 +1092,7 @@ const SPECIAL_CHARS = [
       scissors: { name: '引き留め', rate: RATE.normal, mark: { stat: 'atk', v: 800, cap: 0 } },
       paper:    { name: '寄り添い', rate: RATE.normal, team: { stat: 'dfs', v: 500, cap: 0, bench: 1 } } } },
   { id: 'k_osore', name: 'オソレ', faction: '零', group: '零', bonusOk: true, role: '恐れ・強い相手をすくませる', unlock: 'kr40', hp: 11000, atk: 3000, dfs: 1500, phys: 1.4,
-    trait: { key: 'awe', name: '怯え', desc: '場に出たとき、相手のATKとDFSの合計(強化込み)が13000以上なら、両方を60%減らす(その相手が倒れるまで)', line: 13000, cut: 0.6 },
+    trait: { key: 'awe', name: '怯え', desc: '自分が場に出たときと、相手が場に出たとき、相手のATKとDFSの合計(強化込み)が10000以上なら、両方を60%減らす(その相手が倒れるまで)', line: 10000, cut: 0.6 },
     actions: {
       rock:     { name: '竦み',     rate: RATE.max, selfPerm: { atk: 1000 } },
       scissors: { name: '震え',     rate: RATE.normal, seal: 1 },
@@ -1678,8 +1678,9 @@ function beginRally(S, log) {
       const ea = baseAtk(fo), ed = dfsOf(fo, false);
       if (ed > ea) { fo.atk += ed - ea; fo.dfs += ea - ed; trig(c, 'swapStats'); log(`　${nameOf(c)}の「憂い」:${nameOf(fo)}のATKとDFSが入れ替わった(ATK${baseAtk(fo)}・DFS${dfsOf(fo, false)})`); }
     }
-    // オソレの「怯え」:相手のATKとDFSの合計が大きければ、両方を減らす
-    const aw = c.turn === 1 && traitOf(c, 'awe');
+    // オソレの「怯え」:自分が場に出たとき・相手が場に出たとき(相手1体につき1回だけ判定)、相手のATKとDFSの合計が大きければ、両方を減らす
+    const aw = traitOf(c, 'awe') && (c.turn === 1 || fo.turn <= 1) && !fo.aweChecked && traitOf(c, 'awe');
+    if (aw) fo.aweChecked = true;
     if (aw && fo.hp > 0 && !traitOf(fo, 'void')) {
       const ea = baseAtk(fo), ed = dfsOf(fo, false);
       if (ea + ed >= aw.line) { fo.atk -= Math.round(ea * aw.cut); fo.dfs -= Math.round(ed * aw.cut); trig(c, 'awe'); log(`　${nameOf(c)}の「怯え」:${nameOf(fo)}のATKとDFSが${Math.round(aw.cut * 100)}%減った(ATK${baseAtk(fo)}・DFS${dfsOf(fo, false)})`); }
@@ -3974,7 +3975,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '1.14';
+const APP_VER = '1.15';
 // ----- 古い版で遊び続けさせない -----
 // 公開中の版は version.json に書く(APP_VER を上げるときに一緒に上げる)。起動時・画面に戻ったとき・5分おきに確かめ、
 // 新しい版があれば、対戦中なら決着を待ってから、閉じられない「更新してください」の画面を出す
