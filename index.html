@@ -416,7 +416,7 @@
   #cutin .small { font-size: .95rem; color: #fff; letter-spacing: .08em; }
   #cutin .cuthint { text-align: center; margin-top: 6px; font-size: .72rem; color: #cfd3ee; opacity: .8; animation: cuthint 1.2s ease-in-out infinite; }
   @keyframes cuthint { 50% { opacity: .35; } }
-  #cutin.gold { --c: #f5c451; } #cutin.violet { --c: #a78bff; } #cutin.plain { --c: #cfd3ee; } #cutin.trait { --c: #7dd3fc; } #cutin.red { --c: #ff4d5e; } #cutin.evil { --c: #ff2a3d; }
+  #cutin.gold { --c: #f5c451; } #cutin.violet { --c: #a78bff; } #cutin.plain { --c: #cfd3ee; } #cutin.trait { --c: #4ade80; } #cutin.traitFoe { --c: #ff6b6b; } #cutin.red { --c: #ff4d5e; } #cutin.evil { --c: #ff2a3d; }
   #cutin.evil .band { background: linear-gradient(90deg, transparent, #1a0006ee 15%, #1a0006ee 85%, transparent); }
   #cutin.rainbow .band { border-color: #fff; }
   #cutin.rainbow .big { text-shadow: none; filter: drop-shadow(0 0 14px #fff); }
@@ -3672,9 +3672,12 @@ async function traitShow(c, key) {
   c.trShown[key] = 1;
   Sound.trait();
   // 毎回出す特性は、2回目からは短く、動いた量だけを書く
-  const big = `「${t.name}」`, small = `${dispName(c.ch)}:${every && !first ? every(c, t) : `${t.desc || ''}${every ? `(${every(c, t)})` : ''}`}`;
-  if (S && S.spectate) await cutin(big, small, 'trait', every && !first ? 800 : 1200);   // 観戦は止めずに流す
-  else await cutinHold(big, small, 'trait');
+  // 味方の特性は緑、相手の特性は赤。下の文字の頭にも「味方」「相手」を付ける(観戦では、それぞれのチームの名前)
+  const mine = S && S.teams[0].cards.includes(c), who = S && S.spectate ? S.teams[mine ? 0 : 1].label : mine ? '味方' : '相手';
+  const big = `「${t.name}」`, small = `${who}・${dispName(c.ch)}:${every && !first ? every(c, t) : `${t.desc || ''}${every ? `(${every(c, t)})` : ''}`}`;
+  const cls = mine ? 'trait' : 'traitFoe';
+  if (S && S.spectate) await cutin(big, small, cls, every && !first ? 800 : 1200);   // 観戦は止めずに流す
+  else await cutinHold(big, small, cls);
 }
 // 画面をタップするまで残すカットイン(出てから0.7秒は、うっかり閉じないようにタップを受けつけない)
 async function cutinHold(big, small, cls) {
@@ -4012,7 +4015,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '1.23';
+const APP_VER = '1.24';
 // ----- 古い版で遊び続けさせない -----
 // 公開中の版は version.json に書く(APP_VER を上げるときに一緒に上げる)。起動時・画面に戻ったとき・5分おきに確かめ、
 // 新しい版があれば、対戦中なら決着を待ってから、閉じられない「更新してください」の画面を出す
