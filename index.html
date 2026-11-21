@@ -1074,13 +1074,13 @@ const SPECIAL_CHARS = [
       rock:     { name: '迷い打ち', rate: RATE.big, up: { rate: RATE.max, when: 'oddTurn', text: '奇数ラリーは極大' } },
       scissors: { name: '揺れ戻し', rate: RATE.normal, mods: [selfDfs(800, 2)] },
       paper:    { name: 'ためらい', rate: RATE.normal, mods: [foeAtk(600, 2)] } } },
-  { id: 'k_urei', name: 'ウレイ', faction: '零', group: '零', bonusOk: true, rarity: 3, role: '憂い・ATKとDFSを入れ替える', unlock: 'kr1000', hp: 11500, atk: 2200, dfs: 1300, phys: 1.0,
+  { id: 'k_urei', name: 'ウレイ', faction: '零', group: '零', bonusOk: true, rarity: 3, role: '憂い・ATKとDFSを入れ替える', unlock: 'kr32', hp: 11500, atk: 2200, dfs: 1300, phys: 1.0,
     trait: { key: 'swapStats', name: '憂い', desc: '場に出たとき、相手のDFSがATKより高ければ、相手のATKとDFS(強化込み)を入れ替える(その相手が倒れるまで。上限を超えた分は切り捨て)' },
     actions: {
       rock:     { name: '鬱ぎ',     rate: RATE.big },
       scissors: { name: '翳り',     rate: RATE.normal, mods: [foeDfs(800, 3)] },
       paper:    { name: '憂さ晴らし', rate: RATE.normal, mods: [selfAtk(800, 3)] } } },
-  { id: 'k_isami', name: 'イサミ', faction: '矢', group: '矢', bonusOk: true, role: '勇気・連勝を積む', unlock: 'kr32', hp: 9000, atk: 3500, dfs: 1200, phys: 1.4,
+  { id: 'k_isami', name: 'イサミ', faction: '矢', group: '矢', bonusOk: true, role: '勇気・連勝を積む', unlock: 'kr1000', hp: 9000, atk: 3500, dfs: 1200, phys: 1.4,
     traits: [{ key: 'backwaterSteps', name: '勇み足', desc: '残りHPが75%・50%・25%を切るごとにATK+800', steps: [0.75, 0.5, 0.25], add: 800 },
       { key: 'rouse', name: '奮起', desc: 'HPが半分を切ったとき、一度だけ連勝+2', below: 0.5, add: 2 }],
     actions: {
@@ -4004,7 +4004,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '1.18';
+const APP_VER = '1.19';
 // ----- 古い版で遊び続けさせない -----
 // 公開中の版は version.json に書く(APP_VER を上げるときに一緒に上げる)。起動時・画面に戻ったとき・5分おきに確かめ、
 // 新しい版があれば、対戦中なら決着を待ってから、閉じられない「更新してください」の画面を出す
@@ -5010,8 +5010,8 @@ const TITLES = [
   // 刻練場(百刻スコアアタック):累計撃破数(krTotal)と、1回で突破した最高の層(krBest)。キャラが手に入る
   { id: 'kr300', tier: 3, name: '刻練の常連', desc: '刻練場で累計300体を倒す(ハレが使えるようになる)', test: (c) => st(c, 'krTotal') >= 300 },
   { id: 'kr500', tier: 4, name: '刻練の古参', desc: '刻練場で累計500体を倒す(ユラギが使えるようになる)', test: (c) => st(c, 'krTotal') >= 500 },
-  { id: 'kr1000', tier: 5, name: '千の門下を越えし者', desc: '刻練場で累計1000体を倒す(ウレイが使えるようになる)', test: (c) => st(c, 'krTotal') >= 1000 },
-  { id: 'kr32', tier: 4, name: '三十二刻の壁', desc: '刻練場で32層を突破する(イサミが使えるようになる)', test: (c) => st(c, 'krBest') >= 32 },
+  { id: 'kr1000', tier: 5, name: '千の門下を越えし者', desc: '刻練場で累計1000体を倒す(イサミが使えるようになる)', test: (c) => st(c, 'krTotal') >= 1000 },
+  { id: 'kr32', tier: 4, name: '三十二刻の壁', desc: '刻練場で32層を突破する(ウレイが使えるようになる)', test: (c) => st(c, 'krBest') >= 32 },
   { id: 'kr36', tier: 4, name: '三十六刻の壁', desc: '刻練場で36層を突破する(セツナが使えるようになる)', test: (c) => st(c, 'krBest') >= 36 },
   { id: 'kr40', tier: 5, name: '百刻を制す者', desc: '刻練場で40層(100体)を突破する(オソレが使えるようになる)', test: (c) => st(c, 'krBest') >= 40 },
   { id: 'krUtsuro', tier: 5, name: '虚ろを見た者', desc: '刻練場で40層(100体)突破を5回達成する(ウツロが使えるようになる)', test: (c) => st(c, 'krGoals') >= 5 },
