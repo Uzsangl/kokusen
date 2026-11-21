@@ -3769,9 +3769,14 @@ async function finale() {
     const kills = S.teams[0].wins, layers = krCleared(S);
     const best = Number(localStorage.getItem('kokusen.krBest') || 0), tot = Number(localStorage.getItem('kokusen.krTotal') || 0) + kills;
     try { localStorage.setItem('kokusen.krBest', String(Math.max(best, kills))); localStorage.setItem('kokusen.krTotal', String(tot)); } catch (e) { /* 保存できなくても動く */ }
+    // サーバーに記録する(ランキング用)。記録できたら、累計などはサーバーの値を使う
+    let sv = null;
+    const run = S.krRun && await S.krRun;
+    if (run) { try { sv = await verRpc('kr_finish', { p_run: run, p_kills: kills, p_layers: layers }); } catch (e) { if (e.code === 'KV001') verOld(); } }
     if (ACC.stats && ACC.progMode === 'table') {
       const s2 = ACC.stats;
-      s2.krTotal = (s2.krTotal || 0) + kills; s2.krBest = Math.max(s2.krBest || 0, layers); s2.krKills = Math.max(s2.krKills || 0, kills);
+      if (sv && typeof sv.total_kills === 'number') { s2.krTotal = sv.total_kills; s2.krBest = sv.best_layers; s2.krKills = sv.best_kills; }
+      else { s2.krTotal = (s2.krTotal || 0) + kills; s2.krBest = Math.max(s2.krBest || 0, layers); s2.krKills = Math.max(s2.krKills || 0, kills); }
       sbFetch(`/rest/v1/progress?id=eq.${accUid()}`, { method: 'PATCH', prefer: 'return=minimal', body: { stats: s2 } }).catch(() => null);
     }
     log(`刻練場:${kills}体撃破・${layers}層突破(最高 ${Math.max(best, kills)}体・累計 ${ACC.stats && ACC.progMode === 'table' ? ACC.stats.krTotal : tot}体)`);
@@ -3998,7 +4003,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '1.16';
+const APP_VER = '1.17';
 // ----- 古い版で遊び続けさせない -----
 // 公開中の版は version.json に書く(APP_VER を上げるときに一緒に上げる)。起動時・画面に戻ったとき・5分おきに確かめ、
 // 新しい版があれば、対戦中なら決着を待ってから、閉じられない「更新してください」の画面を出す
@@ -5190,18 +5195,35 @@ function openRulebook(tab = '基本') {
   $('sheetBody').querySelectorAll('.rtabs button').forEach((b) => { b.onclick = () => openRulebook(b.dataset.k); });
 }
 // ランキング(ログインしていなくても見られる)
+const rankTabs = (on) => `<div class="rtabs"><button data-rk="rate" class="${on === 'rate' ? 'on' : ''}">レート</button><button data-rk="kr" class="${on === 'kr' ? 'on' : ''}">刻練場</button></div>`;
+function bindRankTabs() { document.querySelectorAll('#sheetBody [data-rk]').forEach((b) => { b.onclick = () => { Sound.click(); if (b.dataset.rk === 'kr') openKrRanking(); else openRanking(); }; }); }
+// 刻練場(百刻スコアアタック)のランキング:最高撃破数の上位50人(SQLの13回目)
+async function openKrRanking() {
+  openSheet('🏆 ランキング', rankTabs('kr') + '<p class="sub">読み込んでいます…</p>'); bindRankTabs();
+  let rows = null;
+  try { rows = await sbFetch('/rest/v1/rpc/kr_ranking', { method: 'POST', body: {}, auth: !!accUid() }); } catch (e) { rows = isMissingFn(e) ? 'missing' : null; }
+  if (rows === 'missing') { openSheet('🏆 ランキング', rankTabs('kr') + '<p class="sub">刻練場のランキングは、準備中です。</p>'); bindRankTabs(); return; }
+  if (!Array.isArray(rows)) { openSheet('🏆 ランキング', rankTabs('kr') + '<p class="sub">読み込めませんでした。通信状態を確かめてください。</p>'); bindRankTabs(); return; }
+  const uid = accUid();
+  openSheet('🏆 ランキング', rankTabs('kr') + `<p class="sub">刻練場「百刻スコアアタック」の最高撃破数・上位50人</p>` + (rows.length ? `<ol class="rank">${rows.map((r) => {
+    const fav = favChar(r);
+    return `<li class="${r.id === uid ? 'me' : ''}">${fav ? iconHtml(fav, 'sm') : ''}${titleTag(r.title)}${escHtml(r.name)}<span class="r">${r.best_kills}体(${r.best_layers}層・累計${r.total_kills})</span></li>`;
+  }).join('')}</ol>` : '<p class="sub">まだ記録がありません。</p>'));
+  bindRankTabs();
+}
 async function openRanking() {
   $('accModal').classList.add('hidden');
-  openSheet('🏆 ランキング', '<p class="sub">読み込んでいます…</p>');
+  openSheet('🏆 ランキング', rankTabs('rate') + '<p class="sub">読み込んでいます…</p>'); bindRankTabs();
   let rows = null;
   try { rows = await sbFetch('/rest/v1/profiles?select=id,name,title,fav,rating,wins,losses&order=rating.desc&limit=50'); }
   catch (e) { try { rows = await sbFetch('/rest/v1/profiles?select=id,name,rating,wins,losses&order=rating.desc&limit=50'); } catch (e2) { rows = null; } }
-  if (!rows) { openSheet('🏆 ランキング', '<p class="sub">読み込めませんでした。通信状態を確かめてください。</p>'); return; }
+  if (!rows) { openSheet('🏆 ランキング', rankTabs('rate') + '<p class="sub">読み込めませんでした。通信状態を確かめてください。</p>'); bindRankTabs(); return; }
   const uid = accUid();
-  openSheet('🏆 ランキング', `<p class="sub">オンライン対人のレーティング上位50人</p><ol class="rank">${rows.map((r) => {
+  openSheet('🏆 ランキング', rankTabs('rate') + `<p class="sub">オンライン対人のレーティング上位50人</p><ol class="rank">${rows.map((r) => {
     const fav = favChar(r);
     return `<li class="${r.id === uid ? 'me' : ''}">${fav ? iconHtml(fav, 'sm') : ''}${titleTag(r.title)}${escHtml(r.name)}<span class="r">${r.rating}(${r.wins}勝${r.losses}敗)</span></li>`;
   }).join('')}</ol>`);
+  bindRankTabs();
 }
 // 称号一覧:ログインしていれば、解放済みの称号を選んで飾れる。していなければ、一覧と解放人数だけ見せる
 async function openTitles() {
@@ -6423,7 +6445,11 @@ async function startMatch(mine, theirs, foeLabel, opt = {}) {
   S.bossRead = opt.read || 0;
   S.stage = opt.stage || null;
   S.noDecay = !!opt.noDecay;
-  if (opt.stage && opt.stage.kr) { S.kr = true; S.krSeed = opt.krSeed; S.teams[0].cards.forEach((c) => { c.dfsCap = 5000; }); }   // 刻練場:こちらのDFSは5000まで
+  if (opt.stage && opt.stage.kr) {
+    S.kr = true; S.krSeed = opt.krSeed; S.teams[0].cards.forEach((c) => { c.dfsCap = 5000; });   // 刻練場:こちらのDFSは5000まで
+    // ログイン中は、サーバーに挑戦の開始を知らせる(SQLの13回目。終わりの記録と突き合わせる)
+    if (!opt.spectate && accUid()) S.krRun = verRpc('kr_start', {}).catch(() => null);
+  }
   if (!S.spectate && !PVP.on) whStart(mine, theirs, opt); else WH.snap = null;   // フレンドの観戦用の記録を始める
   $('log').innerHTML = '';
   logBuf = [];
