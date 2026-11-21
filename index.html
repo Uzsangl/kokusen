@@ -82,6 +82,7 @@
   .col .trait.multi { font-size: .56rem; line-height: 1.25; height: 4.6em; }
   .roomrow { display: flex; gap: 8px; margin-bottom: 4px; }
   .roomrow button { padding: 10px 8px; white-space: nowrap; }
+  #audBadge { flex: none; align-self: center; font-size: .72rem; font-weight: 700; color: #ff6b6b; border: 1px solid #ff6b6b; border-radius: 999px; padding: 3px 10px; white-space: nowrap; }
   #specBadge { flex: none; align-self: center; font-size: .72rem; color: var(--sub); border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; white-space: nowrap; }
   .roomrow input { flex: 1; min-width: 0; font: inherit; color: var(--text); background: #0b0d1c; border: 1px solid var(--line); border-radius: 10px; padding: 10px; }
   #netStatus { color: var(--gold); }
@@ -818,6 +819,7 @@
       <button id="resign" class="resign">リタイア</button>
       <button id="retry" class="hidden">キャラ選択に戻る</button>
       <span id="specBadge" class="hidden"></span>
+      <span id="audBadge" class="hidden">🛡 運営が観戦中</span>
       <button id="chain" class="hidden">続けて【始】に挑む</button>
     </div>
     <div class="panel hidden" id="logPanel"><div id="handStats"></div><div id="log"></div></div>
@@ -3149,6 +3151,9 @@ function render(view) {
   const nSpec = PVP.on && !S.spectate ? Math.max(PVP.room && PVP.room.specCount ? PVP.room.specCount() : 0, fpSp) : wn.length;
   $('specBadge').textContent = S.spectate ? (FW.on ? `👁 ${FW.who}さんを観戦中` : '👁 観戦中') : `👁 観戦 ${nSpec}人` + (wn.length ? `(${wn.join('・')})` : '');
   $('specBadge').classList.toggle('hidden', !(S.spectate || nSpec > 0) || $('battle').classList.contains('hidden'));
+  // 運営(マスター)が観戦しているときは、見られている側に知らせる(不正対策)
+  const nAud = !PVP.on && !S.spectate ? WH.specs.filter((c) => c.audit && c.open).length : 0;
+  $('audBadge').classList.toggle('hidden', !nAud || $('battle').classList.contains('hidden'));
 }
 const setResult = (t) => { $('result').textContent = t; };
 
@@ -3446,6 +3451,7 @@ async function aftermath(o) {
 async function finale() {
   clearTimeout(tickTimer);
   freeze(false);
+  if (S.spectate && S.winner == null) return;   // 観戦を途中でやめた(決着していない)
   const score = `(${S.teams[0].wins}-${S.teams[1].wins})`;
   const msg = S.spectate ? (S.winner === -1 ? '引き分け' : `${S.teams[S.winner].label}の勝利!`) + score + (S.specWhy || '') : (S.winner === -1 ? '引き分け' : S.winner === 0 ? 'あなたの勝利!' : 'あなたの敗北…') + score + (S.resign === 'me' ? '(リタイア)' : S.resign === 'foe' ? '(相手のリタイア)' : S.forfeit === 0 ? '(相手の応答なし)' : S.forfeit === 1 ? '(応答なし)' : '');
   log(`=== ${msg} ${S.rally}ラリー ===`);
@@ -3668,7 +3674,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.96';
+const APP_VER = '0.97';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
@@ -5556,7 +5562,7 @@ async function openAudit() {
     return `<div class="fr-row"><div class="fr-main"><b>${escHtml(r.name || '')}</b><br><span class="fr-on on">● ログイン中</span>${frStatusText(st) ? `<span class="sub"> ・${escHtml(frStatusText(st))}</span>` : ''}${r.key ? '' : '<span class="sub"> ・(観戦の部屋なし:古い版)</span>'}</div>`
       + `<div class="fr-btns">${can ? `<button data-aw="${i}">👁 観戦</button>` : ''}</div></div>`;
   }).join('');
-  openSheet('全プレイヤー(運営)', `<p class="sub">ログイン中 ${rows.length}人(3分以内に動いていた人)。ソロ・CPU戦の人を観戦できます。相手には観戦していることは表示されません。</p>${list || '<p class="sub">ほかにログイン中の人はいません。</p>'}<div class="row"><button id="audReload">更新</button></div>`);
+  openSheet('全プレイヤー(運営)', `<p class="sub">ログイン中 ${rows.length}人(3分以内に動いていた人)。ソロ・CPU戦の人を観戦できます。相手の対戦画面には「🛡 運営が観戦中」と出ます。</p>${list || '<p class="sub">ほかにログイン中の人はいません。</p>'}<div class="row"><button id="audReload">更新</button></div>`);
   document.querySelectorAll('#sheetBody [data-aw]').forEach((b) => { b.onclick = () => { const r = rows[+b.dataset.aw]; if (r) fwStart({ name: r.name, key: r.key, audit: 1 }); }; });
   $('audReload').onclick = () => openAudit();
 }
@@ -5589,7 +5595,7 @@ function watchHostClose() {
   Object.assign(WH, { peer: null, key: '', open: false, specs: WH.specs.filter((c) => c.audit) });   // 運営の観戦はそのまま
 }
 // ----- 運営(マスター)の観戦(不正対策):ログイン中は、フレンドの観戦の設定に関係なく、運営だけが入れる部屋を開く -----
-// 部屋の名前は、本人と運営にしか返さない「運営観戦の鍵」から作る(SQLの11回目)。運営の観戦者は、観戦者の一覧には出さない
+// 部屋の名前は、本人と運営にしか返さない「運営観戦の鍵」から作る(SQLの11回目)。運営が観戦している間は、見られている側に「運営が観戦中」と出す(フレンドの観戦者の一覧・人数とは別)
 const AUD = { peer: null, uid: '', ready: true };
 async function auditHostSync() {
   const uid = accUid();
@@ -5606,8 +5612,8 @@ async function auditHostSync() {
     c.audit = true;
     WH.specs.push(c);
     const drop = () => { WH.specs = WH.specs.filter((x) => x !== c); };
-    c.on('open', () => whSend(c));
-    c.on('close', drop); c.on('error', drop);
+    c.on('open', () => { whSend(c); if (S && !S.spectate) { log('🛡 運営が観戦を始めました(不正対策)'); render(); } });
+    c.on('close', () => { drop(); if (S && !S.spectate) render(); }); c.on('error', drop);
   });
   p.on('disconnected', () => { if (AUD.peer === p) { try { p.reconnect(); } catch (e) { /* 次の更新で作り直す */ } } });
   p.on('error', (e) => { if (AUD.peer === p && e.type === 'unavailable-id') { AUD.peer = null; AUD.uid = ''; } });   // 別のタブで開いているときは、そちらが受け付ける
