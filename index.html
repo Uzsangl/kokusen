@@ -1405,7 +1405,8 @@ const STAGES = [
 ];
 // ステージの敵を、倍率を掛けた能力値で作る(元のデータは書き換えない)
 // ----- 刻練場(百刻スコアアタック) -----
-// 4層で1区切り(4層目がボス層で敵1体、ほかは敵3体)。ボスを倒すと全回復(40層まで)。敵は層ごとの決まりでLvを決め、Lvごとの候補から抽選する
+// 1層 = 4戦(1〜3戦目は敵3体、4戦目はボス1体)で10体。ボスを倒して層を終えると全回復(10層まで)。10層で100体。
+// 中では「戦」の通し番号(krLayer:1〜)で持ち、画面では「第N層・M戦目」に直して見せる。敵は戦ごとの決まりでLvを決め、Lvごとの候補から抽選する
 const KR_RENAME = { a_guard: '錨門の盾持ち', a_lamp: '錨門の灯持ち', a_chain: '錨門の鎖持ち', z_mask: '零門の面打ち', z_wind: '零門の巻き手', z_sand: '零門の砂読み', y_runner: '矢門の早駆け', y_archer: '矢門の射手', y_seer: '矢門の占い見習い' };
 // Lvごとの候補。[もとの★(1か2、3はボス), 倍率, 敵の一覧, HP上限]
 const KR_LV = {
@@ -1422,7 +1423,9 @@ const KR_LV = {
 };
 // 層の決まり:[最後の層, 通常層のLv(配列ならその範囲からランダム), ボス層のLv]
 const KR_RULES = [[8, [1, 2], 5], [16, 3, 6], [24, 4, 7], [32, 4, 8], [36, 5, 9], [40, 5, 10], [Infinity, 5, 9]];
-const KR_HEAL_UNTIL = 40, KR_GOAL = 40;
+const KR_HEAL_UNTIL = 40, KR_GOAL = 10;   // 全回復は40戦目(10層)まで。目標は10層
+const krFloor = (w) => Math.ceil(w / 4), krWave = (w) => ((w - 1) % 4) + 1;   // 通し番号の戦 → 層・その層の何戦目か
+const krWaveText = (ch) => (ch.krBoss ? 'ボス' : `${krWave(ch.krLayer)}戦目`);
 function krRand(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 function krEnemy(lv, id) {
   const [star, mul, , cap] = KR_LV[lv];
@@ -1452,7 +1455,8 @@ function krFoes(seed, layers = 120) {
   return out;
 }
 // 何層まで突破したか(その層の敵を全部倒した層の数)
-const krCleared = (S) => { const t = S.teams[1], dead = t.cards.filter((c) => c.result === 'lose').length; let L = 0; for (const c of t.cards.slice(0, dead)) L = c.ch.krLayer; const nx = t.cards[dead]; return nx && nx.ch.krLayer === L ? L - 1 : L; };
+const krCleared = (S) => Math.floor(krWavesCleared(S) / 4);   // 終えた層の数
+const krWavesCleared = (S) => { const t = S.teams[1], dead = t.cards.filter((c) => c.result === 'lose').length; let L = 0; for (const c of t.cards.slice(0, dead)) L = c.ch.krLayer; const nx = t.cards[dead]; return nx && nx.ch.krLayer === L ? L - 1 : L; };
 function stageFoes(stage) {
   if (stage.kr) return krFoes(1, 4);   // 画面の説明用(実際の試合は startSolo で抽選する)
   // ボスラッシュ:元のステージの強さのまま並べる。read は、そのボスが読みに頼る割合
@@ -2065,7 +2069,7 @@ function endRally(S, log, winSide) {
     a.cards.forEach((c) => { c.dfsCap = 5000; });
     Object.assign(a, { idx: 0, streak: 0, breakReady: false, sealed: false, keep: false, relay: {} });
     S.events.push({ type: 'krHeal', layer: fallen.ch.krLayer });
-    log(`　${fallen.ch.krLayer}層を突破。こちらは全回復した`);
+    log(`　第${krFloor(fallen.ch.krLayer)}層を突破。こちらは全回復した`);
   }
   const out = S.teams.map((t) => t.idx >= t.cards.length);
   if (out[0] || out[1]) {
@@ -3207,7 +3211,7 @@ function teamHead(el, t) {
   const rush = S.stage && S.stage.rush && t === S.teams[1];
   const kr = S.kr && t === S.teams[1];
   const krNow = kr && active(t).ch;
-  const chips = kr ? `<span class="chip on">${dispName(krNow)}(Lv${krNow.krLv})</span><span class="chip">第${krNow.krLayer}層${krNow.krBoss ? '・ボス' : ''}</span>` : rush ? `<span class="chip on">${dispName(active(t).ch)}</span><span class="chip">${rushCount(t) + (S.over && S.winner === 0 ? 0 : 1)} / ${S.stage.rush.length}体目</span>` : t.cards.map((c, i) => {
+  const chips = kr ? `<span class="chip on">${dispName(krNow)}(Lv${krNow.krLv})</span><span class="chip">第${krFloor(krNow.krLayer)}層・${krWaveText(krNow)}</span>` : rush ? `<span class="chip on">${dispName(active(t).ch)}</span><span class="chip">${rushCount(t) + (S.over && S.winner === 0 ? 0 : 1)} / ${S.stage.rush.length}体目</span>` : t.cards.map((c, i) => {
     if (c.ch.hiddenUntilActive && i > t.idx) return '';   // ★5の精神離脱体は、出てくるまで隠す
     const cls = c.result === 'lose' ? 'chip ko' : i === t.idx && !c.result ? 'chip on' : 'chip';
     return `<span class="${cls}">${dispName(c.ch)}${c.result ? mark[c.result] : ''}</span>`;
@@ -3607,7 +3611,7 @@ async function stageFx(o) {
     }
     if (e.type === 'krHeal') {   // 刻練場:ボス層を突破して全回復
       flash('#4ade80'); Sound.heal();
-      await cutin(`${e.layer}層 突破`, e.layer >= KR_GOAL ? '百刻を制した! ここからは全回復なし' : '味方が全回復した', 'gold', 1300);
+      await cutin(`第${krFloor(e.layer)}層 突破`, krFloor(e.layer) >= KR_GOAL ? '百刻を制した! ここからは全回復なし' : '味方が全回復した', 'gold', 1300);
       render();
     }
     if (e.type === 'rushHeal') {
@@ -3710,7 +3714,7 @@ async function entryFx() {
     if (f.krLayer !== S.krShownLayer) {
       S.krShownLayer = f.krLayer;
       Sound.cue(f.krBoss ? 3 : 1);
-      await cutin(`第${f.krLayer}層`, f.krBoss ? `ボス:${dispName(f)}(Lv${f.krLv})` : `敵 ${S.teams[1].cards.filter((c) => c.ch.krLayer === f.krLayer).length}体`, f.krBoss ? 'evil' : 'gold', f.krBoss ? 1300 : 900);
+      await cutin(`第${krFloor(f.krLayer)}層・${krWaveText(f)}`, f.krBoss ? `ボス:${dispName(f)}(Lv${f.krLv})` : `敵 ${S.teams[1].cards.filter((c) => c.ch.krLayer === f.krLayer).length}体`, f.krBoss ? 'evil' : 'gold', f.krBoss ? 1300 : 900);
     }
   }
   for (const t of S.teams) {
@@ -3775,7 +3779,7 @@ async function finale() {
     if (run) { try { sv = await verRpc('kr_finish', { p_run: run, p_kills: kills, p_layers: layers }); } catch (e) { if (e.code === 'KV001') verOld(); } }
     if (ACC.stats && ACC.progMode === 'table') {
       const s2 = ACC.stats;
-      if (layers >= KR_GOAL && (sv || !run)) s2.krGoals = (s2.krGoals || 0) + 1;   // 40層突破の回数(ウツロの解放に使う)
+      if (layers >= KR_GOAL && (sv || !run)) s2.krGoals = (s2.krGoals || 0) + 1;   // 10層突破の回数(ウツロの解放に使う)
       if (sv && typeof sv.total_kills === 'number') { s2.krTotal = sv.total_kills; s2.krBest = sv.best_layers; s2.krKills = sv.best_kills; }
       else { s2.krTotal = (s2.krTotal || 0) + kills; s2.krBest = Math.max(s2.krBest || 0, layers); s2.krKills = Math.max(s2.krKills || 0, kills); }
       sbFetch(`/rest/v1/progress?id=eq.${accUid()}`, { method: 'PATCH', prefer: 'return=minimal', body: { stats: s2 } }).catch(() => null);
@@ -4004,7 +4008,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '1.20';
+const APP_VER = '1.21';
 // ----- 古い版で遊び続けさせない -----
 // 公開中の版は version.json に書く(APP_VER を上げるときに一緒に上げる)。起動時・画面に戻ったとき・5分おきに確かめ、
 // 新しい版があれば、対戦中なら決着を待ってから、閉じられない「更新してください」の画面を出す
@@ -5011,10 +5015,10 @@ const TITLES = [
   { id: 'kr300', tier: 3, name: '刻練の常連', desc: '刻練場で累計300体を倒す(ハレが使えるようになる)', test: (c) => st(c, 'krTotal') >= 300 },
   { id: 'kr500', tier: 4, name: '刻練の古参', desc: '刻練場で累計500体を倒す(ユラギが使えるようになる)', test: (c) => st(c, 'krTotal') >= 500 },
   { id: 'kr1000', tier: 5, name: '千の門下を越えし者', desc: '刻練場で累計1000体を倒す(イサミが使えるようになる)', test: (c) => st(c, 'krTotal') >= 1000 },
-  { id: 'kr32', tier: 4, name: '三十二刻の壁', desc: '刻練場で32層を突破する(ウレイが使えるようになる)', test: (c) => st(c, 'krBest') >= 32 },
-  { id: 'kr36', tier: 4, name: '三十六刻の壁', desc: '刻練場で36層を突破する(セツナが使えるようになる)', test: (c) => st(c, 'krBest') >= 36 },
-  { id: 'kr40', tier: 5, name: '百刻を制す者', desc: '刻練場で40層(100体)を突破する(オソレが使えるようになる)', test: (c) => st(c, 'krBest') >= 40 },
-  { id: 'krUtsuro', tier: 5, name: '虚ろを見た者', desc: '刻練場で40層(100体)突破を5回達成する(ウツロが使えるようになる)', test: (c) => st(c, 'krGoals') >= 5 },
+  { id: 'kr32', tier: 4, name: '八層の壁', desc: '刻練場で8層を突破する(ウレイが使えるようになる)', test: (c) => st(c, 'krBest') >= 8 },
+  { id: 'kr36', tier: 4, name: '九層の壁', desc: '刻練場で9層を突破する(セツナが使えるようになる)', test: (c) => st(c, 'krBest') >= 9 },
+  { id: 'kr40', tier: 5, name: '百刻を制す者', desc: '刻練場で10層(100体)を突破する(オソレが使えるようになる)', test: (c) => st(c, 'krBest') >= 10 },
+  { id: 'krUtsuro', tier: 5, name: '虚ろを見た者', desc: '刻練場で10層(100体)突破を5回達成する(ウツロが使えるようになる)', test: (c) => st(c, 'krGoals') >= 5 },
   { id: 'tengan', tier: 5, name: '天眼の果てを見た者', desc: '刻の回廊★★★★★「天眼の果て」をクリア(ツル・天眼が使えるようになる)', test: (c) => hasClear(c, 'r4_5') },
   { id: 'trio', tier: 5, name: '三つの刻を束ねし者', desc: 'カジ・レイ・ツルの3枚でトキバミを倒す', hidden: true, test: (c) => st(c, 'trioToki') >= 1 },
 ];
@@ -5415,7 +5419,7 @@ function renderStages() {
   $('stageNote').textContent = from
     ? `${st.faction} ${'★'.repeat(st.stars)}「${st.name}」 敵:${shown.map(dispName).join('・')}(ボス1体と3対1)。${'★'.repeat(from.stars)}「${from.name}」をクリアした直後だけ、結果画面の「続けて【始】に挑む」から、同じパーティで挑めます(全回復します)。`
     : st.kr
-    ? `刻練場「${st.name}」 弱めの門下生が次々と出てくる。こちらのHPは引き継いだまま、全滅するまで戦い続けて撃破数を競う。4層ごとにボス層があり、ボスを倒すと全回復(40層まで)。40層(100体)の突破が目標。こちらは回復できず、DFSは5000まで。パーティはアドバンスで組む(★4以上は1体まで)。最高記録:${Number(localStorage.getItem('kokusen.krBest') || 0)}体・累計 ${(ACC.stats && ACC.stats.krTotal) || Number(localStorage.getItem('kokusen.krTotal') || 0)}体`
+    ? `刻練場「${st.name}」 弱めの門下生が次々と出てくる。こちらのHPは引き継いだまま、全滅するまで戦い続けて撃破数を競う。1層は10体(敵3体×3戦+ボス)。層の最後のボスを倒すと全回復(10層まで)。10層(100体)の突破が目標。こちらは回復できず、DFSは5000まで。パーティはアドバンスで組む(★4以上は1体まで)。最高記録:${Number(localStorage.getItem('kokusen.krBest') || 0)}体・累計 ${(ACC.stats && ACC.stats.krTotal) || Number(localStorage.getItem('kokusen.krTotal') || 0)}体`
     : st.rush
     ? `連戦「${st.name}」 ★★★のボス3体 → ★★★★ → ★★★★★ を、3対1で続けて戦います(ゼノ以外のボスのHPは通常の28%)。ボスを1体倒すごとに、こちらは全回復して1番手から出直します。最高記録:${SOLO.rush} / ${st.rush.length}体`
     : st.corridor
