@@ -2399,6 +2399,7 @@ function applyOpts() {
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms * FX.speed));
 
 // ----- 音(WebAudioで合成。音声ファイルは使わない) -----
+let TRAIT_SE = 'traitA';   // 特性のカットインの音(候補:traitA / traitB / traitC)
 const Sound = (() => {
   // 効果音はWebAudioで合成する。ガチャのプチュンだけは音声ファイル(SE_FILES)を使う。
   // パチスロの「レバー → リール回転 → 停止 → 予告音 → 告知音 → ファンファーレ」という流れを意識した、この作品用の音。
@@ -2484,12 +2485,25 @@ const Sound = (() => {
     // 背景で鳴り続ける時計
     tick(n) { tone(n % 2 ? 1500 : 1900, 0.025, { type: 'square', vol: 0.022 }); },
     click() { tone(1400, 0.03, { type: 'square', vol: 0.05 }); },
-    // 特性のカットイン:「シャキン」と上がる短い音(下から上へ、きらっと光る)
-    trait() {
+    // 特性のカットインの音(候補3つ。決まったら1つにする)。trait() が今使っている音
+    trait() { Sound[TRAIT_SE](); },
+    // A「シャキン」:下から上へ、きらっと光る(今の音)
+    traitA() {
       tone(520, 0.16, { type: 'triangle', vol: 0.22, to: 1560 });
       tone(1040, 0.22, { type: 'sine', vol: 0.12, to: 2080, at: 0.05 });
       tone(2600, 0.3, { type: 'sine', vol: 0.06, at: 0.12 });
       tone(3900, 0.25, { type: 'sine', vol: 0.04, at: 0.16 });
+    },
+    // B「キィーン」:金属を打ったような澄んだ響き(倍音をずらして重ね、長めに残す)
+    traitB() {
+      [[1318, 0.2], [1318 * 2.76, 0.09], [1318 * 5.4, 0.05], [1318 * 1.5, 0.07]].forEach(([f, v], i) => tone(f, 0.9 - i * 0.12, { type: 'sine', vol: v, attack: 0.002 }));
+      noise(0.03, { type: 'highpass', freq: 6000, vol: 0.25 });
+    },
+    // C「ドンッ・キラッ」:低い一打のあとに、細かい光の粒が上へ散る
+    traitC() {
+      tone(150, 0.28, { type: 'sine', vol: 0.5, to: 55 });
+      noise(0.08, { type: 'lowpass', freq: 900, vol: 0.35 });
+      [2093, 2637, 3136, 4186].forEach((f, i) => tone(f, 0.22, { type: 'triangle', vol: 0.07, at: 0.08 + i * 0.045 }));
     },
     // ガラスにひびが入る「ピシッ」
     crack() {
@@ -3461,17 +3475,51 @@ async function stageFx(o) {
 // 特性が効いたら、特性の名前のカットイン(下に小さく効果)。同じカードの同じ特性は、1試合に1回だけ
 // 変身・離脱・巻き戻しなど、もともと専用の演出がある特性は出さない
 const TRAIT_FX_SKIP = new Set(['transform', 'detach', 'rewindRite', 'undying', 'weakness', 'eatMove', 'astral']);
+// ステータスが動く特性は、効くたびに毎回出す(下の文に、そのとき動いた量を書く)。それ以外は1試合に1回
+const TRAIT_EVERY = {
+  immovable: (c, t) => `DFS+${t.gain}(合計+${c.dfsGain})`,
+  breakGrow: (c, t) => `ATK+${t.add}(合計+${c.growAtk || 0})`,
+  winStack: (c) => `次の攻撃 ATK+${c.stackAtk || 0}`,
+  hazeMark: (c, t) => `相手のATK−${t.v}(刻印。最大−${t.cap})`,
+  pierceMark: (c, t) => `相手のDFS−${t.v}(刻印。最大−${t.cap})`,
+  teamCurse: (c, t) => `相手全員のATK−${t.v}(刻印)`,
+  devour: (c, t) => `与えたダメージの${Math.round(t.rate * 100)}%を回復`,
+  regen: (c, t) => `HP${t.heal}回復`,
+  drawHeal: (c, t) => `あいこでHP${t.heal}回復`,
+  drawStreak: () => 'あいこでも連勝+1',
+  selfBurn: (c, t) => `自分にHP${t.dmg}のダメージ`,
+};
+async function traitShow(c, key) {
+  if (!c || TRAIT_FX_SKIP.has(key)) return;
+  const t = traitOf(c, key);
+  if (!t || !t.name) return;
+  const every = TRAIT_EVERY[key];
+  c.trShown = c.trShown || {};
+  if (c.trShown[key] && !every) return;
+  const first = !c.trShown[key];
+  c.trShown[key] = 1;
+  Sound.trait();
+  // 毎回出す特性は、2回目からは短く、動いた量だけを書く
+  await cutin(`「${t.name}」`, `${dispName(c.ch)}:${every && !first ? every(c, t) : `${t.desc || ''}${every ? `(${every(c, t)})` : ''}`}`, 'trait', every && !first ? 800 : 1200);
+}
 async function traitFx() {
-  const list = (S && S.trig ? S.trig.splice(0) : []);
+  const list = (S && S.trig ? S.trig.splice(0) : []), done = new Set();
   for (const { c, key } of list) {
-    if (TRAIT_FX_SKIP.has(key)) continue;
-    c.trShown = c.trShown || {};
-    if (c.trShown[key]) continue;
-    c.trShown[key] = 1;
-    const t = traitOf(c, key);
-    if (!t || !t.name) continue;
-    Sound.trait();
-    await cutin(`「${t.name}」`, `${dispName(c.ch)}:${t.desc || ''}`, 'trait', 1200);
+    const id = list.indexOf(list.find((x) => x.c === c && x.key === key));   // 同じラリーの同じ特性は1回にまとめる
+    if (done.has(id)) continue;
+    done.add(id);
+    await traitShow(c, key);
+  }
+}
+// 場に出たときから効く特性(全力・先駆け・白紙化・一点留め・零の綴じ):カードが場に出た時点で出す(試合の始めと、交代のあと)
+const ENTRY_TRAITS = ['burnout', 'rush', 'enterDispel', 'giantSlayer'];
+async function entryFx() {
+  if (!S || S.over) return;
+  for (const t of S.teams) {
+    const c = active(t);
+    if (!c || c.hp <= 0) continue;
+    for (const key of ENTRY_TRAITS) if (traitOf(c, key) && (key !== 'giantSlayer' || c.giant)) await traitShow(c, key);   // 一点留めなどはボス戦のときだけ
+    if (c.tsuzuri) await traitShow(t.cards.slice(0, t.idx).find((x) => traitOf(x, 'facGuard')), 'facGuard');
   }
 }
 async function aftermath(o) {
@@ -3608,6 +3656,7 @@ async function normalRally(hand, cpuHand, why) {
   if (S.over) return finale();
   await stageFx(o);
   await climaxFx();
+  await entryFx();
 
   if (S.teams[0].breakReady) {
     await shatter(false);
@@ -3650,6 +3699,7 @@ async function playerBreak(hand) {
   if (S.over) return finale();
   await stageFx(o);
   await climaxFx();
+  await entryFx();
 }
 
 // 相手のBREAK。forced は対人戦で相手が選んだ手
@@ -3672,6 +3722,7 @@ async function cpuBreak(forced) {
   if (S.over) return finale();
   await stageFx(o);
   await climaxFx();
+  await entryFx();
 }
 
 async function play(hand) {
@@ -3734,7 +3785,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '1.04';
+const APP_VER = '1.06';
 // ----- 古い版で遊び続けさせない -----
 // 公開中の版は version.json に書く(APP_VER を上げるときに一緒に上げる)。起動時・画面に戻ったとき・5分おきに確かめ、
 // 新しい版があれば、対戦中なら決着を待ってから、閉じられない「更新してください」の画面を出す
@@ -6184,6 +6235,7 @@ async function startMatch(mine, theirs, foeLabel, opt = {}) {
     else if (PVP.on) await cutin(`VS ${PVP.foeName || '相手(ゲスト)'}`, `${PVP.rank ? `ランク戦 第${PVP.rank.g + 1}戦` : PVP.rated ? 'ランク戦' : 'フリー戦'}　${active(S.teams[0]).ch.name} vs ${active(S.teams[1]).ch.name}`, PVP.rated ? 'evil' : 'gold', 1400);
     else await cutin('開戦', `${active(S.teams[0]).ch.name} vs ${active(S.teams[1]).ch.name}`, 'gold', 900);
   }
+  await entryFx();   // 1番手の、場に出たときから効く特性
   busy = false;
   render();
   tickLoop();
