@@ -1052,7 +1052,8 @@ const SPECIAL_CHARS = [
       paper:    { name: '綴じ直し', rate: RATE.normal, team: { stat: 'atk', v: 300, cap: 0, rei: 800, bench: 1 } } } },
   // 矢のタブに並ぶ解放キャラ。ツルとは同じパーティに入れられない。チョキで勝つとその場でBREAK
   { id: 'p_tsuru_ten', name: 'ツル・天眼', faction: '矢', group: '矢', bonusOk: true, sameAs: 'tsuru', role: 'BREAK確定', unlock: 'tengan', secret: '？？？', secretUnlock: 1, hp: 9000, atk: 3800, dfs: 1300, phys: 1.5,
-    trait: { key: 'foresight', name: '天眼', desc: `${BREAK_NAME}の一撃はATK+1500`, add: 1500 },
+    traits: [{ key: 'foresight', name: '天眼', desc: `${BREAK_NAME}の一撃はATK+1500`, add: 1500 },
+      { key: 'seeThrough', name: '見透かし', desc: '相手が零の陣営なら、相手の「受けるダメージを減らす効果」を無効にする', faction: '零' }],
     actions: {
       rock:     { name: '張り詰め・天', rate: RATE.huge, up: { rate: RATE.max, when: 'inBreak', text: `${BREAK_NAME}中は極大` } },
       scissors: { name: '先読み・天',   rate: RATE.normal, breakNow: 1 },
@@ -1436,12 +1437,14 @@ function damage(S, att, def, rate, isBreak) {
   const lb = isBreak ? traitOf(att, 'lateBreak') : null;
   if (lb && att.turn >= lb.from) atk *= lb.mul;
   atk = Math.min(ATK_MAX, atk);
-  const ub = isBreak ? traitOf(def, 'unbreak') : null;   // 特性:BREAKの被ダメージを減らす
-  const out = !def.captured ? traitOf(def, 'outside') : null;   // 特性「時の外側」
+  // 特性「見透かし」(ツル・天眼):相手が零の陣営なら、受けるダメージを減らす効果(下の3つ)をすべて無効にする
+  const see = traitOf(att, 'seeThrough'), seeOn = !!see && def.ch.faction === see.faction;
+  const ub = isBreak && !seeOn ? traitOf(def, 'unbreak') : null;   // 特性:BREAKの被ダメージを減らす
+  const out = !def.captured && !seeOn ? traitOf(def, 'outside') : null;   // 特性「時の外側」
   // 特性「継ぎ刻」(アワイ):前の番手にアワイがいた味方の BREAK は強くなる(レイはさらに)
   let tk = 1;
   if (isBreak) { const tm = S.teams.find((t) => t.cards.includes(att)), i = tm ? tm.cards.indexOf(att) : -1, src = i > 0 ? tm.cards.slice(0, i).map((c) => traitOf(c, 'tsugiKoku')).find(Boolean) : null; if (src) tk = att.ch.id === 'rei' ? src.rei : src.mul; }
-  return Math.round(atk * rate * att.ch.phys * (1 - dfsVs(att, def, isBreak) / 10000) * (ub ? 1 - ub.cut : 1) * (out ? 1 - out.cut : 1) * tk * (def.cut ? 1 - def.cut : 1));
+  return Math.round(atk * rate * att.ch.phys * (1 - dfsVs(att, def, isBreak) / 10000) * (ub ? 1 - ub.cut : 1) * (out ? 1 - out.cut : 1) * tk * (def.cut && !seeOn ? 1 - def.cut : 1));
 }
 
 const modText = (m, short) => (short
@@ -3659,7 +3662,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.92';
+const APP_VER = '0.93';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
