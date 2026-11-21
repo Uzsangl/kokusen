@@ -3668,7 +3668,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.95';
+const APP_VER = '0.96';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
@@ -4561,7 +4561,7 @@ async function accDelete() {
 async function accSignOut() {
   try { await sbFetch('/auth/v1/logout', { method: 'POST' }); } catch (e) { /* サーバー側が失敗しても、この端末ではログアウトする */ }
   ACC.session = null; ACC.profile = null; accStore(); renderAcct();
-  FR.me = null; FR.list = []; watchHostClose(); renderFriendBadge();
+  FR.me = null; FR.list = []; watchHostClose(); auditHostClose(); renderFriendBadge();
   SOLO.cleared = readCleared(GUEST_KEY);   // ゲストの記録に戻す
   renderStages();
 }
@@ -5441,7 +5441,7 @@ async function frLoad() {
     FR.list = (await frRpc('friend_list')) || [];
     FR.ready = true;
   } catch (e) { if (isMissingFn(e)) FR.ready = false; }
-  renderFriendBadge(); watchHostSync(); frBeat(true);
+  renderFriendBadge(); watchHostSync(); auditHostSync(); frBeat(true);
   frReward();
 }
 // はじめてフレンドができたら、空間のカケラ200個(1アカウント1回だけ。もらったかはサーバーに記録する。SQLの9回目)
@@ -5520,7 +5520,7 @@ function openFriends() {
     + `<label class="fr-opt"><input type="checkbox" id="frOff"${me.off ? ' checked' : ''}> フレンドの観戦を受け付けない</label>`
     + '<p class="sub">ソロ・CPU戦を遊んでいる間、フレンドはいつでも観戦に入れます(いつ抜けても大丈夫です)。観戦されても、記録や結果は変わりません。</p>'
     + (ACC.stats && ACC.stats.friendGot ? '' : `<p class="sub" style="color:var(--gold)">はじめてフレンドができると、💠${SHARD_NAME}${FRIEND_BONUS}個をプレゼント(1回だけ)。</p>`)
-    + '<div class="row"><button id="frReload">更新</button></div>');
+    + `<div class="row"><button id="frReload">更新</button>${IS_MASTER ? '<button id="frAudit" style="border-color:var(--red);color:var(--red)">👁 全プレイヤー(運営)</button>' : ''}</div>`);
   const msg = (t, err) => { $('frMsg').textContent = t; $('frMsg').className = 'msg' + (err ? ' err' : ''); };
   const act = async (fn) => { try { const t = await fn(); await frLoad(); openFriends(); if (t) setTimeout(() => msg(t), 0); } catch (e) { msg(/^KF/.test(e.code || '') || /[ぁ-んァ-ン]/.test(e.message || '') ? e.message : '通信に失敗しました', true); } };
   $('frCopy').onclick = () => { try { navigator.clipboard.writeText(me.code || ''); msg('コピーしました'); } catch (e) { /* コピーできなくても動く */ } };
@@ -5542,6 +5542,23 @@ function openFriends() {
   document.querySelectorAll('#sheetBody [data-watch]').forEach((b) => { b.onclick = () => { const f = FR.list.find((x) => x.id === b.dataset.watch); if (f) fwStart(f); }; });
   $('frOff').onchange = () => act(async () => { await frRpc('friend_watch_off', { p_off: $('frOff').checked }); return $('frOff').checked ? 'フレンドの観戦を受け付けないようにしました' : 'フレンドの観戦を受け付けます'; });
   $('frReload').onclick = () => act(async () => '');
+  if ($('frAudit')) $('frAudit').onclick = () => { Sound.click(); openAudit(); };
+}
+// 運営(マスター)用:ログイン中の全プレイヤー。ソロ・CPU戦の人は観戦できる(フレンドの観戦をオフにしている人も)
+async function openAudit() {
+  if (!IS_MASTER) return;
+  openSheet('全プレイヤー(運営)', '<p class="sub">読み込み中…</p>');
+  let rows;
+  try { rows = await frRpc('audit_list', {}); } catch (e) { openSheet('全プレイヤー(運営)', `<p class="sub">${isMissingFn(e) ? 'SQLの11回目を実行すると使えます。' : '読み込めませんでした(' + escHtml(e.message || '') + ')'}</p>`); return; }
+  rows = Array.isArray(rows) ? rows : [];
+  const list = rows.map((r, i) => {
+    const st = r.st || {}, can = !!r.key && (st.m === 'solo' || st.m === 'cpu');
+    return `<div class="fr-row"><div class="fr-main"><b>${escHtml(r.name || '')}</b><br><span class="fr-on on">● ログイン中</span>${frStatusText(st) ? `<span class="sub"> ・${escHtml(frStatusText(st))}</span>` : ''}${r.key ? '' : '<span class="sub"> ・(観戦の部屋なし:古い版)</span>'}</div>`
+      + `<div class="fr-btns">${can ? `<button data-aw="${i}">👁 観戦</button>` : ''}</div></div>`;
+  }).join('');
+  openSheet('全プレイヤー(運営)', `<p class="sub">ログイン中 ${rows.length}人(3分以内に動いていた人)。ソロ・CPU戦の人を観戦できます。相手には観戦していることは表示されません。</p>${list || '<p class="sub">ほかにログイン中の人はいません。</p>'}<div class="row"><button id="audReload">更新</button></div>`);
+  document.querySelectorAll('#sheetBody [data-aw]').forEach((b) => { b.onclick = () => { const r = rows[+b.dataset.aw]; if (r) fwStart({ name: r.name, key: r.key, audit: 1 }); }; });
+  $('audReload').onclick = () => openAudit();
 }
 function frToast(t) { log(t); flushLog(); setResult(t); if (!S || $('battle').classList.contains('hidden')) openSheet('観戦', `<p class="sub">${escHtml(t)}</p>`); }
 
@@ -5558,7 +5575,7 @@ async function watchHostSync() {
   const p = WH.peer = new window.Peer('kokusen-watch-' + key.toLowerCase());
   p.on('open', () => { if (WH.peer === p) { WH.open = true; frBeat(true); } });
   p.on('connection', (c) => {
-    if (WH.specs.length >= SPEC_MAX) { c.on('open', () => { try { c.send({ full: 1 }); } catch (e) { /* 閉じるだけ */ } setTimeout(() => c.close(), 300); }); return; }
+    if (WH.specs.filter((x) => !x.audit).length >= SPEC_MAX) { c.on('open', () => { try { c.send({ full: 1 }); } catch (e) { /* 閉じるだけ */ } setTimeout(() => c.close(), 300); }); return; }
     WH.specs.push(c);
     const drop = () => { WH.specs = WH.specs.filter((x) => x !== c); if (S && !S.spectate) render(); };
     c.on('open', () => { whSend(c); if (S && !S.spectate) render(); });
@@ -5569,10 +5586,39 @@ async function watchHostSync() {
 }
 function watchHostClose() {
   try { if (WH.peer) WH.peer.destroy(); } catch (e) { /* すでに閉じている */ }
-  Object.assign(WH, { peer: null, key: '', open: false, specs: [] });
+  Object.assign(WH, { peer: null, key: '', open: false, specs: WH.specs.filter((c) => c.audit) });   // 運営の観戦はそのまま
+}
+// ----- 運営(マスター)の観戦(不正対策):ログイン中は、フレンドの観戦の設定に関係なく、運営だけが入れる部屋を開く -----
+// 部屋の名前は、本人と運営にしか返さない「運営観戦の鍵」から作る(SQLの11回目)。運営の観戦者は、観戦者の一覧には出さない
+const AUD = { peer: null, uid: '', ready: true };
+async function auditHostSync() {
+  const uid = accUid();
+  if (!uid || !AUD.ready) { auditHostClose(); return; }
+  if (AUD.peer && AUD.uid === uid) return;
+  auditHostClose();
+  let key = '';
+  try { key = await frRpc('audit_me', {}); } catch (e) { if (isMissingFn(e)) AUD.ready = false; return; }
+  if (typeof key !== 'string' || !/^[0-9A-Z]{8,32}$/.test(key) || accUid() !== uid || AUD.peer) return;
+  if (!(window.Peer || await loadScript('vendor/peerjs.min.js')) || !window.Peer) return;
+  AUD.uid = uid;
+  const p = AUD.peer = new window.Peer('kokusen-audit-' + key.toLowerCase());
+  p.on('connection', (c) => {
+    c.audit = true;
+    WH.specs.push(c);
+    const drop = () => { WH.specs = WH.specs.filter((x) => x !== c); };
+    c.on('open', () => whSend(c));
+    c.on('close', drop); c.on('error', drop);
+  });
+  p.on('disconnected', () => { if (AUD.peer === p) { try { p.reconnect(); } catch (e) { /* 次の更新で作り直す */ } } });
+  p.on('error', (e) => { if (AUD.peer === p && e.type === 'unavailable-id') { AUD.peer = null; AUD.uid = ''; } });   // 別のタブで開いているときは、そちらが受け付ける
+}
+function auditHostClose() {
+  try { if (AUD.peer) AUD.peer.destroy(); } catch (e) { /* すでに閉じている */ }
+  AUD.peer = null; AUD.uid = '';
+  WH.specs = WH.specs.filter((c) => !c.audit);
 }
 const whSend = (c) => { try { if (c.open) c.send({ spec: WH.snap || { v: RULES_VER, wait: 1 } }); } catch (e) { /* 送れなければ次の更新で送る */ } };
-const whViewers = () => WH.specs.filter((c) => c.open).map((c) => String((c.metadata && c.metadata.name) || 'フレンド').replace(/[\u0000-\u001f]/g, '').slice(0, 12));
+const whViewers = () => WH.specs.filter((c) => c.open && !c.audit).map((c) => String((c.metadata && c.metadata.name) || 'フレンド').replace(/[\u0000-\u001f]/g, '').slice(0, 12));
 function whStart(mine, theirs, opt) {
   const p = ACC.profile;
   WH.id = Math.random().toString(36).slice(2); WH.hist = [];
@@ -5594,7 +5640,7 @@ async function fwStart(f) {
   const me = FW.peer = new window.Peer();
   const myName = ACC.profile ? String(ACC.profile.name).slice(0, 12) : 'フレンド';
   me.on('open', () => {
-    const c = me.connect('kokusen-watch-' + String(f.key).toLowerCase(), { reliable: true, serialization: 'json', metadata: { spec: 1, name: myName } });
+    const c = me.connect((f.audit ? 'kokusen-audit-' : 'kokusen-watch-') + String(f.key).toLowerCase(), { reliable: true, serialization: 'json', metadata: { spec: 1, name: myName } });
     c.on('data', (d) => {
       if (!d || typeof d !== 'object' || FW.peer !== me) return;
       if (d.full) { frToast('観戦できるのは5人までです。いっぱいでした'); fwStop(true); return; }
