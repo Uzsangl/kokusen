@@ -414,6 +414,8 @@
   }
   #cutin .big { font-size: clamp(2.6rem, 13vw, 5rem); font-weight: 900; letter-spacing: .12em; line-height: 1.1; color: var(--c, var(--gold)); text-shadow: 0 0 24px var(--c, var(--gold)); animation: slam calc(.3s * var(--spd)) cubic-bezier(.2, 1.6, .4, 1); }
   #cutin .small { font-size: .95rem; color: #fff; letter-spacing: .08em; }
+  #cutin .cuthint { text-align: center; margin-top: 6px; font-size: .72rem; color: #cfd3ee; opacity: .8; animation: cuthint 1.2s ease-in-out infinite; }
+  @keyframes cuthint { 50% { opacity: .35; } }
   #cutin.gold { --c: #f5c451; } #cutin.violet { --c: #a78bff; } #cutin.plain { --c: #cfd3ee; } #cutin.trait { --c: #7dd3fc; } #cutin.red { --c: #ff4d5e; } #cutin.evil { --c: #ff2a3d; }
   #cutin.evil .band { background: linear-gradient(90deg, transparent, #1a0006ee 15%, #1a0006ee 85%, transparent); }
   #cutin.rainbow .band { border-color: #fff; }
@@ -3666,7 +3668,28 @@ async function traitShow(c, key) {
   c.trShown[key] = 1;
   Sound.trait();
   // 毎回出す特性は、2回目からは短く、動いた量だけを書く
-  await cutin(`「${t.name}」`, `${dispName(c.ch)}:${every && !first ? every(c, t) : `${t.desc || ''}${every ? `(${every(c, t)})` : ''}`}`, 'trait', every && !first ? 800 : 1200);
+  const big = `「${t.name}」`, small = `${dispName(c.ch)}:${every && !first ? every(c, t) : `${t.desc || ''}${every ? `(${every(c, t)})` : ''}`}`;
+  if (S && S.spectate) await cutin(big, small, 'trait', every && !first ? 800 : 1200);   // 観戦は止めずに流す
+  else await cutinHold(big, small, 'trait');
+}
+// 画面をタップするまで残すカットイン(出てから0.7秒は、うっかり閉じないようにタップを受けつけない)
+async function cutinHold(big, small, cls) {
+  const el = $('cutin');
+  $('cutBig').textContent = big;
+  $('cutBig').style.fontSize = `min(${(78 / Math.max(3, [...big].length)).toFixed(1)}vw, 5rem)`;
+  $('cutBig').className = 'big';
+  $('cutSmall').textContent = small || '';
+  el.className = 'show ' + cls;
+  const cover = document.createElement('div');   // 画面全体でタップを受ける(下のボタンは押せない)
+  cover.style.cssText = 'position:fixed;inset:0;z-index:7;';
+  document.body.appendChild(cover);
+  await new Promise((r) => setTimeout(r, 700));
+  const hint = document.createElement('div');
+  hint.className = 'cuthint'; hint.textContent = 'タップで次へ';
+  el.appendChild(hint);
+  await new Promise((res) => { cover.addEventListener('pointerup', (e) => { e.preventDefault(); e.stopPropagation(); res(); }, { once: true }); });
+  cover.remove(); hint.remove();
+  el.className = '';
 }
 async function traitFx() {
   const list = (S && S.trig ? S.trig.splice(0) : []), done = new Set();
@@ -3975,7 +3998,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '1.15';
+const APP_VER = '1.16';
 // ----- 古い版で遊び続けさせない -----
 // 公開中の版は version.json に書く(APP_VER を上げるときに一緒に上げる)。起動時・画面に戻ったとき・5分おきに確かめ、
 // 新しい版があれば、対戦中なら決着を待ってから、閉じられない「更新してください」の画面を出す
