@@ -1143,7 +1143,7 @@ const GACHA_CHARS = [
   { id: 'g_z4', name: 'カガミ', faction: '零', rarity: 4, gacha: true, role: '相手のATKで殴る', hp: 28800, atk: 1000, dfs: 1300, phys: 1.1,
     trait: { key: 'mirrorAtk', name: '鏡写し', desc: '攻撃するとき、自分のATKの代わりに相手の今のATKを使う' },
     actions: { rock: { rate: RATE.big, name: '鏡面' }, scissors: { rate: RATE.normal, name: '映し誘い', mods: [{ to: 'foe', stat: 'atk', v: 500, t: 2 }] }, paper: { rate: RATE.normal, name: '鏡の修復', heal: 1500 } } },
-  { id: 'g_z5', name: 'ゼノ【仮面】', faction: '零', rarity: 5, gacha: true, role: '10ラリー目からBREAK10倍', hp: 11500, atk: 2500, dfs: 1500, phys: 1.5,
+  { id: 'g_z5', name: 'ゼノ【仮面】', faction: '零', group: '隔絶', rarity: 5, gacha: true, role: '10ラリー目からBREAK10倍', hp: 11500, atk: 2500, dfs: 1500, phys: 1.5,
     traits: [{ key: 'lateBreak', name: '遅咲きの刻', desc: `場に出て10ラリー目以降、自分の${BREAK_NAME}の攻撃だけATKが10倍`, from: 10, mul: 10 },
       { key: 'drawHeal', name: '凪の間', desc: 'あいこのたびにHP1000回復', heal: 1000 }],
     actions: { rock: N('針止め'), scissors: { rate: RATE.max, name: '十の跳躍' }, paper: { rate: RATE.normal, name: '仮面の内', mods: [selfDfs(1500, 2)], keep: 1, heal: 3000 } } },
@@ -3883,7 +3883,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '1.10';
+const APP_VER = '1.11';
 // ----- 古い版で遊び続けさせない -----
 // 公開中の版は version.json に書く(APP_VER を上げるときに一緒に上げる)。起動時・画面に戻ったとき・5分おきに確かめ、
 // 新しい版があれば、対戦中なら決着を待ってから、閉じられない「更新してください」の画面を出す
