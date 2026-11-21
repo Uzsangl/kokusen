@@ -1374,7 +1374,7 @@ const traitOf = (card, key) => traitsOf(card.ch).find((t) => t.key === key) || n
 // バフ・デバフ(mods)の合計。ATK も DFS も実数の足し引き
 const modSum = (c, stat) => c.mods.reduce((s, m) => s + (m.stat === stat ? m.v : 0), 0);
 // 現在のATK(変身・渡された強化・バフ/デバフ込み。次の攻撃だけの上乗せ atkUp は含めない)
-const ATK_MIN = 250;   // デバフでATKがこれより下がることはない
+const ATK_MIN = 1000;   // ATKはこれより小さくならない(全体のルール)
 const ATK_MAX = 99999;   // ATKの上限
 const baseAtk = (c) => Math.min(ATK_MAX, Math.max(ATK_MIN, c.atk + c.atkBonus + c.teamAtk + c.markAtk + (c.facAtk || 0) + (c.growAtk || 0) + modSum(c, 'atk')));
 // 現在のDFS(変身・特性・渡された強化・バフ/デバフ込み。次の被弾だけの上乗せ dfsUp は含めない)
@@ -1491,6 +1491,12 @@ function factionBonus(chars) {
   if (chars.length !== TEAM_SIZE || !chars.every((ch) => ch.faction === chars[0].faction && (ch.bonusOk || ch.gacha || CHARACTERS.some((c) => c.id === ch.id)))) return null;
   const b = FACTION_BONUS[chars[0].faction];
   return b ? { ...b, faction: chars[0].faction } : null;
+}
+// 後ろの番手に効果を渡す技・特性が発動した記録(画面の「かかっている効果」に回数つきで出す)
+function relay(t, key, label, text) {
+  t.relay = t.relay || {};
+  const r = t.relay[key] || (t.relay[key] = { label, text, n: 0 });
+  r.n++; r.text = text;
 }
 function newTeam(label, chars) {
   const fb = factionBonus(chars);
@@ -1644,7 +1650,7 @@ function act(S, side, hand, log, isBreak) {
   }
   if (a.mark && l.hp > 0) {
     const k = a.mark.stat === 'atk' ? 'markAtk' : 'markDfs', label = a.mark.stat === 'atk' ? 'ATK' : 'DFS';
-    l[k] = a.mark.cap ? Math.max(-a.mark.cap, l[k] - a.mark.v) : l[k] - a.mark.v;   // cap 0 は上限なし(ATKは ATK_MIN より下がらない)
+    l[k] = a.mark.cap ? Math.max(-a.mark.cap, l[k] - a.mark.v) : l[k] - a.mark.v;   // cap 0 は上限なし(ATKは ATK_MIN=1000 より下がらない)
     S.events.push({ type: 'mod', side: 1 - side, text: `${label}刻印`, good: false });
     log(`　${nameOf(l)}に${label}の刻印(${label}${l[k]})`);
   }
@@ -1665,6 +1671,8 @@ function act(S, side, hand, log, isBreak) {
     wt.cards.forEach((c) => { if (c.hp > 0 && c.result !== 'lose' && !(a.team.bench && c === w)) c[k] = a.team.cap ? Math.min(a.team.cap, c[k] + tv(c)) : c[k] + tv(c); });
     S.events.push({ type: 'mod', side, text: `${a.team.bench ? '控え' : '全員'}${label}↑`, good: true });
     log(a.team.bench ? `　${wt.label}の控えの味方全員の${label}+${a.team.v}` : `　${wt.label}の味方全員の${label}+${a.team.v}(全体${label}+${w[k]})`);
+    const bench = wt.cards.slice(wt.idx + 1).filter((c) => c.hp > 0 && c.result !== 'lose');
+    if (bench.length) relay(wt, 'tm:' + a.name, a.name, `${a.team.bench ? '控えの味方全員' : '味方全員(控えも)'}の${label}+${a.team.v}ずつ。いまの控え:` + bench.map((c) => `${dispName(c.ch)} ${label}+${c[k]}`).join('・'));
   }
   if (a.atkUp) w.atkUp = a.atkUp;
   if (a.dfsUp) w.dfsUp = a.dfsUp;
@@ -1692,9 +1700,12 @@ function act(S, side, hand, log, isBreak) {
   if (a.seal) lt.sealed = true;
   if (a.keep) wt.keep = true;
   const next = wt.cards[wt.idx + 1];
-  if (next && a.nextAtkUp) next.atkUp = Math.max(next.atkUp, a.nextAtkUp);
-  if (next && a.nextDfsUp) next.dfsUp = Math.max(next.dfsUp, a.nextDfsUp);
-  if (next && a.nextCut && !next.cut) { next.cut = next.ch.id === 'rei' ? a.nextCut.rei : a.nextCut.v; log(`　${wt.label}の次の番手(${dispName(next.ch)})が受けるダメージが減る(ずっと)`); }   // 重ならない
+  if (next && a.nextAtkUp) { next.atkUp = Math.max(next.atkUp, a.nextAtkUp); relay(wt, 'na:' + a.name, a.name, `次の番手(${dispName(next.ch)})の最初の攻撃ATK+${next.atkUp}(重ならない)`); }
+  if (next && a.nextDfsUp) { next.dfsUp = Math.max(next.dfsUp, a.nextDfsUp); relay(wt, 'nd:' + a.name, a.name, `次の番手(${dispName(next.ch)})が最初に受ける攻撃DFS+${next.dfsUp}(重ならない)`); }
+  if (next && a.nextCut) {   // 重ならない
+    if (!next.cut) { next.cut = next.ch.id === 'rei' ? a.nextCut.rei : a.nextCut.v; log(`　${wt.label}の次の番手(${dispName(next.ch)})が受けるダメージが減る(ずっと)`); }
+    relay(wt, 'nc:' + a.name, a.name, `次の番手(${dispName(next.ch)})が受けるダメージ−${Math.round(next.cut * 100)}%(ずっと。重ならない)`);
+  }
 }
 
 // 特性「不滅」:BREAK以外ではHP1で耐える。初めてHP1になったら知らせる
@@ -1810,6 +1821,7 @@ function endRally(S, log, winSide) {
     const f = active(t), tr = traitOf(f, 'record'), next = t.cards[t.idx + 1];
     if (ko[side] && tr && next) {
       next.atkBonus += tr.atk; next.dfsBonus += tr.dfs;
+      relay(t, 'rc:' + f.ch.id, tr.name, `${f.ch.name}が倒れて、次の${next.ch.name}にATK+${tr.atk}・DFS+${tr.dfs}(ずっと)`);
       log(`　${t.label}の${f.ch.name}の「${tr.name}」→ 次の${next.ch.name}にATK+${tr.atk}・DFS+${tr.dfs}`);
     }
     // 特性「継ぎ」:倒れたとき、自分のATKとDFS(消えない強化も込み)をそのまま次の番手に足す
@@ -1817,12 +1829,14 @@ function endRally(S, log, winSide) {
     if (ko[side] && ps && next) {
       const pa = f.atk + f.atkBonus + f.teamAtk + (f.growAtk || 0), pd = f.dfs + f.dfsBonus + f.teamDfs + f.dfsGain;
       next.atkBonus += pa; next.dfsBonus += pd;
+      relay(t, 'ps:' + f.ch.id, ps.name, `${f.ch.name}が倒れて、次の${next.ch.name}にATK+${pa}・DFS+${pd}(ずっと)`);
       log(`　${t.label}の${f.ch.name}の「${ps.name}」→ 次の${next.ch.name}にATK+${pa}・DFS+${pd}`);
     }
     // 特性「舫い」「羽渡し」:倒れたとき、控えの味方全員を強化する
     const lg = traitOf(f, 'legacy'), bench = t.cards.slice(t.idx + 1);
     if (ko[side] && lg && bench.length) {
       bench.forEach((c) => { c.atkBonus += lg.atk; c.dfsBonus += lg.dfs; c.max += lg.hp; c.hp += lg.hp; });
+      relay(t, 'lg:' + f.ch.id, lg.name, `${f.ch.name}が倒れて、控えの味方全員に` + [lg.atk && `ATK+${lg.atk}`, lg.dfs && `DFS+${lg.dfs}`, lg.hp && `最大HP+${lg.hp}`].filter(Boolean).join('・') + '(ずっと)');
       log(`　${t.label}の${f.ch.name}の「${lg.name}」→ 控えの味方全員に` + [lg.atk && `ATK+${lg.atk}`, lg.dfs && `DFS+${lg.dfs}`, lg.hp && `最大HP+${lg.hp}`].filter(Boolean).join('・'));
     }
   });
@@ -3070,6 +3084,8 @@ function statusList(t, f) {
   if (f.poison) add(`時蝕·${f.poison}`, `時蝕(残り${f.poison}ラリー。毎ラリー${f.poisonDmg}ダメージ)`, 'down');
   if (f.atkUp) add(`次撃ATK+${f.atkUp}`, `次の攻撃だけ ATK+${f.atkUp}`, 'up');
   if (f.dfsUp) add(`次被弾DFS+${f.dfsUp}`, `次に受ける攻撃だけ DFS+${f.dfsUp}`, 'up');
+  // 後ろの番手に効果を渡す技・特性(発動した回数つき)
+  Object.values(t.relay || {}).forEach((r) => add(`後続:${r.label}×${r.n}`, `後続へ「${r.label}」×${r.n}回:${r.text}`, 'info'));
   if (t.keep) add('連勝保護', '連勝保護(次に負けても、連勝が途切れない)', 'up');
   if (t.sealed) add('連勝封じ', '連勝封じ(次に勝っても、連勝に数えない)', 'down');
   // 特性「全力」:3ラリー目までは技がすべて極大、そのあとは毎ラリーATKが下がる
@@ -3669,7 +3685,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.99';
+const APP_VER = '1.00';
 // ----- 古い版で遊び続けさせない -----
 // 公開中の版は version.json に書く(APP_VER を上げるときに一緒に上げる)。起動時・画面に戻ったとき・5分おきに確かめ、
 // 新しい版があれば、対戦中なら決着を待ってから、閉じられない「更新してください」の画面を出す
@@ -4820,6 +4836,7 @@ const RULEBOOK = {
   '基本': `<h3>勝ち方</h3><p>3枚1チームの勝ち抜き戦。場のカード同士がじゃんけんで戦い、倒されたら次のカードに交代する。倒した側はそのままのHPで場に残る。相手の3枚をすべて倒した側の勝ち。</p>
     <h3>手と技</h3><p>✊グー=停止、✌️チョキ=跳躍、🖐パー=遡行。じゃんけんに勝った側の技だけが出る。停止は跳躍に、跳躍は遡行に、遡行は停止に勝つ。</p>
     <h3>あいこ</h3><p>どちらの技も出ない。連勝は途切れない。</p>
+    <h3>ATKの下限</h3><p>ATKは、どれだけ下げられても1000より小さくならない。</p>
     <h3>刻の抜け落ち</h3><p>交代がないまま12ラリー続くと、両者のHPが毎ラリー削れていく(ソロでは起きない)。</p>`,
   'BREAK': `<h3>BREAK</h3><p>じゃんけんに3連勝すると BREAK が発生する。次は好きな手を選ぶと、その技が確定で通る。</p>
     <h3>BREAK中の攻撃</h3><p>相手のDFSを無視してダメージを与える。キャラによっては BREAK でさらに強くなる。</p>
