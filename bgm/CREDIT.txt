@@ -16,6 +16,7 @@ YouTube: https://www.youtube.com/@nagumorizu
   天使迎撃戦(ソロ★4 トキバミ戦の曲)         bgm/Tenshi-Geigekisen.mp3
   Le Cirque du Diable(刻の回廊★4 カガミ・ナガレ・トモシ戦の曲) bgm/Le-Cirque-du-Diable.mp3
   黒翼の魔女(刻の回廊★5 ツル戦の曲) bgm/Kokuyoku-no-Majo.mp3
+  古戦場にて(刻練場「百刻スコアアタック」の曲。100体目のウツロ戦だけ Devine Fencer) bgm/Kosenjo-nite.mp3
 -------------------------------------------------
 
 ※本ゲーム内で使用している楽曲の著作権は、作曲者の南雲 莉翠(nagumorizu)に帰属します。

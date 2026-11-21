@@ -1382,7 +1382,7 @@ const STAGES = [
   { id: 'k5', faction: '錨', stars: 5, name: '始まり', foes: ['b_kaji_shi'], level: 4, read: 0.6, hp: 1.0, atk: 1.0, bgm: 'xeno', chainFrom: 'k4' },
   // ボスラッシュ:★★★の3体 → ★★★★ → ★★★★★ を続けて戦う。ボスを1体倒すごとに、こちらは全回復する。
   // rushHp は、ゼノ以外のボスのHPの倍率。「むずかしい」で5連勝できる率が約0.01%になるように決めた
-  { id: 'kr', faction: '刻練', stars: 0, name: '百刻スコアアタック', kr: true, level: 2, read: 0.2, hp: 1.0, atk: 1.0 },
+  { id: 'kr', faction: '刻練', stars: 0, name: '百刻スコアアタック', kr: true, bgm: 'kosen', level: 2, read: 0.2, hp: 1.0, atk: 1.0 },
   { id: 'rush', faction: '連戦', stars: 0, name: 'ボスラッシュ1', rush: ['a3', 'z3', 'y3', 't4', 'x5'], rushHp: 0.28, level: 4, read: 0.35, hp: 1.0, atk: 1.0 },
   // ----- 刻の回廊(アドバンスのソロ)。★2 → ★3 → ★4 → ★5 の順に、前の段をクリアすると次に挑める -----
   // reward:[初回クリア, 2回目以降] の空間のカケラ。勝率は tools/bossrate.js で、適正パーティ5通り(tools/parties/fixed5.json)で測った
@@ -2852,7 +2852,7 @@ const Sound = (() => {
 // main は対戦中の曲、climax は決着が近いときの曲。ファイルが読めなければ何もせず、「曲」ボタンも出さない。
 // main:対戦中、climax:決着が近いとき、xeno:★5の肉体戦。tick(時計の音)はファイルではなく合成する
 // title:タイトル画面(climax と同じ曲)、menu:メニュー(キャラ選択)、toki:★★★★ トキバミ戦(天使迎撃戦)
-const BGM_TRACKS = { main: 'bgm/The-Battle-of-Beliefs.mp3', climax: 'bgm/Sign-of-Victory.mp3', xeno: 'bgm/Devine-Fencer.mp3', title: 'bgm/Sign-of-Victory.mp3', menu: 'bgm/Important-Thing.mp3', toki: 'bgm/Tenshi-Geigekisen.mp3', cirque: 'bgm/Le-Cirque-du-Diable.mp3', majo: 'bgm/Kokuyoku-no-Majo.mp3' };
+const BGM_TRACKS = { main: 'bgm/The-Battle-of-Beliefs.mp3', climax: 'bgm/Sign-of-Victory.mp3', xeno: 'bgm/Devine-Fencer.mp3', title: 'bgm/Sign-of-Victory.mp3', menu: 'bgm/Important-Thing.mp3', toki: 'bgm/Tenshi-Geigekisen.mp3', cirque: 'bgm/Le-Cirque-du-Diable.mp3', majo: 'bgm/Kokuyoku-no-Majo.mp3', kosen: 'bgm/Kosenjo-nite.mp3' };
 const BGM_VOLUME = 0.2;
 // 曲は、効果音と同じ仕組み(WebAudio)で鳴らす。
 // iPhoneでは <audio> での再生がうまくいかないことがあり、効果音だけ鳴って曲が鳴らなかったため。
@@ -2989,7 +2989,7 @@ const Bgm = (() => {
 // 対人戦:相手の残りが1枚になったとき。CPU戦:相手チーム全体の残りHPが25%以下になったとき
 // (ストーリーモードはまだないので、CPU戦をその代わりにしている)
 function climaxReady() {
-  if (!S || S.over || S.climax || (S.stage && ((S.stage.bgm === 'xeno' && !S.stage.climaxOk) || S.stage.rush))) return false;   // ゼノの曲の戦いは、ずっとその曲のまま(climaxOk のステージは切り替える)
+  if (!S || S.over || S.climax || (S.stage && ((S.stage.bgm === 'xeno' && !S.stage.climaxOk) || S.stage.rush || S.stage.kr))) return false;   // ゼノの曲の戦いは、ずっとその曲のまま(climaxOk のステージは切り替える)
   const cards = S.teams[1].cards;
   const left = cards.filter((c) => c.hp > 0 && c.result !== 'lose');
   const hp = left.reduce((s, c) => s + c.hp, 0), max = cards.reduce((s, c) => s + c.max, 0);
@@ -3713,6 +3713,10 @@ async function entryFx() {
     const f = active(S.teams[1]).ch;
     if (f.krLayer !== S.krShownLayer) {
       S.krShownLayer = f.krLayer;
+      // 曲:ふだんは「古戦場にて」。100体目のウツロ(Lv10)だけ、★5のいつもの曲
+      const want = f.krLv === 10 ? 'xeno' : 'kosen';
+      if (Bgm.current() !== want) Bgm.switchTo(want);
+      if (krFloor(f.krLayer) === 10 && f.krLv !== 10) Bgm.prepare('xeno');   // 第10層に入ったら先に読み込んでおく(切り替えた瞬間に無音にならないように)
       Sound.cue(f.krBoss ? 3 : 1);
       await cutin(`第${krFloor(f.krLayer)}層・${krWaveText(f)}`, f.krBoss ? `ボス:${dispName(f)}(Lv${f.krLv})` : `敵 ${S.teams[1].cards.filter((c) => c.ch.krLayer === f.krLayer).length}体`, f.krBoss ? 'evil' : 'gold', f.krBoss ? 1300 : 900);
     }
@@ -4008,7 +4012,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '1.21';
+const APP_VER = '1.22';
 // ----- 古い版で遊び続けさせない -----
 // 公開中の版は version.json に書く(APP_VER を上げるときに一緒に上げる)。起動時・画面に戻ったとき・5分おきに確かめ、
 // 新しい版があれば、対戦中なら決着を待ってから、閉じられない「更新してください」の画面を出す
@@ -5151,7 +5155,7 @@ function openSettings() {
   $('sSeVol').oninput = (e) => { FX.seVol = e.target.value / 100; saveVol(); Sound.setVol(); };
   $('sSeVol').onchange = () => { Sound.wake(); Sound.click(); };
   $('sCredit').onclick = () => openSheet('クレジット', `
-    <h3>音楽</h3><p><a href="https://nagumorizu.com/" target="_blank" rel="noopener" style="color:var(--gold)">なぐもりずの音楽室</a>(南雲莉翠)<br>The Battle of Beliefs / Sign of Victory / Devine Fencer / Important Thing / 天使迎撃戦 / Le Cirque du Diable / 黒翼の魔女</p>
+    <h3>音楽</h3><p><a href="https://nagumorizu.com/" target="_blank" rel="noopener" style="color:var(--gold)">なぐもりずの音楽室</a>(南雲莉翠)<br>The Battle of Beliefs / Sign of Victory / Devine Fencer / Important Thing / 天使迎撃戦 / Le Cirque du Diable / 黒翼の魔女 / 古戦場にて</p>
     <h3>効果音</h3><p>ゲーム内で合成</p>
     <h3>通信</h3><p>PeerJS(MIT License)/ Supabase</p>`);
 }
