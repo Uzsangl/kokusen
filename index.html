@@ -1044,7 +1044,8 @@ const SPECIAL_CHARS = [
       paper:    { name: '流れ戻し', rate: RATE.normal, heal: 1500 } } },
   // 零のタブに並ぶ解放キャラ。レイを支えるための支え役(単体では弱い)。「レイなら」の中身の数字は伏せる
   { id: 'p_awai', name: 'アワイ', faction: '零', group: '零', bonusOk: true, role: 'レイの支え', unlock: 'rush5', hp: 7000, atk: 1500, dfs: 1000, phys: 1.0,
-    trait: { key: 'tsugiKoku', name: '継ぎ刻', desc: `後ろの番手の味方は、${BREAK_NAME}で与えるダメージが1.1倍。レイなら効果がアップする`, mul: 1.1, rei: 3 },
+    traits: [{ key: 'tsugiKoku', name: '継ぎ刻', desc: `後ろの番手の味方は、${BREAK_NAME}で与えるダメージが1.1倍。レイなら効果がアップする`, mul: 1.1, rei: 3 },
+      { key: 'facGuard', name: '零の綴じ', desc: '陣営ボーナスが発動していたら、次の番手のDFS+1000。レイなら効果がアップする', v: 1000, rei: 5000 }],
     actions: {
       rock:     { name: '縫い止め', rate: RATE.normal, mark: { stat: 'atk', v: 800, cap: 0 } },
       scissors: { name: '刻寄せ',   rate: RATE.normal, nextCut: { v: 0.05, rei: 0.4 } },
@@ -1491,7 +1492,7 @@ function factionBonus(chars) {
 function newTeam(label, chars) {
   const fb = factionBonus(chars);
   const hpUp = fb && fb.hp ? fb.hp : 0;
-  return {
+  const team = {
     label, idx: 0, wins: 0, streak: 0, breakReady: false, sealed: false, keep: false,
     // atk / dfs / actions は変身で変わるのでカード側に持つ
     cards: chars.map((ch) => ({
@@ -1509,6 +1510,9 @@ function newTeam(label, chars) {
       poison: 0, poisonDmg: 0, poisonStacks: 0, result: null,
     })),
   };
+  // 特性「零の綴じ」(アワイ):陣営ボーナスが発動していれば、次の番手のDFSがずっと上がる(レイはさらに)
+  if (fb) team.cards.forEach((c, i) => { const g = traitOf(c, 'facGuard'), nx = team.cards[i + 1]; if (g && nx) nx.dfsBonus += nx.ch.id === 'rei' ? g.rei : g.v; });
+  return team;
 }
 function newMatch(charsA, charsB) {
   const S = {
@@ -3655,7 +3659,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.90';
+const APP_VER = '0.91';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
