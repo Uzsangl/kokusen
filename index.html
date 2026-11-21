@@ -1002,6 +1002,12 @@ const CHARACTERS = [
       rock:     { name: '羽撃ち', rate: RATE.big },
       scissors: { name: '風読み', rate: RATE.normal, streak: 1 },
       paper:    { name: '追い風', rate: RATE.normal, team: { stat: 'atk', v: 250, cap: 1000 } } } },
+  { id: 'yugake', name: 'ユガケ', faction: '矢', role: 'あいこで回復', hp: 11000, atk: 2500, dfs: 1200, phys: 1.0,
+    trait: { key: 'drawHeal', name: '残心', desc: 'あいこのたびにHP2000回復', heal: 2000 },
+    actions: {
+      rock:     { name: '射抜き',   rate: RATE.big },
+      scissors: { name: '番え直し', rate: RATE.normal, mods: [selfAtk(700, 3)] },
+      paper:    { name: '間合い',   rate: RATE.normal, mods: [foeAtk(500, 2)] } } },
 ];
 
 // ===== ソロモードの敵(プレイヤーは選べない、ソロ専用の能力値) =====
@@ -1036,6 +1042,20 @@ const SPECIAL_CHARS = [
       rock:     { name: '始の一閃', rate: RATE.huge },
       scissors: { name: '間を跳ぶ', rate: RATE.normal, streak: 1 },
       paper:    { name: '流れ戻し', rate: RATE.normal, heal: 1500 } } },
+  // 零のタブに並ぶ解放キャラ。レイを支えるための支え役(単体では弱い)。「レイなら」の中身の数字は伏せる
+  { id: 'p_awai', name: 'アワイ', faction: '零', group: '零', bonusOk: true, role: 'レイの支え', unlock: 'rush5', hp: 7000, atk: 1500, dfs: 1000, phys: 1.0,
+    trait: { key: 'tsugiKoku', name: '継ぎ刻', desc: `後ろの番手の味方は、${BREAK_NAME}で与えるダメージが1.1倍。レイなら効果がアップする`, mul: 1.1, rei: 3 },
+    actions: {
+      rock:     { name: '縫い止め', rate: RATE.normal, mark: { stat: 'atk', v: 800, cap: 0 } },
+      scissors: { name: '刻寄せ',   rate: RATE.normal, nextCut: { v: 0.05, rei: 0.4 } },
+      paper:    { name: '綴じ直し', rate: RATE.normal, team: { stat: 'atk', v: 300, cap: 0, rei: 800, bench: 1 } } } },
+  // 矢のタブに並ぶ解放キャラ。ツルとは同じパーティに入れられない。チョキで勝つとその場でBREAK
+  { id: 'p_tsuru_ten', name: 'ツル・天眼', faction: '矢', group: '矢', bonusOk: true, sameAs: 'tsuru', role: 'BREAK確定', unlock: 'tengan', secret: '？？？', secretUnlock: 1, hp: 9000, atk: 3800, dfs: 1300, phys: 1.5,
+    trait: { key: 'foresight', name: '天眼', desc: `${BREAK_NAME}の一撃はATK+1500`, add: 1500 },
+    actions: {
+      rock:     { name: '張り詰め・天', rate: RATE.huge, up: { rate: RATE.max, when: 'inBreak', text: `${BREAK_NAME}中は極大` } },
+      scissors: { name: '先読み・天',   rate: RATE.normal, breakNow: 1 },
+      paper:    { name: '引き絞り・天', rate: RATE.normal, mods: [selfAtk(1500, 3)] } } },
 ];
 
 // ===== ガチャキャラ(仮。名前・技名はあとで決める)=====
@@ -1417,7 +1437,10 @@ function damage(S, att, def, rate, isBreak) {
   atk = Math.min(ATK_MAX, atk);
   const ub = isBreak ? traitOf(def, 'unbreak') : null;   // 特性:BREAKの被ダメージを減らす
   const out = !def.captured ? traitOf(def, 'outside') : null;   // 特性「時の外側」
-  return Math.round(atk * rate * att.ch.phys * (1 - dfsVs(att, def, isBreak) / 10000) * (ub ? 1 - ub.cut : 1) * (out ? 1 - out.cut : 1));
+  // 特性「継ぎ刻」(アワイ):前の番手にアワイがいた味方の BREAK は強くなる(レイはさらに)
+  let tk = 1;
+  if (isBreak) { const tm = S.teams.find((t) => t.cards.includes(att)), i = tm ? tm.cards.indexOf(att) : -1, src = i > 0 ? tm.cards.slice(0, i).map((c) => traitOf(c, 'tsugiKoku')).find(Boolean) : null; if (src) tk = att.ch.id === 'rei' ? src.rei : src.mul; }
+  return Math.round(atk * rate * att.ch.phys * (1 - dfsVs(att, def, isBreak) / 10000) * (ub ? 1 - ub.cut : 1) * (out ? 1 - out.cut : 1) * tk * (def.cut ? 1 - def.cut : 1));
 }
 
 const modText = (m, short) => (short
@@ -1444,10 +1467,11 @@ function describe(a, rate, short) {
   if (a.noheal) parts.push(short ? `回復封じ${a.noheal}` : `相手の回復を${a.noheal}ラリー封じる`);
   if (a.dispel) parts.push(short ? 'バフ消し' : '相手のバフをすべて消す');
   if (a.resetStreak) parts.push(short ? '連勝リセット' : '相手の連勝を0にする(連勝保護も無視)');
-  if (a.mark) { const L = a.mark.stat === 'atk' ? 'ATK' : 'DFS'; parts.push(short ? `敵${L}−${a.mark.v}刻印` : `相手の${L}−${a.mark.v}(刻印。消えず、重ねがけで最大−${a.mark.cap})`); }
+  if (a.mark) { const L = a.mark.stat === 'atk' ? 'ATK' : 'DFS'; parts.push(short ? `敵${L}−${a.mark.v}永続` : a.mark.cap ? `相手の${L}−${a.mark.v}(刻印。消えず、重ねがけで最大−${a.mark.cap})` : `相手の${L}が永続で−${a.mark.v}(効果は重複する)`); }
+  if (a.nextCut) parts.push(short ? '次番手被ダメ↓' : '次の番手が受けるダメージが永続で−5%。レイなら効果がアップ(効果は重複しない)');
   if (a.foeTeamMark) { const L = a.foeTeamMark.stat === 'atk' ? 'ATK' : 'DFS'; parts.push(short ? `敵全員${L}−${a.foeTeamMark.v}` : `相手の全員(控えも)の${L}−${a.foeTeamMark.v}(消えず、重ねがけで最大−${a.foeTeamMark.cap})`); }
   if (a.selfPerm) parts.push(short ? `自ATK・DFS+${a.selfPerm.atk}(永続)` : `自分のATK+${a.selfPerm.atk}・DFS+${a.selfPerm.dfs}(消えず、重ねがけできる)`);
-  if (a.team) { const L = a.team.stat === 'atk' ? 'ATK' : 'DFS'; parts.push(short ? `全員${L}+${a.team.v}` : `味方全員(控えも)の${L}+${a.team.v}(消えず、重ねがけで最大+${a.team.cap})`); }
+  if (a.team) { const L = a.team.stat === 'atk' ? 'ATK' : 'DFS'; parts.push(short ? `${a.team.bench ? '控え' : '全員'}${L}+${a.team.v}` : a.team.bench ? `控えの味方全員の${L}+${a.team.v}(消えず、上限なし)${a.team.rei ? '。レイなら効果がアップ' : ''}` : `味方全員(控えも)の${L}+${a.team.v}(消えず、重ねがけで最大+${a.team.cap})`); }
   if (a.nextAtkUp) parts.push(short ? `次番手ATK+${a.nextAtkUp}` : `次の番手の最初の攻撃ATK+${a.nextAtkUp}`);
   if (a.nextDfsUp) parts.push(short ? `次番手DFS+${a.nextDfsUp}` : `次の番手の最初の被弾DFS+${a.nextDfsUp}`);
   return parts.join(short ? '・' : '、');
@@ -1499,7 +1523,9 @@ function newMatch(charsA, charsB) {
 const active = (team) => team.cards[team.idx];
 // ゼノは、一度倒すまで名前を伏せる(ソロのクリア記録で判定。シミュレーターでは常に本名)
 const xenoKnown = () => typeof SOLO === 'undefined' || SOLO.cleared.includes('x5');
-const dispName = (ch) => (ch.secret && !xenoKnown() ? ch.secret : ch.name);
+// 名前を伏せるか。ゼノは一度倒すまで、secretUnlock のキャラ(ツル・天眼)は解放するまで
+const secretOn = (ch) => !!ch.secret && (ch.secretUnlock ? !(typeof charUnlocked === 'function' && charUnlocked(ch)) : !xenoKnown());
+const dispName = (ch) => (secretOn(ch) ? ch.secret : ch.name);
 const nameOf = (c) => (c.form ? c.formName || traitOf(c, 'transform').formName : dispName(c.ch));
 
 function judge(a, b) {
@@ -1611,7 +1637,7 @@ function act(S, side, hand, log, isBreak) {
   }
   if (a.mark && l.hp > 0) {
     const k = a.mark.stat === 'atk' ? 'markAtk' : 'markDfs', label = a.mark.stat === 'atk' ? 'ATK' : 'DFS';
-    l[k] = Math.max(-a.mark.cap, l[k] - a.mark.v);
+    l[k] = a.mark.cap ? Math.max(-a.mark.cap, l[k] - a.mark.v) : l[k] - a.mark.v;   // cap 0 は上限なし(ATKは ATK_MIN より下がらない)
     S.events.push({ type: 'mod', side: 1 - side, text: `${label}刻印`, good: false });
     log(`　${nameOf(l)}に${label}の刻印(${label}${l[k]})`);
   }
@@ -1628,9 +1654,10 @@ function act(S, side, hand, log, isBreak) {
   }
   if (a.team) {
     const k = a.team.stat === 'atk' ? 'teamAtk' : 'teamDfs', label = a.team.stat === 'atk' ? 'ATK' : 'DFS';
-    wt.cards.forEach((c) => { if (c.hp > 0 && c.result !== 'lose') c[k] = Math.min(a.team.cap, c[k] + a.team.v); });
-    S.events.push({ type: 'mod', side, text: `全員${label}↑`, good: true });
-    log(`　${wt.label}の味方全員の${label}+${a.team.v}(全体${label}+${w[k]})`);
+    const tv = (c) => (a.team.rei && c.ch.id === 'rei' ? a.team.rei : a.team.v);   // アワイ:レイなら効果アップ
+    wt.cards.forEach((c) => { if (c.hp > 0 && c.result !== 'lose' && !(a.team.bench && c === w)) c[k] = a.team.cap ? Math.min(a.team.cap, c[k] + tv(c)) : c[k] + tv(c); });
+    S.events.push({ type: 'mod', side, text: `${a.team.bench ? '控え' : '全員'}${label}↑`, good: true });
+    log(a.team.bench ? `　${wt.label}の控えの味方全員の${label}+${a.team.v}` : `　${wt.label}の味方全員の${label}+${a.team.v}(全体${label}+${w[k]})`);
   }
   if (a.atkUp) w.atkUp = a.atkUp;
   if (a.dfsUp) w.dfsUp = a.dfsUp;
@@ -1660,6 +1687,7 @@ function act(S, side, hand, log, isBreak) {
   const next = wt.cards[wt.idx + 1];
   if (next && a.nextAtkUp) next.atkUp = Math.max(next.atkUp, a.nextAtkUp);
   if (next && a.nextDfsUp) next.dfsUp = Math.max(next.dfsUp, a.nextDfsUp);
+  if (next && a.nextCut && !next.cut) { next.cut = next.ch.id === 'rei' ? a.nextCut.rei : a.nextCut.v; log(`　${wt.label}の次の番手(${dispName(next.ch)})が受けるダメージが減る(ずっと)`); }   // 重ならない
 }
 
 // 特性「不滅」:BREAK以外ではHP1で耐える。初めてHP1になったら知らせる
@@ -2189,7 +2217,7 @@ const PERSONA_LINES = {
   prey:   L(['同じ手だな', '続けたな？'], ['待つ', '隙を探す'], ['三度目は喰う'], ['腹が鳴る', '……いい匂いがする']),
   rage:   L(['遅い！', 'そこだ！'], ['来い', 'まだ本気じゃない'], ['ここからだ！'], ['熱い', 'ああ、もう！']),
 };
-const LINE_ALIAS = { b_tomari: 'tomari', b_rei: 'rei', b_tsuru: 'tsuru', p_xeno: 'xeno_body', b_kaji: 'kaji', p_kaji_shi: 'b_kaji_shi',
+const LINE_ALIAS = { p_tsuru_ten: 'tsuru', b_tomari: 'tomari', b_rei: 'rei', b_tsuru: 'tsuru', p_xeno: 'xeno_body', b_kaji: 'kaji', p_kaji_shi: 'b_kaji_shi',
   c5_xeno_body: 'xeno_body', c5_xeno_spirit: 'xeno_spirit', c5_tsuru: 'tsuru', c5_tsuru1: 'tsuru' };   // 刻の回廊のボスは元のキャラのセリフ
 // トキバミは自分の声を持たず、喰った者たちの声で、過去・現在・未来を混ぜて話す(場面は分けない)
 const TOKIBAMI_VOICE = [
@@ -2283,7 +2311,7 @@ const ICON_IDS = new Set(['kaji', 'tomari', 'mio', 'moyai', 'shio', 'rei', 'haji
   'tsuru', 'haya', 'yajiri', 'hane', 'tokibami', 'xeno_body', 'xeno_spirit', 'kaji_shi', 'tsuru2',
   'g_a1', 'g_a2', 'g_a3a', 'g_a3b', 'g_a3c', 'g_a4', 'g_z1', 'g_z2', 'g_z3a', 'g_z3b', 'g_z3c', 'g_z4', 'g_z5', 'g_y1', 'g_y2', 'g_y3a', 'g_y3b', 'g_y3c', 'g_y4',
   'a_guard', 'a_chain', 'a_lamp', 'z_mask', 'z_wind', 'z_sand', 'y_runner', 'y_archer', 'y_seer']);
-const ICON_ALIAS = { b_tomari: 'tomari', b_rei: 'rei', b_tsuru: 'tsuru', p_tokibami: 'tokibami', p_xeno: 'xeno_body', b_kaji: 'kaji', b_kaji_shi: 'kaji_shi', p_kaji_shi: 'kaji_shi',
+const ICON_ALIAS = { p_tsuru_ten: 'tsuru2', b_tomari: 'tomari', b_rei: 'rei', b_tsuru: 'tsuru', p_tokibami: 'tokibami', p_xeno: 'xeno_body', b_kaji: 'kaji', b_kaji_shi: 'kaji_shi', p_kaji_shi: 'kaji_shi',
   // 刻の回廊の敵は、元のキャラのアイコン
   c2_1a: 'g_a1', c2_1b: 'g_z1', c2_1c: 'g_y1', c2_2a: 'g_z1', c2_2b: 'g_z2', c2_2c: 'g_a2', c2_3a: 'g_y1', c2_3b: 'g_y2', c2_3c: 'g_z2', c2_4a: 'g_a1', c2_4b: 'g_a2', c2_4c: 'g_y2',
   c3_mata: 'g_z3b', c3_ai: 'g_z3c', c3_ebira: 'g_y3c', c3_iso: 'g_a3b',
@@ -2296,7 +2324,7 @@ function iconHtml(ch, size) {
   const id = ICON_ALIAS[ch.id] || ch.id;
   const cls = `cico ${size} ${ch.id === 'g_z5' || ch.id === 'c5_mask' ? 'f-none' : ICON_FACTION[ch.faction] || 'f-none'}`;   // ゼノ【仮面】はゼノ・トキバミと同じ灰色の枠
   if (!ICON_IDS.has(id)) return `<span class="${cls} none" aria-hidden="true">${ch.name[0]}</span>`;
-  const secret = ch.secret && !xenoKnown();
+  const secret = secretOn(ch);
   return `<img class="${cls}${secret ? ' secret' : ''}" src="icons/${id}.webp${ICON_REV[id] ? '?r=' + ICON_REV[id] : ''}" alt="" aria-hidden="true" width="192" height="192">`;
 }
 let S = null;
@@ -3627,7 +3655,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.88';
+const APP_VER = '0.89';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
@@ -4582,7 +4610,7 @@ const TITLES = [
   { id: 'xeno', tier: 5, name: '始まりを見た者', desc: '★★★★★「始まりの前」をクリア', test: (c) => hasClear(c, 'x5') },
   { id: 'all', tier: 5, name: '刻の覇者', desc: 'ソロの全ステージをクリア(ボスラッシュ・激戦の余波・始まりは除く)', test: (c) => hasClear(c, ...SOLO_STAGES()) },
   { id: 'top', tier: 5, name: '頂に立つ者', desc: 'レーティングのランキングで1位になる', test: (c) => !!c.stats.top },
-  { id: 'rush5', tier: 5, name: '連戦を制す者', desc: 'ボスラッシュを突破する', test: (c) => st(c, 'rushBest') >= 5 },
+  { id: 'rush5', tier: 5, name: '連戦を制す者', desc: 'ボスラッシュを突破する(アワイが使えるようになる)', test: (c) => st(c, 'rushBest') >= 5 },
   { id: 'r1650', tier: 5, name: '刻神', desc: 'レート1650に到達', test: (c) => c.rating >= 1650 || st(c, 'bestRating') >= 1650 },
   { id: 'win500', tier: 5, name: '永劫の兵', desc: 'オンライン対人で500勝', test: (c) => c.wins >= 500 },
   { id: 'kaji', tier: 5, name: '完全なる刻', desc: 'カジをパーティに入れて★★★★★「始まりの前」をクリア', test: (c) => st(c, 'kajiXeno') >= 1 },
@@ -4591,6 +4619,7 @@ const TITLES = [
   { id: 'kaji4', tier: 4, name: '堰を越えし者', desc: '★★★★「激戦の余波」をクリア', test: (c) => hasClear(c, 'k4') },
   { id: 'kaji5', tier: 5, name: '始まりに触れし者', desc: '★★★★★「始まり」をクリア', test: (c) => hasClear(c, 'k5') },
   { id: 'shiToki', tier: 5, name: '始まりを喰らう者', desc: 'トキバミをパーティに入れて★★★★★「始まり」をクリア(カジ【始】が使えるようになる)', test: (c) => st(c, 'tokiShi') >= 1 },
+  { id: 'tengan', tier: 5, name: '天眼の果てを見た者', desc: '刻の回廊★★★★★「天眼の果て」をクリア(ツル・天眼が使えるようになる)', test: (c) => hasClear(c, 'r4_5') },
   { id: 'trio', tier: 5, name: '三つの刻を束ねし者', desc: 'カジ・レイ・ツルの3枚でトキバミを倒す', hidden: true, test: (c) => st(c, 'trioToki') >= 1 },
 ];
 const titleOf = (id) => TITLES.find((t) => t.id === id);
@@ -4820,7 +4849,7 @@ function renderMyTitles(msg) {
   $('sheet').querySelector('.box').scrollTop = top;
 }
 // ----- お気に入りキャラ:アイコンとして、タイトル・ランキングなどに出る -----
-const favChar = (p) => { const ch = p && p.fav && charById(p.fav); return ch && (!ch.secret || xenoKnown() || (ACC.profile && p.id === ACC.profile.id)) ? ch : null; };
+const favChar = (p) => { const ch = p && p.fav && charById(p.fav); return ch && (!secretOn(ch) || (ACC.profile && p.id === ACC.profile.id)) ? ch : null; };
 const favReady = () => !!ACC.profile && 'fav' in ACC.profile;
 
 // ----- 画面 -----
@@ -5069,7 +5098,7 @@ function bindPress(el, onTap, onLong) {
 // キャラの詳細(長押しで開く)
 function openCharDetail(ch, back) {   // back:閉じたあとに戻る画面(ガチャから開いたとき)
   const order = picked.indexOf(ch.id), unlocked = charUnlocked(ch);
-  const hide = ch.secret && !xenoKnown();
+  const hide = secretOn(ch) && !ch.secretUnlock;   // ツル・天眼は、名前とアイコンだけ伏せて能力は見せる
   const clash = order < 0 && (sameClash(ch, picked) || highFull(ch, picked));
   const canToggle = !back && unlocked && !(PVP.on && PVP.phase === 'ready') && (order >= 0 || (!clash && picked.length < TEAM_SIZE));
   openSheet(dispName(ch), `<div class="cdetail"><div class="crow">${iconHtml(ch, 'lg')}<div>` +
@@ -5888,7 +5917,7 @@ function renderSelect() {
     const off = dt ? dt.off : !unlocked || clash || full || locked;
     b.classList.toggle('off', off && order < 0);
     b.classList.toggle('locked', !unlocked);
-    b.innerHTML = `${order >= 0 ? `<i class="ord">${order + 1}</i>` : ''}${unlocked ? '' : '<span class="lk">🔒</span>'}${iconHtml(ch, 'lg')}${ch.secret && !xenoKnown() && !unlocked ? '' : rarHtml(ch)}<span class="nm">${dispName(ch)}</span>${dt && dt.tag ? `<span class="dtag${dt.foe ? ' foe' : ''}">${dt.tag}</span>` : ''}`;
+    b.innerHTML = `${order >= 0 ? `<i class="ord">${order + 1}</i>` : ''}${unlocked ? '' : '<span class="lk">🔒</span>'}${iconHtml(ch, 'lg')}${secretOn(ch) && !ch.secretUnlock && !unlocked ? '' : rarHtml(ch)}<span class="nm">${dispName(ch)}</span>${dt && dt.tag ? `<span class="dtag${dt.foe ? ' foe' : ''}">${dt.tag}</span>` : ''}`;
     b.setAttribute('aria-label', `${dispName(ch)}${order >= 0 ? `(${order + 1}番手)` : ''}。長押しで詳細`);
     const tap = () => {
       if (dr && dr !== 'order') { rankTap(ch, dt); return; }   // ランク戦のBAN・ピック
