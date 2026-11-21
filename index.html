@@ -1411,8 +1411,8 @@ const KR_LV = {
   2: [1, 0.8, ['a_chain', 'z_wind', 'y_archer', 'y_seer', 'a_guard']],
   3: [1, 1.0, ['a_lamp', 'a_chain', 'z_mask', 'z_wind', 'y_archer']],
   4: [1, 1.4, ['a_guard', 'z_sand', 'z_wind', 'y_runner', 'y_seer']],
-  5: [2, 1.0, ['a_guard', 'a_chain', 'z_mask', 'z_sand', 'y_runner']],
-  6: [2, 1.2, ['a_lamp', 'z_wind', 'y_archer', 'y_seer', 'a_chain']],
+  5: [2, 1.0, ['a_guard', 'a_chain', 'z_mask', 'z_sand', 'y_runner'], 7000],
+  6: [2, 1.2, ['a_lamp', 'z_wind', 'y_archer', 'y_seer', 'a_chain'], 8000],   // HPはLvが上がるほど多くなるよう、上限でそろえる(Lv5 7000・Lv6 8000・Lv7 9000…)
   7: [3, 1.0, ['b_tomari', 'b_rei', 'b_tsuru', 'a_guard', 'y_runner'], 9000],
   8: [0, 1.0, ['k_hare', 'k_yuragi', 'k_urei'], 11000],
   9: [0, 1.0, ['k_isami', 'k_setsuna', 'k_osore'], 13000],
@@ -2056,9 +2056,11 @@ function endRally(S, log, winSide) {
     log(`　${nameOf(fallen)}を倒した。こちらは全回復して、1番手から出直す`);
   }
 
-  // 刻練場:ボス層(4層ごと)の敵を倒したら、こちらは全回復(40層まで)。倒れたカードは戻らない
+  // 刻練場:ボス層(4層ごと)の敵を倒したら、こちらはバトルが始まる前と同じに戻る(倒れたカードも戻り、1番手から。40層まで)
   if (S.kr && ko[1] && fallen && fallen.ch.krBoss && fallen.ch.krLayer <= KR_HEAL_UNTIL && nextFoe) {
-    a.cards.forEach((c) => { if (c.result !== 'lose' && c.hp > 0) Object.assign(c, { hp: c.max, poison: 0, poisonDmg: 0, poisonStacks: 0 }); });
+    a.cards = newTeam(a.label, a.cards.map((c) => c.ch)).cards;
+    a.cards.forEach((c) => { c.dfsCap = 5000; });
+    Object.assign(a, { idx: 0, streak: 0, breakReady: false, sealed: false, keep: false, relay: {} });
     S.events.push({ type: 'krHeal', layer: fallen.ch.krLayer });
     log(`　${fallen.ch.krLayer}層を突破。こちらは全回復した`);
   }
@@ -3972,7 +3974,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '1.13';
+const APP_VER = '1.14';
 // ----- 古い版で遊び続けさせない -----
 // 公開中の版は version.json に書く(APP_VER を上げるときに一緒に上げる)。起動時・画面に戻ったとき・5分おきに確かめ、
 // 新しい版があれば、対戦中なら決着を待ってから、閉じられない「更新してください」の画面を出す
