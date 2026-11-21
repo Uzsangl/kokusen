@@ -1514,7 +1514,7 @@ function newTeam(label, chars) {
     })),
   };
   // 特性「零の綴じ」(アワイ):陣営ボーナスが発動していれば、次の番手のATKがずっと上がる(レイはさらに)
-  if (fb) team.cards.forEach((c, i) => { const g = traitOf(c, 'facGuard'), nx = team.cards[i + 1]; if (g && nx) nx.atkBonus += nx.ch.id === 'rei' ? g.rei : g.v; });
+  if (fb) team.cards.forEach((c, i) => { const g = traitOf(c, 'facGuard'), nx = team.cards[i + 1]; if (g && nx) { const v = nx.ch.id === 'rei' ? g.rei : g.v; nx.atkBonus += v; nx.tsuzuri = (nx.tsuzuri || 0) + v; } });   // tsuzuri は画面の表示用
   return team;
 }
 function newMatch(charsA, charsB) {
@@ -3053,7 +3053,13 @@ function statusList(t, f) {
   const add = (s, l, k) => st.push({ s, l, k });
   f.mods.forEach((m) => add(`${L(m.stat)}${sign(m.v)}${Math.abs(m.v)}·${m.t}`, `${L(m.stat)}${sign(m.v)}${Math.abs(m.v)}(残り${m.t}ラリー)`, m.v > 0 ? 'up' : 'down'));
   if (f.fac) add(`陣営 ${f.fac.text}`, `${f.fac.faction}の陣営ボーナス:${f.fac.text}(試合中ずっと)`, 'up');
-  if (f.atkBonus) add(`継承ATK+${f.atkBonus}`, `継承 ATK+${f.atkBonus}(前の番手から受け継いだ強化。場にいる間ずっと)`, 'up');
+  const inh = f.atkBonus - (f.tsuzuri || 0);   // アワイの「零の綴じ」のぶんは分けて出す
+  if (inh) add(`継承ATK+${inh}`, `継承 ATK+${inh}(前の番手から受け継いだ強化。場にいる間ずっと)`, 'up');
+  if (f.tsuzuri) add(`零の綴じATK+${f.tsuzuri}`, `零の綴じ ATK+${f.tsuzuri}(アワイの特性。試合中ずっと)`, 'up');
+  // アワイの「継ぎ刻」:前の番手にアワイがいれば、BREAKのダメージが上がる
+  const ti = t.cards.indexOf(f), tk = ti > 0 ? t.cards.slice(0, ti).map((c) => traitOf(c, 'tsugiKoku')).find(Boolean) : null;
+  if (tk) { const m = f.ch.id === 'rei' ? tk.rei : tk.mul; add(`${BREAK_NAME}ダメ×${m}`, `${BREAK_NAME}で与えるダメージ${m}倍(アワイの継ぎ刻。試合中ずっと)`, 'up'); }
+  if (f.cut) add(`被ダメ−${Math.round(f.cut * 100)}%`, `受けるダメージ−${Math.round(f.cut * 100)}%(アワイの刻寄せ。試合中ずっと)`, 'up');
   if (f.dfsBonus) add(`継承DFS+${f.dfsBonus}`, `継承 DFS+${f.dfsBonus}(前の番手から受け継いだ強化。場にいる間ずっと)`, 'up');
   if (f.teamAtk) add(`全体ATK+${f.teamAtk}`, `味方全員 ATK+${f.teamAtk}(消えない)`, 'up');
   if (f.teamDfs) add(`全体DFS+${f.teamDfs}`, `味方全員 DFS+${f.teamDfs}(消えない)`, 'up');
@@ -3662,7 +3668,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '0.94';
+const APP_VER = '0.95';
 function pvpPublish(patch) {
   Object.assign(PVP.my, patch);
   if (PVP.room) PVP.room.presence(patch).catch(() => {});
