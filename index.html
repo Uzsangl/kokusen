@@ -414,7 +414,7 @@
   }
   #cutin .big { font-size: clamp(2.6rem, 13vw, 5rem); font-weight: 900; letter-spacing: .12em; line-height: 1.1; color: var(--c, var(--gold)); text-shadow: 0 0 24px var(--c, var(--gold)); animation: slam calc(.3s * var(--spd)) cubic-bezier(.2, 1.6, .4, 1); }
   #cutin .small { font-size: .95rem; color: #fff; letter-spacing: .08em; }
-  #cutin.gold { --c: #f5c451; } #cutin.violet { --c: #a78bff; } #cutin.plain { --c: #cfd3ee; } #cutin.red { --c: #ff4d5e; } #cutin.evil { --c: #ff2a3d; }
+  #cutin.gold { --c: #f5c451; } #cutin.violet { --c: #a78bff; } #cutin.plain { --c: #cfd3ee; } #cutin.trait { --c: #7dd3fc; } #cutin.red { --c: #ff4d5e; } #cutin.evil { --c: #ff2a3d; }
   #cutin.evil .band { background: linear-gradient(90deg, transparent, #1a0006ee 15%, #1a0006ee 85%, transparent); }
   #cutin.rainbow .band { border-color: #fff; }
   #cutin.rainbow .big { text-shadow: none; filter: drop-shadow(0 0 14px #fff); }
@@ -1097,7 +1097,7 @@ const GACHA_CHARS = [
   { id: 'g_z4', name: 'カガミ', faction: '零', rarity: 4, gacha: true, role: '相手のATKで殴る', hp: 28800, atk: 1000, dfs: 1300, phys: 1.1,
     trait: { key: 'mirrorAtk', name: '鏡写し', desc: '攻撃するとき、自分のATKの代わりに相手の今のATKを使う' },
     actions: { rock: { rate: RATE.big, name: '鏡面' }, scissors: { rate: RATE.normal, name: '映し誘い', mods: [{ to: 'foe', stat: 'atk', v: 500, t: 2 }] }, paper: { rate: RATE.normal, name: '鏡の修復', heal: 1500 } } },
-  { id: 'g_z5', name: 'ゼノ【仮面】', faction: '零', rarity: 5, gacha: true, role: 'SEC・10ラリー目からBREAK10倍', hp: 11500, atk: 2500, dfs: 1500, phys: 1.5,
+  { id: 'g_z5', name: 'ゼノ【仮面】', faction: '零', rarity: 5, gacha: true, role: '10ラリー目からBREAK10倍', hp: 11500, atk: 2500, dfs: 1500, phys: 1.5,
     traits: [{ key: 'lateBreak', name: '遅咲きの刻', desc: `場に出て10ラリー目以降、自分の${BREAK_NAME}の攻撃だけATKが10倍`, from: 10, mul: 10 },
       { key: 'drawHeal', name: '凪の間', desc: 'あいこのたびにHP1000回復', heal: 1000 }],
     actions: { rock: N('針止め'), scissors: { rate: RATE.max, name: '十の跳躍' }, paper: { rate: RATE.normal, name: '仮面の内', mods: [selfDfs(1500, 2)], keep: 1, heal: 3000 } } },
@@ -1392,8 +1392,10 @@ const dfsOf = (def, isBreak) => (isBreak ? 0 : Math.min(DFS_MAX, baseDfs(def) + 
 // 攻撃する側から見た相手のDFS(特性「貫き」はDFSを一定量無視する)
 const dfsVs = (att, def, isBreak) => {
   const z = traitOf(att, 'lastPierce');   // 特性「見切り」:自分の残りHPが少ないとき、相手のDFSを0として攻撃する
-  if (z && att.hp <= att.max * z.below) return 0;
-  const p = traitOf(att, 'pierce'); return Math.max(0, dfsOf(def, isBreak) - (p && !traitOf(def, 'hardshell') ? p.v : 0));
+  if (z && att.hp <= att.max * z.below) { trig(att, 'lastPierce'); return 0; }
+  const p = traitOf(att, 'pierce');
+  if (p && !isBreak) trig(traitOf(def, 'hardshell') ? def : att, traitOf(def, 'hardshell') ? 'hardshell' : 'pierce');
+  return Math.max(0, dfsOf(def, isBreak) - (p && !traitOf(def, 'hardshell') ? p.v : 0));
 };
 
 // 必殺技の格上げ条件(up)を満たしているか。n はそのカードが場に出て何ラリー目か
@@ -1411,20 +1413,23 @@ function upActive(a, att, def, n, isBreak) {
   return false;
 }
 // 特性「全力」:場に出て数ラリーの間、ダメージのある技はすべて極大
-const rateOf = (a, att, def, n, isBreak) => { const b = traitOf(att, 'burnout'); if (b && a.rate && n <= b.until) return RATE.max; return upActive(a, att, def, n, isBreak) ? a.up.rate : a.rate; };
+const rateOf = (a, att, def, n, isBreak) => { const b = traitOf(att, 'burnout'); if (b && a.rate && n <= b.until) { trig(att, 'burnout'); return RATE.max; } return upActive(a, att, def, n, isBreak) ? a.up.rate : a.rate; };
 
 // 特性によるATKの増減(実数の足し引き)
+// 特性が実際に効いた記録(画面で、特性の名前のカットインを出すのに使う)。本番のラリーの間だけ記録する
+let TRIG = null;
+const trig = (c, key) => { if (TRIG && c) TRIG.push({ c, key }); };
 function traitAtk(S, att, def, isBreak) {
   let v = 0, t;
-  if ((t = traitOf(att, 'backwater')) && att.hp <= att.max * t.below) v += t.add;
-  if ((t = traitOf(att, 'backwaterSteps'))) v += t.steps.filter((x) => att.hp <= att.max * x).length * t.add;   // 背水・見
-  if ((t = traitOf(att, 'backwaterAll')) && att.hp <= att.max * t.below) v += t.add;                               // 背水・始
-  if ((t = traitOf(att, 'oldwound')) && def.poison > 0) v += t.add;
-  if ((t = traitOf(att, 'foresight')) && isBreak) v += t.add;
-  if ((t = traitOf(att, 'giantSlayer')) && att.giant) v += t.atk;   // 相手が1体だけのチーム(ソロのボス戦)のとき
-  if ((t = traitOf(att, 'rush'))) v += att.turn <= t.until ? t.early : att.turn >= t.from ? t.late : 0;
+  if ((t = traitOf(att, 'backwater')) && att.hp <= att.max * t.below) { v += t.add; trig(att, 'backwater'); }
+  if ((t = traitOf(att, 'backwaterSteps')) && t.steps.some((x) => att.hp <= att.max * x)) { v += t.steps.filter((x) => att.hp <= att.max * x).length * t.add; trig(att, 'backwaterSteps'); }   // 背水・見
+  if ((t = traitOf(att, 'backwaterAll')) && att.hp <= att.max * t.below) { v += t.add; trig(att, 'backwaterAll'); }                               // 背水・始
+  if ((t = traitOf(att, 'oldwound')) && def.poison > 0) { v += t.add; trig(att, 'oldwound'); }
+  if ((t = traitOf(att, 'foresight')) && isBreak) { v += t.add; trig(att, 'foresight'); }
+  if ((t = traitOf(att, 'giantSlayer')) && att.giant) { v += t.atk; trig(att, 'giantSlayer'); }   // 相手が1体だけのチーム(ソロのボス戦)のとき
+  if ((t = traitOf(att, 'rush')) && (att.turn <= t.until || att.turn >= t.from)) { v += att.turn <= t.until ? t.early : t.late; trig(att, 'rush'); }
   if ((t = traitOf(att, 'burnout')) && att.turn > t.until) v -= Math.min(t.cap, (att.turn - t.until) * t.step);   // 全力のあとの減速
-  if ((t = traitOf(att, 'winStack'))) v += att.stackAtk || 0;                                                     // 勝つたびに重なる
+  if ((t = traitOf(att, 'winStack')) && att.stackAtk) { v += att.stackAtk; trig(att, 'winStack'); }                                                    // 勝つたびに重なる
   return v;
 }
 
@@ -1432,18 +1437,22 @@ function traitAtk(S, att, def, isBreak) {
 // 掛け算するのは「ATK × ダメージ係数 × フィジカル係数 × DFS軽減」だけで、強化・弱体はすべてATKとDFSへの足し引き
 function damage(S, att, def, rate, isBreak) {
   // 特性「鏡写し」:自分のATKの代わりに、相手の今のATKで攻撃する
+  if (traitOf(att, 'mirrorAtk')) trig(att, 'mirrorAtk');
   let atk = Math.max(ATK_MIN, (traitOf(att, 'mirrorAtk') ? baseAtk(def) : baseAtk(att)) + att.atkUp + traitAtk(S, att, def, isBreak));
   // 特性「遅咲きの刻」:場に出て一定ラリー以降の BREAK だけ、ATKが何倍にもなる
   const lb = isBreak ? traitOf(att, 'lateBreak') : null;
-  if (lb && att.turn >= lb.from) atk *= lb.mul;
+  if (lb && att.turn >= lb.from) { atk *= lb.mul; trig(att, 'lateBreak'); }
   atk = Math.min(ATK_MAX, atk);
   // 特性「見透かし」(ツル・天眼):相手が零の陣営なら、受けるダメージを減らす効果(下の3つ)をすべて無効にする
   const see = traitOf(att, 'seeThrough'), seeOn = !!see && def.ch.faction === see.faction;
+  if (seeOn && (def.cut || (isBreak && traitOf(def, 'unbreak')) || (!def.captured && traitOf(def, 'outside')))) trig(att, 'seeThrough');
   const ub = isBreak && !seeOn ? traitOf(def, 'unbreak') : null;   // 特性:BREAKの被ダメージを減らす
   const out = !def.captured && !seeOn ? traitOf(def, 'outside') : null;   // 特性「時の外側」
+  if (ub) trig(def, 'unbreak');
+  if (out) trig(def, 'outside');
   // 特性「継ぎ刻」(アワイ):前の番手にアワイがいた味方の BREAK は強くなる(レイはさらに)
   let tk = 1;
-  if (isBreak) { const tm = S.teams.find((t) => t.cards.includes(att)), i = tm ? tm.cards.indexOf(att) : -1, src = i > 0 ? tm.cards.slice(0, i).map((c) => traitOf(c, 'tsugiKoku')).find(Boolean) : null; if (src) tk = att.ch.id === 'rei' ? src.rei : src.mul; }
+  if (isBreak) { const tm = S.teams.find((t) => t.cards.includes(att)), i = tm ? tm.cards.indexOf(att) : -1, sc = i > 0 ? tm.cards.slice(0, i).find((c) => traitOf(c, 'tsugiKoku')) : null, src = sc && traitOf(sc, 'tsugiKoku'); if (src) { tk = att.ch.id === 'rei' ? src.rei : src.mul; trig(sc, 'tsugiKoku'); } }
   return Math.round(atk * rate * att.ch.phys * (1 - dfsVs(att, def, isBreak) / 10000) * (ub ? 1 - ub.cut : 1) * (out ? 1 - out.cut : 1) * tk * (def.cut && !seeOn ? 1 - def.cut : 1));
 }
 
@@ -1555,7 +1564,8 @@ function beginRally(S, log) {
   S.teams.forEach((t, side) => {
     const c = active(t), tr = traitOf(c, 'transform');
     c.turn++;
-    if (c.turn === 1 && traitOf(c, 'enterDispel')) dispel(S, side, log);   // 特性「白紙化」
+    if (c.turn === 1 && traitOf(c, 'enterDispel')) { trig(c, 'enterDispel'); dispel(S, side, log); }   // 特性「白紙化」
+    if (c.turn === 1 && c.tsuzuri) trig(t.cards.slice(0, t.idx).find((x) => traitOf(x, 'facGuard')), 'facGuard');   // アワイの「零の綴じ」を受けた番手が出た
     if (tr && !c.form && c.turn >= tr.at) {
       c.form = 1; c.atk = tr.atk; c.dfs = tr.dfs; c.actions = tr.actions;
       S.events.push({ type: 'transform', side });
@@ -1598,14 +1608,16 @@ function act(S, side, hand, log, isBreak) {
     log(`　${lt.label}の${nameOf(l)}に${d}ダメージ(${RATE_LABEL[rate]}、${isBreak ? `${BREAK_NAME}中はDFS無視` : `DFS${dfs}で${pct(dfs / 10000)}カット`})`);
     // 特性「時の報い」:BREAKで攻撃されて耐えたら、攻撃してきたカードに大ダメージを返す
     if (isBreak && (t = traitOf(l, 'retaliate')) && l.hp > 0) {
+      trig(l, 'retaliate');
       w.hp = Math.max(0, w.hp - t.dmg);
       S.ticks.push({ side, dmg: t.dmg, label: t.name });
       log(`　${nameOf(l)}の「${t.name}」→ ${nameOf(w)}に${t.dmg}ダメージ`);
     }
     // 特性「不動」:攻撃を受けるたびに硬くなる
-    if ((t = traitOf(l, 'immovable')) && l.hp > 0) l.dfsGain = Math.min(t.cap, l.dfsGain + t.gain);
+    if ((t = traitOf(l, 'immovable')) && l.hp > 0) { l.dfsGain = Math.min(t.cap, l.dfsGain + t.gain); trig(l, 'immovable'); }
     // 特性「刻喰い」:当てたダメージの一部を回復する(回復封じ中は回復しない)
     if ((t = traitOf(w, 'devour')) && d > 0 && w.noHeal <= 0 && w.hp < w.max) {
+      trig(w, 'devour');
       const before = w.hp;
       w.hp = Math.min(w.max, w.hp + Math.round(d * t.rate));
       S.hit.heal += w.hp - before;
@@ -1613,16 +1625,19 @@ function act(S, side, hand, log, isBreak) {
     }
     // 特性「呪い」:当たるたびに、相手の控えも含めた全員に消えない弱体
     if ((t = traitOf(w, 'teamCurse')) && d > 0) {
+      trig(w, 'teamCurse');
       lt.cards.forEach((c) => { if (c.result !== 'lose') c.markAtk = Math.max(-t.cap, c.markAtk - t.v); });
       log(`　${lt.label}の全員にATKの刻印(ATK${l.markAtk})`);
     }
     // 特性「穿ち」:当たるたびに、場の相手のDFSを削る刻印
     if ((t = traitOf(w, 'pierceMark')) && l.hp > 0 && d > 0) {
+      trig(w, 'pierceMark');
       l.markDfs = Math.max(-t.cap, l.markDfs - t.v);
       log(`　${nameOf(l)}にDFSの刻印(DFS${l.markDfs})`);
     }
     // 特性「霞の刻」:当たるたびに相手のATKを削る刻印
     if ((t = traitOf(w, 'hazeMark')) && l.hp > 0 && d > 0 && l.markAtk > -t.cap) {
+      trig(w, 'hazeMark');
       l.markAtk = Math.max(-t.cap, l.markAtk - t.v);
       log(`　${nameOf(l)}にATKの刻印(ATK${l.markAtk})`);
     }
@@ -1767,12 +1782,14 @@ function endRally(S, log, winSide) {
       const before = f.hp;
       f.hp = Math.min(f.max, f.hp + tr.heal);
       S.ticks.push({ side, heal: f.hp - before });
+      trig(f, 'regen');
       log(`　${t.label}の${nameOf(f)}は「${tr.name}」で${f.hp - before}回復`);
     }
     // 特性「燃え尽き」:ラリーが終わるたびに自分のHPが削れる(全力を出し続ける代わり)
     if ((tr = traitOf(f, 'selfBurn')) && f.hp > 0) {
       f.hp = Math.max(0, f.hp - tr.dmg);
       S.ticks.push({ side, dmg: tr.dmg });
+      trig(f, 'selfBurn');
       log(`　${t.label}の${nameOf(f)}は「${tr.name}」で${tr.dmg}ダメージ`);
     }
     // バフ・デバフ:付いたラリーは数えず、次のラリーから残りを減らす
@@ -1786,7 +1803,7 @@ function endRally(S, log, winSide) {
       const f = active(t), foe = active(S.teams[1 - side]);
       if (f.hp <= 0) return;
       const g = traitOf(f, 'decayGuard'), gf = traitOf(foe, 'decayGuard');
-      if (g) return;   // 特性「錨泊」:抜け落ちを受けない
+      if (g) { trig(f, 'decayGuard'); return; }   // 特性「錨泊」:抜け落ちを受けない
       const d = Math.round(f.max * DECAY_STEP * (S.boutRally - DECAY_FROM) * (gf ? 1 + gf.boost : 1));
       f.hp = Math.max(0, f.hp - d);
       S.ticks.push({ side, dmg: d, decay: true });
@@ -1801,7 +1818,7 @@ function endRally(S, log, winSide) {
   S.teams.forEach((t, side) => {
     const f = active(t), sw = traitOf(f, 'secondWind');
     if (f.hp > 0 || !sw || f.revived) return;
-    f.revived = true; f.hp = Math.round(f.max * sw.hp);
+    f.revived = true; f.hp = Math.round(f.max * sw.hp); trig(f, 'secondWind');
     S.events.push({ type: 'mod', side, text: '立ち直り', good: true });
     log(`　${t.label}の${nameOf(f)}の「${sw.name}」:HP${f.hp}で立ち上がった`);
   });
@@ -1822,6 +1839,7 @@ function endRally(S, log, winSide) {
     const f = active(t), tr = traitOf(f, 'record'), next = t.cards[t.idx + 1];
     if (ko[side] && tr && next) {
       next.atkBonus += tr.atk; next.dfsBonus += tr.dfs;
+      trig(f, 'record');
       relay(t, 'rc:' + f.ch.id, tr.name, `${f.ch.name}が倒れて、次の${next.ch.name}にATK+${tr.atk}・DFS+${tr.dfs}(ずっと)`);
       log(`　${t.label}の${f.ch.name}の「${tr.name}」→ 次の${next.ch.name}にATK+${tr.atk}・DFS+${tr.dfs}`);
     }
@@ -1830,6 +1848,7 @@ function endRally(S, log, winSide) {
     if (ko[side] && ps && next) {
       const pa = f.atk + f.atkBonus + f.teamAtk + (f.growAtk || 0), pd = f.dfs + f.dfsBonus + f.teamDfs + f.dfsGain;
       next.atkBonus += pa; next.dfsBonus += pd;
+      trig(f, 'passStats');
       relay(t, 'ps:' + f.ch.id, ps.name, `${f.ch.name}が倒れて、次の${next.ch.name}にATK+${pa}・DFS+${pd}(ずっと)`);
       log(`　${t.label}の${f.ch.name}の「${ps.name}」→ 次の${next.ch.name}にATK+${pa}・DFS+${pd}`);
     }
@@ -1837,6 +1856,7 @@ function endRally(S, log, winSide) {
     const lg = traitOf(f, 'legacy'), bench = t.cards.slice(t.idx + 1);
     if (ko[side] && lg && bench.length) {
       bench.forEach((c) => { c.atkBonus += lg.atk; c.dfsBonus += lg.dfs; c.max += lg.hp; c.hp += lg.hp; });
+      trig(f, 'legacy');
       relay(t, 'lg:' + f.ch.id, lg.name, `${f.ch.name}が倒れて、控えの味方全員に` + [lg.atk && `ATK+${lg.atk}`, lg.dfs && `DFS+${lg.dfs}`, lg.hp && `最大HP+${lg.hp}`].filter(Boolean).join('・') + '(ずっと)');
       log(`　${t.label}の${f.ch.name}の「${lg.name}」→ 控えの味方全員に` + [lg.atk && `ATK+${lg.atk}`, lg.dfs && `DFS+${lg.dfs}`, lg.hp && `最大HP+${lg.hp}`].filter(Boolean).join('・'));
     }
@@ -1890,7 +1910,8 @@ function endRally(S, log, winSide) {
 }
 
 // 通常のラリー(じゃんけん1回)。戻り値は side0 から見た勝敗 1 / 0 / -1
-function rally(S, hand0, hand1, log) {
+function rally(S, hand0, hand1, log) { TRIG = []; try { return rallyCore(S, hand0, hand1, log); } finally { S.trig = TRIG; TRIG = null; } }
+function rallyCore(S, hand0, hand1, log) {
   S.hist.push([hand0, hand1]);
   log(`— ラリー${S.rally + 1}:あなた ${HANDS[hand0].label} / CPU ${HANDS[hand1].label} —`);
   beginRally(S, log);
@@ -1902,14 +1923,14 @@ function rally(S, hand0, hand1, log) {
     S.teams.forEach((t) => {
       const c = active(t), dh = traitOf(c, 'drawHeal');
       if (!dh || c.hp <= 0 || c.noHeal > 0 || c.hp >= c.max) return;
-      const before = c.hp; c.hp = Math.min(c.max, c.hp + dh.heal);
+      const before = c.hp; c.hp = Math.min(c.max, c.hp + dh.heal); trig(c, 'drawHeal');
       S.ticks.push({ side: S.teams.indexOf(t), heal: c.hp - before });
       log(`　${t.label}の${nameOf(c)}の「${dh.name}」:${c.hp - before}回復`);
     });
     // 特性「逆巻き」:あいこでも連勝が1増える
     S.teams.forEach((t) => {
       if (!traitOf(active(t), 'drawStreak')) return;
-      t.streak++;
+      t.streak++; trig(active(t), 'drawStreak');
       log(`　${t.label}の${nameOf(active(t))}の「逆巻き」:あいこでも連勝+1`);
       if (t.streak >= BREAK_STREAK) { t.streak = 0; t.breakReady = true; log(`　${t.label}が${BREAK_STREAK}連勝 → ${BREAK_NAME}!`); }
     });
@@ -1939,7 +1960,8 @@ function rally(S, hand0, hand1, log) {
 }
 
 // ブレイク中のラリー:じゃんけん無しで、選んだ手のアクションが確定で通る
-function breakRally(S, side, hand, log) {
+function breakRally(S, side, hand, log) { TRIG = []; try { return breakRallyCore(S, side, hand, log); } finally { S.trig = TRIG; TRIG = null; } }
+function breakRallyCore(S, side, hand, log) {
   log(`— ラリー${S.rally + 1}:${S.teams[side].label}の${BREAK_NAME} —`);
   beginRally(S, log);
   S.teams[side].breakReady = false;
@@ -1947,7 +1969,7 @@ function breakRally(S, side, hand, log) {
   act(S, side, hand, log, true);
   // 特性「始の刻」:BREAKするたびに、ATKがずっと上がる
   const me = active(S.teams[side]), grow = traitOf(me, 'breakGrow');
-  if (grow && me.hp > 0) { me.growAtk = (me.growAtk || 0) + grow.add; log(`　${nameOf(me)}の「${grow.name}」:ATK+${grow.add}(合計+${me.growAtk})`); }
+  if (grow && me.hp > 0) { trig(me, 'breakGrow'); me.growAtk = (me.growAtk || 0) + grow.add; log(`　${nameOf(me)}の「${grow.name}」:ATK+${grow.add}(合計+${me.growAtk})`); }
   // 特性「三刻の重ね」:BREAKで停止・跳躍・遡行を1回ずつ当てると、「時の外側」が消える
   const foe = active(S.teams[1 - side]);
   if (traitOf(foe, 'weakness') && !foe.captured && foe.hp > 0 && S.hit && S.hit.dmg > 0) {
@@ -3427,7 +3449,23 @@ async function stageFx(o) {
 }
 
 // カードが倒れたとき
+// 特性が効いたら、特性の名前のカットイン(下に小さく効果)。同じカードの同じ特性は、1試合に1回だけ
+// 変身・離脱・巻き戻しなど、もともと専用の演出がある特性は出さない
+const TRAIT_FX_SKIP = new Set(['transform', 'detach', 'rewindRite', 'undying', 'weakness', 'eatMove', 'astral']);
+async function traitFx() {
+  const list = (S && S.trig ? S.trig.splice(0) : []);
+  for (const { c, key } of list) {
+    if (TRAIT_FX_SKIP.has(key)) continue;
+    c.trShown = c.trShown || {};
+    if (c.trShown[key]) continue;
+    c.trShown[key] = 1;
+    const t = traitOf(c, key);
+    if (!t || !t.name) continue;
+    await cutin(`「${t.name}」`, `${dispName(c.ch)}:${t.desc || ''}`, 'trait', 1200);
+  }
+}
 async function aftermath(o) {
+  await traitFx();
   if (!o.ko) return;
   await sleep(150);
   const w = o.boutWin;
@@ -3686,7 +3724,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '1.02';
+const APP_VER = '1.03';
 // ----- 古い版で遊び続けさせない -----
 // 公開中の版は version.json に書く(APP_VER を上げるときに一緒に上げる)。起動時・画面に戻ったとき・5分おきに確かめ、
 // 新しい版があれば、対戦中なら決着を待ってから、閉じられない「更新してください」の画面を出す
