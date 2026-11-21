@@ -1100,7 +1100,7 @@ const SPECIAL_CHARS = [
       scissors: { name: '震え',     rate: RATE.normal, seal: 1 },
       paper:    { name: '立て直し', rate: RATE.normal, heal: 3000 } } },
   { id: 'k_utsuro', name: 'ウツロ', faction: '無', role: '無・あいこを支配する', unlock: 'krUtsuro', hp: 13000, atk: 3200, dfs: 2000, phys: 0.9,
-    traits: [{ key: 'void', name: '虚ろ', desc: '強化も弱体も刻印も受けない(自分を強化する技も効かない)' },
+    traits: [{ key: 'void', name: '虚ろ', desc: 'ATK・DFS・最大HPは元の値のまま変わらない。強化も弱体も刻印も、味方から受け継ぐ強化も受けない' },
       { key: 'drawStrike', name: '無の間', desc: 'あいこのたびに、相手に大ダメージ(大の技1回分)', rate: 1.25 }],
     actions: {
       rock:     { name: '空', rate: RATE.huge },
@@ -1479,9 +1479,10 @@ const modSum = (c, stat) => c.mods.reduce((s, m) => s + (m.stat === stat ? m.v :
 // 現在のATK(変身・渡された強化・バフ/デバフ込み。次の攻撃だけの上乗せ atkUp は含めない)
 const ATK_MIN = 1000;   // ATKはこれより小さくならない(全体のルール)
 const ATK_MAX = 99999;   // ATKの上限
-const baseAtk = (c) => Math.min(ATK_MAX, Math.max(ATK_MIN, c.atk + c.atkBonus + c.teamAtk + c.markAtk + (c.facAtk || 0) + (c.growAtk || 0) + modSum(c, 'atk')));
+const baseAtk = (c) => (traitOf(c, 'void') ? c.atk : Math.min(ATK_MAX, Math.max(ATK_MIN, c.atk + c.atkBonus + c.teamAtk + c.markAtk + (c.facAtk || 0) + (c.growAtk || 0) + modSum(c, 'atk'))));   // ウツロの「虚ろ」:ATKは元の値のまま(上がりも下がりもしない)
 // 現在のDFS(変身・特性・渡された強化・バフ/デバフ込み。次の被弾だけの上乗せ dfsUp は含めない)
 const baseDfs = (c) => {
+  if (traitOf(c, 'void')) return c.dfs;   // ウツロの「虚ろ」:DFSも元の値のまま
   const v = c.dfs + c.dfsGain + c.dfsBonus + c.teamDfs + c.markDfs + (c.facDfs || 0) + modSum(c, 'dfs');
   // 特性「鋼の刻」:DFSはデバフや刻印で下がらない
   return Math.max(0, Math.min(c.dfsCap || DFS_MAX, traitOf(c, 'hardshell') ? Math.max(c.dfs, v) : v));
@@ -1491,7 +1492,7 @@ const baseDfs = (c) => {
 const giantDfs = (c) => { const t = traitOf(c, 'giantSlayer'); return t && c.giant ? t.dfs : 0; };
 // 特性「背水・始」:残りHPが一定以下でDFSも上がる
 const traitDfs = (c) => { const t = traitOf(c, 'backwaterAll'), w = traitOf(c, 'sway'); return (t && c.hp <= c.max * t.below ? t.add : 0) + (w ? (c.turn % 2 === 1 ? -w.minus : w.dfs) : 0); };
-const dfsOf = (def, isBreak) => (isBreak ? 0 : Math.min(def.dfsCap || DFS_MAX, baseDfs(def) + def.dfsUp + giantDfs(def) + traitDfs(def)));
+const dfsOf = (def, isBreak) => (isBreak ? 0 : traitOf(def, 'void') ? Math.min(def.dfsCap || DFS_MAX, def.dfs) : Math.min(def.dfsCap || DFS_MAX, baseDfs(def) + def.dfsUp + giantDfs(def) + traitDfs(def)));
 // 攻撃する側から見た相手のDFS(特性「貫き」はDFSを一定量無視する)
 const dfsVs = (att, def, isBreak) => {
   const z = traitOf(att, 'lastPierce');   // 特性「見切り」:自分の残りHPが少ないとき、相手のDFSを0として攻撃する
@@ -1985,7 +1986,7 @@ function endRally(S, log, winSide) {
   // 特性「記録」:倒れたとき、次の番手に強化を渡す
   S.teams.forEach((t, side) => {
     const f = active(t), tr = traitOf(f, 'record'), next = t.cards[t.idx + 1];
-    if (ko[side] && tr && next) {
+    if (ko[side] && tr && next && !traitOf(next, 'void')) {
       next.atkBonus += tr.atk; next.dfsBonus += tr.dfs;
       trig(f, 'record');
       relay(t, 'rc:' + f.ch.id, tr.name, `${f.ch.name}が倒れて、次の${next.ch.name}にATK+${tr.atk}・DFS+${tr.dfs}(ずっと)`);
@@ -1993,7 +1994,7 @@ function endRally(S, log, winSide) {
     }
     // 特性「継ぎ」:倒れたとき、自分のATKとDFS(消えない強化も込み)をそのまま次の番手に足す
     const ps = traitOf(f, 'passStats');
-    if (ko[side] && ps && next) {
+    if (ko[side] && ps && next && !traitOf(next, 'void')) {
       const pa = f.atk + f.atkBonus + f.teamAtk + (f.growAtk || 0), pd = f.dfs + f.dfsBonus + f.teamDfs + f.dfsGain;
       next.atkBonus += pa; next.dfsBonus += pd;
       trig(f, 'passStats');
@@ -2020,7 +2021,7 @@ function endRally(S, log, winSide) {
     // 特性「舫い」「羽渡し」:倒れたとき、控えの味方全員を強化する
     const lg = traitOf(f, 'legacy'), bench = t.cards.slice(t.idx + 1);
     if (ko[side] && lg && bench.length) {
-      bench.forEach((c) => { c.atkBonus += lg.atk; c.dfsBonus += lg.dfs; c.max += lg.hp; c.hp += lg.hp; });
+      bench.forEach((c) => { if (traitOf(c, 'void')) return; c.atkBonus += lg.atk; c.dfsBonus += lg.dfs; c.max += lg.hp; c.hp += lg.hp; });
       trig(f, 'legacy');
       relay(t, 'lg:' + f.ch.id, lg.name, `${f.ch.name}が倒れて、控えの味方全員に` + [lg.atk && `ATK+${lg.atk}`, lg.dfs && `DFS+${lg.dfs}`, lg.hp && `最大HP+${lg.hp}`].filter(Boolean).join('・') + '(ずっと)');
       log(`　${t.label}の${f.ch.name}の「${lg.name}」→ 控えの味方全員に` + [lg.atk && `ATK+${lg.atk}`, lg.dfs && `DFS+${lg.dfs}`, lg.hp && `最大HP+${lg.hp}`].filter(Boolean).join('・'));
@@ -2667,6 +2668,14 @@ const Sound = (() => {
     // 背景で鳴り続ける時計
     tick(n) { tone(n % 2 ? 1500 : 1900, 0.025, { type: 'square', vol: 0.022 }); },
     click() { tone(1400, 0.03, { type: 'square', vol: 0.05 }); },
+    // ウツロの「無の間」:低く沈む虚ろな響きと、遠くで鳴る澄んだ音。あいこのダメージのとき
+    mu() {
+      tone(330, 0.9, { type: 'sine', vol: 0.32, to: 55, attack: 0.08 });
+      tone(165, 1.1, { type: 'triangle', vol: 0.18, to: 41, attack: 0.12 });
+      noise(0.8, { type: 'lowpass', freq: 600, vol: 0.22, at: 0.05 });
+      tone(1760, 1.2, { type: 'sine', vol: 0.05, at: 0.25, attack: 0.2 });
+      tone(2637, 1.0, { type: 'sine', vol: 0.03, at: 0.35, attack: 0.2 });
+    },
     // 特性のカットインの音:予告音の緑(軽い上昇音)と同じ
     trait() { Sound.cue(2); },
     // ガラスにひびが入る「ピシッ」
@@ -3670,7 +3679,7 @@ async function traitShow(c, key) {
   if (c.trShown[key] && !every) return;
   const first = !c.trShown[key];
   c.trShown[key] = 1;
-  Sound.trait();
+  if (key === 'drawStrike') Sound.mu(); else Sound.trait();
   // 毎回出す特性は、2回目からは短く、動いた量だけを書く
   // 味方の特性は緑、相手の特性は赤。下の文字の頭にも「味方」「相手」を付ける(観戦では、それぞれのチームの名前)
   const mine = S && S.teams[0].cards.includes(c), who = S && S.spectate ? S.teams[mine ? 0 : 1].label : mine ? '味方' : '相手';
@@ -4022,7 +4031,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '1.26';
+const APP_VER = '1.27';
 // ----- 古い版で遊び続けさせない -----
 // 公開中の版は version.json に書く(APP_VER を上げるときに一緒に上げる)。起動時・画面に戻ったとき・5分おきに確かめ、
 // 新しい版があれば、対戦中なら決着を待ってから、閉じられない「更新してください」の画面を出す
