@@ -4032,7 +4032,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '1.34';
+const APP_VER = '1.35';
 // ----- 古い版で遊び続けさせない -----
 // 公開中の版は version.json に書く(APP_VER を上げるときに一緒に上げる)。起動時・画面に戻ったとき・5分おきに確かめ、
 // 新しい版があれば、対戦中なら決着を待ってから、閉じられない「更新してください」の画面を出す
@@ -5160,7 +5160,6 @@ function openSettings() {
     <div class="srow"><div>CPU戦・対人の曲<small>あとひと刻からは Sign of Victory</small></div><select id="sBattleBgm" aria-label="CPU戦・対人の曲">${BATTLE_BGM_CHOICES.map(([k, n]) => `<option value="${k}"${battleBgmNow() === k ? ' selected' : ''}${bgmOpen(k) ? '' : ' disabled'}>${n}${bgmOpen(k) ? '' : '(アドバンス★5「天眼の果て」クリアで解放)'}</option>`).join('')}</select></div>
     <div class="srow"><div>効果音</div>${sw('sSe', FX.sound)}</div>
     <div class="srow"><div>効果音の音量</div><input type="range" id="sSeVol" min="0" max="100" value="${Math.round(FX.seVol * 100)}" aria-label="効果音の音量"></div>
-    <div class="srow"><div>演出<small>短縮にすると対戦のテンポが速くなる</small></div><div class="seg"><button id="sFull" class="${FX.short ? '' : 'on'}">フル</button><button id="sShort" class="${FX.short ? 'on' : ''}">短縮</button></div></div>
     <div class="srow"><div>演出パターン<small>${FX_PATTERNS[FX.pattern].note}</small></div><div class="seg seg4">${Object.entries(FX_PATTERNS).map(([k, v]) => `<button data-pt="${k}" class="${FX.pattern === k ? 'on' : ''}">${v.name}</button>`).join('')}</div></div>
     <div class="srow"><div>先バレ<small>手を出した瞬間に赤く光ったら、じゃんけん勝ち確定</small></div>${sw('sSaki', FX.sakibare)}</div>
     <div class="srow"><div>特性のカットイン<small>特性が効いたときに、特性の名前を大きく出す(タップで閉じる)</small></div>${sw('sTrait', FX.traitCut)}</div>
@@ -5170,8 +5169,6 @@ function openSettings() {
   $('sTrait').onclick = () => { FX.traitCut = !FX.traitCut; saveOpt('kokusen.traitCut', FX.traitCut); openSettings(); };
   $('sBgm').onclick = () => { FX.bgm = !FX.bgm; saveOpt('kokusen.bgm', FX.bgm); applyOpts(); openSettings(); };
   $('sSe').onclick = () => { FX.sound = !FX.sound; saveOpt('kokusen.sound', FX.sound); applyOpts(); if (FX.sound) { Sound.wake(); Sound.click(); } openSettings(); };
-  $('sFull').onclick = () => { FX.short = false; saveOpt('kokusen.short', false); applyOpts(); openSettings(); };
-  $('sShort').onclick = () => { FX.short = true; saveOpt('kokusen.short', true); applyOpts(); openSettings(); };
   $('sBattleBgm').onchange = (e) => { FX.battleBgm = BATTLE_BGM_CHOICES.some(([k]) => k === e.target.value) && bgmOpen(e.target.value) ? e.target.value : 'main'; try { localStorage.setItem('kokusen.battleBgm', FX.battleBgm); } catch (err) { /* 保存できなくても動く */ } };
   $('sBgmVol').oninput = (e) => { FX.bgmVol = e.target.value / 100; saveVol(); Bgm.setVol(); };
   $('sSeVol').oninput = (e) => { FX.seVol = e.target.value / 100; saveVol(); Sound.setVol(); };
@@ -6686,7 +6683,7 @@ function init() {
     $('logBtn').textContent = hid ? 'ログを見る' : 'ログを閉じる';
   };
   FX.sound = loadOpt('kokusen.sound', true);
-  FX.short = loadOpt('kokusen.short', false);
+  FX.short = false;   // 演出の短縮は設定から外した(前に短縮にしていた人も、フルに戻す)
   try { const v = localStorage.getItem('kokusen.battleBgm'); if (BATTLE_BGM_CHOICES.some(([k]) => k === v)) FX.battleBgm = v; } catch (e) { /* 読めなければいつもの曲 */ }
   FX.sakibare = loadOpt('kokusen.sakibare', true);
   FX.traitCut = loadOpt('kokusen.traitCut', true);
