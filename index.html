@@ -1670,6 +1670,33 @@ function judge(a, b) {
 
 // ラリーの始まり:ラリー数を進め、特性「仮面割れ」の変身を判定する
 // S.boutRally は最後の交代からのラリー数(抜け落ち用)、card.turn はそのカードが場に出てからのラリー数(特性用)
+// カードが場に出た瞬間に効く特性(白紙化・憂い・怯え)。試合の始めと、交代した瞬間に呼ぶ(1枚につき1回)
+// fired:画面でカットインを出す特性(entryFx が読んで消す)
+function aweCheck(S, o, fo, log) {   // オソレの「怯え」:相手1体につき1回だけ判定する。CPU戦・対人のときだけ(ソロ・回廊・刻練場では効かない)
+  const aw = traitOf(o, 'awe');
+  if (!aw || S.stage || fo.aweChecked || o.hp <= 0 || fo.hp <= 0) return;
+  fo.aweChecked = true;
+  if (traitOf(fo, 'void')) return;
+  const ea = baseAtk(fo), ed = dfsOf(fo, false);
+  if (ea + ed < aw.line) return;
+  fo.atk -= Math.round(ea * aw.cut); fo.dfs -= Math.round(ed * aw.cut);
+  (o.fired = o.fired || []).push('awe');
+  log(`　${nameOf(o)}の「怯え」:${nameOf(fo)}のATKとDFSが${Math.round(aw.cut * 100)}%減った(ATK${baseAtk(fo)}・DFS${dfsOf(fo, false)})`);
+}
+function cardEnter(S, side, log) {
+  const t = S.teams[side], c = active(t), fo = active(S.teams[1 - side]);
+  if (!c || c.hp <= 0 || c.entered) return;
+  c.entered = true;
+  if (traitOf(c, 'enterDispel')) dispel(S, side, log);   // 特性「白紙化」
+  // ウレイの「憂い」:相手のDFSがATKより高ければ、ATKとDFS(強化込み)を入れ替える
+  if (traitOf(c, 'swapStats') && fo && fo.hp > 0 && !traitOf(fo, 'void')) {
+    const ea = baseAtk(fo), ed = dfsOf(fo, false);
+    if (ed > ea) { fo.atk += ed - ea; fo.dfs += ea - ed; (c.fired = c.fired || []).push('swapStats'); log(`　${nameOf(c)}の「憂い」:${nameOf(fo)}のATKとDFSが入れ替わった(ATK${baseAtk(fo)}・DFS${dfsOf(fo, false)})`); }
+  }
+  if (fo) { aweCheck(S, c, fo, log); aweCheck(S, fo, c, log); }   // 自分がオソレのとき/相手のオソレの前に出たとき
+}
+// 交代のあと・試合の始めに、両方の場のカードについて呼ぶ
+const enterAll = (S, log) => S.teams.forEach((t, side) => { if (t.idx < t.cards.length) cardEnter(S, side, log); });
 function beginRally(S, log) {
   S.rally++;
   S.boutRally++;
@@ -1677,21 +1704,8 @@ function beginRally(S, log) {
   S.teams.forEach((t, side) => {
     const c = active(t), tr = traitOf(c, 'transform');
     c.turn++;
-    if (c.turn === 1 && traitOf(c, 'enterDispel')) { trig(c, 'enterDispel'); dispel(S, side, log); }   // 特性「白紙化」
-    if (c.turn === 1 && traitOf(c, 'burnout')) trig(c, 'burnout');
-    const fo = active(S.teams[1 - side]);
-    // ウレイの「憂い」:相手のDFSがATKより高ければ、ATKとDFS(強化込み)を入れ替える
-    if (c.turn === 1 && traitOf(c, 'swapStats') && fo.hp > 0 && !traitOf(fo, 'void')) {
-      const ea = baseAtk(fo), ed = dfsOf(fo, false);
-      if (ed > ea) { fo.atk += ed - ea; fo.dfs += ea - ed; trig(c, 'swapStats'); log(`　${nameOf(c)}の「憂い」:${nameOf(fo)}のATKとDFSが入れ替わった(ATK${baseAtk(fo)}・DFS${dfsOf(fo, false)})`); }
-    }
-    // オソレの「怯え」:自分が場に出たとき・相手が場に出たとき(相手1体につき1回だけ判定)、相手のATKとDFSの合計が大きければ、両方を減らす
-    const aw = !S.stage && traitOf(c, 'awe') && (c.turn === 1 || fo.turn <= 1) && !fo.aweChecked && traitOf(c, 'awe');   // CPU戦・対人のときだけ(ソロ・回廊・刻練場では効かない)
-    if (aw) fo.aweChecked = true;
-    if (aw && fo.hp > 0 && !traitOf(fo, 'void')) {
-      const ea = baseAtk(fo), ed = dfsOf(fo, false);
-      if (ea + ed >= aw.line) { fo.atk -= Math.round(ea * aw.cut); fo.dfs -= Math.round(ed * aw.cut); trig(c, 'awe'); log(`　${nameOf(c)}の「怯え」:${nameOf(fo)}のATKとDFSが${Math.round(aw.cut * 100)}%減った(ATK${baseAtk(fo)}・DFS${dfsOf(fo, false)})`); }
-    }   // ナガレの「全力」:場に出たときから効く
+    cardEnter(S, side, log);   // 場に出たときの特性(試合の始め・交代の時点でまだなら、ここで)
+    if (c.turn === 1 && traitOf(c, 'burnout')) trig(c, 'burnout');   // ナガレの「全力」:場に出たときから効く
     if (c.turn === 1 && traitOf(c, 'rush')) trig(c, 'rush');         // 先駆けなど:場に出たときから効く
     if (c.turn === 1 && c.tsuzuri) trig(t.cards.slice(0, t.idx).find((x) => traitOf(x, 'facGuard')), 'facGuard');   // アワイの「零の綴じ」を受けた番手が出た
     if (tr && !c.form && c.turn >= tr.at) {
@@ -1890,6 +1904,7 @@ function rewindMatch(S, log) {
   body.dfs = Math.round(body.ch.dfs / Math.pow(2, S.rewinds));
   S.boutRally = 0;
   S.events.push({ type: 'rewind', dfs: body.dfs });
+  enterAll(S, log);
   log(`　刻が戦いの前に巻き戻された(${S.rewinds}回目)。${keepMe ? 'こちらは巻き戻らず、今のまま。' : ''}${nameOf(body)}のDFSは${body.dfs}に下がった`);
 }
 
@@ -2072,6 +2087,7 @@ function endRally(S, log, winSide) {
     S.events.push({ type: 'krHeal', layer: fallen.ch.krLayer });
     log(`　第${krFloor(fallen.ch.krLayer)}層を突破。こちらは全回復した`);
   }
+  enterAll(S, log);   // 交代して出てきたカードの、場に出たときの特性
   const out = S.teams.map((t) => t.idx >= t.cards.length);
   if (out[0] || out[1]) {
     // 全員倒れた側の負け。同時に全滅したら、このラリーのじゃんけんに勝った側の勝ち(あいこなら引き分け)
@@ -3669,6 +3685,8 @@ const TRAIT_EVERY = {
   drawStreak: () => 'あいこでも連勝+1',
   selfBurn: (c, t) => `自分にHP${t.dmg}のダメージ`,
   drawStrike: (c) => `相手に${c.lastDraw || 0}ダメージ`,
+  awe: () => '相手のATKとDFSが60%減った',
+  swapStats: () => '相手のATKとDFSが入れ替わった',
 };
 async function traitShow(c, key) {
   if (!c || TRAIT_FX_SKIP.has(key) || !FX.traitCut) return;   // 設定で切れる(効果はログで分かる)
@@ -3744,6 +3762,8 @@ async function entryFx() {
     const c = active(t);
     if (!c || c.hp <= 0) continue;
     for (const key of ENTRY_TRAITS) if (traitOf(c, key) && (key !== 'giantSlayer' || c.giant)) await traitShow(c, key);   // 一点留めなどはボス戦のときだけ
+    const fired = c.fired || []; c.fired = [];
+    for (const key of fired) await traitShow(c, key);   // 場に出た瞬間に効いた特性(憂い・怯え)
     if (c.tsuzuri) await traitShow(t.cards.slice(0, t.idx).find((x) => traitOf(x, 'facGuard')), 'facGuard');
   }
 }
@@ -4032,7 +4052,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '1.36';
+const APP_VER = '1.37';
 // ----- 古い版で遊び続けさせない -----
 // 公開中の版は version.json に書く(APP_VER を上げるときに一緒に上げる)。起動時・画面に戻ったとき・5分おきに確かめ、
 // 新しい版があれば、対戦中なら決着を待ってから、閉じられない「更新してください」の画面を出す
@@ -6482,6 +6502,7 @@ async function startMatch(mine, theirs, foeLabel, opt = {}) {
     // ログイン中は、サーバーに挑戦の開始を知らせる(SQLの13回目。終わりの記録と突き合わせる)
     if (!opt.spectate && accUid()) S.krRun = verRpc('kr_start', {}).catch(() => null);
   }
+  enterAll(S, logLater);   // 1番手どうしの、場に出たときの特性(試合が始まった瞬間に効かせる)
   if (!S.spectate && !PVP.on) whStart(mine, theirs, opt); else WH.snap = null;   // フレンドの観戦用の記録を始める
   $('log').innerHTML = '';
   logBuf = [];
