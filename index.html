@@ -887,6 +887,15 @@ const POISON_RATE = 0.3;     // 時蝕1ラリーぶんのダメージ係数
 // 刻の抜け落ち:交代がないまま長引くと、両者のHPが毎ラリー削れていく(決着がつかない組み合わせを防ぐ)
 const DECAY_FROM = 12;       // このラリー数を超えたら始まる
 const DECAY_STEP = 0.03;     // 超過1ラリーごとに、最大HPのこの割合ずつ増える
+// 判定:対人・CPU戦で、このラリー数までに決着がつかなければ、残り体数 → 残りHPの合計で勝ち負けを決める(ソロでは起きない)
+const RALLY_LIMIT = 100;
+const judgeOf = (S) => {
+  const left = S.teams.map((t) => t.cards.slice(t.idx).filter((c) => c.hp > 0));
+  const n = left.map((l) => l.length), hp = left.map((l) => l.reduce((v, c) => v + Math.max(0, c.hp), 0));
+  if (n[0] !== n[1]) return { w: n[0] > n[1] ? 0 : 1, why: `残り${n[0]}体-${n[1]}体` };
+  if (hp[0] !== hp[1]) return { w: hp[0] > hp[1] ? 0 : 1, why: `残り${n[0]}体同士・HP${hp[0]}-${hp[1]}` };
+  return { w: -1, why: `残り${n[0]}体同士・HPも同じ` };
+};
 
 // ダメージ係数:通常攻撃と、必殺技の3段階
 const RATE = { normal: 1.0, big: 1.25, huge: 1.5, max: 2.0 };
@@ -1998,7 +2007,7 @@ function endRally(S, log, winSide) {
   });
   const [a, b] = S.teams;
   const ko = S.teams.map((t) => active(t).hp <= 0);
-  if (!ko[0] && !ko[1]) return;
+  if (!ko[0] && !ko[1]) { rallyJudge(S, log); return; }
 
   // 特性「記録」:倒れたとき、次の番手に強化を渡す
   S.teams.forEach((t, side) => {
@@ -2099,6 +2108,15 @@ function endRally(S, log, winSide) {
   } else {
     log(`— 交代:${nameOf(active(a))} vs ${nameOf(active(b))} —`);
   }
+  rallyJudge(S, log);
+}
+// 100ラリーで決着していなければ判定(対人・CPU戦のみ)
+function rallyJudge(S, log) {
+  if (S.over || S.stage || S.rally < RALLY_LIMIT) return;
+  const j = judgeOf(S);
+  S.over = true; S.winner = j.w; S.judge = `${RALLY_LIMIT}ラリー判定・${j.why}`;
+  S.teams.forEach((t) => { t.breakReady = false; });
+  log(`— ${S.judge} —`);
 }
 
 // 通常のラリー(じゃんけん1回)。戻り値は side0 から見た勝敗 1 / 0 / -1
@@ -3807,7 +3825,7 @@ async function finale() {
   clearTimeout(tickTimer);
   freeze(false);
   if (S.spectate && S.winner == null) return;   // 観戦を途中でやめた(決着していない)
-  const score = `(${S.teams[0].wins}-${S.teams[1].wins})`;
+  const score = `(${S.teams[0].wins}-${S.teams[1].wins})` + (S.judge ? `(${S.judge})` : '');
   const msg = S.spectate ? (S.winner === -1 ? '引き分け' : `${S.teams[S.winner].label}の勝利!`) + score + (S.specWhy || '') : (S.winner === -1 ? '引き分け' : S.winner === 0 ? 'あなたの勝利!' : 'あなたの敗北…') + score + (S.resign === 'me' ? '(リタイア)' : S.resign === 'foe' ? '(相手のリタイア)' : S.forfeit === 0 ? '(相手の応答なし)' : S.forfeit === 1 ? '(応答なし)' : '');
   log(`=== ${msg} ${S.rally}ラリー ===`);
   setResult(msg);
@@ -4054,7 +4072,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '1.46';
+const APP_VER = '1.47';
 // ----- 古い版で遊び続けさせない -----
 // 公開中の版は version.json に書く(APP_VER を上げるときに一緒に上げる)。起動時・画面に戻ったとき・5分おきに確かめ、
 // 新しい版があれば、対戦中なら決着を待ってから、閉じられない「更新してください」の画面を出す
@@ -5214,7 +5232,8 @@ const RULEBOOK = {
     <h3>あいこ</h3><p>どちらの技も出ない。連勝は途切れない。</p>
     <h3>ラリー数つきの強化・弱体</h3><p>同じ種類(同じ能力の上げ、または下げ)を重ねると、値は強いほうになり、残りラリー数は足される。例:−500(3)を2ラリー続けて当てると −500(5)。</p>
     <h3>ATKの下限</h3><p>ATKは、どれだけ下げられても1000より小さくならない。</p>
-    <h3>刻の抜け落ち</h3><p>交代がないまま12ラリー続くと、両者のHPが毎ラリー削れていく(ソロでは起きない)。</p>`,
+    <h3>刻の抜け落ち</h3><p>交代がないまま12ラリー続くと、両者のHPが毎ラリー削れていく(ソロでは起きない)。</p>
+    <h3>100ラリー判定</h3><p>100ラリーで決着がつかないときは判定。残りの体数が多いほうの勝ち。同じなら、残りのHPの合計が多いほうの勝ち(ソロでは起きない)。</p>`,
   'BREAK': `<h3>BREAK</h3><p>じゃんけんに3連勝すると BREAK が発生する。次は好きな手を選ぶと、その技が確定で通る。</p>
     <h3>BREAK中の攻撃</h3><p>相手のDFSを無視してダメージを与える。キャラによっては BREAK でさらに強くなる。</p>
     <h3>予兆の色</h3><p>手を出すと、相手の手が回って止まる。そのときの色が、結果の予兆になる。青 → 緑 → <span style="color:var(--red);font-weight:700">赤(勝ち確定)</span> → <span class="rainbow" style="font-weight:700">虹(撃破かBREAK確定)</span></p>
