@@ -3902,9 +3902,12 @@ async function finale() {
   // 空間のカケラ(オンライン対人だけ。観戦では増えない)
   if (MODE === 'pvp' && !S.spectate && !S.shardDone) {
     S.shardDone = true;
-    const n = shardReward(S), total = await shardAdd(n);
-    log(n ? `${SHARD_NAME} +${n}(所持 ${total})` : `${SHARD_NAME}:${S.resign === 'me' || S.forfeit === 1 ? 'リタイア・応答なしの負けのため、もらえません' : 'レート戦の負けでは、もらえません'}(所持 ${total})`);
-    if (n) await cutin(`${SHARD_NAME} +${n}`, `所持 ${total}`, 'gold', 1300);
+    const base = shardReward(S), free = !PVP.rated, n = free ? freeShardTake(base) : base, total = await shardAdd(n);
+    const capped = free && base > 0 && n < base;
+    const capTxt = `今日のフリー戦の上限(${FREE_SHARD_CAP}個)`;
+    log(n ? `${SHARD_NAME} +${n}(所持 ${total}${free ? `・今日のフリー戦 ${freeShardGot()}/${FREE_SHARD_CAP}` : ''})` : `${SHARD_NAME}:${capped ? `${capTxt}に達しているため、もらえません` : S.resign === 'me' || S.forfeit === 1 ? 'リタイア・応答なしの負けのため、もらえません' : 'レート戦の負けでは、もらえません'}(所持 ${total})`);
+    if (n) await cutin(`${SHARD_NAME} +${n}`, `所持 ${total}${capped ? `・${capTxt}に達しました` : ''}`, 'gold', 1300);
+    else if (capped) await cutin(`${capTxt}`, 'レート戦なら、まだもらえます', 'plain', 1300);
   }
   if (MODE === 'pvp' && PVP.rank && !S.spectate) await rankSeriesFx(S);
   const res = rating && await rating;
@@ -4075,7 +4078,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '1.53';
+const APP_VER = '1.54';
 // ----- 古い版で遊び続けさせない -----
 // 公開中の版は version.json に書く(APP_VER を上げるときに一緒に上げる)。起動時・画面に戻ったとき・5分おきに確かめ、
 // 新しい版があれば、対戦中なら決着を待ってから、閉じられない「更新してください」の画面を出す
@@ -4720,7 +4723,7 @@ function renderMode() {
   $('rankFind').classList.toggle('hidden', !ranked || PVP.phase !== 'idle');
   $('rankFind').disabled = !PVP.room;
   $('rankFind').textContent = RANK.searching ? '探すのをやめる' : '相手を探す';
-  $('pvpKindNote').textContent = kindNow === 'rated' ? `ランク戦:レートの近い相手と自動で当たる3本勝負(ベーシック→アドバンス→ベーシック)。毎試合、お互いにBANを1体ずつ出してから、交互にキャラを取り合う(持っているキャラだけ・★4以上は1体まで)。くわしくはルールブックの「ランク戦」。3本勝負の勝ち負けでレートが1回動く(勝つと+1のボーナス)。${SHARD_NAME}は1試合ごとに勝ち30・負け0。` : `フリー戦:レートは動きません。ログインなしでも遊べます。${SHARD_NAME}は勝ち20・負け5(リタイアの負けは0)。${ACC.profile ? '' : '(ランク戦はログインすると選べます)'}`;
+  $('pvpKindNote').textContent = kindNow === 'rated' ? `ランク戦:レートの近い相手と自動で当たる3本勝負(ベーシック→アドバンス→ベーシック)。毎試合、お互いにBANを1体ずつ出してから、交互にキャラを取り合う(持っているキャラだけ・★4以上は1体まで)。くわしくはルールブックの「ランク戦」。3本勝負の勝ち負けでレートが1回動く(勝つと+1のボーナス)。${SHARD_NAME}は1試合ごとに勝ち30・負け0。` : `フリー戦:レートは動きません。ログインなしでも遊べます。${SHARD_NAME}は勝ち20・負け5(リタイアの負けは0)。1日${FREE_SHARD_CAP}個まで(今日 ${freeShardGot()}/${FREE_SHARD_CAP})。${ACC.profile ? '' : '(ランク戦はログインすると選べます)'}`;
   $('specRoom').classList.toggle('hidden', ranked || (!!PVP.room && !PVP.room.spectate));   // 観戦は、端末どうしを直接つなぐ方式のときだけ
   $('leaveRoom').classList.toggle('hidden', PVP.phase === 'idle');
   renderSelect();
@@ -5603,7 +5606,7 @@ function openCharDetail(ch, back) {   // back:閉じたあとに戻る画面(ガ
 }
 
 // ----- 空間のカケラ:オンライン対人で手に入る(のちにガチャで使う) -----
-// フリー戦:勝ち20・負け5(引き分けも5)。レート戦:勝ち30・負け0。自分のリタイアや応答なしで負けたときはもらえない。
+// フリー戦:勝ち20・負け5(引き分けも5)。1日200個まで。レート戦:勝ち30・負け0(上限なし)。自分のリタイアや応答なしで負けたときはもらえない。
 // ログイン中はアカウント(progress の stats.shards)、ログインしていないときは端末に貯める
 const SHARD_NAME = '空間のカケラ';
 const SHARD_KEY = 'kokusen.shards';
@@ -5617,6 +5620,22 @@ function shardReward(S) {
   const win = S.winner === 0, quit = S.resign === 'me' || S.forfeit === 1;
   if (PVP.rated) return win ? 30 : 0;
   return win ? 20 : quit ? 0 : 5;
+}
+// フリー戦でもらえるカケラは、1日200個まで(端末の日付で切り替わる)。ログイン中は stats.freeShard、ゲストは端末に { d: 日付, n: その日にもらった数 }
+const FREE_SHARD_CAP = 200, FREE_SHARD_KEY = 'kokusen.freeShard';
+const todayStr = () => { const t = new Date(); return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`; };
+function freeShardGot() {
+  let v = null;
+  if (shardOnAcc()) v = ACC.stats && ACC.stats.freeShard;
+  else { try { v = JSON.parse(localStorage.getItem(FREE_SHARD_KEY) || 'null'); } catch (e) { v = null; } }
+  return v && v.d === todayStr() ? Number(v.n) || 0 : 0;
+}
+// フリー戦の分を上限で切って返し、その日の受け取り数を記録する(保存は shardAdd がまとめて行う)
+function freeShardTake(n) {
+  const got = freeShardGot(), take = Math.max(0, Math.min(n, FREE_SHARD_CAP - got)), v = { d: todayStr(), n: got + take };
+  if (shardOnAcc()) { ACC.stats = ACC.stats || {}; ACC.stats.freeShard = v; }
+  else { try { localStorage.setItem(FREE_SHARD_KEY, JSON.stringify(v)); } catch (e) { /* 保存できなくても動く */ } }
+  return take;
 }
 async function shardAdd(n) {
   if (!n) return shardCount();
