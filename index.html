@@ -1091,7 +1091,7 @@ const SPECIAL_CHARS = [
       paper:    { name: '憂さ晴らし', rate: RATE.normal, mods: [selfAtk(800, 3)] } } },
   { id: 'k_isami', name: 'イサミ', faction: '矢', group: '矢', bonusOk: true, role: '勇気・連勝を積む', unlock: 'kr1000', hp: 9000, atk: 3500, dfs: 1200, phys: 1.4,
     traits: [{ key: 'backwaterSteps', name: '勇み足', desc: '残りHPが75%・50%・25%を切るごとにATK+800', steps: [0.75, 0.5, 0.25], add: 800 },
-      { key: 'rouse', name: '奮起', desc: 'HPが半分を切ったとき、一度だけ連勝+2', below: 0.5, add: 2 }],
+      { key: 'rouse', name: '奮起', desc: 'HPが半分を切ったとき、一度だけ連勝+1', below: 0.5, add: 1 }],
     actions: {
       rock:     { name: '踏み込み', rate: RATE.huge, streak: 1, up: { rate: RATE.max, when: 'hpBelow', v: 0.5, text: '残りHP半分以下で極大' } },
       scissors: { name: '鼓舞',     rate: RATE.normal, streak: 1 },
@@ -4072,7 +4072,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '1.48';
+const APP_VER = '1.49';
 // ----- 古い版で遊び続けさせない -----
 // 公開中の版は version.json に書く(APP_VER を上げるときに一緒に上げる)。起動時・画面に戻ったとき・5分おきに確かめ、
 // 新しい版があれば、対戦中なら決着を待ってから、閉じられない「更新してください」の画面を出す
