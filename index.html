@@ -1166,7 +1166,7 @@ const GACHA_CHARS = [
     trait: { key: 'winStack', name: '連射', desc: '勝つたびに次の攻撃のATK+400が重なる(負けると消える)', v: 400 },
     actions: { rock: N('速射'), scissors: { rate: RATE.big, name: '乱れ撃ち' }, paper: N('矢継ぎ') } },
   { id: 'g_y4', name: 'ナガレ', faction: '矢', rarity: 4, gacha: true, role: 'フルパワー→減速', hp: 10000, atk: 10000, dfs: 1100, phys: 1.1,
-    trait: { key: 'burnout', name: '全力', desc: '場に出て3ラリー目まで、技がすべて極大。4ラリー目からは毎ラリーATK−1000(最大−8000)', until: 3, step: 1000, cap: 8000 },
+    trait: { key: 'burnout', name: '全力', desc: '場に出てから勝ち負けが3回つくまで(あいこは数えない)、技がすべて極大。そのあとは毎ラリーATK−1000(最大−8000)', until: 3, step: 1000, cap: 8000 },
     actions: { rock: { rate: RATE.huge, name: '流星' }, scissors: { rate: RATE.big, name: '尾を引く矢' }, paper: N('燃え残り') } },
 ];
 
@@ -1326,7 +1326,7 @@ Object.assign(ENEMIES, {
       { key: 'outside', name: '割れぬ鏡', desc: '被ダメージ−20%', cut: 0.2 },
       { key: 'drawHeal', name: '映し合い', desc: 'あいこのたびにHP1500回復', heal: 1500 }] }),
   c4_nagare: gBoss('g_y4', { hp: 200040,
-    traits: [{ key: 'burnout', name: '全力', desc: '場に出て5ラリー目まで、技がすべて極大。6ラリー目からは毎ラリーATK−500(最大−5000)', until: 5, step: 500, cap: 5000 },
+    traits: [{ key: 'burnout', name: '全力', desc: '場に出てから勝ち負けが5回つくまで(あいこは数えない)、技がすべて極大。そのあとは毎ラリーATK−500(最大−5000)', until: 5, step: 500, cap: 5000 },
       { key: 'pierce', name: '射抜き', desc: '相手のDFSを1000低いものとして攻撃する', v: 1000 }] }),
   c4_tomoshi: gBoss('g_a4', { hp: 242640, atk: 2600,
     traits: [{ key: 'immovable', name: '灯台', desc: '被弾でDFS+500(最大+3000)', gain: 500, cap: 3000 },
@@ -1519,8 +1519,8 @@ function upActive(a, att, def, n, isBreak) {
   if (u.when === 'foeDfsAtLeast') return dfsOf(def, false) >= u.v;
   return false;
 }
-// 特性「全力」:場に出て数ラリーの間、ダメージのある技はすべて極大
-const rateOf = (a, att, def, n, isBreak) => { const b = traitOf(att, 'burnout'); if (b && a.rate && n <= b.until) { trig(att, 'burnout'); return RATE.max; } return upActive(a, att, def, n, isBreak) ? a.up.rate : a.rate; };
+// 特性「全力」:場に出てから勝ち負けが数回つくまで(あいこは数えない)、ダメージのある技はすべて極大
+const rateOf = (a, att, def, n, isBreak) => { const b = traitOf(att, 'burnout'); if (b && a.rate && (att.boN || 0) < b.until) { trig(att, 'burnout'); return RATE.max; } return upActive(a, att, def, n, isBreak) ? a.up.rate : a.rate; };
 
 // 特性によるATKの増減(実数の足し引き)
 // 特性が実際に効いた記録(画面で、特性の名前のカットインを出すのに使う)。本番のラリーの間だけ記録する
@@ -1537,7 +1537,7 @@ function traitAtk(S, att, def, isBreak) {
   if ((t = traitOf(att, 'sway'))) { v += att.turn % 2 === 1 ? t.atk : -t.minus; trig(att, 'sway'); }   // ユラギ
   if ((t = traitOf(att, 'giantSlayer')) && att.giant) { v += t.atk; trig(att, 'giantSlayer'); }   // 相手が1体だけのチーム(ソロのボス戦)のとき
   if ((t = traitOf(att, 'rush')) && (att.turn <= t.until || att.turn >= t.from)) { v += att.turn <= t.until ? t.early : t.late; trig(att, 'rush'); }
-  if ((t = traitOf(att, 'burnout')) && att.turn > t.until) v -= Math.min(t.cap, (att.turn - t.until) * t.step);   // 全力のあとの減速
+  if ((t = traitOf(att, 'burnout')) && att.boEnd != null) v -= Math.min(t.cap, (att.turn - att.boEnd) * t.step);   // 全力のあとの減速
   if ((t = traitOf(att, 'winStack')) && att.stackAtk) { v += att.stackAtk; trig(att, 'winStack'); }                                                    // 勝つたびに重なる
   return v;
 }
@@ -1631,7 +1631,7 @@ function newTeam(label, chars) {
       ch, hp: ch.hp + hpUp, atk: ch.atk, dfs: ch.dfs, actions: ch.actions, form: 0,
       facAtk: fb && fb.atk ? fb.atk : 0, facDfs: fb && fb.dfs ? fb.dfs : 0, fac: fb,   // 陣営ボーナス
       atkUp: 0, dfsUp: 0,          // 次の1回だけ
-      turn: 0, kills: 0,           // 場に出てからのラリー数 / 倒した数
+      turn: 0, kills: 0, boN: 0, boEnd: null,           // 場に出てからのラリー数 / 倒した数
       atkBonus: 0, dfsBonus: 0,    // 場にいる間ずっと(特性「記録」で渡される)
       dfsGain: 0,                  // 特性「不動」の累積
       max: ch.hp + hpUp,           // 最大HP(特性「舫い」や陣営ボーナスで増える)
@@ -1924,6 +1924,7 @@ function dispel(S, side, log) {
 // ラリーの締め:時蝕 → 特性「処置」 → バフ・デバフの残りラリー数 → 抜け落ち → 倒れたカードの交代
 // winSide: このラリーのじゃんけんに勝った側(あいこは -1)
 function endRally(S, log, winSide) {
+  if (winSide >= 0) S.teams.forEach((t) => { const f = active(t), b = traitOf(f, 'burnout'); if (b && f.boEnd == null && (f.boN = (f.boN || 0) + 1) >= b.until) f.boEnd = f.turn; });   // 全力:勝ち負けがついたラリーだけ数える
   S.teams.forEach((t, side) => {
     const f = active(t);
     let tr;
@@ -3326,12 +3327,12 @@ function statusList(t, f) {
   Object.values(t.relay || {}).forEach((r) => add(`後続:${r.label}×${r.n}`, `後続へ「${r.label}」×${r.n}回:${r.text}`, 'info'));
   if (t.keep) add('連勝保護', '連勝保護(次に負けても、連勝が途切れない)', 'up');
   if (t.sealed) add('連勝封じ', '連勝封じ(次に勝っても、連勝に数えない)', 'down');
-  // 特性「全力」:3ラリー目までは技がすべて極大、そのあとは毎ラリーATKが下がる
+  // 特性「全力」:勝ち負けが数回つくまでは技がすべて極大(あいこは数えない)、そのあとは毎ラリーATKが下がる
   const bo = traitOf(f, 'burnout');
   if (bo) {
-    const n = f.turn + 1;   // 次のラリーで、場に出て何ラリー目か
-    if (n <= bo.until) add(`全力·あと${bo.until - n + 1}`, `全力:技がすべて極大(あと${bo.until - n + 1}ラリー)`, 'up');
-    else add(`減速ATK−${Math.min(bo.cap, (n - bo.until) * bo.step)}`, `全力のあとの減速:ATK−${Math.min(bo.cap, (n - bo.until) * bo.step)}(毎ラリー−${bo.step}、最大−${bo.cap})`, 'down');
+    const left = bo.until - (f.boN || 0);
+    if (f.boEnd == null) add(`全力·あと${left}`, `全力:技がすべて極大(勝ち負けあと${left}回。あいこは数えない)`, 'up');
+    else add(`減速ATK−${Math.min(bo.cap, (f.turn + 1 - f.boEnd) * bo.step)}`, `全力のあとの減速:ATK−${Math.min(bo.cap, (f.turn + 1 - f.boEnd) * bo.step)}(毎ラリー−${bo.step}、最大−${bo.cap})`, 'down');
   }
   if (f.stackAtk) add(`連射ATK+${f.stackAtk}`, `連射:次の攻撃ATK+${f.stackAtk}(負けると消える)`, 'up');
   const rite = traitOf(f, 'rewindRite');
@@ -4053,7 +4054,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '1.44';
+const APP_VER = '1.45';
 // ----- 古い版で遊び続けさせない -----
 // 公開中の版は version.json に書く(APP_VER を上げるときに一緒に上げる)。起動時・画面に戻ったとき・5分おきに確かめ、
 // 新しい版があれば、対戦中なら決着を待ってから、閉じられない「更新してください」の画面を出す
