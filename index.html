@@ -1027,7 +1027,7 @@ const CHARACTERS = [
 const SPECIAL_CHARS = [
   { id: 'p_tokibami', name: 'トキバミ', faction: '刻喰', role: '耐久・吸収', unlock: 'trio', hp: 20000, atk: 2000, dfs: 1000, phys: 1.0,
     traits: [{ key: 'outside', name: '時の外側', desc: '被ダメージ−20%', cut: 0.2 },
-      { key: 'devour', name: '刻喰い', desc: '与ダメージの10%回復', rate: 0.1 }],
+      { key: 'devour', name: '刻喰い', desc: '与ダメージの20%回復', rate: 0.2 }],
     actions: {
       rock:     { name: '止め喰い', rate: RATE.big, mods: [foeAtk(600, 3)] },
       scissors: { name: '先喰い',   rate: RATE.huge },
@@ -1097,12 +1097,12 @@ const SPECIAL_CHARS = [
       scissors: { name: '鼓舞',     rate: RATE.normal, streak: 1 },
       paper:    { name: '構え',     rate: RATE.normal, streak: 1, mods: [selfAtk(1000, 3)] } } },
   { id: 'k_setsuna', name: 'セツナ', faction: '錨', group: '錨', bonusOk: true, role: '切なさ・散り際に託す', unlock: 'kr36', hp: 14000, atk: 2600, dfs: 1800, phys: 1.3,
-    trait: { key: 'lingerPass', name: '散り際', desc: '倒れたとき、場にいたラリー数×100を、控えの味方全員のATKに足す(最大+10000)', per: 100, cap: 10000 },
+    trait: { key: 'lingerPass', name: '散り際', desc: '倒れたとき、場にいたラリー数×200を、控えの味方全員のATKに足す(最大+10000)', per: 200, cap: 10000 },
     actions: {
       rock:     { name: '名残',     rate: RATE.big },
       scissors: { name: '引き留め', rate: RATE.normal, mark: { stat: 'atk', v: 800, cap: 0 } },
       paper:    { name: '寄り添い', rate: RATE.normal, team: { stat: 'dfs', v: 500, cap: 0, bench: 1 } } } },
-  { id: 'k_osore', name: 'オソレ', faction: '零', group: '零', bonusOk: true, role: '恐れ・強い相手をすくませる', unlock: 'kr40', hp: 11000, atk: 1500, dfs: 1500, phys: 1.4,
+  { id: 'k_osore', name: 'オソレ', faction: '零', group: '零', bonusOk: true, role: '恐れ・強い相手をすくませる', unlock: 'kr40', hp: 15000, atk: 1500, dfs: 1500, phys: 1.4,
     trait: { key: 'awe', name: '怯え', desc: 'CPU戦・対人のときだけ(ソロでは効かない):自分が場に出たときと、相手が場に出たとき、相手のATKとDFSの合計(強化込み)が10000以上なら、両方を50%減らす(その相手が倒れるまで)', line: 10000, cut: 0.5 },
     actions: {
       rock:     { name: '竦み',     rate: RATE.max, selfPerm: { atk: 1000 } },
@@ -2035,7 +2035,7 @@ function endRally(S, log, winSide) {
       log(`　${t.label}の${f.ch.name}の「${sp.name}」→ 連勝+${sp.add}`);
       if (t.streak >= BREAK_STREAK) { t.streak = 0; t.breakReady = true; log(`　${t.label}が${BREAK_STREAK}連勝 → ${BREAK_NAME}!`); }
     }
-    // セツナの「散り際」:場にいたラリー数×100を、控えの味方全員のATKに足す
+    // セツナの「散り際」:場にいたラリー数×200を、控えの味方全員のATKに足す
     const lp = traitOf(f, 'lingerPass'), lb2 = t.cards.slice(t.idx + 1).filter((c) => !traitOf(c, 'void'));
     if (ko[side] && lp && lb2.length) {
       const v = Math.min(lp.cap, f.turn * lp.per);
@@ -4072,7 +4072,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '1.47';
+const APP_VER = '1.48';
 // ----- 古い版で遊び続けさせない -----
 // 公開中の版は version.json に書く(APP_VER を上げるときに一緒に上げる)。起動時・画面に戻ったとき・5分おきに確かめ、
 // 新しい版があれば、対戦中なら決着を待ってから、閉じられない「更新してください」の画面を出す
