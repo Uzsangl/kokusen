@@ -3845,7 +3845,8 @@ async function finale() {
     if (ACC.stats && ACC.progMode === 'table') {
       const s2 = ACC.stats;
       if (layers >= KR_GOAL && (sv || !run)) s2.krGoals = (s2.krGoals || 0) + 1;   // 10層突破の回数(ウツロの解放に使う)
-      if (sv && typeof sv.total_kills === 'number') { s2.krTotal = sv.total_kills; s2.krBest = sv.best_layers; s2.krKills = sv.best_kills; }
+      // サーバーの値と、この端末の値の大きいほう(サーバーに届かなかった挑戦の分を消さない)
+      if (sv && typeof sv.total_kills === 'number') { s2.krTotal = Math.max(sv.total_kills, (s2.krTotal || 0) + kills); s2.krBest = Math.max(sv.best_layers, s2.krBest || 0, layers); s2.krKills = Math.max(sv.best_kills, s2.krKills || 0, kills); }
       else { s2.krTotal = (s2.krTotal || 0) + kills; s2.krBest = Math.max(s2.krBest || 0, layers); s2.krKills = Math.max(s2.krKills || 0, kills); }
       sbFetch(`/rest/v1/progress?id=eq.${accUid()}`, { method: 'PATCH', prefer: 'return=minimal', body: { stats: s2 } }).catch(() => null);
     }
@@ -4074,7 +4075,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '1.51';
+const APP_VER = '1.52';
 // ----- 古い版で遊び続けさせない -----
 // 公開中の版は version.json に書く(APP_VER を上げるときに一緒に上げる)。起動時・画面に戻ったとき・5分おきに確かめ、
 // 新しい版があれば、対戦中なら決着を待ってから、閉じられない「更新してください」の画面を出す
@@ -6536,6 +6537,11 @@ const startSolo = (mine, st, seed) => {
 };
 let LAST_MATCH = null;   // 再挑戦用:直前に始めた対戦の中身
 async function startMatch(mine, theirs, foeLabel, opt = {}) {
+  // 刻練場:始める前にサーバーに挑戦の開始を知らせる。古い版で断られたら、遊ぶ前に更新を求める(遊んだあとに記録が残らない、を防ぐ)
+  let krRun = null;
+  if (opt.stage && opt.stage.kr && !opt.spectate && accUid()) {
+    try { krRun = await verRpc('kr_start', {}); } catch (e) { if (e.code === 'KV001') { verOld(); return; } krRun = null; }
+  }
   LAST_MATCH = { mine, theirs, foeLabel, opt };
   S = newMatch(mine, theirs);
   S.teams[1].label = foeLabel;
@@ -6548,7 +6554,7 @@ async function startMatch(mine, theirs, foeLabel, opt = {}) {
   if (opt.stage && opt.stage.kr) {
     S.kr = true; S.krSeed = opt.krSeed; S.teams[0].cards.forEach((c) => { c.dfsCap = 5000; });   // 刻練場:こちらのDFSは5000まで
     // ログイン中は、サーバーに挑戦の開始を知らせる(SQLの13回目。終わりの記録と突き合わせる)
-    if (!opt.spectate && accUid()) S.krRun = verRpc('kr_start', {}).catch(() => null);
+    if (!opt.spectate && accUid()) S.krRun = Promise.resolve(krRun);
   }
   enterAll(S, logLater);   // 1番手どうしの、場に出たときの特性(試合が始まった瞬間に効かせる)
   if (!S.spectate && !PVP.on) whStart(mine, theirs, opt); else WH.snap = null;   // フレンドの観戦用の記録を始める
