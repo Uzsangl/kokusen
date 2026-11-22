@@ -4074,7 +4074,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '1.50';
+const APP_VER = '1.51';
 // ----- 古い版で遊び続けさせない -----
 // 公開中の版は version.json に書く(APP_VER を上げるときに一緒に上げる)。起動時・画面に戻ったとき・5分おきに確かめ、
 // 新しい版があれば、対戦中なら決着を待ってから、閉じられない「更新してください」の画面を出す
@@ -6104,27 +6104,52 @@ function whStart(mine, theirs, opt) {
 function whRec(e) { if (!WH.snap) return; WH.hist.push(e); WH.specs.forEach(whSend); }
 
 // ----- フレンドのソロ観戦:見る側 -----
-const FW = { on: false, peer: null, snap: null, id: null, n: 0, who: '' };
+const FW = { on: false, peer: null, snap: null, id: null, n: 0, who: '', f: null, conn: null, tries: 0, timer: null };
+// 切れたら、3秒ごとに10回(30秒ほど)つなぎ直す。相手がアプリを切り替えた・読み込み直した、などで一瞬切れても見続けられるように
+const FW_RETRY_MAX = 10, FW_RETRY_MS = 3000, FW_OPEN_MS = 6000;
 async function fwStart(f) {
   fwStop(true);
   if (PVP.spec) specStop();
   if (PVP.on && PVP.phase !== 'idle') pvpLeave();
   if (MODE === 'pvp') { MODE = 'cpu'; PVP.on = false; renderMode(); }
   if (!(window.Peer || await loadScript('vendor/peerjs.min.js')) || !window.Peer) { frToast('この端末では観戦できません'); return; }
-  Object.assign(FW, { on: true, snap: null, id: null, n: 0, who: String(f.name).slice(0, 12) });
+  Object.assign(FW, { on: true, snap: null, id: null, n: 0, who: String(f.name).slice(0, 12), f, conn: null, tries: 0 });
+  clearTimeout(FW.timer); FW.timer = null;
   $('sheet').classList.add('hidden');
   const me = FW.peer = new window.Peer();
-  const myName = ACC.profile ? String(ACC.profile.name).slice(0, 12) : 'フレンド';
-  me.on('open', () => {
-    const c = me.connect((f.audit ? 'kokusen-audit-' : 'kokusen-watch-') + String(f.key).toLowerCase(), { reliable: true, serialization: 'json', metadata: { spec: 1, name: myName } });
-    c.on('data', (d) => {
-      if (!d || typeof d !== 'object' || FW.peer !== me) return;
-      if (d.full) { frToast('観戦できるのは5人までです。いっぱいでした'); fwStop(true); return; }
-      if (d.spec && typeof d.spec === 'object') { FW.snap = d.spec; fwShow(); }
-    });
-    c.on('close', () => { if (FW.peer === me) frToast(`${FW.who}さんとの接続が切れました`); });
+  me.on('open', () => fwConnect(me));
+  me.on('disconnected', () => { if (FW.peer === me) { try { me.reconnect(); } catch (e) { /* つなぎ直しで作り直す */ } } });
+  me.on('error', (e) => {
+    if (FW.peer !== me) return;
+    if (FW.tries > 0) { FW.conn = null; fwRetry(me); return; }   // つなぎ直しの途中の失敗は、次の試しへ
+    frToast(e.type === 'peer-unavailable' ? `${FW.who}さんは今、観戦を受け付けていません` : `つながりませんでした(${e.type})`); fwStop(true);
   });
-  me.on('error', (e) => { if (FW.peer !== me) return; frToast(e.type === 'peer-unavailable' ? `${FW.who}さんは今、観戦を受け付けていません` : `つながりませんでした(${e.type})`); fwStop(true); });
+}
+function fwConnect(me) {
+  if (FW.peer !== me || !FW.f) return;
+  const f = FW.f, myName = ACC.profile ? String(ACC.profile.name).slice(0, 12) : 'フレンド';
+  let c;
+  try { c = FW.conn = me.connect((f.audit ? 'kokusen-audit-' : 'kokusen-watch-') + String(f.key).toLowerCase(), { reliable: true, serialization: 'json', metadata: { spec: 1, name: myName } }); } catch (e) { FW.conn = null; fwRetry(me); return; }
+  c.on('open', () => { if (FW.peer === me && FW.conn === c && FW.tries > 0) { FW.tries = 0; frToast(`${FW.who}さんにつなぎ直しました`); } });
+  c.on('data', (d) => {
+    if (!d || typeof d !== 'object' || FW.peer !== me || FW.conn !== c) return;
+    if (d.full) { frToast('観戦できるのは5人までです。いっぱいでした'); fwStop(true); return; }
+    if (d.spec && typeof d.spec === 'object') { FW.snap = d.spec; fwShow(); }
+  });
+  c.on('close', () => { if (FW.peer === me && FW.conn === c) { FW.conn = null; fwRetry(me); } });
+  if (FW.tries > 0) setTimeout(() => { if (FW.peer === me && FW.conn === c && !c.open) { FW.conn = null; try { c.close(); } catch (e) { /* もう閉じている */ } fwRetry(me); } }, FW_OPEN_MS);   // 返事がないまま待ち続けない
+}
+function fwRetry(me) {
+  if (FW.peer !== me || !FW.on || FW.timer) return;
+  if (FW.tries >= FW_RETRY_MAX) { frToast(`${FW.who}さんとの接続が切れました(つなぎ直せませんでした)`); return; }
+  if (FW.tries === 0) frToast(`${FW.who}さんとの接続が切れました。つなぎ直しています…`);
+  FW.tries++;
+  FW.timer = setTimeout(() => {
+    FW.timer = null;
+    if (FW.peer !== me || !FW.on) return;
+    if (me.disconnected) { try { me.reconnect(); } catch (e) { /* 次の試しで */ } }
+    fwConnect(me);
+  }, FW_RETRY_MS);
 }
 let fwBusy = false;
 async function fwShow() {
@@ -6161,7 +6186,7 @@ async function fwShow() {
 }
 function fwStop(quiet) {
   const was = FW.on;
-  FW.on = false;
+  FW.on = false; clearTimeout(FW.timer); FW.timer = null; FW.conn = null; FW.tries = 0;
   try { if (FW.peer) FW.peer.destroy(); } catch (e) { /* すでに閉じている */ }
   FW.peer = null; FW.snap = null; FW.id = null;
   if (was && S && S.spectate && !PVP.spec) {
