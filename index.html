@@ -1018,7 +1018,7 @@ const CHARACTERS = [
 const SPECIAL_CHARS = [
   { id: 'p_tokibami', name: 'トキバミ', faction: '刻喰', role: '耐久・吸収', unlock: 'trio', hp: 20000, atk: 2000, dfs: 1000, phys: 1.0,
     traits: [{ key: 'outside', name: '時の外側', desc: '被ダメージ−20%', cut: 0.2 },
-      { key: 'devour', name: '刻喰い', desc: '与ダメージの20%回復', rate: 0.2 }],
+      { key: 'devour', name: '刻喰い', desc: '与ダメージの10%回復', rate: 0.1 }],
     actions: {
       rock:     { name: '止め喰い', rate: RATE.big, mods: [foeAtk(600, 3)] },
       scissors: { name: '先喰い',   rate: RATE.huge },
@@ -1094,7 +1094,7 @@ const SPECIAL_CHARS = [
       scissors: { name: '引き留め', rate: RATE.normal, mark: { stat: 'atk', v: 800, cap: 0 } },
       paper:    { name: '寄り添い', rate: RATE.normal, team: { stat: 'dfs', v: 500, cap: 0, bench: 1 } } } },
   { id: 'k_osore', name: 'オソレ', faction: '零', group: '零', bonusOk: true, role: '恐れ・強い相手をすくませる', unlock: 'kr40', hp: 11000, atk: 3000, dfs: 1500, phys: 1.4,
-    trait: { key: 'awe', name: '怯え', desc: 'CPU戦・対人のときだけ(ソロでは効かない):自分が場に出たときと、相手が場に出たとき、相手のATKとDFSの合計(強化込み)が10000以上なら、両方を60%減らす(その相手が倒れるまで)', line: 10000, cut: 0.6 },
+    trait: { key: 'awe', name: '怯え', desc: 'CPU戦・対人のときだけ(ソロでは効かない):自分が場に出たときと、相手が場に出たとき、相手のATKとDFSの合計(強化込み)が10000以上なら、両方を50%減らす(その相手が倒れるまで)', line: 10000, cut: 0.5 },
     actions: {
       rock:     { name: '竦み',     rate: RATE.max, selfPerm: { atk: 1000 } },
       scissors: { name: '震え',     rate: RATE.normal, seal: 1 },
@@ -1125,7 +1125,7 @@ const GACHA_CHARS = [
     actions: { rock: { rate: RATE.normal, name: '潮受け', mods: [foeAtk(500, 2)] }, scissors: N('しぶき'), paper: { rate: RATE.normal, name: '満ち潮', heal: 1600 } } },
   { id: 'g_a3c', name: 'カイ', faction: '錨', rarity: 3, gacha: true, role: '硬い相手を割る', hp: 12300, atk: 2600, dfs: 1300, phys: 1.15,
     actions: { rock: { rate: RATE.huge, name: '大鎚', up: { rate: RATE.max, when: 'foeDfsAtLeast', v: 2000, text: '相手のDFSが2000以上なら極大' } }, scissors: { rate: RATE.normal, name: '鋲打ち', mods: [foeDfs(800, 3)] }, paper: N('櫂返し') } },
-  { id: 'g_a4', name: 'トモシ', faction: '錨', rarity: 4, gacha: true, role: '抜け落ち勝ち', hp: 19000, atk: 1500, dfs: 2600, phys: 0.9,
+  { id: 'g_a4', name: 'トモシ', faction: '錨', rarity: 4, gacha: true, role: '抜け落ち勝ち', hp: 35000, atk: 1500, dfs: 2600, phys: 0.9,
     traits: [{ key: 'decayGuard', name: '錨泊', desc: '刻の抜け落ちを受けない。相手が受ける抜け落ちダメージ+50%', boost: 0.5 },
       { key: 'unbreak', name: '消えぬ灯', desc: `${BREAK_NAME}で受けるダメージを半分にする`, cut: 0.5 }],
     actions: { rock: { rate: RATE.normal, name: '灯台守り', mods: [selfDfs(2000, 2)] }, scissors: N('灯し火'), paper: { rate: RATE.normal, name: '常夜灯', heal: 3000 } } },
@@ -3686,7 +3686,7 @@ const TRAIT_EVERY = {
   drawStreak: () => 'あいこでも連勝+1',
   selfBurn: (c, t) => `自分にHP${t.dmg}のダメージ`,
   drawStrike: (c) => `相手に${c.lastDraw || 0}ダメージ`,
-  awe: () => '相手のATKとDFSが60%減った',
+  awe: () => '相手のATKとDFSが50%減った',
   swapStats: () => '相手のATKとDFSが入れ替わった',
 };
 async function traitShow(c, key) {
@@ -4053,7 +4053,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '1.40';
+const APP_VER = '1.41';
 // ----- 古い版で遊び続けさせない -----
 // 公開中の版は version.json に書く(APP_VER を上げるときに一緒に上げる)。起動時・画面に戻ったとき・5分おきに確かめ、
 // 新しい版があれば、対戦中なら決着を待ってから、閉じられない「更新してください」の画面を出す
