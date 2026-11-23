@@ -6063,7 +6063,7 @@ function gachaShow(r, rates = GACHA_RATES) {
     // BGM消え:ひびのプチュンが無かったときに出す(★4以上全体で GACHA_MUTE_RATE になるように)
     // 違和感どうしは重ならない:逆さまの「刻」が出ているときはBGM消えを出さない(そのぶん割合を上げて、★4以上全体で GACHA_MUTE_RATE に保つ)
     const mute = top >= 4 && !puchunAt && sakasa < 0 && Math.random() < GACHA_MUTE_RATE / (1 - GACHA_PUCHUN_RATE) / (1 - GACHA_SAKASA_RATE);
-    let taps = 0, broke = false, skipped = false, busyFlip = false, hiFlipped = 0;
+    let taps = 0, broke = false, skipped = false, busyFlip = false, hiFlipped = 0, curFlip = null;
     const cardHtml = (x, i) => `<div class="gc-card r${x.c.rarity} back${i === sakasa ? ' sakasa' : ''}" data-i="${i}">${x.fresh ? '<i class="new">NEW</i>' : ''}${iconHtml(x.c, 'lg')}<div>${rarHtml(x.c)}</div><span class="nm">${escHtml(x.c.name)}</span></div>`;
     const crack = (e) => {   // タップした場所から、ひびを足す
       const rc = pane.getBoundingClientRect(), x0 = e && e.clientX ? e.clientX - rc.left : rc.width / 2, y0 = e && e.clientY ? e.clientY - rc.top : rc.height / 2;
@@ -6085,7 +6085,7 @@ function gachaShow(r, rates = GACHA_RATES) {
         el.classList.remove('back'); el.classList.add('show');
         if (!quick) Sound.click();
       } else {
-        busyFlip = true;
+        busyFlip = true; curFlip = el;
         // めくる瞬間にプチュン:11連の2枚目以降の★4以上・逆さまの「刻」は必ず。1枚目は決めた演出どおり
         const pu = rr >= 5 || hiFlipped > 0 || flipPu || mute || +el.dataset.i === sakasa;   // ★5は必ずプチュンから
         hiFlipped++;
@@ -6159,9 +6159,13 @@ function gachaShow(r, rates = GACHA_RATES) {
       if (skipped) return;
       skipped = true; broke = true;
       if (!res.children.length) reveal();
-      const hi = left().some((el) => r[+el.dataset.i].c.rarity >= 4);
+      const hi = left().some((el) => r[+el.dataset.i].c.rarity >= 4), sec = left().some((el) => el !== curFlip && r[+el.dataset.i].c.rarity >= 5);   // めくっている途中の★5は、その演出がそのまま続く
       skip.classList.add('hidden'); all.classList.add('hidden');
-      if (hi && $('gsec').classList.contains('hidden')) await puchunFx(1000);
+      if (sec) {   // ★5が伏せたまま:スキップでも、プチュンから赤いガラスの破片の演出を見せる
+        while (!$('gsec').classList.contains('hidden')) await sleep(50);   // ほかのプチュンの途中なら、終わるのを待つ
+        await puchunFx(1000, true);
+        await secShow();
+      } else if (hi && $('gsec').classList.contains('hidden')) await puchunFx(1000);
       left().forEach((el) => flip(el, true));
       finish();
     };
