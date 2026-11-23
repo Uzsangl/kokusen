@@ -3901,9 +3901,18 @@ async function finale() {
     // 刻の回廊の★4・★5:クリアで空間のカケラ(初回は多め)
     if (S.stage && S.stage.reward && !S.shardDone) {
       S.shardDone = true;
-      const n = S.stage.reward[firstClear ? 0 : 1], total = await shardAdd(n);
-      log(`${SHARD_NAME} +${n}(${firstClear ? '初回クリア' : 'クリア'}・所持 ${total})`);
-      await cutin(`${SHARD_NAME} +${n}`, `${firstClear ? '初回クリア! ' : ''}所持 ${total}`, 'gold', 1500);
+      let n, total, first = firstClear;
+      if (walletOn()) {   // 報酬はサーバーが決めて財布に入れる(始めてから45秒たたない報告は断られる)
+        const run = S.soloRun && await S.soloRun;
+        let r = null;
+        try { r = run ? await verRpc('solo_reward', { p_run: run }) : null; } catch (e) { if (e.code === 'KV001') verOld(); }
+        walletSet(r);
+        n = r ? r.given : 0; total = shardCount(); first = !!(r && r.first);
+      } else { n = S.stage.reward[firstClear ? 0 : 1]; total = await shardAdd(n); }
+      if (n) {
+        log(`${SHARD_NAME} +${n}(${first ? '初回クリア' : 'クリア'}・所持 ${total})`);
+        await cutin(`${SHARD_NAME} +${n}`, `${first ? '初回クリア! ' : ''}所持 ${total}`, 'gold', 1500);
+      } else log(`${SHARD_NAME}:この挑戦は記録できませんでした(所持 ${total})`);
     }
   } else if (S.winner === 1) {
     Sound.defeat(); Particles.shower(COLORS.violet, 80);
@@ -3914,10 +3923,20 @@ async function finale() {
   // 空間のカケラ(オンライン対人だけ。観戦では増えない)
   if (MODE === 'pvp' && !S.spectate && !S.shardDone) {
     S.shardDone = true;
-    const base = shardReward(S), free = !PVP.rated, n = free ? freeShardTake(base) : base, total = await shardAdd(n);
-    const capped = free && base > 0 && n < base;
+    const base = shardReward(S), free = !PVP.rated;
+    let n, total, capped;
+    if (walletOn()) {   // 報酬はサーバーが決めて財布に入れる(フリー戦の上限もサーバーが数える。ランク戦はレートの記録がある対戦だけ)
+      let r = null;
+      const rk = ACC.rankKey || {};
+      if (base > 0) { try { r = await verRpc('pvp_reward', { p_rank: !free, p_win: S.winner === 0, p_key: free ? null : rk.key || null, p_foe: free ? null : rk.foeId || null }); } catch (e) { if (e.code === 'KV001') verOld(); } }
+      walletSet(r);
+      n = r ? r.given : 0; total = shardCount(); capped = !!(r && r.capped);
+    } else {
+      n = free ? freeShardTake(base) : base; total = await shardAdd(n);
+      capped = free && base > 0 && n < base;
+    }
     const capTxt = `今日のフリー戦の上限(${FREE_SHARD_CAP}個)`;
-    log(n ? `${SHARD_NAME} +${n}(所持 ${total}${free ? `・今日のフリー戦 ${freeShardGot()}/${FREE_SHARD_CAP}` : ''})` : `${SHARD_NAME}:${capped ? `${capTxt}に達しているため、もらえません` : S.resign === 'me' || S.forfeit === 1 ? 'リタイア・応答なしの負けのため、もらえません' : 'レート戦の負けでは、もらえません'}(所持 ${total})`);
+    log(n ? `${SHARD_NAME} +${n}(所持 ${total}${free ? `・今日のフリー戦 ${walletOn() ? WAL.freeGot || 0 : freeShardGot()}/${FREE_SHARD_CAP}` : ''})` : `${SHARD_NAME}:${capped ? `${capTxt}に達しているため、もらえません` : S.resign === 'me' || S.forfeit === 1 ? 'リタイア・応答なしの負けのため、もらえません' : !free && S.winner === 0 ? 'レートの記録がない対戦のため、もらえません' : 'レート戦の負けでは、もらえません'}(所持 ${total})`);
     if (n) await cutin(`${SHARD_NAME} +${n}`, `所持 ${total}${capped ? `・${capTxt}に達しました` : ''}`, 'gold', 1300);
     else if (capped) await cutin(`${capTxt}`, 'レート戦なら、まだもらえます', 'plain', 1300);
   }
@@ -4863,6 +4882,7 @@ async function accLoadProfile(name) {
     else await sbFetch('/rest/v1/progress', { method: 'POST', prefer: 'return=minimal', body: { id: uid, cleared: [], stats: {} } });
   } catch (e) { if (!isMissingTable(e)) throw e; }
   ACC.stats = { ...server.stats };
+  await walletLoad();   // カケラと持っているキャラ(サーバーの財布)
   setTimeout(accCheckMaster, 0);   // 記録を読んだあとに、マスター用の補充を確かめる
   setTimeout(inviteCollect, 300);   // 招待した人が増えていたら、ボーナスを受け取る
   setTimeout(frLoad, 500);   // フレンドと、ソロ観戦の受け付け
@@ -4944,6 +4964,7 @@ async function accRateStart(foe, key) {
   if (!p) return;
   const base = { rating: p.rating, wins: p.wins, losses: p.losses };
   const pd = ACC.pending = { base, foeRating: foe.r, foeId: foe.id, key, mode: null, streak: (ACC.stats || {}).curStreak || 0 };
+  ACC.rankKey = { key, foeId: foe.id };   // ランク戦のカケラの受け取りに使う(レートの記録がある対戦だけもらえる)
   if (ACC.stats && ACC.progMode === 'table' && ACC.stats.curStreak) {
     ACC.stats.curStreak = 0;
     sbFetch(`/rest/v1/progress?id=eq.${accUid()}`, { method: 'PATCH', prefer: 'return=minimal', body: { stats: ACC.stats } }).catch(() => null);
@@ -5018,7 +5039,7 @@ async function accDelete() {
   const uid = accUid();
   await sbFetch('/rest/v1/rpc/delete_my_account', { method: 'POST', body: {} });
   try { localStorage.removeItem(userKey(uid)); localStorage.removeItem(`kokusen.mysets.${uid}`); } catch (e) { /* 消せなくても動く */ }
-  ACC.session = null; ACC.profile = null; ACC.stats = null; ACC.pending = null; accStore(); renderAcct();
+  ACC.session = null; ACC.profile = null; ACC.stats = null; ACC.pending = null; WAL.ready = false; accStore(); renderAcct();
   SOLO.cleared = readCleared(GUEST_KEY);
   renderStages();
 }
@@ -5584,7 +5605,8 @@ async function accCheckMaster() {
   const hex = [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
   IS_MASTER = MASTER_HASHES.includes(hex);
   // マスター:空間のカケラを1回だけ10000個補充する(記録 masterGrant1 で二重に補充しない)
-  if (IS_MASTER && shardOnAcc() && ACC.stats && !ACC.stats.masterGrant1) {
+  if (IS_MASTER && walletOn()) { try { walletSet(await sbFetch('/rest/v1/rpc/master_grant', { method: 'POST', body: { p_once: true } })); } catch (e) { /* 次に開いたときにもう一度 */ } }
+  else if (IS_MASTER && shardOnAcc() && ACC.stats && !ACC.stats.masterGrant1) {
     ACC.stats.masterGrant1 = 1;
     await shardAdd(10000);
   }
@@ -5626,7 +5648,25 @@ function openCharDetail(ch, back) {   // back:閉じたあとに戻る画面(ガ
 const SHARD_NAME = '空間のカケラ';
 const SHARD_KEY = 'kokusen.shards';
 const shardOnAcc = () => !!accUid() && ACC.progMode === 'table';   // アカウントに貯めるか(サーバーの表が使えるとき)
+// 財布(SQLの16回目):ログイン中のカケラ・持っているキャラ・受け取り済みのメールは、サーバーの wallet 表が正。増減はサーバーの関数だけが行う
+// 関数がまだないとき(SQLの前)は、これまでどおり progress の stats を使う
+const WAL = { ready: false, shards: 0, owned: {}, mailGot: [] };
+const walletOn = () => shardOnAcc() && WAL.ready;
+function walletSet(r) {
+  if (!r || typeof r !== 'object') return;
+  if (typeof r.shards === 'number') WAL.shards = r.shards;
+  if (r.owned && typeof r.owned === 'object') WAL.owned = r.owned;
+  if (Array.isArray(r.mail_got)) WAL.mailGot = r.mail_got;
+  if (typeof r.free_got === 'number') WAL.freeGot = r.free_got;
+}
+async function walletLoad() {
+  if (!shardOnAcc()) { WAL.ready = false; return; }
+  try { walletSet(await sbFetch('/rest/v1/rpc/wallet_me', { method: 'POST', body: {} })); WAL.ready = true; }
+  catch (e) { if (isMissingFn(e)) WAL.ready = false; }
+  try { renderTitleAcc(); renderAcct(); renderMailBadge(); } catch (e) { /* 画面がまだなくてもよい */ }
+}
 function shardCount() {
+  if (walletOn()) return WAL.shards;
   if (shardOnAcc()) return Number((ACC.stats || {}).shards) || 0;
   try { return Number(localStorage.getItem(SHARD_KEY)) || 0; } catch (e) { return 0; }
 }
@@ -5640,6 +5680,7 @@ function shardReward(S) {
 const FREE_SHARD_CAP = 200, FREE_SHARD_KEY = 'kokusen.freeShard';
 const todayStr = () => { const t = new Date(); return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`; };
 function freeShardGot() {
+  if (walletOn()) return WAL.freeGot || 0;   // 財布があれば、サーバーが数えた値
   let v = null;
   if (shardOnAcc()) v = ACC.stats && ACC.stats.freeShard;
   else { try { v = JSON.parse(localStorage.getItem(FREE_SHARD_KEY) || 'null'); } catch (e) { v = null; } }
@@ -5671,7 +5712,7 @@ async function shardAdd(n) {
 const GACHA_COST = 25, GACHA_COST11 = 250;
 const MASTER_SHARDS = 3000;   // マスターアカウントのガチャ画面のボタンで、1回に足すカケラの数
 const GACHA_RATES = { 5: 0.001, 4: 0.01, 3: 0.30, 2: 0.309, 1: 0.38 };
-const gachaOwned = (id) => (shardOnAcc() && ACC.stats && ACC.stats.owned ? Number(ACC.stats.owned[id]) || 0 : 0);
+const gachaOwned = (id) => (walletOn() ? Number(WAL.owned[id]) || 0 : shardOnAcc() && ACC.stats && ACC.stats.owned ? Number(ACC.stats.owned[id]) || 0 : 0);
 // お試しガチャ(無料・キャラは手に入らない・だれでも回せる)の確率。演出を味わってもらうため本番より高い。画面には出さない
 const GACHA_SIM_RATES = (() => {
   const hi = { 5: 0.003, 4: 0.03, 3: GACHA_RATES[3] };
@@ -5688,6 +5729,13 @@ function gachaRoll(rates = GACHA_RATES) {
 async function gachaPull(times) {
   const cost = times === 11 ? GACHA_COST11 : GACHA_COST * times;
   if (!shardOnAcc() || shardCount() < cost) return null;
+  if (walletOn()) {   // サーバーで抽選する
+    let r;
+    try { r = await verRpc('gacha_pull', { p_times: times }); } catch (e) { if (e.code === 'KV001') verOld(); else if (e.code === 'GC001') walletLoad(); return null; }
+    if (!r || !Array.isArray(r.ids)) return null;
+    walletSet(r);
+    return r.ids.map((id, i) => ({ c: charById(id), fresh: !!(r.fresh || [])[i] })).filter((x) => x.c);
+  }
   const got = Array.from({ length: times }, gachaRoll);
   const owned = { ...(ACC.stats.owned || {}) };
   const fresh = got.map((c) => { const n = !owned[c.id]; owned[c.id] = (Number(owned[c.id]) || 0) + 1; return n; });
@@ -5934,7 +5982,8 @@ function openGacha(results, sim) {
   // マスターアカウントだけ:テスト用にカケラを足す(アカウントに保存される)
   if (IS_MASTER && $('gcMaster')) $('gcMaster').onclick = async () => {
     $('gcMaster').disabled = true;
-    await shardAdd(MASTER_SHARDS);
+    if (walletOn()) { try { walletSet(await sbFetch('/rest/v1/rpc/master_grant', { method: 'POST', body: { p_once: false } })); } catch (e) { /* 足せなかった */ } }
+    else await shardAdd(MASTER_SHARDS);
     Sound.click();
     renderTitleAcc(); renderAcct();
     openGacha(results);
@@ -5966,7 +6015,8 @@ async function frReward() {
   try {
     if (!(await frRpc('friend_reward'))) { ACC.stats.friendGot = 1; return; }   // もうもらっている
     ACC.stats.friendGot = 1;
-    const total = await shardAdd(FRIEND_BONUS);
+    let total;
+    if (walletOn()) { await walletLoad(); total = WAL.shards; } else total = await shardAdd(FRIEND_BONUS);   // 財布にはサーバーが入れている
     renderTitleAcc(); renderAcct();
     if (S && !$('battle').classList.contains('hidden')) log(`はじめてのフレンド:${SHARD_NAME} +${FRIEND_BONUS}(所持 ${total})`);
     else openSheet('はじめてのフレンド', `<p class="sub">はじめてフレンドができました。<br>💠${SHARD_NAME}を<b style="color:var(--gold)">${FRIEND_BONUS}個</b>プレゼント!(所持 ${total})</p>`);
@@ -6240,10 +6290,10 @@ function fwStop(quiet) {
 // デイリー:対戦3回(どのモードでも)20・刻練場1回 20・お試しガチャ(またはガチャ)1回 20・すべて達成 +40 = 1日100個
 const DAILY = { ready: true, busy: false };
 const LOGIN_BONUS = [30, 30, 50, 30, 30, 50, 150];
-async function dailyGive(n, title, sub) {
+async function dailyGive(n, title, sub, total) {
   if (!n || !shardOnAcc()) return;
-  ACC.stats.shards = shardCount() + n;
-  await mailSave();
+  if (walletOn()) { if (typeof total === 'number') WAL.shards = total; else await walletLoad(); }   // 財布にはサーバーが入れている
+  else { ACC.stats.shards = shardCount() + n; await mailSave(); }
   renderTitleAcc(); renderAcct();
   if (verBusy()) { frToast(`${title}:${sub}`); return; }   // 対戦中はカットインを出さない
   Sound.fanfare();
@@ -6254,7 +6304,7 @@ async function dailyLogin() {
   DAILY.busy = true;
   try {
     const r = await verRpc('daily_login', {});
-    if (r && r.shards > 0) await dailyGive(r.shards, `ログインボーナス ${r.streak}日目`, `💠${SHARD_NAME} +${r.shards}${r.streak === 7 ? '・7日連続!' : '(7日連続で150個)'}`);
+    if (r && r.shards > 0) await dailyGive(r.shards, `ログインボーナス ${r.streak}日目`, `💠${SHARD_NAME} +${r.shards}${r.streak === 7 ? '・7日連続!' : '(7日連続で150個)'}`, r.total);
   } catch (e) { if (isMissingFn(e)) DAILY.ready = false; else if (e.code === 'KV001') verOld(); }
   finally { DAILY.busy = false; }
 }
@@ -6263,7 +6313,7 @@ async function dailyMission(kind) {
   if (!DAILY.ready || !shardOnAcc()) return;
   try {
     const r = await verRpc('daily_progress', { p_kind: kind });
-    if (r && r.shards > 0) await dailyGive(r.shards, 'デイリーミッション達成', `${(r.done || []).join('・')} 💠+${r.shards}`);
+    if (r && r.shards > 0) await dailyGive(r.shards, 'デイリーミッション達成', `${(r.done || []).join('・')} 💠+${r.shards}`, r.total);
   } catch (e) { if (isMissingFn(e)) DAILY.ready = false; }
 }
 // メールボックスの上に、今日の進み具合を出す
@@ -6295,7 +6345,7 @@ const MAILS = [
 setInterval(() => dailyLogin(), 600000);   // 開いたまま朝4時をまたいだとき
 document.addEventListener('visibilitychange', () => { if (!document.hidden) dailyLogin(); });
 const mailLive = () => MAILS.filter((m) => !m.until || new Date() <= new Date(m.until + 'T23:59:59'));
-const mailStat = (k) => (ACC.stats && Array.isArray(ACC.stats[k]) ? ACC.stats[k] : []);
+const mailStat = (k) => (k === 'mailGot' && walletOn() ? WAL.mailGot : ACC.stats && Array.isArray(ACC.stats[k]) ? ACC.stats[k] : []);
 function mailUnread() {
   if (!shardOnAcc()) return 0;
   const read = mailStat('mailRead'), got = mailStat('mailGot');
@@ -6314,6 +6364,12 @@ async function mailSave() {
 async function mailClaim(ids) {
   const got = mailStat('mailGot').slice(), todo = mailLive().filter((m) => ids.includes(m.id) && m.gift && !got.includes(m.id));
   if (!todo.length) return [];
+  if (walletOn()) {   // 中身と受け取り済みかは、サーバーが決める
+    let r;
+    try { r = await verRpc('mail_claim', { p_ids: todo.map((m) => m.id) }); } catch (e) { if (e.code === 'KV001') verOld(); return []; }
+    walletSet(r);
+    return todo.filter((m) => (r && r.got || []).includes(m.id));
+  }
   const owned = { ...(ACC.stats.owned || {}) };
   let shards = 0;
   todo.forEach((m) => { got.push(m.id); shards += m.gift.shards || 0; (m.gift.chars || []).forEach((id) => { owned[id] = (Number(owned[id]) || 0) + 1; }); });
@@ -6361,6 +6417,15 @@ async function inviteCollect() {
   let rows = [];
   try { rows = await sbFetch(`/rest/v1/invites?inviter=eq.${accUid()}&select=invitee`) || []; } catch (e) { return 0; }
   ACC.inviteN = rows.length;
+  if (walletOn()) {   // 受け取りはサーバーが数える
+    if (ACC.stats && ACC.stats.inviteUsed) { try { walletSet(await verRpc('invite_self', {})); } catch (e) { /* 次に開いたときにもう一度 */ } }   // 招待された側(取りこぼし分)
+    let r = null;
+    try { r = await verRpc('invite_collect', {}); } catch (e) { return 0; }
+    if (!r || !r.n) return 0;
+    walletSet(r); renderTitleAcc(); renderAcct();
+    await cutin('招待ボーナス', `${r.n}人が招待コードを使いました　💠+${INVITE_BONUS * r.n}`, 'gold', 1600);
+    return r.n;
+  }
   const got = mailStat('inviteGot'), fresh = rows.map((r) => r.invitee).filter((id) => !got.includes(id)).slice(0, Math.max(0, INVITE_MAX - got.length));
   if (!fresh.length) return 0;
   ACC.stats.inviteGot = [...got, ...fresh];
@@ -6386,7 +6451,8 @@ async function inviteUse(code) {
     throw e;
   }
   ACC.stats.inviteUsed = who.id;
-  await shardAdd(INVITE_BONUS);
+  if (walletOn()) { try { walletSet(await verRpc('invite_self', {})); } catch (e) { /* 次にログインしたとき inviteCollect で受け取り直す */ } }
+  else await shardAdd(INVITE_BONUS);
   renderTitleAcc(); renderAcct();
   return `${String(who.name).slice(0, 12)}さんの招待コードを使いました。お互いに空間のカケラ${INVITE_BONUS}個!`;
 }
@@ -6628,6 +6694,8 @@ let LAST_MATCH = null;   // 再挑戦用:直前に始めた対戦の中身
 async function startMatch(mine, theirs, foeLabel, opt = {}) {
   // 刻練場:始める前にサーバーに挑戦の開始を知らせる。古い版で断られたら、遊ぶ前に更新を求める(遊んだあとに記録が残らない、を防ぐ)
   let krRun = null;
+  // 刻の回廊の★4・★5(報酬のあるステージ):挑戦の開始をサーバーに知らせる(勝ったときの報酬の突き合わせ)
+  const soloRun = opt.stage && opt.stage.reward && !opt.spectate && walletOn() ? verRpc('solo_start', { p_stage: opt.stage.id }).catch(() => null) : null;
   if (opt.stage && opt.stage.kr && !opt.spectate && accUid()) {
     try { krRun = await verRpc('kr_start', {}); } catch (e) { if (e.code === 'KV001') { verOld(); return; } krRun = null; }
   }
@@ -6639,6 +6707,7 @@ async function startMatch(mine, theirs, foeLabel, opt = {}) {
   S.cpuLevel = opt.level || FX.level;
   S.bossRead = opt.read || 0;
   S.stage = opt.stage || null;
+  S.soloRun = soloRun;
   S.noDecay = !!opt.noDecay;
   if (opt.stage && opt.stage.kr) {
     S.kr = true; S.krSeed = opt.krSeed; S.teams[0].cards.forEach((c) => { c.dfsCap = 5000; });   // 刻練場:こちらのDFSは5000まで
