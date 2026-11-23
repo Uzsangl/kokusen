@@ -3583,7 +3583,7 @@ async function puchun() {
   const bar = $('hpYou').querySelector('.bar').getBoundingClientRect();
   $('blackout').style.setProperty('--line-y', (bar.top + bar.height / 2) + 'px');
   $('blackout').classList.add('on');
-  Sound.puchun();
+  Sound.gachaPuchun();   // (試し)ガチャと同じプチュンの音
   await wait(800);                        // 真っ暗で無音
   $('blackout').classList.remove('on');
   flash('#ffffff');                       // 明けた瞬間に一度だけ光る
@@ -6947,6 +6947,7 @@ const startSolo = (mine, st, seed) => {
 };
 let LAST_MATCH = null;   // 再挑戦用:直前に始めた対戦の中身
 async function startMatch(mine, theirs, foeLabel, opt = {}) {
+  Sound.preload();   // プチュンの音(音声ファイル)を先に読み込む
   // 刻練場:始める前にサーバーに挑戦の開始を知らせる。古い版で断られたら、遊ぶ前に更新を求める(遊んだあとに記録が残らない、を防ぐ)
   let krRun = null;
   // 刻の回廊の★4・★5(報酬のあるステージ):挑戦の開始をサーバーに知らせる(勝ったときの報酬の突き合わせ)
