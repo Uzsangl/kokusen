@@ -3543,13 +3543,13 @@ async function sakibareFx() {
   flash('#ff1a2e'); shake(false); Sound.pokyun();
   await sleep(450);
 }
-// ★5確定の先バレ(虹):「ぽ」のたびに虹の色で光り、「きゅん」で白く光って虹の粒が降る
+// ★5確定の先バレ(虹):「ぽ」のたびに虹の色で光り、「きゅん」で白く光る
 async function sakibareRainbowFx() {
   Sound.popokyun();
   const cols = ['#ff4d5e', '#f5c451', '#4ade80', '#38bdf8', '#8b6cff'], at = [0, 150, 270, 360, 430];
   at.forEach((ms, i) => setTimeout(() => { flash(cols[i]); shake(false); }, ms));
   await sleep(550);
-  flash('#ffffff'); shake(true); Particles.shower(COLORS.rainbow, 140);
+  flash('#ffffff'); shake(true);
   await sleep(500);
 }
 
