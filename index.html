@@ -6364,7 +6364,7 @@ function openFriends() {
     + `<label class="fr-opt"><input type="checkbox" id="frOff"${me.off ? ' checked' : ''}> フレンドの観戦を受け付けない</label>`
     + '<p class="sub">ソロ・CPU戦を遊んでいる間、フレンドはいつでも観戦に入れます(いつ抜けても大丈夫です)。観戦されても、記録や結果は変わりません。</p>'
     + (ACC.stats && ACC.stats.friendGot ? '' : `<p class="sub" style="color:var(--gold)">はじめてフレンドができると、💠${SHARD_NAME}${FRIEND_BONUS}個をプレゼント(1回だけ)。</p>`)
-    + `<div class="row"><button id="frReload">更新</button>${IS_MASTER ? '<button id="frAudit" style="border-color:var(--red);color:var(--red)">👁 全プレイヤー(運営)</button>' : ''}</div>`);
+    + `<div class="row"><button id="frReload">更新</button>${IS_MASTER ? '<button id="frAudit" style="border-color:var(--red);color:var(--red)">👁 全プレイヤー(運営)</button><button id="frStats" style="border-color:var(--red);color:var(--red)">📊 利用状況(運営)</button>' : ''}</div>`);
   const msg = (t, err) => { $('frMsg').textContent = t; $('frMsg').className = 'msg' + (err ? ' err' : ''); };
   const act = async (fn) => { try { const t = await fn(); await frLoad(); openFriends(); if (t) setTimeout(() => msg(t), 0); } catch (e) { msg(/^KF/.test(e.code || '') || /[ぁ-んァ-ン]/.test(e.message || '') ? e.message : '通信に失敗しました', true); } };
   $('frCopy').onclick = () => { try { navigator.clipboard.writeText(me.code || ''); msg('コピーしました'); } catch (e) { /* コピーできなくても動く */ } };
@@ -6387,6 +6387,38 @@ function openFriends() {
   $('frOff').onchange = () => act(async () => { await frRpc('friend_watch_off', { p_off: $('frOff').checked }); return $('frOff').checked ? 'フレンドの観戦を受け付けないようにしました' : 'フレンドの観戦を受け付けます'; });
   $('frReload').onclick = () => act(async () => '');
   if ($('frAudit')) $('frAudit').onclick = () => { Sound.click(); openAudit(); };
+  if ($('frStats')) $('frStats').onclick = () => { Sound.click(); openAdminStats(); };
+}
+// 運営(マスター)用:利用状況。サーバーの admin_stats(SQLの18回目)がまとめて返す数字を出す。
+// 通信量(Egress)だけはここでは分からないので、Supabase の Usage の画面へのリンクを置く
+async function openAdminStats() {
+  if (!IS_MASTER) return;
+  const T = '利用状況(運営)';
+  openSheet(T, '<p class="sub">読み込み中…</p>');
+  let d;
+  try { d = await frRpc('admin_stats', {}); } catch (e) { openSheet(T, `<p class="sub">${isMissingFn(e) ? 'SQLの18回目を実行すると使えます。' : '読み込めませんでした(' + escHtml(e.message || '') + ')'}</p>`); return; }
+  if (!d || typeof d !== 'object') { openSheet(T, '<p class="sub">読み込めませんでした。</p>'); return; }
+  const num = (v) => (Number(v) || 0).toLocaleString('ja-JP');
+  const mb = (v) => ((Number(v) || 0) / 1048576).toFixed(1) + 'MB';
+  const pct = Math.min(100, Math.round(100 * (Number(d.db_bytes) || 0) / (Number(d.db_limit_bytes) || 1)));
+  const col = pct >= 90 ? 'var(--red)' : pct >= 70 ? 'var(--gold)' : 'var(--hp)';
+  const row = (k, v) => `<tr><td style="padding:4px 0;color:var(--sub)">${k}</td><td style="padding:4px 0;text-align:right;font-weight:800">${v}</td></tr>`;
+  const days = Array.isArray(d.days) ? d.days : [], dmax = Math.max(1, ...days.map((x) => Number(x.n) || 0));
+  const bars = days.map((x) => `<div style="flex:1;text-align:center"><div style="height:60px;display:flex;align-items:flex-end"><div style="width:100%;height:${Math.max(2, Math.round(60 * (Number(x.n) || 0) / dmax))}px;background:var(--violet);border-radius:3px 3px 0 0"></div></div><b style="font-size:.8rem">${num(x.n)}</b><br><span class="sub" style="font-size:.7rem">${escHtml(String(x.day))}</span></div>`).join('');
+  const tables = (Array.isArray(d.tables) ? d.tables : []).map((t) => row(escHtml(String(t.name)), `${mb(t.bytes)} <span class="sub" style="font-weight:400">(約${num(t.est_rows)}行)</span>`)).join('');
+  openSheet(T, `<p class="sub" style="margin:0">${new Date(d.at || Date.now()).toLocaleString('ja-JP')} 時点</p>
+    <h4 style="margin:12px 0 4px">記録の量(無料プランの上限 ${mb(d.db_limit_bytes)})</h4>
+    <div style="height:14px;background:var(--line);border-radius:7px;overflow:hidden"><div style="height:100%;width:${Math.max(1, pct)}%;background:${col}"></div></div>
+    <p style="margin:4px 0 0"><b style="color:${col}">${mb(d.db_bytes)}(${pct}%)</b>${pct >= 70 ? ' <span class="sub">上限が近づいています</span>' : ''}</p>
+    <h4 style="margin:14px 0 4px">人数</h4>
+    <table style="width:100%;border-collapse:collapse">${row('いまログイン中(3分以内)', num(d.online_now) + '人')}${row('24時間以内に遊んだ人', num(d.active_24h) + '人')}${row('7日以内に遊んだ人', num(d.active_7d) + '人')}${row('30日以内にログインした人(上限5万人)', num(d.signin_30d) + '人')}${row('アカウントの総数', num(d.accounts))}${row('新しいアカウント(24時間 / 7日)', `${num(d.accounts_24h)} / ${num(d.accounts_7d)}`)}</table>
+    <h4 style="margin:14px 0 4px">新しいアカウント(直近7日)</h4><div style="display:flex;gap:4px">${bars}</div>
+    <h4 style="margin:14px 0 4px">レート戦</h4>
+    <table style="width:100%;border-collapse:collapse">${row('ランク戦の相手を探している人', num(d.rank_queue) + '人')}${row('対戦の数(24時間 / 7日 / 全部)', `${num(d.rated_24h)} / ${num(d.rated_7d)} / ${num(d.rated_all)}`)}${row('申告が食い違った対戦(7日)', num(d.rated_conflict_7d))}</table>
+    <h4 style="margin:14px 0 4px">大きい記録(上位6つ)</h4><table style="width:100%;border-collapse:collapse">${tables}</table>
+    <p class="sub" style="margin-top:12px">ここで数えているのはログインした人だけです。通信量(Egress)は Supabase の画面でしか見られません。<br><a href="https://supabase.com/dashboard/project/qebyhyftdqkthjplopcl" target="_blank" rel="noopener" style="color:var(--gold)">Supabase を開く</a>(Settings → Usage)</p>
+    <div class="row"><button id="adsReload">更新</button></div>`);
+  $('adsReload').onclick = () => openAdminStats();
 }
 // 運営(マスター)用:ログイン中の全プレイヤー。ソロ・CPU戦の人は観戦できる(フレンドの観戦をオフにしている人も)
 async function openAudit() {
