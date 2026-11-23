@@ -1706,7 +1706,7 @@ function cardEnter(S, side, log) {
   const t = S.teams[side], c = active(t), fo = active(S.teams[1 - side]);
   if (!c || c.hp <= 0 || c.entered) return;
   c.entered = true;
-  if (traitOf(c, 'enterDispel')) dispel(S, side, log);   // 特性「白紙化」
+  if (traitOf(c, 'enterDispel') && fo && fo.hp > 0) dispel(S, side, log);   // 特性「白紙化」(相手が全滅して誰もいないときは何もしない)
   // ウレイの「憂い」:相手のDFSがATKより高ければ、ATKとDFS(強化込み)を入れ替える
   if (traitOf(c, 'swapStats') && fo && fo.hp > 0 && !traitOf(fo, 'void')) {
     const ea = baseAtk(fo), ed = dfsOf(fo, false);
