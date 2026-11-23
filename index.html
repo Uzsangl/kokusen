@@ -3929,6 +3929,8 @@ async function finale() {
     setResult(`${msg} レート${res.after}(${d >= 0 ? '+' : ''}${d})`);
     flushLog();
   }
+  // デイリーミッション(観戦は数えない。刻練場は「対戦」にも数える)
+  if (!S.spectate && !S.dailyDone) { S.dailyDone = true; await dailyMission(S.kr ? 'kr' : 'battle'); }
 }
 
 // hand は自分の手、cpuHand は相手の手。why はCPUがその手を選んだ理由(対人戦では null)
@@ -4864,6 +4866,7 @@ async function accLoadProfile(name) {
   setTimeout(accCheckMaster, 0);   // 記録を読んだあとに、マスター用の補充を確かめる
   setTimeout(inviteCollect, 300);   // 招待した人が増えていたら、ボーナスを受け取る
   setTimeout(frLoad, 500);   // フレンドと、ソロ観戦の受け付け
+  setTimeout(dailyLogin, 900);   // ログインボーナス
   let moved = false;
   try { moved = localStorage.getItem('kokusen.guestMoved') === '1'; } catch (e) { /* 読めなければ未移行として扱う */ }
   const guest = created && !moved ? readCleared(GUEST_KEY) : [];
@@ -5906,6 +5909,7 @@ function openGacha(results, sim) {
     await gachaShow(r, GACHA_SIM_RATES);
     openGacha(r, true);
     document.querySelectorAll('#sheetBody .gc-card').forEach((el) => el.classList.add('show'));
+    dailyMission('gacha');
   };
   $('gs1').onclick = () => trial(1);
   $('gs11').onclick = () => trial(11);
@@ -5923,6 +5927,7 @@ function openGacha(results, sim) {
     await gachaShow(r);
     openGacha(r);
     document.querySelectorAll('#sheetBody .gc-card').forEach((el) => el.classList.add('show'));
+    dailyMission('gacha');
   };
   $('gc1').onclick = () => go(1);
   $('gc11').onclick = () => go(11);
@@ -6229,6 +6234,55 @@ function fwStop(quiet) {
   frBeat(true);
 }
 
+// ----- ログインボーナス・デイリーミッション(ログインが必要。SQLの15回目)-----
+// 日付は日本時間の朝4時で切り替わる(サーバーが判定)。報酬は自動で受け取る。カケラの数はサーバーが決め、端末は所持数に足して保存する
+// ログインボーナス:7日連続で1周(30・30・50・30・30・50・150)。1日空くと1日目に戻る
+// デイリー:対戦3回(どのモードでも)20・刻練場1回 20・お試しガチャ(またはガチャ)1回 20・すべて達成 +40 = 1日100個
+const DAILY = { ready: true, busy: false };
+const LOGIN_BONUS = [30, 30, 50, 30, 30, 50, 150];
+async function dailyGive(n, title, sub) {
+  if (!n || !shardOnAcc()) return;
+  ACC.stats.shards = shardCount() + n;
+  await mailSave();
+  renderTitleAcc(); renderAcct();
+  if (verBusy()) { frToast(`${title}:${sub}`); return; }   // 対戦中はカットインを出さない
+  Sound.fanfare();
+  await cutin(title, sub, 'gold', 1500);
+}
+async function dailyLogin() {
+  if (!DAILY.ready || DAILY.busy || !shardOnAcc()) return;
+  DAILY.busy = true;
+  try {
+    const r = await verRpc('daily_login', {});
+    if (r && r.shards > 0) await dailyGive(r.shards, `ログインボーナス ${r.streak}日目`, `💠${SHARD_NAME} +${r.shards}${r.streak === 7 ? '・7日連続!' : '(7日連続で150個)'}`);
+  } catch (e) { if (isMissingFn(e)) DAILY.ready = false; else if (e.code === 'KV001') verOld(); }
+  finally { DAILY.busy = false; }
+}
+// kind:battle(対戦が1回終わった)/ kr(刻練場が1回終わった。対戦1回にも数える)/ gacha(ガチャを引いた)
+async function dailyMission(kind) {
+  if (!DAILY.ready || !shardOnAcc()) return;
+  try {
+    const r = await verRpc('daily_progress', { p_kind: kind });
+    if (r && r.shards > 0) await dailyGive(r.shards, 'デイリーミッション達成', `${(r.done || []).join('・')} 💠+${r.shards}`);
+  } catch (e) { if (isMissingFn(e)) DAILY.ready = false; }
+}
+// メールボックスの上に、今日の進み具合を出す
+async function dailyPanel() {
+  if (!DAILY.ready || !shardOnAcc()) return;
+  let r = null;
+  try { r = await sbFetch('/rest/v1/rpc/daily_me', { method: 'POST', body: {} }); } catch (e) { if (isMissingFn(e)) DAILY.ready = false; return; }
+  const box = $('sheetBody');
+  if (!r || !box || $('sheetTitle').textContent !== 'メールボックス') return;
+  const g = r.got || 0, row = (ok, t) => `<li style="${ok ? 'color:var(--gold)' : ''}">${ok ? '✔' : '・'} ${t}</li>`;
+  const el = document.createElement('div');
+  el.className = 'ml';
+  el.innerHTML = `<h4>今日のデイリーミッション(朝4時に更新)</h4><ul style="margin:4px 0 0;padding-left:4px;list-style:none">` +
+    row(g & 1, `対戦を3回する ${Math.min(3, r.battles || 0)}/3(💠20)`) + row(g & 2, `刻練場を1回遊ぶ ${Math.min(1, r.kr || 0)}/1(💠20)`) +
+    row(g & 4, `お試しガチャを1回引く ${Math.min(1, r.gacha || 0)}/1(💠20)`) + row(g & 8, 'すべて達成(💠40)') + '</ul>' +
+    `<div class="dt">ログインボーナス:連続${r.streak || 0}日目(7日目は💠150)</div>`;
+  box.prepend(el);
+}
+
 // ----- メールボックス:運営からのお知らせとプレゼント(ログインが必要)-----
 // メールはここに書いて公開する(全員に同じものが届く)。id は一度使ったら変えない。
 // gift:{ shards: 空間のカケラの数, chars: [ガチャキャラのid] }。until:受け取り期限(この日の終わりまで。なしなら期限なし)
@@ -6238,6 +6292,8 @@ const MAILS = [
   { id: 'm002', date: '2026-11-18', title: '刻の回廊 実装記念', body: 'アドバンスのソロ「刻の回廊」を実装しました。\nソロで区分けを「アドバンス」にすると挑めます。\n実装を記念して、空間のカケラ550個をお届けします。', gift: { shards: 550 } },
   { id: 'm001', date: '2026-11-17', title: 'テストプレゼント', body: 'メールボックスのテストです。\n空間のカケラ400個をお届けします。', gift: { shards: 400 } },
 ];
+setInterval(() => dailyLogin(), 600000);   // 開いたまま朝4時をまたいだとき
+document.addEventListener('visibilitychange', () => { if (!document.hidden) dailyLogin(); });
 const mailLive = () => MAILS.filter((m) => !m.until || new Date() <= new Date(m.until + 'T23:59:59'));
 const mailStat = (k) => (ACC.stats && Array.isArray(ACC.stats[k]) ? ACC.stats[k] : []);
 function mailUnread() {
@@ -6289,6 +6345,7 @@ async function openMail() {
   const unread = list.filter((m) => !read.includes(m.id)).map((m) => m.id);
   if (unread.length) { ACC.stats.mailRead = [...read, ...unread]; mailSave(); }
   renderMailBadge();
+  dailyPanel();
 }
 
 // ----- 招待コード:作って1日以内のアカウントが、ほかの人の招待コードを入れると、お互いに空間のカケラ700個 -----
