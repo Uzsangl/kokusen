@@ -1841,6 +1841,7 @@ function act(S, side, hand, log, isBreak) {
   }
   if (a.selfPerm && w.hp > 0 && !traitOf(w, 'void')) {   // 自分に、消えない強化(重ねがけできる)
     w.atkBonus += a.selfPerm.atk || 0; w.dfsBonus += a.selfPerm.dfs || 0;
+    w.permAtk = (w.permAtk || 0) + (a.selfPerm.atk || 0); w.permDfs = (w.permDfs || 0) + (a.selfPerm.dfs || 0); w.permName = a.name;   // 画面で「継承」と分けて出すため
     S.events.push({ type: 'mod', side, text: 'ずっと↑', good: true });
     log(`　${nameOf(w)}のATK+${a.selfPerm.atk || 0}・DFS+${a.selfPerm.dfs || 0}(消えない。合計ATK+${w.atkBonus}・DFS+${w.dfsBonus})`);
   }
@@ -3335,14 +3336,16 @@ function statusList(t, f) {
   const add = (s, l, k) => st.push({ s, l, k });
   f.mods.forEach((m) => add(`${L(m.stat)}${sign(m.v)}${Math.abs(m.v)}·${m.t}`, `${L(m.stat)}${sign(m.v)}${Math.abs(m.v)}(残り${m.t}ラリー)`, m.v > 0 ? 'up' : 'down'));
   if (f.fac) add(`陣営 ${f.fac.text}`, `${f.fac.faction}の陣営ボーナス:${f.fac.text}(試合中ずっと)`, 'up');
-  const inh = f.atkBonus - (f.tsuzuri || 0);   // アワイの「零の綴じ」のぶんは分けて出す
+  const pa = f.permAtk || 0, pd = f.permDfs || 0;   // 自分の技(託し・竦みなど)で積んだ、消えない強化
+  const inh = f.atkBonus - (f.tsuzuri || 0) - pa;   // アワイの「零の綴じ」・自分で積んだぶんは分けて出す
+  if (pa || pd) { const sp = [pa && `ATK+${pa}`, pd && `DFS+${pd}`].filter(Boolean).join('・'); add(`${f.permName || '自己強化'} ${sp}`, `「${f.permName || '自己強化'}」で自分に積んだ強化 ${sp}(消えない。重ねがけできる)`, 'up'); }
   if (inh) add(`継承ATK+${inh}`, `継承 ATK+${inh}(前の番手から受け継いだ強化。場にいる間ずっと)`, 'up');
   if (f.tsuzuri) add(`零の綴じATK+${f.tsuzuri}`, `零の綴じ ATK+${f.tsuzuri}(アワイの特性。試合中ずっと)`, 'up');
   // アワイの「継ぎ刻」:前の番手にアワイがいれば、BREAKのダメージが上がる
   const ti = t.cards.indexOf(f), tk = ti > 0 ? t.cards.slice(0, ti).map((c) => traitOf(c, 'tsugiKoku')).find(Boolean) : null;
   if (tk) { const m = f.ch.id === 'rei' ? tk.rei : tk.mul; add(`${BREAK_NAME}ダメ×${m}`, `${BREAK_NAME}で与えるダメージ${m}倍(アワイの継ぎ刻。試合中ずっと)`, 'up'); }
   if (f.cut) add(`被ダメ−${Math.round(f.cut * 100)}%`, `受けるダメージ−${Math.round(f.cut * 100)}%(アワイの刻寄せ。試合中ずっと)`, 'up');
-  if (f.dfsBonus) add(`継承DFS+${f.dfsBonus}`, `継承 DFS+${f.dfsBonus}(前の番手から受け継いだ強化。場にいる間ずっと)`, 'up');
+  if (f.dfsBonus - pd) add(`継承DFS+${f.dfsBonus - pd}`, `継承 DFS+${f.dfsBonus - pd}(前の番手から受け継いだ強化。場にいる間ずっと)`, 'up');
   if (f.teamAtk) add(`全体ATK+${f.teamAtk}`, `味方全員 ATK+${f.teamAtk}(消えない)`, 'up');
   if (f.teamDfs) add(`全体DFS+${f.teamDfs}`, `味方全員 DFS+${f.teamDfs}(消えない)`, 'up');
   if (f.dfsGain) add(`不動DFS+${f.dfsGain}`, `特性で上がったDFS+${f.dfsGain}`, 'up');
@@ -4087,7 +4090,7 @@ function seal(text) {
 }
 const RULES_VER = seal(RULES_SRC);
 // 画面に出す版。更新するたびに 0.01 ずつ上げる(0.10 から)
-const APP_VER = '1.54';
+const APP_VER = '1.55';
 // ----- 古い版で遊び続けさせない -----
 // 公開中の版は version.json に書く(APP_VER を上げるときに一緒に上げる)。起動時・画面に戻ったとき・5分おきに確かめ、
 // 新しい版があれば、対戦中なら決着を待ってから、閉じられない「更新してください」の画面を出す
