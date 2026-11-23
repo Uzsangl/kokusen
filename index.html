@@ -777,7 +777,7 @@
       <p class="sub" id="stageNote"></p>
     </div>
     <div id="netOpts" class="hidden">
-      <div class="levels" id="pvpKinds" style="grid-template-columns:1fr 1fr"><button data-k="rated">ランク戦</button><button data-k="free">フリー戦</button></div>
+      <div class="levels" id="pvpKinds" style="grid-template-columns:1fr 1fr 1fr"><button data-k="rated">ランク</button><button data-k="random">フリー</button><button data-k="free">プラベ</button></div>
       <p class="sub" id="pvpKindNote"></p>
       <div class="roomrow">
         <input id="roomCode" inputmode="numeric" maxlength="12" placeholder="合言葉(例:1234)" autocomplete="off">
@@ -4103,7 +4103,7 @@ const PVP = {
   hand: null, salt: '',       // 今のラリーで自分が選んだ手
   foeTeamSeal: null, foeSeal: {},   // 相手が先に出した印(最初に見たものを覚えておく)
   applying: false,
-  kind: 'free',     // 'rated' レート戦 / 'free' フリー戦(お互いに同じ方を選んだときだけ始まる)
+  kind: 'random',   // 'rated' ランク戦 / 'random' フリー戦(ランダムマッチ) / 'free' プラベ(合言葉)。お互いに同じものを選んだときだけ始まる
   rated: false,     // 今の対戦がレート戦か
   hist: [],         // この対戦で明かされた手の記録(自分の側から見て。観戦者への中継に使う)
   spec: false,      // 観戦者として見ているか
@@ -4318,9 +4318,81 @@ function pvpReady() {
 function pvpLeave() {
   PVP.phase = 'idle'; PVP.code = ''; PVP.applying = false;
   if (PVP.rank) { FORMAT = PVP.rank.fmt0; PVP.rank = null; PVP.draft = null; }
+  if (PVP.rndFmt0) { FORMAT = PVP.rndFmt0; PVP.rndFmt0 = null; }
   pvpPublish({ g: null, ts: null, t: null, n: null, c: null, r: null, b: null, last: null, d: null, acc: null, ff: null, rs: null });
   if (PVP.room && PVP.room.leave) PVP.room.leave();
   renderSelect();
+}
+
+// ----- フリー戦(ランダムマッチ):サーバーを使わず、待ち合わせ用のIDを取り合って2人を組む(ゲストも入れる・アドバンスのみ) -----
+// 先に探し始めた人が待ち合わせのIDを持って待ち、あとから来た人がそこへつなぐ。組めたら、待っていた人が合言葉を決めて渡し、
+// 二人でその合言葉の部屋に入る。待ち合わせのIDにはゲームの版を入れるので、同じ版の人どうしだけが当たる
+const RND = { searching: false, peer: null, t0: 0, timer: 0, tick: 0 };
+const RND_FMT = 'advance';
+const rndLobbyId = () => 'kokusen-q-' + String(RULES_VER).toLowerCase().replace(/[^0-9a-z]/g, '').slice(0, 16);
+const rndCode = () => Array.from({ length: 10 }, () => '0123456789ABCDEFGHJKLMNPQRSTUVWXYZ'[Math.floor(Math.random() * 34)]).join('');
+function rndStatus() { if (RND.searching) pvpStatus(`ランダムな相手を探しています…(${Math.round((Date.now() - RND.t0) / 1000)}秒)`); }
+function rndFind() {
+  if (RND.searching || PVP.phase !== 'idle' || !PVP.room || !PVP.room.direct || !window.Peer) return;
+  RND.searching = true; RND.t0 = Date.now();
+  clearInterval(RND.tick); RND.tick = setInterval(rndStatus, 1000);
+  renderMode(); rndStatus();
+  rndTry();
+}
+function rndDrop() { const p = RND.peer; RND.peer = null; try { if (p) p.destroy(); } catch (e) { /* すでに閉じている */ } }
+function rndCancel(msg) {
+  if (!RND.searching) return;
+  RND.searching = false; clearTimeout(RND.timer); clearInterval(RND.tick); rndDrop();
+  renderMode();
+  pvpStatus(msg || '相手を探すのをやめました。');
+}
+function rndRetry() { rndDrop(); if (RND.searching) RND.timer = setTimeout(rndTry, 400 + Math.random() * 1200); }
+function rndTry() {
+  if (!RND.searching) return;
+  const id = rndLobbyId(), host = RND.peer = new window.Peer(id);
+  let done = false;
+  // 待っている側:最初につないできた1人と組む(2人目からは断る)
+  host.on('connection', (c) => {
+    c.on('open', () => {
+      if (done || RND.peer !== host) { try { c.close(); } catch (e) { /* 閉じるだけ */ } return; }
+      done = true;
+      const code = rndCode();
+      try { c.send({ q: code }); } catch (e) { done = false; return; }
+      setTimeout(() => { try { host.destroy(); } catch (e) { /* すでに閉じている */ } }, 1500);
+      RND.peer = null;
+      rndMatched(code);
+    });
+  });
+  host.on('disconnected', () => { if (RND.peer === host) { try { host.reconnect(); } catch (e) { rndRetry(); } } });
+  host.on('error', (e) => {
+    if (RND.peer !== host) return;
+    if (e.type !== 'unavailable-id') { rndRetry(); return; }
+    // もう誰かが待っている → その人につなぐ
+    try { host.destroy(); } catch (e2) { /* 閉じるだけ */ }
+    const g = RND.peer = new window.Peer();
+    g.on('open', () => {
+      if (RND.peer !== g) return;
+      const c = g.connect(id, { reliable: true, serialization: 'json' });
+      const to = setTimeout(() => { if (RND.peer === g) rndRetry(); }, 6000);   // 返事がない(先に組まれた・抜けた):やり直す
+      c.on('data', (d) => {
+        if (RND.peer !== g || !d || typeof d.q !== 'string' || !/^[0-9A-Z]{10}$/.test(d.q)) return;
+        clearTimeout(to); RND.peer = null;
+        setTimeout(() => { try { g.destroy(); } catch (e2) { /* すでに閉じている */ } }, 1500);
+        rndMatched(d.q);
+      });
+      c.on('close', () => { if (RND.peer === g) { clearTimeout(to); rndRetry(); } });
+    });
+    g.on('error', () => { if (RND.peer === g) rndRetry(); });
+  });
+}
+function rndMatched(code) {
+  if (!RND.searching) return;
+  RND.searching = false; clearTimeout(RND.timer); clearInterval(RND.tick);
+  PVP.kind = 'random';
+  if (FORMAT !== RND_FMT) { PVP.rndFmt0 = FORMAT; FORMAT = RND_FMT; }   // フリー戦はアドバンスだけ
+  Sound.click();
+  pvpJoin('q' + code);
+  renderMode();
 }
 
 // ----- ランク戦:自動で相手を探す → 毎試合BAN1体ずつ・交互にピック → 3本勝負(ベーシック→アドバンス→ベーシック) -----
@@ -4755,23 +4827,25 @@ function renderMode() {
   $('netOpts').classList.toggle('hidden', MODE !== 'pvp');
   if (PVP.on && !PVP.room) pvpStatus('この画面では、オンライン対人は使えません。公開サイト版(https://uzsangl.github.io/kokusen/)を、二人とも開いてください。');
   else if (PVP.on && PVP.phase === 'idle' && PVP.kind === 'rated' && ACC.profile) { if (!RANK.searching) pvpStatus('「相手を探す」を押すと、レートの近い相手を自動で探します。'); }
+  else if (PVP.on && PVP.phase === 'idle' && PVP.kind === 'random') { if (!RND.searching) pvpStatus(PVP.room && !PVP.room.direct ? 'この画面では、フリー戦(ランダムマッチ)は使えません。プラベをお使いください。' : '「相手を探す」を押すと、ランダムな相手を自動で探します。'); }
   else if (PVP.on && PVP.phase === 'idle') pvpStatus('相手と決めた合言葉を入れて、「部屋に入る」を押してください。対戦を見るだけなら「観戦する」。');
   $('roomCode').disabled = $('joinRoom').disabled = !PVP.room || PVP.phase !== 'idle';
   $('specRoom').disabled = !PVP.room || PVP.phase !== 'idle';
   // レート戦はログインが必要。部屋に入ったあとは変えられない
-  const kindNow = PVP.kind === 'rated' && !ACC.profile && PVP.phase === 'idle' ? 'free' : PVP.kind;   // ログインしていなければフリー戦
+  const kindNow = PVP.kind === 'rated' && !ACC.profile && PVP.phase === 'idle' ? 'random' : PVP.kind;   // ログインしていなければフリー戦
   [...$('pvpKinds').children].forEach((b) => {
     b.classList.toggle('picked', b.dataset.k === kindNow);
     b.disabled = PVP.phase !== 'idle' || (b.dataset.k === 'rated' && !ACC.profile);
   });
   // ランク戦は合言葉ではなく、自動で相手を探す
-  const ranked = kindNow === 'rated';
-  ['roomCode', 'joinRoom'].forEach((id) => $(id).classList.toggle('hidden', ranked));
-  $('rankFind').classList.toggle('hidden', !ranked || PVP.phase !== 'idle');
-  $('rankFind').disabled = !PVP.room;
-  $('rankFind').textContent = RANK.searching ? '探すのをやめる' : '相手を探す';
-  $('pvpKindNote').textContent = kindNow === 'rated' ? `ランク戦:レートの近い相手と自動で当たる3本勝負(ベーシック→アドバンス→ベーシック)。毎試合、お互いにBANを1体ずつ出してから、交互にキャラを取り合う(持っているキャラだけ・★4以上は1体まで)。くわしくはルールブックの「ランク戦」。3本勝負の勝ち負けでレートが1回動く(勝つと+1のボーナス)。${SHARD_NAME}は1試合ごとに勝ち30・負け0。` : `フリー戦:レートは動きません。ログインなしでも遊べます。${SHARD_NAME}は勝ち20・負け5(リタイアの負けは0)。1日${FREE_SHARD_CAP}個まで(今日 ${freeShardGot()}/${FREE_SHARD_CAP})。${ACC.profile ? '' : '(ランク戦はログインすると選べます)'}`;
-  $('specRoom').classList.toggle('hidden', ranked || (!!PVP.room && !PVP.room.spectate));   // 観戦は、端末どうしを直接つなぐ方式のときだけ
+  const ranked = kindNow === 'rated', auto = ranked || kindNow === 'random';   // ランク・フリーは合言葉ではなく、自動で相手を探す
+  ['roomCode', 'joinRoom'].forEach((id) => $(id).classList.toggle('hidden', auto));
+  $('rankFind').classList.toggle('hidden', !auto || PVP.phase !== 'idle');
+  $('rankFind').disabled = !PVP.room || (kindNow === 'random' && !PVP.room.direct);
+  $('rankFind').textContent = (ranked ? RANK.searching : RND.searching) ? '探すのをやめる' : '相手を探す';
+  $('pvpKindNote').textContent = kindNow === 'rated' ? `ランク戦:レートの近い相手と自動で当たる3本勝負(ベーシック→アドバンス→ベーシック)。毎試合、お互いにBANを1体ずつ出してから、交互にキャラを取り合う(持っているキャラだけ・★4以上は1体まで)。くわしくはルールブックの「ランク戦」。3本勝負の勝ち負けでレートが1回動く(勝つと+1のボーナス)。${SHARD_NAME}は1試合ごとに勝ち30・負け0。`
+    : `${kindNow === 'random' ? 'フリー戦:ランダムな相手と自動で当たる1本勝負(アドバンス)。' : 'プラベ:相手と決めた合言葉で部屋に入る1本勝負。'}レートは動きません。ログインなしでも遊べます。${SHARD_NAME}は勝ち20・負け5(リタイアの負けは0)。フリーとプラベ合わせて1日${FREE_SHARD_CAP}個まで(今日 ${freeShardGot()}/${FREE_SHARD_CAP})。${ACC.profile ? '' : '(ランク戦はログインすると選べます)'}`;
+  $('specRoom').classList.toggle('hidden', auto || (!!PVP.room && !PVP.room.spectate));   // 観戦は、端末どうしを直接つなぐ方式のときだけ
   $('leaveRoom').classList.toggle('hidden', PVP.phase === 'idle');
   renderSelect();
 }
@@ -5304,7 +5378,8 @@ const RULEBOOK = {
     <h3>ボス</h3><p>ボスは、こちらの手の癖を読んでくる。同じ手ばかり出していると狙われる。</p>
     <h3>ボスラッシュ</h3><p>ボスと続けて戦う。ボスを1体倒すごとに、味方は全回復して1番手から出直す。</p>
     <h3>その他</h3><p>ソロでは「刻の抜け落ち」は起きない。クリアしたステージには印が付く。</p>`,
-  '対人': `<h3>フリー戦</h3><p>相手と同じ合言葉を入れて部屋に入り、お互いにキャラを選んで「準備完了」を押すと対戦が始まる。レートは動かない。ログインなしでも遊べる。</p>
+  '対人': `<h3>フリー戦</h3><p>「相手を探す」を押すと、ランダムな相手と自動で当たる。形式はアドバンスだけ。お互いにキャラを選んで「準備完了」を押すと対戦が始まる。レートは動かない。ログインなしでも遊べる。</p>
+    <h3>プラベ</h3><p>相手と同じ合言葉を入れて部屋に入る(知り合いと遊ぶとき)。レートは動かない。ログインなしでも遊べる。空間のカケラは、フリー戦と合わせて1日200個まで。</p>
     <h3>パーティのルール</h3><p>★4以上は1パーティに1体まで。同じ人物は1パーティに1体まで。ベーシックではガチャキャラは使えない。</p>
     <h3>切断・放置</h3><p>相手の応答が60秒ないと不戦勝。ランク戦の途中で抜けると負けになる。</p>
     <h3>版の確認</h3><p>相手とゲームの版が違うと対戦できない。「版が違います」と出たら、お互いにページを開き直す。</p>`,
@@ -6555,14 +6630,14 @@ function setStep(st) {
 // 選んだ相手の説明(キャラ選択の上に出す)
 function pickInfoText() {
   if (MODE === 'solo') { const st = STAGES.find((x) => x.id === SOLO.stage); return st ? `ソロ:${st.rush ? st.name : `${st.faction}${'★'.repeat(st.stars)}「${st.name}」`}` : 'ソロ'; }
-  if (MODE === 'pvp') { const f = pvpFoe(); const nm = f && f.presence && typeof f.presence.nm === 'string' ? f.presence.nm.slice(0, 12) : ''; const kd = PVP.rank ? `ランク戦 第${PVP.rank.g + 1}戦・${FORMATS[FORMAT]}` : `${PVP.kind === 'rated' ? 'ランク戦' : 'フリー戦'}・${FORMATS[FORMAT]}`; return f ? `${kd}:${nm || '相手(ゲスト)'}` : `${kd}:合言葉「${PVP.code}」`; }
+  if (MODE === 'pvp') { const f = pvpFoe(); const nm = f && f.presence && typeof f.presence.nm === 'string' ? f.presence.nm.slice(0, 12) : ''; const kd = PVP.rank ? `ランク戦 第${PVP.rank.g + 1}戦・${FORMATS[FORMAT]}` : `${PVP.kind === 'rated' ? 'ランク戦' : PVP.kind === 'random' ? 'フリー戦' : 'プラベ'}・${FORMATS[FORMAT]}`; return f ? `${kd}:${nm || '相手(ゲスト)'}` : PVP.kind === 'random' ? `${kd}:相手を待っています` : `${kd}:合言葉「${PVP.code}」`; }
   return `CPU(${AI_LEVELS[FX.level].name})・${FORMATS[fmtNow()]}${choosingFoe() ? '・相手も選ぶ' : ''}`;
 }
 // レート戦・フリー戦がそろっているか。そろっていなければ理由を返す
 function pvpKindNg(fp) {
   if (!fp || !fp.k) return '';
   if (fp.fm && fp.fm !== FORMAT && !PVP.rank) return `相手は「${FORMATS[fp.fm] || fp.fm}」を選んでいます。部屋を出て、ベーシック/アドバンスをそろえて入り直してください。`;
-  if (fp.k !== PVP.kind) return fp.k === 'rated' ? '相手は「ランク戦」を選んでいます。部屋を出て、同じ種類にそろえて入り直してください。' : '相手は「フリー戦」を選んでいます。部屋を出て、同じ種類にそろえて入り直してください。';
+  if (fp.k !== PVP.kind) return `相手は「${fp.k === 'rated' ? 'ランク' : fp.k === 'random' ? 'フリー' : 'プラベ'}」を選んでいます。部屋を出て、同じ種類にそろえて入り直してください。`;
   if (PVP.kind === 'rated' && !fp.acc) return '相手がログインしていません。ランク戦は、二人ともログインが必要です。';
   if (PVP.kind === 'rated' && ACC.profile && fp.acc && fp.acc.id === ACC.profile.id) return '同じアカウントどうしでは、ランク戦はできません。';
   return '';
@@ -6782,7 +6857,7 @@ async function startMatch(mine, theirs, foeLabel, opt = {}) {
     await cutin('トキバミ', '止めておいてくれて、ありがとう', 'violet', 1500);
   } else {
     if (S.spectate) await cutin('観戦', `${S.teams[0].label} vs ${S.teams[1].label}`, 'gold', 1200);
-    else if (PVP.on) await cutin(`VS ${PVP.foeName || '相手(ゲスト)'}`, `${PVP.rank ? `ランク戦 第${PVP.rank.g + 1}戦` : PVP.rated ? 'ランク戦' : 'フリー戦'}　${active(S.teams[0]).ch.name} vs ${active(S.teams[1]).ch.name}`, PVP.rated ? 'evil' : 'gold', 1400);
+    else if (PVP.on) await cutin(`VS ${PVP.foeName || '相手(ゲスト)'}`, `${PVP.rank ? `ランク戦 第${PVP.rank.g + 1}戦` : PVP.rated ? 'ランク戦' : PVP.kind === 'random' ? 'フリー戦' : 'プラベ'}　${active(S.teams[0]).ch.name} vs ${active(S.teams[1]).ch.name}`, PVP.rated ? 'evil' : 'gold', 1400);
     else await cutin('開戦', `${active(S.teams[0]).ch.name} vs ${active(S.teams[1]).ch.name}`, 'gold', 900);
   }
   await entryFx();   // 1番手の、場に出たときから効く特性
@@ -6822,7 +6897,7 @@ function init() {
   MODES.forEach(([label, m]) => {
     const b = document.createElement('button');
     b.textContent = label;
-    b.onclick = () => { if (PVP.spec) specStop(); else if (PVP.on && m !== 'pvp' && PVP.phase !== 'idle') pvpLeave(); if (m !== 'pvp') rankCancel(); MODE = m; PVP.on = m === 'pvp'; renderMode(); };
+    b.onclick = () => { if (PVP.spec) specStop(); else if (PVP.on && m !== 'pvp' && PVP.phase !== 'idle') pvpLeave(); if (m !== 'pvp') { rankCancel(); rndCancel(); } MODE = m; PVP.on = m === 'pvp'; renderMode(); };
     $('modes').appendChild(b);
   });
   try { SOLO.stage = localStorage.getItem('kokusen.stage') || 'a1'; SOLO.cleared = readCleared(GUEST_KEY); SOLO.rush = Number(localStorage.getItem('kokusen.rush')) || 0; } catch (e) { /* 保存できなくても動く */ }
@@ -6930,9 +7005,9 @@ function init() {
   $('joinRoom').onclick = () => { pvpJoin(); renderMode(); };
   $('leaveRoom').onclick = () => { if (PVP.spec) specStop(); else pvpLeave(); renderMode(); };
   $('specRoom').onclick = () => specStart();
-  $('rankFind').onclick = () => { Sound.click(); if (RANK.searching) rankCancel(); else rankFind(); };
-  [...$('pvpKinds').children].forEach((b) => { b.onclick = () => { if (b.disabled) return; if (b.dataset.k !== 'rated') rankCancel(); PVP.kind = b.dataset.k; try { localStorage.setItem('kokusen.pvpKind', PVP.kind); } catch (e) { /* 保存できなくても動く */ } Sound.click(); renderMode(); }; });
-  try { const k = localStorage.getItem('kokusen.pvpKind'); if (k === 'rated' || k === 'free') PVP.kind = k; } catch (e) { /* 読めなければフリー戦 */ }
+  $('rankFind').onclick = () => { Sound.click(); if (PVP.kind === 'random') { if (RND.searching) rndCancel(); else rndFind(); } else if (RANK.searching) rankCancel(); else rankFind(); };
+  [...$('pvpKinds').children].forEach((b) => { b.onclick = () => { if (b.disabled) return; if (b.dataset.k !== 'rated') rankCancel(); if (b.dataset.k !== 'random') rndCancel(); PVP.kind = b.dataset.k; try { localStorage.setItem('kokusen.pvpKind', PVP.kind); } catch (e) { /* 保存できなくても動く */ } Sound.click(); renderMode(); }; });
+  try { const k = localStorage.getItem('kokusen.pvpKind'); if (k === 'rated' || k === 'free' || k === 'random') PVP.kind = k; } catch (e) { /* 読めなければフリー戦 */ }
   $('toPick').onclick = () => { if (canPick()) { Sound.click(); setStep('pick'); } };
   $('toMenu').onclick = () => { if (MODE === 'pvp' && PVP.phase !== 'idle') { pvpLeave(); renderMode(); } Sound.click(); setStep('menu'); };
   $('mysetBtn').onclick = () => openMyset();
