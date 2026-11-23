@@ -3583,7 +3583,7 @@ async function puchun() {
   const bar = $('hpYou').querySelector('.bar').getBoundingClientRect();
   $('blackout').style.setProperty('--line-y', (bar.top + bar.height / 2) + 'px');
   $('blackout').classList.add('on');
-  Sound.gachaPuchun();   // (試し)ガチャと同じプチュンの音
+  Sound.gachaPuchun();   // ガチャと同じプチュンの音(音声ファイル)
   await wait(800);                        // 真っ暗で無音
   $('blackout').classList.remove('on');
   flash('#ffffff');                       // 明けた瞬間に一度だけ光る
