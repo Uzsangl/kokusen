@@ -6075,11 +6075,11 @@ function gachaShow(r, rates = GACHA_RATES) {
       } else {
         busyFlip = true;
         // めくる瞬間にプチュン:11連の2枚目以降の★4以上・逆さまの「刻」は必ず。1枚目は決めた演出どおり
-        const pu = hiFlipped > 0 || flipPu || mute || +el.dataset.i === sakasa;
+        const pu = rr >= 5 || hiFlipped > 0 || flipPu || mute || +el.dataset.i === sakasa;   // ★5は必ずプチュンから
         hiFlipped++;
         if (pu && Math.random() < GACHA_LATE_RATE) await sleep(3000);   // 遅れ:触っても反応しないまま3秒
         if (skipped) { busyFlip = false; return; }
-        if (pu) await puchunFx(1000);
+        if (pu) await puchunFx(1000, rr >= 5);   // ★5:プチュンの暗転のまま、赤いガラスの破片の演出へ
         if (rr >= 5) await secShow();
         if (!pu) { el.classList.add('shake'); Sound.heart(); await sleep(500); }
         el.classList.remove('back', 'shake'); el.classList.add('show', 'pillar');
@@ -6090,10 +6090,11 @@ function gachaShow(r, rates = GACHA_RATES) {
       if (!left().length) finish();
     };
     // プチュン:画面が切れて暗転 → 無音
-    const puchunFx = async (ms) => {
+    const puchunFx = async (ms, keep) => {   // keep:暗転を解かずに、次の演出(★5)へつなぐ
       const g = $('gsec');
       Bgm.duck(true); g.innerHTML = '<b></b>'; g.classList.remove('hidden'); Sound.gachaPuchun();
       await sleep(ms);
+      if (keep) { g.innerHTML = ''; return; }
       g.classList.add('hidden'); g.innerHTML = ''; Bgm.duck(false);
     };
     // SEC:暗転 → 無音 → 奥から赤いガラスの破片がゆっくり近づく → 一瞬止まる → 一気にこちらへ飛び抜ける → 赤く光って「ぽきゅん」
