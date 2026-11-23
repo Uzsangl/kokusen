@@ -597,7 +597,7 @@
   /* SEC:暗転して、10本の針が回る */
   .gsec { position: fixed; inset: 0; z-index: 8; background: #000; display: flex; align-items: center; justify-content: center; }
   .gsec.hidden { display: none; }
-  .gsec b { position: absolute; left: 0; right: 0; top: 44.3%; height: 100vh; margin-top: -50vh; background: #fff; animation: puchun 0.32s ease-in forwards; }
+  .gsec b { position: absolute; left: 0; right: 0; top: 40%; height: 100vh; margin-top: -50vh; background: #fff; animation: puchun 0.32s ease-in forwards; }
   @keyframes puchun { 0% { transform: scale(1, 1); opacity: 0.9; } 45% { transform: scale(1, 0.004); opacity: 1; } 80% { transform: scale(0.01, 0.004); opacity: 1; } 100% { transform: scale(0, 0); opacity: 0; } }
   .gsec i { position: absolute; left: 50%; top: 50%; width: 3px; height: 34vmin; margin-left: -1.5px; background: linear-gradient(#ff2a3d, #ff2a3d00); transform-origin: 50% 0; opacity: 0; animation: secHand 1.4s ease-in forwards; }
   @keyframes secHand { 0% { opacity: 0; } 20% { opacity: 1; } 100% { opacity: 1; transform: rotate(var(--r)); } }
@@ -5900,7 +5900,7 @@ function secShards(host) {
     cv.width = W * dpr; cv.height = H * dpr; cv.style.cssText = 'position:absolute;inset:0;width:100%;height:100%';
     host.appendChild(cv);
     const c = cv.getContext('2d'); c.scale(dpr, dpr);
-    const F = Math.min(W, H) * 0.9, cx = W / 2, cy = H * 0.443;   // 出発点:横は真ん中、縦は真ん中より少し上(プチュンが縮んで消える点と同じ)
+    const F = Math.min(W, H) * 0.9, cx = W / 2, cy = H * 0.4;   // 出発点:横は真ん中、縦は真ん中より少し上(プチュンが縮んで消える点と同じ)
     // 破片:全部が奥の中心の一点から出発し、それぞれの向き(x, y)・速さで手前へ広がる。形は3〜5角の尖ったかけら
     const shards = Array.from({ length: 70 }, () => {
       const a = Math.random() * Math.PI * 2, rr = 0.2 + Math.pow(Math.random(), 0.6) * 3.0, n = 3 + Math.floor(Math.random() * 3);
