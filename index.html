@@ -1870,11 +1870,16 @@ function act(S, side, hand, log, isBreak) {
   if (a.team) {
     const k = a.team.stat === 'atk' ? 'teamAtk' : 'teamDfs', label = a.team.stat === 'atk' ? 'ATK' : 'DFS';
     const tv = (c) => (a.team.rei && c.ch.id === 'rei' ? a.team.rei : a.team.v);   // アワイ:レイなら効果アップ
-    wt.cards.forEach((c) => { if (c.hp > 0 && c.result !== 'lose' && !(a.team.bench && c === w) && !traitOf(c, 'void')) c[k] = a.team.cap ? Math.min(a.team.cap, c[k] + tv(c)) : c[k] + tv(c); });
+    // 上限のある技は、上限まで足す(上限のない別の技で、すでに上限を超えていたら減らさない)。表示のため、上限も控える
+    wt.cards.forEach((c) => {
+      if (!(c.hp > 0 && c.result !== 'lose' && !(a.team.bench && c === w) && !traitOf(c, 'void'))) return;
+      c[k] = a.team.cap ? Math.max(c[k], Math.min(a.team.cap, c[k] + tv(c))) : c[k] + tv(c);
+      if (a.team.cap) c[k + 'Cap'] = Math.max(c[k + 'Cap'] || 0, a.team.cap); else c[k + 'Free'] = true;   // 上限のない技も受けたら、上限は出さない
+    });
     S.events.push({ type: 'mod', side, text: `${a.team.bench ? '控え' : '全員'}${label}↑`, good: true });
     log(a.team.bench ? `　${wt.label}の控えの味方全員の${label}+${a.team.v}` : `　${wt.label}の味方全員の${label}+${a.team.v}(全体${label}+${w[k]})`);
     const bench = wt.cards.slice(wt.idx + 1).filter((c) => c.hp > 0 && c.result !== 'lose');
-    if (bench.length) relay(wt, 'tm:' + a.name, a.name, `${a.team.bench ? '控えの味方全員' : '味方全員(控えも)'}の${label}+${a.team.v}ずつ。いまの控え:` + bench.map((c) => `${dispName(c.ch)} ${label}+${c[k]}`).join('・'));
+    if (bench.length) relay(wt, 'tm:' + a.name, a.name, `${a.team.bench ? '控えの味方全員' : '味方全員(控えも)'}の${label}+${a.team.v}ずつ${a.team.cap ? `(最大+${a.team.cap})` : ''}。いまの控え:` + bench.map((c) => `${dispName(c.ch)} ${label}+${c[k]}`).join('・'));
   }
   if (a.atkUp && !traitOf(w, 'void')) w.atkUp = a.atkUp;
   if (a.dfsUp && !traitOf(w, 'void')) w.dfsUp = a.dfsUp;
@@ -3408,8 +3413,9 @@ function statusList(t, f) {
   if (tk) { const m = f.ch.id === 'rei' ? tk.rei : tk.mul; add(`${BREAK_NAME}ダメ×${m}`, `${BREAK_NAME}で与えるダメージ${m}倍(アワイの継ぎ刻。永続・重複不可)`, 'up'); }
   if (f.cut) add(`被ダメ−${Math.round(f.cut * 100)}%`, `受けるダメージ−${Math.round(f.cut * 100)}%(アワイの刻寄せ。永続・重複不可)`, 'up');
   if (f.dfsBonus - pd) add(`継承DFS+${f.dfsBonus - pd}`, `継承 DFS+${f.dfsBonus - pd}(前の番手から受け継いだ強化。永続・重複可能)`, 'up');
-  if (f.teamAtk) add(`全体ATK+${f.teamAtk}`, `味方全員 ATK+${f.teamAtk}(永続・重複可能)`, 'up');
-  if (f.teamDfs) add(`全体DFS+${f.teamDfs}`, `味方全員 DFS+${f.teamDfs}(永続・重複可能)`, 'up');
+  const capTxt = (cap, free) => (cap && !free ? `。最大+${cap}` : '');   // 上限のある技だけで上がっていれば、上限も出す
+  if (f.teamAtk) add(`全体ATK+${f.teamAtk}`, `味方全員 ATK+${f.teamAtk}(永続・重複可能${capTxt(f.teamAtkCap, f.teamAtkFree)})`, 'up');
+  if (f.teamDfs) add(`全体DFS+${f.teamDfs}`, `味方全員 DFS+${f.teamDfs}(永続・重複可能${capTxt(f.teamDfsCap, f.teamDfsFree)})`, 'up');
   if (f.dfsGain) add(`不動DFS+${f.dfsGain}`, `特性で上がったDFS+${f.dfsGain}`, 'up');
   if (f.markAtk) add(`刻印ATK${f.markAtk}`, `刻印 ATK${f.markAtk}(永続・重複可能)`, 'down');
   if (f.markDfs) add(`刻印DFS${f.markDfs}`, `刻印 DFS${f.markDfs}(永続・重複可能)`, 'down');
