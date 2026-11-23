@@ -5499,7 +5499,7 @@ function renderAcct() {
       : `<span class="who">ログインすると、クリア記録とレーティングを保存できます(💠${shardCount()})</span><button id="accOpen">ログイン</button>`;
   $('accOpen').onclick = () => accOpen();
 }
-const ACC_LEGAL = '<p class="sub" style="margin-top:12px"><a href="terms.html" target="_blank" rel="noopener" style="color:var(--gold)">利用規約</a> ・ <a href="privacy.html" target="_blank" rel="noopener" style="color:var(--gold)">プライバシーポリシー</a> ・ <a href="https://x.com/kokusenofficial" target="_blank" rel="noopener" style="color:var(--gold)">通報・お問い合わせ(X)</a></p>';
+const ACC_LEGAL = '<p class="sub" style="margin-top:12px"><a href="terms.html" target="_blank" rel="noopener" style="color:var(--gold)">利用規約</a> ・ <a href="privacy.html" target="_blank" rel="noopener" style="color:var(--gold)">プライバシーポリシー</a> ・ <a href="https://x.com/kokusenofficial" target="_blank" rel="noopener" style="color:var(--gold)">通報・お問い合わせ(X)</a> ・ <a href="https://line.me/ti/g2/-5DyDGVxiRfsG2cihgbqj2cae0sPVaB6C-ZtPA" target="_blank" rel="noopener" style="color:var(--gold)">公式オープンチャット(LINE)</a></p>';
 function accMsg(text, err) { $('accMsg').textContent = text || ''; $('accMsg').className = 'msg' + (err ? ' err' : ''); }
 function renderAccModal() {
   const p = ACC.profile, body = $('accBody');
