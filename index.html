@@ -5839,11 +5839,11 @@ function secShards(host) {
     host.appendChild(cv);
     const c = cv.getContext('2d'); c.scale(dpr, dpr);
     const F = Math.min(W, H) * 0.9, cx = W / 2, cy = H * 0.46;
-    // 破片:中心のまわりに散らばり、奥行き z を持つ。形は3〜5角の尖ったかけら
+    // 破片:全部が奥の中心の一点から出発し、それぞれの向き(x, y)・速さで手前へ広がる。形は3〜5角の尖ったかけら
     const shards = Array.from({ length: 70 }, () => {
       const a = Math.random() * Math.PI * 2, rr = 0.2 + Math.pow(Math.random(), 0.6) * 3.0, n = 3 + Math.floor(Math.random() * 3);
       return {
-        x: Math.cos(a) * rr, y: Math.sin(a) * rr * 0.9, z0: 3 + Math.random() * 9,
+        x: Math.cos(a) * rr, y: Math.sin(a) * rr * 0.9, z0: 7 + Math.random() * 3,
         sp: 0.6 + Math.random() * 1.0,          // 1枚ずつ速さが違う
         dl: Math.random() * 0.22,               // 動き出しも少しずつずれる
         drift: 0.5 + Math.random() * 2.2,       // 近づきながら外へ散らばる量
@@ -5870,7 +5870,7 @@ function secShards(host) {
       c.fillStyle = glow; c.fillRect(0, 0, W, H);
       const sx = shake ? (Math.random() - 0.5) * shake : 0, sy = shake ? (Math.random() - 0.5) * shake : 0;
       shards.map((p) => { const q = Math.max(0, k - p.dl) * p.sp; return { p, q, z: p.z0 * (1 - q) }; }).filter((o) => o.z > 0.05).sort((a, b) => b.z - a.z).forEach(({ p, q, z }) => {
-        const sp2 = 1 + p.drift * q;   // 進むほど外へ広がる
+        const sp2 = q * (1 + p.drift * q);   // 出発は全部同じ一点(奥の中心)。進むほど、それぞれの向きへ広がる
         const px = cx + sx + (p.x * sp2 * F) / z, py = cy + sy + (p.y * sp2 * F) / z, sz = (p.size * F) / z;
         if (px < -sz * 2 || px > W + sz * 2 || py < -sz * 2 || py > H + sz * 2) return;   // 画面の外へ抜けた
         const fade = Math.min(1, (p.z0 - z) / 1.2);   // 遠くでは淡く、近づくと濃く
