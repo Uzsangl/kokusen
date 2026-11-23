@@ -2873,6 +2873,20 @@ const Sound = (() => {
       noise(0.9, { type: 'bandpass', freq: 300, to: 5000, vol: 0.2, rise: true });
       boom(0.9, 0.9, 0.6); cymbal(0.9, 0.16); kyuin(2, 0.95);
     },
+    // ★5確定の先バレ「ぽぽぽぽぽきゅん」:だんだん速く・高くなる「ぽ」を5回、そのあと駆け上がる「きゅん」と長い余韻
+    popokyun() {
+      const at = [0, 0.15, 0.27, 0.36, 0.43];
+      at.forEach((t, i) => {
+        tone(160 + i * 30, 0.13, { type: 'sine', vol: 0.85, to: 110 + i * 25, at: t });
+        tone(320 + i * 60, 0.08, { type: 'triangle', vol: 0.22, to: 220 + i * 50, at: t });
+      });
+      const k = 0.55;
+      tone(300, 0.07, { type: 'sine', vol: 0.6, to: 4600, at: k, attack: 0.05 });
+      tone(600, 0.07, { type: 'triangle', vol: 0.12, to: 9200, at: k, attack: 0.05 });
+      tone(4600, 1.8, { type: 'sine', vol: 0.45, at: k + 0.07, vib: 6, vibDepth: 0.004, trem: 7, tremDepth: 0.12 });
+      tone(2300, 1.4, { type: 'sine', vol: 0.14, at: k + 0.07, vib: 6, vibDepth: 0.004 });
+      [3136, 3951, 4699, 5274, 6272].forEach((f, i) => tone(f, 0.9, { type: 'sine', vol: 0.05, at: k + 0.1 + i * 0.05 }));   // 虹のきらめき
+    },
     // ガチャ★5の演出の音(破片の演出 secShards に合わせる)。at はこの呼び出しから何秒後に鳴らすか
     // 1) 一点から広がる:小さく高い「キン」のあと、きらめきながら駆け上がる風の音(0.37秒)
     secRise(at = 0) {
@@ -3528,6 +3542,15 @@ const SAKIBARE_RATE = 0.75;   // 先バレモードの勝利占有率:自分が�
 async function sakibareFx() {
   flash('#ff1a2e'); shake(false); Sound.pokyun();
   await sleep(450);
+}
+// ★5確定の先バレ(虹):「ぽ」のたびに虹の色で光り、「きゅん」で白く光って虹の粒が降る
+async function sakibareRainbowFx() {
+  Sound.popokyun();
+  const cols = ['#ff4d5e', '#f5c451', '#4ade80', '#38bdf8', '#8b6cff'], at = [0, 150, 270, 360, 430];
+  at.forEach((ms, i) => setTimeout(() => { flash(cols[i]); shake(false); }, ms));
+  await sleep(550);
+  flash('#ffffff'); shake(true); Particles.shower(COLORS.rainbow, 140);
+  await sleep(500);
 }
 
 // リールが回り、予兆が出て、相手の手が止まるまで
@@ -6055,7 +6078,7 @@ function gachaShow(r, rates = GACHA_RATES) {
     // 白発展+ぽきゅんのぶんを引いて、★4以上全体のぽきゅん占有率を保つ
     const pkRate = top >= 4 ? (GACHA_POKYUN_HI - GACHA_WHITE_POKYUN) / keep : gachaPokyunRate(false, r.length, top >= 3, rates);
     const pk = !instant && (cold === 'wp' || (!cold && Math.random() < pkRate));
-    if (pk) setTimeout(() => sakibareFx(), 450);
+    if (pk) setTimeout(() => (top >= 5 ? sakibareRainbowFx() : sakibareFx()), 450);   // ★5が入っていれば虹の「ぽぽぽぽぽきゅん」
     const flipPu = !!cold || (pk && top >= 4 && Math.random() < GACHA_POKYUN_FLIP);   // めくる瞬間にプチュン
     // ひびのプチュン:めくりプチュンにならなかった残りから出して、★4以上全体の占有率を GACHA_PUCHUN_RATE に保つ
     const crackRate = GACHA_PUCHUN_RATE / keep / (1 - pkRate * GACHA_POKYUN_FLIP);
