@@ -2861,6 +2861,29 @@ const Sound = (() => {
       noise(0.9, { type: 'bandpass', freq: 300, to: 5000, vol: 0.2, rise: true });
       boom(0.9, 0.9, 0.6); cymbal(0.9, 0.16); kyuin(2, 0.95);
     },
+    // ガチャ★5の演出の音(破片の演出 secShards に合わせる)。at はこの呼び出しから何秒後に鳴らすか
+    // 1) 一点から広がる:小さく高い「キン」のあと、きらめきながら駆け上がる風の音(0.37秒)
+    secRise(at = 0) {
+      tone(3135, 0.5, { type: 'sine', vol: 0.22, at });
+      tone(6270, 0.3, { type: 'sine', vol: 0.05, at });
+      noise(0.42, { type: 'bandpass', freq: 700, to: 5200, vol: 0.2, rise: true, at });
+      for (let i = 0; i < 7; i++) tone(2600 + Math.random() * 3400, 0.09, { type: 'triangle', vol: 0.05, at: at + 0.04 + i * 0.05 });
+    },
+    // 2) 飛び抜ける:低い「ドンッ」とガラスが砕ける「シャリーン」、破片がそばを通り抜ける風の音
+    secBurst(at = 0) {
+      tone(120, 0.55, { type: 'sine', vol: 1.0, to: 30, at });
+      tone(60, 0.7, { type: 'sine', vol: 0.6, to: 24, at });
+      noise(0.25, { type: 'lowpass', freq: 1800, to: 150, vol: 0.55, at });
+      noise(0.5, { type: 'highpass', freq: 4500, vol: 0.32, at });
+      for (let i = 0; i < 16; i++) tone(3000 + Math.random() * 5000, 0.12 + Math.random() * 0.25, { type: 'triangle', vol: 0.045 + Math.random() * 0.04, at: at + 0.01 + Math.random() * 0.45 });
+      noise(0.55, { type: 'bandpass', freq: 6500, to: 600, vol: 0.28, at: at + 0.05 });
+    },
+    // 3) 光ってキャラが出る:きらきらした和音が、下から上へ駆け上がって長く響く
+    secReveal(at = 0) {
+      [880, 1109, 1319, 1760, 2217, 2637, 3520].forEach((f, i) => tone(f, 1.4 - i * 0.08, { type: i % 2 ? 'triangle' : 'sine', vol: 0.16 - i * 0.012, at: at + i * 0.035, vib: 5.5, vibDepth: 0.004 }));
+      chord([220, 330, 440], 1.2, { type: 'sine', vol: 0.12, at, attack: 0.05 });
+      noise(0.9, { type: 'highpass', freq: 7000, vol: 0.07, at });
+    },
     // BREAK突入:いったん沈み込み、告知音で跳ね上がる
     breakIn() {
       tone(130, 1.1, { vol: 0.85, to: 26 });
@@ -5864,6 +5887,7 @@ function secShards(host) {
     };
     const t0 = performance.now(), T = SEC_T, total = T.slow + T.hold + T.rush;
     let cued = false;
+    Sound.secRise();
     const ease = (x) => 1 - Math.pow(1 - x, 3), easeIn = (x) => x * x * x;
     const frame = (now) => {
       const t = now - t0;
@@ -5872,7 +5896,7 @@ function secShards(host) {
       if (t < T.slow) k = 0.4 * ease(t / T.slow);
       // 急:いちばん遅い破片も通り過ぎるまで進める
       else if (t < T.slow + T.hold) { k = 0.4 + 0.02 * ((t - T.slow) / T.hold); shake = 3; }
-      else { const tr = t - T.slow - T.hold, x = Math.min(1, tr < T.rushA ? tr / 650 : T.rushA / 650 + ((tr - T.rushA) * 1.8) / 650); k = 0.42 + 1.45 * x * x; if (!cued) { cued = true; Sound.breakIn(); } }
+      else { const tr = t - T.slow - T.hold, x = Math.min(1, tr < T.rushA ? tr / 650 : T.rushA / 650 + ((tr - T.rushA) * 1.8) / 650); k = 0.42 + 1.45 * x * x; if (!cued) { cued = true; Sound.secBurst(); } }
       c.clearRect(0, 0, W, H);
       // 奥の赤い光(破片が来る前の気配)
       const glow = c.createRadialGradient(cx, cy, 0, cx, cy, Math.min(W, H) * (0.12 + k * 0.25));
@@ -6074,9 +6098,9 @@ function gachaShow(r, rates = GACHA_RATES) {
       const g = $('gsec');
       Bgm.duck(true); g.innerHTML = ''; g.classList.remove('hidden');
       await sleep(170);
-      if (matchMedia('(prefers-reduced-motion: reduce)').matches) { flash('#ff1a2e'); Sound.pokyun(); await sleep(450); g.classList.add('hidden'); Bgm.duck(false); return; }
+      if (matchMedia('(prefers-reduced-motion: reduce)').matches) { flash('#ff1a2e'); Sound.secReveal(); await sleep(450); g.classList.add('hidden'); Bgm.duck(false); return; }
       await secShards(g);
-      flash('#ff1a2e'); Sound.pokyun(); await sleep(450);
+      flash('#ff1a2e'); Sound.secReveal(); await sleep(450);
       g.classList.add('hidden'); g.innerHTML = ''; Bgm.duck(false);
     };
     const reveal = () => {   // 割れたあと、伏せたカードを並べる
