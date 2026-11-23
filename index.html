@@ -2878,11 +2878,14 @@ const Sound = (() => {
       for (let i = 0; i < 16; i++) tone(3000 + Math.random() * 5000, 0.12 + Math.random() * 0.25, { type: 'triangle', vol: 0.045 + Math.random() * 0.04, at: at + 0.01 + Math.random() * 0.45 });
       noise(0.55, { type: 'bandpass', freq: 6500, to: 600, vol: 0.28, at: at + 0.05 });
     },
-    // 3) 光ってキャラが出る:きらきらした和音が、下から上へ駆け上がって長く響く
+    // 3) 光ってキャラが出る:「ブーン」と腹に響く重低音。少しずれた低い音を重ねてうなりを出し、ゆっくり沈みながら消える
+    //    (スマホのスピーカーでも聞こえるよう、2倍・3倍の高さの音も小さく重ねる)
     secReveal(at = 0) {
-      [880, 1109, 1319, 1760, 2217, 2637, 3520].forEach((f, i) => tone(f, 1.4 - i * 0.08, { type: i % 2 ? 'triangle' : 'sine', vol: 0.16 - i * 0.012, at: at + i * 0.035, vib: 5.5, vibDepth: 0.004 }));
-      chord([220, 330, 440], 1.2, { type: 'sine', vol: 0.12, at, attack: 0.05 });
-      noise(0.9, { type: 'highpass', freq: 7000, vol: 0.07, at });
+      tone(55, 1.9, { type: 'sine', vol: 1.0, to: 41, at, attack: 0.03 });
+      tone(57.5, 1.9, { type: 'sine', vol: 0.7, to: 43, at, attack: 0.03 });
+      tone(110, 1.6, { type: 'triangle', vol: 0.35, to: 82, at, attack: 0.03, trem: 7, tremDepth: 0.4 });
+      tone(165, 1.2, { type: 'sine', vol: 0.15, to: 124, at, attack: 0.04 });
+      noise(0.35, { type: 'lowpass', freq: 300, to: 60, vol: 0.4, at });
     },
     // BREAK突入:いったん沈み込み、告知音で跳ね上がる
     breakIn() {
