@@ -3858,6 +3858,7 @@ async function finale() {
       const s2 = ACC.stats;
       if (layers >= KR_GOAL && (sv || !run)) s2.krGoals = (s2.krGoals || 0) + 1;   // 10層突破の回数(ウツロの解放に使う)
       // サーバーの値と、この端末の値の大きいほう(サーバーに届かなかった挑戦の分を消さない)
+      if (sv) await unlockLoad();   // 刻練場の記録で解放される称号
       if (sv && typeof sv.total_kills === 'number') { s2.krTotal = Math.max(sv.total_kills, (s2.krTotal || 0) + kills); s2.krBest = Math.max(sv.best_layers, s2.krBest || 0, layers); s2.krKills = Math.max(sv.best_kills, s2.krKills || 0, kills); }
       else { s2.krTotal = (s2.krTotal || 0) + kills; s2.krBest = Math.max(s2.krBest || 0, layers); s2.krKills = Math.max(s2.krKills || 0, kills); }
       sbFetch(`/rest/v1/progress?id=eq.${accUid()}`, { method: 'PATCH', prefer: 'return=minimal', body: { stats: s2 } }).catch(() => null);
@@ -3899,6 +3900,11 @@ async function finale() {
     if (S.stage) soloClear(S.stage.id);
     await cutin('勝利', S.stage ? `${S.stage.name} クリア ${score}` : `刻は、あなたの側に確定した ${score}`, 'rainbow', 1900);
     // 刻の回廊の★4・★5:クリアで空間のカケラ(初回は多め)
+    if (S.stage && !S.stage.reward && S.soloRun && !S.unlockDone) {   // 称号が解放されるステージ:クリアをサーバーに知らせる
+      S.unlockDone = true;
+      const run = await S.soloRun;
+      try { if (run) soloUnlocked(await verRpc('solo_reward', { p_run: run })); } catch (e) { if (e.code === 'KV001') verOld(); }
+    }
     if (S.stage && S.stage.reward && !S.shardDone) {
       S.shardDone = true;
       let n, total, first = firstClear;
@@ -3906,7 +3912,7 @@ async function finale() {
         const run = S.soloRun && await S.soloRun;
         let r = null;
         try { r = run ? await verRpc('solo_reward', { p_run: run }) : null; } catch (e) { if (e.code === 'KV001') verOld(); }
-        walletSet(r);
+        walletSet(r); soloUnlocked(r);
         n = r ? r.given : 0; total = shardCount(); first = !!(r && r.first);
       } else { n = S.stage.reward[firstClear ? 0 : 1]; total = await shardAdd(n); }
       if (n) {
@@ -4883,6 +4889,7 @@ async function accLoadProfile(name) {
   } catch (e) { if (!isMissingTable(e)) throw e; }
   ACC.stats = { ...server.stats };
   await walletLoad();   // カケラと持っているキャラ(サーバーの財布)
+  await unlockLoad();   // キャラが使えるようになる称号(サーバーが判定)
   setTimeout(accCheckMaster, 0);   // 記録を読んだあとに、マスター用の補充を確かめる
   setTimeout(inviteCollect, 300);   // 招待した人が増えていたら、ボーナスを受け取る
   setTimeout(frLoad, 500);   // フレンドと、ソロ観戦の受け付け
@@ -5039,7 +5046,7 @@ async function accDelete() {
   const uid = accUid();
   await sbFetch('/rest/v1/rpc/delete_my_account', { method: 'POST', body: {} });
   try { localStorage.removeItem(userKey(uid)); localStorage.removeItem(`kokusen.mysets.${uid}`); } catch (e) { /* 消せなくても動く */ }
-  ACC.session = null; ACC.profile = null; ACC.stats = null; ACC.pending = null; WAL.ready = false; accStore(); renderAcct();
+  ACC.session = null; ACC.profile = null; ACC.stats = null; ACC.pending = null; WAL.ready = false; UNL.ready = false; accStore(); renderAcct();
   SOLO.cleared = readCleared(GUEST_KEY);
   renderStages();
 }
@@ -5143,7 +5150,7 @@ async function unlockTitlesNow() {
   const p = ACC.profile;
   if (!titleReady()) return;
   const c = { cleared: SOLO.cleared, wins: p.wins, rating: p.rating, stats: ACC.stats || {} };
-  const add = TITLES.filter((t) => !p.titles.includes(t.id) && t.test(c)).map((t) => t.id);
+  const add = TITLES.filter((t) => !p.titles.includes(t.id) && (UNL.ready && UNLOCK_IDS.includes(t.id) ? UNL.ids.includes(t.id) : t.test(c))).map((t) => t.id);
   if (!add.length) return;
   const next = [...p.titles, ...add];
   try {
@@ -5612,7 +5619,18 @@ async function accCheckMaster() {
   }
   if (IS_MASTER) { try { renderStages(); renderTitleAcc(); renderAcct(); } catch (e) { /* 画面がまだなくてもよい */ } }
 }
-const charUnlocked = (ch) => IS_MASTER || (ch.gacha ? gachaOwned(ch.id) > 0 : !ch.unlock || myTitles().includes(ch.unlock));
+// キャラが使えるようになる称号は、サーバーの unlocks 表が正(SQLの17回目)。関数がないときは、これまでどおり profiles.titles
+const UNLOCK_IDS = ['kr300', 'kr500', 'kr1000', 'krUtsuro', 'kr32', 'kr36', 'kr40', 'tengan', 'shiToki', 'kaji', 'rush5', 'trio'];
+const UNLOCK_STAGES = ['k5', 'x5', 'rush', 't4'];   // クリアで称号が解放されるソロのステージ(天眼の果ては報酬のあるステージとして記録する)
+const UNL = { ready: false, ids: [] };
+async function unlockLoad() {
+  if (!accUid()) { UNL.ready = false; return; }
+  try { const r = await verRpc('unlock_sync', {}); if (Array.isArray(r)) { UNL.ids = r; UNL.ready = true; } }
+  catch (e) { if (isMissingFn(e)) UNL.ready = false; }
+}
+function soloUnlocked(r) { if (r && Array.isArray(r.unlocked) && r.unlocked.length) UNL.ids = [...new Set([...UNL.ids, ...r.unlocked])]; }
+const unlockHas = (id) => (UNL.ready ? UNL.ids.includes(id) : myTitles().includes(id));
+const charUnlocked = (ch) => IS_MASTER || (ch.gacha ? gachaOwned(ch.id) > 0 : !ch.unlock || unlockHas(ch.unlock));
 // 解放キャラの条件の書き方(隠し称号は、解放するまで名前を伏せる)
 const unlockText = (ch) => { if (ch.gacha) return 'ガチャで手に入れると使える(ログインが必要)'; const t = titleOf(ch.unlock); return `称号「${t.hidden ? '？？？' : t.name}」${t.hidden ? '(隠し称号)' : ''}を解放すると使える(ログインが必要)`; };
 // 押す・長押しを分ける(長押し、またはパソコンの右クリックで詳細を出す)
@@ -6695,7 +6713,8 @@ async function startMatch(mine, theirs, foeLabel, opt = {}) {
   // 刻練場:始める前にサーバーに挑戦の開始を知らせる。古い版で断られたら、遊ぶ前に更新を求める(遊んだあとに記録が残らない、を防ぐ)
   let krRun = null;
   // 刻の回廊の★4・★5(報酬のあるステージ):挑戦の開始をサーバーに知らせる(勝ったときの報酬の突き合わせ)
-  const soloRun = opt.stage && opt.stage.reward && !opt.spectate && walletOn() ? verRpc('solo_start', { p_stage: opt.stage.id }).catch(() => null) : null;
+  const soloOn = opt.stage && !opt.spectate && (opt.stage.reward ? walletOn() : UNLOCK_STAGES.includes(opt.stage.id) && UNL.ready);
+  const soloRun = soloOn ? verRpc('solo_start', { p_stage: opt.stage.id, p_party: mine.map((c) => c.id) }).catch(() => verRpc('solo_start', { p_stage: opt.stage.id }).catch(() => null)) : null;
   if (opt.stage && opt.stage.kr && !opt.spectate && accUid()) {
     try { krRun = await verRpc('kr_start', {}); } catch (e) { if (e.code === 'KV001') { verOld(); return; } krRun = null; }
   }
