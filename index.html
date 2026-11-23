@@ -5830,7 +5830,8 @@ function gachaRoll(rates = GACHA_RATES) {
   }
 }
 // ★5の演出:赤いガラスの破片が、奥(z が大きい)から手前へ飛んでくる。緩(ゆっくり近づく)→ 止まる → 急(一気に飛び抜ける)
-const SEC_T = { slow: 1200, hold: 220, rush: 650 };   // ゆっくり近づく・止まる・飛び抜ける(ミリ秒)
+// 一点から広がる・止まる・飛び抜ける(ミリ秒)。飛び抜けは前半 rushA は等速、残りは1.8倍速で一気に抜ける
+const SEC_T = { slow: 370, hold: 220, rush: 520, rushA: 320 };
 function secShards(host) {
   return new Promise((done) => {
     const cv = document.createElement('canvas'), dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -5871,7 +5872,7 @@ function secShards(host) {
       if (t < T.slow) k = 0.4 * ease(t / T.slow);
       // 急:いちばん遅い破片も通り過ぎるまで進める
       else if (t < T.slow + T.hold) { k = 0.4 + 0.02 * ((t - T.slow) / T.hold); shake = 3; }
-      else { const x = Math.min(1, (t - T.slow - T.hold) / T.rush); k = 0.42 + 1.45 * x * x; if (!cued) { cued = true; Sound.breakIn(); } }
+      else { const tr = t - T.slow - T.hold, x = Math.min(1, tr < T.rushA ? tr / 650 : T.rushA / 650 + ((tr - T.rushA) * 1.8) / 650); k = 0.42 + 1.45 * x * x; if (!cued) { cued = true; Sound.breakIn(); } }
       c.clearRect(0, 0, W, H);
       // 奥の赤い光(破片が来る前の気配)
       const glow = c.createRadialGradient(cx, cy, 0, cx, cy, Math.min(W, H) * (0.12 + k * 0.25));
@@ -6072,7 +6073,7 @@ function gachaShow(r, rates = GACHA_RATES) {
     const secShow = async () => {
       const g = $('gsec');
       Bgm.duck(true); g.innerHTML = ''; g.classList.remove('hidden');
-      await sleep(600);
+      await sleep(170);
       if (matchMedia('(prefers-reduced-motion: reduce)').matches) { flash('#ff1a2e'); Sound.pokyun(); await sleep(450); g.classList.add('hidden'); Bgm.duck(false); return; }
       await secShards(g);
       flash('#ff1a2e'); Sound.pokyun(); await sleep(450);
