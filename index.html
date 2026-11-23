@@ -6036,7 +6036,7 @@ const GACHA_COLD_GOLD_RATE = 0.15;   // オレンジ止まりの板(ぽきゅん
 const GACHA_POKYUN_FLIP = 0.5;   // ぽきゅんが来て★4以上のとき、半分はめくる瞬間のプチュンで見せる(ひびのプチュンとは重ならない)
 const GACHA_INSTANT_RATE = 0.1;   // 「引く」を押した瞬間にプチュン → 板なしでめくる画面へ(★4以上の10%。ほかの板の演出とは重ならない)
 const GACHA_SAKASA_RATE = 0.15;   // ★4以上のとき、そのカードの裏の「刻」が逆さま → めくるとプチュン確定
-const GACHA_LATE_RATE = 0.2;      // めくるときのプチュンのうち、触っても反応せず3秒後にプチュンする(遅れ)割合
+const GACHA_LATE_RATE = 0.2;      // めくるときのプチュンのうち、触っても反応せず1.5秒後にプチュンする(遅れ)割合
 const GACHA_MUTE_RATE = 0.25;     // ★4以上のとき、めくる画面になった瞬間にBGMが消える → ★4以上をめくるとプチュン確定(★4以上全体で25%)
 const GACHA_WHITE_POKYUN = 0.01;  // 白発展+ぽきゅん:★4以上の1%だけ。白のまま割れるのにぽきゅんが来たら★4以上確定(外れの白にはぽきゅんを出さない)
 const GACHA_RAINBOW_RATE = 0.2;   // ★5を引いたときに、虹の先バレ(ぽぽぽぽぽきゅん)が出る割合
@@ -6115,7 +6115,7 @@ function gachaShow(r, rates = GACHA_RATES) {
         // めくる瞬間にプチュン:11連の2枚目以降の★4以上・逆さまの「刻」は必ず。1枚目は決めた演出どおり
         const pu = rr >= 5 || hiFlipped > 0 || flipPu || mute || +el.dataset.i === sakasa;   // ★5は必ずプチュンから
         hiFlipped++;
-        if (pu && Math.random() < GACHA_LATE_RATE) await sleep(3000);   // 遅れ:触っても反応しないまま3秒
+        if (pu && Math.random() < GACHA_LATE_RATE) await sleep(1500);   // 遅れ:触っても反応しないまま1.5秒
         if (skipped) { busyFlip = false; return; }
         if (pu) await puchunFx(1000, rr >= 5);   // ★5:プチュンの暗転のまま、赤いガラスの破片の演出へ
         if (rr >= 5) await secShow();
