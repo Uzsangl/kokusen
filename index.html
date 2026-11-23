@@ -497,8 +497,16 @@
     background: linear-gradient(180deg, #ffe8a3, var(--gold) 60%, #c98e22); box-shadow: 0 0 28px #f5c45177; animation: playGlow 2.4s ease-in-out infinite; }
   @keyframes playGlow { 50% { box-shadow: 0 0 44px #f5c451aa; } }
   .tnote { text-align: center; color: var(--sub); font-size: .75rem; margin-top: 8px; }
-  .tsub { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
-  .tsub button { padding: 12px; border-radius: 12px; font-size: .95rem; font-weight: 700; }
+  .tsub { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 12px; }
+  .tsub button { padding: 12px 6px; border-radius: 12px; font-size: .95rem; font-weight: 700; white-space: nowrap; }
+  .dly-cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin: 6px 0 10px; }
+  .dly-cal div { border: 1px solid var(--line, #333a5c); border-radius: 8px; padding: 6px 2px; text-align: center; font-size: .72rem; color: var(--sub); }
+  .dly-cal div b { display: block; font-size: .85rem; color: var(--text); }
+  .dly-cal div.got { border-color: var(--gold); color: var(--gold); }
+  .dly-cal div.big b { color: #ffd76a; }
+  .dly-ms { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 6px; }
+  .dly-ms li { display: flex; justify-content: space-between; gap: 8px; border: 1px solid var(--line, #333a5c); border-radius: 10px; padding: 8px 10px; }
+  .dly-ms li.ok { border-color: var(--gold); color: var(--gold); }
   .tsub .tgacha { grid-column: 1 / -1; color: #ffd76a; border-color: #b57bff; background: linear-gradient(90deg, #2a1846, #1b2350); }
   /* ガチャ */
   .gc-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
@@ -658,7 +666,7 @@
     .tbg { gap: 4%; } .tbg img { width: min(26%, 26vh); }
     .tlogo { margin-top: min(120px, 12vh); } .tlogo img { width: min(100%, 520px, 52vh); }
     .tplay { max-width: 760px; width: 100%; margin: 18px auto 0; }
-    .tsub { grid-template-columns: 1fr 1fr; }
+    .tsub { grid-template-columns: 1fr 1fr 1fr; }
     /* キャラ選択:左に対戦相手とステージ、右にキャラ */
     #select:not(.hidden) { max-width: 860px; margin: 0 auto; }
     .cgrid { grid-template-columns: repeat(7, 1fr); }
@@ -741,7 +749,7 @@
     <div class="tplay">
       <button id="tPlay" class="btn-play">プレイ</button>
       <div class="tnote">CPU戦・ソロ・オンライン対人</div>
-      <div class="tsub"><button id="tRule">📖 ルールブック</button><button id="tTitles">🎖 称号一覧</button><button id="tGacha" class="tgacha">🎰 ガチャ</button></div>
+      <div class="tsub"><button id="tRule">📖 ルールブック</button><button id="tTitles">🎖 称号一覧</button><button id="tDaily">📅 デイリー</button><button id="tGacha" class="tgacha">🎰 ガチャ</button></div>
       <div class="tacc" id="tAcc"></div>
       <div class="tfoot">音楽:<a href="https://nagumorizu.com/" target="_blank" rel="noopener">なぐもりずの音楽室</a>(南雲莉翠) ・ <span id="tVer"></span></div>
     </div>
@@ -4893,7 +4901,7 @@ async function accLoadProfile(name) {
   setTimeout(accCheckMaster, 0);   // 記録を読んだあとに、マスター用の補充を確かめる
   setTimeout(inviteCollect, 300);   // 招待した人が増えていたら、ボーナスを受け取る
   setTimeout(frLoad, 500);   // フレンドと、ソロ観戦の受け付け
-  setTimeout(dailyLogin, 900);   // ログインボーナス
+  setTimeout(dailyIntro, 300);   // ログインボーナスとデイリー(最初のガラスが割れたあと)
   let moved = false;
   try { moved = localStorage.getItem('kokusen.guestMoved') === '1'; } catch (e) { /* 読めなければ未移行として扱う */ }
   const guest = created && !moved ? readCleared(GUEST_KEY) : [];
@@ -6334,21 +6342,26 @@ async function dailyMission(kind) {
     if (r && r.shards > 0) await dailyGive(r.shards, 'デイリーミッション達成', `${(r.done || []).join('・')} 💠+${r.shards}`, r.total);
   } catch (e) { if (isMissingFn(e)) DAILY.ready = false; }
 }
-// メールボックスの上に、今日の進み具合を出す
-async function dailyPanel() {
-  if (!DAILY.ready || !shardOnAcc()) return;
+// デイリーの画面(タイトルの「📅 デイリー」と、起動したとき)
+async function openDaily() {
+  if (!shardOnAcc()) { openSheet('📅 デイリー', '<p class="sub">ログインすると、毎日のログインボーナスとデイリーミッションで空間のカケラがもらえます。</p>'); return; }
   let r = null;
-  try { r = await sbFetch('/rest/v1/rpc/daily_me', { method: 'POST', body: {} }); } catch (e) { if (isMissingFn(e)) DAILY.ready = false; return; }
-  const box = $('sheetBody');
-  if (!r || !box || $('sheetTitle').textContent !== 'メールボックス') return;
-  const g = r.got || 0, row = (ok, t) => `<li style="${ok ? 'color:var(--gold)' : ''}">${ok ? '✔' : '・'} ${t}</li>`;
-  const el = document.createElement('div');
-  el.className = 'ml';
-  el.innerHTML = `<h4>今日のデイリーミッション(朝4時に更新)</h4><ul style="margin:4px 0 0;padding-left:4px;list-style:none">` +
-    row(g & 1, `対戦を3回する ${Math.min(3, r.battles || 0)}/3(💠20)`) + row(g & 2, `刻練場を1回遊ぶ ${Math.min(1, r.kr || 0)}/1(💠20)`) +
-    row(g & 4, `お試しガチャを1回引く ${Math.min(1, r.gacha || 0)}/1(💠20)`) + row(g & 8, 'すべて達成(💠40)') + '</ul>' +
-    `<div class="dt">ログインボーナス:連続${r.streak || 0}日目(7日目は💠150)</div>`;
-  box.prepend(el);
+  if (DAILY.ready) { try { r = await sbFetch('/rest/v1/rpc/daily_me', { method: 'POST', body: {} }); } catch (e) { if (isMissingFn(e)) DAILY.ready = false; } }
+  if (!r) { openSheet('📅 デイリー', '<p class="sub">デイリーを読み込めませんでした。少し待ってから開き直してください。</p>'); return; }
+  const k = r.streak || 0, g = r.got || 0;
+  const cal = LOGIN_BONUS.map((n, i) => `<div class="${i < k ? 'got' : ''}${i === 6 ? ' big' : ''}">${i + 1}日目<b>💠${n}</b>${i < k ? '受取済' : ''}</div>`).join('');
+  const row = (ok, t, now, need, n) => `<li class="${ok ? 'ok' : ''}"><span>${ok ? '✔ ' : ''}${t}</span><span>${need ? `${Math.min(need, now || 0)}/${need}・` : ''}💠${n}</span></li>`;
+  openSheet('📅 デイリー',
+    `<h4 style="margin:0">ログインボーナス(連続${k}日目)</h4><p class="sub" style="margin:2px 0 0">7日連続で💠150。1日あくと1日目に戻ります。</p><div class="dly-cal">${cal}</div>` +
+    `<h4 style="margin:0">デイリーミッション</h4><p class="sub" style="margin:2px 0 0">毎朝4時に更新。達成すると自動で受け取ります。</p><ul class="dly-ms">` +
+    row(g & 1, '対戦を3回する', r.battles, 3, 20) + row(g & 2, '刻練場を1回遊ぶ', r.kr, 1, 20) + row(g & 4, 'お試しガチャを1回引く', r.gacha, 1, 20) + row(g & 8, 'すべて達成', 0, 0, 40) + '</ul>');
+}
+// 起動したとき:最初のガラスが割れて、ログインできていたら、ログインボーナスを受け取ってからデイリーを出す(1回だけ)
+async function dailyIntro() {
+  if (!DAILY.splashed || DAILY.introDone || !shardOnAcc()) return;
+  DAILY.introDone = true;
+  await dailyLogin();
+  if (DAILY.ready && !verBusy() && !document.getElementById('verBlock')) await openDaily();
 }
 
 // ----- メールボックス:運営からのお知らせとプレゼント(ログインが必要)-----
@@ -6419,7 +6432,6 @@ async function openMail() {
   const unread = list.filter((m) => !read.includes(m.id)).map((m) => m.id);
   if (unread.length) { ACC.stats.mailRead = [...read, ...unread]; mailSave(); }
   renderMailBadge();
-  dailyPanel();
 }
 
 // ----- 招待コード:作って1日以内のアカウントが、ほかの人の招待コードを入れると、お互いに空間のカケラ700個 -----
@@ -6859,6 +6871,7 @@ function init() {
   $('tFriend').onclick = () => { Sound.click(); openFriends(); };
   $('selFriend').onclick = () => { Sound.click(); openFriends(); };
   $('tTitles').onclick = openTitles;
+  $('tDaily').onclick = () => openDaily();
   $('tGacha').onclick = () => openGacha();
   $('sheetClose').onclick = () => $('sheet').classList.add('hidden');
   $('sheet').onclick = (e) => { if (e.target === $('sheet')) $('sheet').classList.add('hidden'); };
@@ -6906,6 +6919,7 @@ function init() {
     await glass;
     Bgm.play('title');   // ガラスが砕け終わってから、タイトル曲を頭から流す
     setTimeout(() => { sp.remove(); document.body.classList.remove('title-burst'); }, 500);
+    DAILY.splashed = true; setTimeout(dailyIntro, 600);   // 割れたあと、まずデイリー
   };
   $('splash').addEventListener('click', splashGo);
   $('splash').addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') splashGo(); });
