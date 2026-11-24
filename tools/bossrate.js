@@ -35,7 +35,7 @@ function seedRandom(seed) {
   Math.random = () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 }
 function parseArgs(argv) {
-  const o = { parties: 200, games: 10, top: 10, final: 200, hpMul: 1, scout: 0.5, pool: 'all', jobs: 4, seed: 1, level: 4, read: 0.35, verbose: false };
+  const o = { parties: 200, games: 10, top: 10, final: 200, hpMul: 1, scout: 0.5, pool: 'all', jobs: 4, seed: 1, level: 4, read: 0.35, verbose: false, high: 0 };
   for (let i = 0; i < argv.length; i++) {
     const k = argv[i].replace(/^--/, ''), v = argv[i + 1];
     if (k === 'verbose') { o.verbose = true; continue; }
@@ -92,7 +92,8 @@ if (!isMainThread) {
   if (!o.stage && !o.foes) { console.log('使い方は tools/bossrate.js の先頭を見てください'); process.exit(1); }
   seedRandom(o.seed);
   const api = loadApi(), F = makeFoes(api, o);
-  const pool = o.pool === 'basic' ? [...api.CHARACTERS, ...api.SPECIAL_CHARS] : [...api.CHARACTERS, ...api.SPECIAL_CHARS, ...api.GACHA_CHARS.filter((c) => c.rarity >= 3)];   // ★1・★2は外す
+  const pool = o.pool === 'basic' ? [...api.CHARACTERS, ...api.SPECIAL_CHARS.filter((c) => !c.adv)] : [...api.CHARACTERS, ...api.SPECIAL_CHARS, ...api.GACHA_CHARS.filter((c) => c.rarity >= 3)];   // ★1・★2は外す。ベーシックはアドバンス専用キャラも外す
+  const rar = (c) => c.rarity || (api.SPECIAL_CHARS.includes(c) ? 4 : 3);
   const name = (ids) => ids.map((id) => pool.find((c) => c.id === id).name).join(' → ');
   // 並行して動かす
   const runAll = (jobs, oo = o) => {
@@ -148,7 +149,10 @@ if (!isMainThread) {
     // 1) ランダムなパーティ(同じ顔ぶれ・同じ順番は1回だけ)
     const seen = new Set(), parties = [];
     while (parties.length < o.parties) {
-      const ids = []; while (ids.length < 3) { const c = pool[Math.floor(Math.random() * pool.length)]; if (!ids.includes(c.id)) ids.push(c.id); }
+      const ids = []; while (ids.length < 3) { const c = pool[Math.floor(Math.random() * pool.length)]; if (ids.includes(c.id)) continue;
+        if (o.high && rar(c) >= 4 && ids.some((id) => rar(pool.find((x) => x.id === id)) >= 4)) continue;   // --high 1:★4以上は1体まで(降臨など)
+        if (ids.some((id) => { const x = pool.find((y) => y.id === id); return x.sameAs === c.id || c.sameAs === x.id; })) continue;   // 同じ人物は入れない
+        ids.push(c.id); }
       const k = ids.join(','); if (!seen.has(k)) { seen.add(k); parties.push(ids); }
     }
     const r1 = await runAll(parties.map((ids) => ({ ids, games: o.games, modes: ['random', 'hard'] })), { ...o, hpMul: o.hpMul * o.scout });

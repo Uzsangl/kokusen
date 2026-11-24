@@ -88,6 +88,8 @@
   .corr-list { grid-template-columns: repeat(4, 1fr); }
   .corr-list button.corr { grid-column: span 1; }
   .corr-list .corr-h { grid-column: 1 / -1; margin: 6px 0 0; font-size: .78rem; color: var(--gold); }
+  #questStages { grid-template-columns: repeat(3, 1fr); }
+  #questStages button { grid-column: span 1; }
   .stages.hidden { display: none; }
   .stages button.locked { opacity: .45; }
   .stages button.chain { opacity: .6; border-style: dashed; }
@@ -775,7 +777,7 @@
     <div class="acct" id="acct"></div>
     <h2>対戦相手</h2>
     <div class="levels" id="modes"></div>
-    <div class="levels" id="formats" style="grid-template-columns:1fr 1fr"><button data-f="basic">ベーシック</button><button data-f="advance">アドバンス</button><button data-f="kr" class="hidden">スコアアタック</button></div>
+    <div class="levels" id="formats" style="grid-template-columns:1fr 1fr"><button data-f="basic">ベーシック</button><button data-f="advance">アドバンス</button><button data-f="kr" class="hidden">スコアアタック</button><button data-f="quest" class="hidden">降臨</button></div>
     <p class="sub" id="formatNote"></p>
     <div id="cpuOpts">
       <h2>CPUの強さ</h2>
@@ -788,6 +790,7 @@
       <h2>ステージ</h2>
       <div class="stages" id="stages"></div>
       <div class="stages corr-list hidden" id="corrStages"></div>
+      <div class="stages corr-list hidden" id="questStages"></div>
       <p class="sub" id="stageNote"></p>
     </div>
     <div id="netOpts" class="hidden">
@@ -1147,6 +1150,19 @@ const SPECIAL_CHARS = [
       rock:     { name: '空', rate: RATE.huge },
       scissors: { name: '虚', rate: RATE.big, voidCharge: 1 },
       paper:    { name: '無', rate: RATE.normal } } },
+  // 降臨クエストのクリアで、まれに解放されるキャラ(★3・アドバンスだけ)
+  { id: 'q_emo', name: 'エモ', faction: '矢', group: '矢', bonusOk: true, adv: true, rarity: 3, role: '感情・ごきげんで強くなる', unlock: 'emo', hp: 10000, atk: 2600, dfs: 1100, phys: 1.0,
+    trait: { key: 'mood', name: 'ごきげん', desc: '勝つたびにATK+500(場にいる間、最大+2500)。負けると半分になる', step: 500, cap: 2500 },
+    actions: {
+      rock:     { name: '全力ハグ', rate: RATE.huge, up: { rate: RATE.max, when: 'moodMax', text: 'ごきげんが最大なら極大' } },
+      scissors: { name: 'ひらめき', rate: RATE.normal, streak: 1 },
+      paper:    { name: 'ありがと!', rate: RATE.normal, heal: 1500, team: { stat: 'atk', v: 300, cap: 0, bench: 1 } } } },
+  { id: 'q_rizu', name: 'リズ', faction: '零', group: '零', bonusOk: true, adv: true, rarity: 3, role: '論理・癖を解析する', unlock: 'rizu', hp: 11000, atk: 2300, dfs: 1600, phys: 1.0,
+    trait: { key: 'analyze', name: '解析', desc: '相手が同じ手を2回続けたら、次のラリーは自分の技が1段階強くなる' },
+    actions: {
+      rock:     { name: '証明終了', rate: RATE.big, up: { rate: RATE.max, when: 'analyzed', text: '解析が効いているときは極大' } },
+      scissors: { name: '反証',     rate: RATE.normal, dispel: 1 },
+      paper:    { name: '最適化',   rate: RATE.normal, atkUp: 1000, mods: [selfDfs(1500, 2)] } } },
 ];
 
 // ===== ガチャキャラ(仮。名前・技名はあとで決める)=====
@@ -1215,6 +1231,19 @@ const GACHA_CHARS = [
 // 敵の能力値はステージごとに決める。hp と atk は、下の STAGES の倍率(hp, atk)を掛けた値になる。
 // 特性の key の処理は、プレイヤーのキャラと共通(「特性」と書いた箇所)。unbreak はボス用。
 const ENEMIES = {
+  // --- 降臨クエストのボス(2階)。技と特性はプレイヤー用のエモ・リズと同じ。強さはステージの倍率で上げる ---
+  qb_emo: { name: 'エモ', faction: '矢', hp: 30000, atk: 2800, dfs: 1300, phys: 1.0, boss: true,
+    trait: { key: 'mood', name: 'ごきげん', desc: '勝つたびにATK+500(場にいる間、最大+2500)。負けると半分になる', step: 500, cap: 2500 },
+    actions: {
+      rock:     { name: '全力ハグ', rate: RATE.huge, up: { rate: RATE.max, when: 'moodMax', text: 'ごきげんが最大なら極大' } },
+      scissors: { name: 'ひらめき', rate: RATE.normal, streak: 1 },
+      paper:    { name: 'ありがと!', rate: RATE.normal, heal: 1500 } } },
+  qb_rizu: { name: 'リズ', faction: '零', hp: 30000, atk: 2500, dfs: 1800, phys: 1.0, boss: true,
+    trait: { key: 'analyze', name: '解析', desc: '相手が同じ手を2回続けたら、次のラリーは自分の技が1段階強くなる' },
+    actions: {
+      rock:     { name: '証明終了', rate: RATE.big, up: { rate: RATE.max, when: 'analyzed', text: '解析が効いているときは極大' } },
+      scissors: { name: '反証',     rate: RATE.normal, dispel: 1 },
+      paper:    { name: '最適化',   rate: RATE.normal, atkUp: 1000, mods: [selfDfs(1500, 2)] } } },
   // --- 錨:硬くて回復する ---
   a_guard: { name: '錨の衛士', faction: '錨', hp: 9000, atk: 2100, dfs: 1800, phys: 1.0,
     trait: { key: 'immovable', name: '不動', desc: '被弾するたびにDFS+400(最大+2000)', gain: 400, cap: 2000 },
@@ -1444,6 +1473,14 @@ const STAGES = [
   { id: 'r4_3', corridor: 4, faction: '灯と天眼', stars: 3, name: '満ち潮の番人', foes: ['c3_iso'], level: 4, read: 0.35, hp: 1, atk: 1 },
   { id: 'r4_4', corridor: 4, faction: '灯と天眼', stars: 4, name: '消えぬ灯',     foes: ['c4_tomoshi'], level: 4, read: 0.35, hp: 1, atk: 1, bgm: 'cirque', reward: [200, 20] },
   { id: 'r4_5', corridor: 4, faction: '灯と天眼', stars: 5, name: '天眼の果て',   foes: ['c5_tsuru1', 'c5_tsuru'], level: 4, read: 0.6, hp: 1, atk: 1, bgm: 'xeno', bgm2: 'majo', climaxOk: true, reward: [1000, 40] },
+  // 降臨クエスト:毎日12時・18時・21時からの1時間だけ挑める。1階で門下生3体、2階でボス(HPは持ち越し)。
+  // エモ降臨はアドバンス、リズ降臨はベーシックで組む(★4以上は1体まで)。クリアの抽選でボスのキャラが解放される(サーバーが抽選)
+  { id: 'qe3', quest: 'emo',  qfmt: 'advance', faction: '矢', stars: 3, name: 'エモ降臨', foes: ['y_runner', 'y_archer', 'y_seer', 'qb_emo'], level: 4, read: 0.35, hp: 1.0, atk: 1.0, reward: [100, 10], drop: 0.002 },
+  { id: 'qe4', quest: 'emo',  qfmt: 'advance', faction: '矢', stars: 4, name: 'エモ降臨', foes: ['y_runner', 'y_archer', 'y_seer', 'qb_emo'], level: 4, read: 0.45, hp: 1.3, atk: 1.15, reward: [200, 20], drop: 0.005 },
+  { id: 'qe5', quest: 'emo',  qfmt: 'advance', faction: '矢', stars: 5, name: 'エモ降臨', foes: ['y_runner', 'y_archer', 'y_seer', 'qb_emo'], level: 4, read: 0.55, hp: 1.6, atk: 1.3, reward: [1000, 30], drop: 0.25 },
+  { id: 'qr3', quest: 'rizu', qfmt: 'basic',   faction: '零', stars: 3, name: 'リズ降臨', foes: ['z_mask', 'z_wind', 'z_sand', 'qb_rizu'], level: 4, read: 0.35, hp: 1.0, atk: 1.0, reward: [100, 10], drop: 0.002 },
+  { id: 'qr4', quest: 'rizu', qfmt: 'basic',   faction: '零', stars: 4, name: 'リズ降臨', foes: ['z_mask', 'z_wind', 'z_sand', 'qb_rizu'], level: 4, read: 0.45, hp: 1.3, atk: 1.15, reward: [200, 20], drop: 0.005 },
+  { id: 'qr5', quest: 'rizu', qfmt: 'basic',   faction: '零', stars: 5, name: 'リズ降臨', foes: ['z_mask', 'z_wind', 'z_sand', 'qb_rizu'], level: 4, read: 0.55, hp: 1.6, atk: 1.3, reward: [1000, 30], drop: 0.25 },
 ];
 // ステージの敵を、倍率を掛けた能力値で作る(元のデータは書き換えない)
 // ----- 刻練場(百刻スコアアタック) -----
@@ -1558,10 +1595,19 @@ function upActive(a, att, def, n, isBreak) {
   if (u.when === 'inBreak') return !!isBreak;
   if (u.when === 'captured') return !!att.captured;
   if (u.when === 'foeDfsAtLeast') return dfsOf(def, false) >= u.v;
+  if (u.when === 'moodMax') { const m = traitOf(att, 'mood'); return !!m && (att.mood || 0) >= m.cap; }   // エモ:ごきげんが最大
+  if (u.when === 'analyzed') return !!att.anaOn;   // リズ:解析が効いている
   return false;
 }
 // 特性「全力」:場に出てから勝ち負けが数回つくまで(あいこは数えない)、ダメージのある技はすべて極大
-const rateOf = (a, att, def, n, isBreak) => { const b = traitOf(att, 'burnout'); if (b && a.rate && (att.boN || 0) < b.until) { trig(att, 'burnout'); return RATE.max; } return upActive(a, att, def, n, isBreak) ? a.up.rate : a.rate; };
+const RATE_NEXT = { 1: RATE.big, 1.25: RATE.huge, 1.5: RATE.max, 2: RATE.max };
+const rateOf = (a, att, def, n, isBreak) => {
+  const b = traitOf(att, 'burnout'); if (b && a.rate && (att.boN || 0) < b.until) { trig(att, 'burnout'); return RATE.max; }
+  const r = upActive(a, att, def, n, isBreak) ? a.up.rate : a.rate;
+  // リズの「解析」:相手が同じ手を2回続けたあとのラリーは、技が1段階強くなる
+  if (r && att.anaOn && traitOf(att, 'analyze')) { trig(att, 'analyze'); return RATE_NEXT[r] || r; }
+  return r;
+};
 
 // 特性によるATKの増減(実数の足し引き)
 // 特性が実際に効いた記録(画面で、特性の名前のカットインを出すのに使う)。本番のラリーの間だけ記録する
@@ -1574,7 +1620,8 @@ function traitAtk(S, att, def, isBreak) {
   if ((t = traitOf(att, 'backwaterAll')) && att.hp <= att.max * t.below) { v += t.add; trig(att, 'backwaterAll'); }                               // 背水・始
   if ((t = traitOf(att, 'oldwound')) && def.poison > 0) { v += t.add; trig(att, 'oldwound'); }
   if ((t = traitOf(att, 'foresight')) && isBreak) { v += t.add; trig(att, 'foresight'); }
-  if (isBreak && att.brkAtk) v += att.brkAtk;   // ハレの「はしゃぎ」:BREAKの一撃のATK
+  if (isBreak && att.brkAtk) v += att.brkAtk;
+  if (traitOf(att, 'mood') && att.mood) v += att.mood;   // エモの「ごきげん」   // ハレの「はしゃぎ」:BREAKの一撃のATK
   if ((t = traitOf(att, 'sway'))) { v += att.turn % 2 === 1 ? t.atk : -t.minus; trig(att, 'sway'); }   // ユラギ
   if ((t = traitOf(att, 'giantSlayer')) && att.giant) { v += t.atk; trig(att, 'giantSlayer'); }   // 相手が1体だけのチーム(ソロのボス戦)のとき
   if ((t = traitOf(att, 'rush')) && (att.turn <= t.until || att.turn >= t.from)) { v += att.turn <= t.until ? t.early : t.late; trig(att, 'rush'); }
@@ -1971,6 +2018,14 @@ function dispel(S, side, log) {
 // ラリーの締め:時蝕 → 特性「処置」 → バフ・デバフの残りラリー数 → 抜け落ち → 倒れたカードの交代
 // winSide: このラリーのじゃんけんに勝った側(あいこは -1)
 function endRally(S, log, winSide) {
+  // エモの「ごきげん」:勝つとATKが上がり、負けると半分になる(あいこは変わらない)
+  if (winSide >= 0) S.teams.forEach((t, side) => {
+    const f = active(t), m = traitOf(f, 'mood');
+    if (!m || f.hp <= 0) return;
+    const before = f.mood || 0;
+    f.mood = side === winSide ? Math.min(m.cap, before + m.step) : Math.floor(before / 2 / 100) * 100;
+    if (f.mood !== before) { if (f.mood > before) trig(f, 'mood'); log(`　${t.label}の${nameOf(f)}の「${m.name}」:ATK+${f.mood}`); }
+  });
   if (winSide >= 0) S.teams.forEach((t) => { const f = active(t), b = traitOf(f, 'burnout'); if (b && f.boEnd == null && (f.boN = (f.boN || 0) + 1) >= b.until) f.boEnd = f.turn; });   // 全力:勝ち負けがついたラリーだけ数える
   S.teams.forEach((t, side) => {
     const f = active(t);
@@ -2216,6 +2271,8 @@ function rallyCore(S, hand0, hand1, log) {
     }
   }
   endRally(S, log, winSide);
+  // リズの「解析」:相手が同じ手を2回続けたら、次のラリーで技が1段階強くなる
+  S.teams.forEach((t, side) => { const c = active(t); if (c) c.anaOn = !!traitOf(c, 'analyze') && preyTarget(S, side) != null; });
   return r;
 }
 
@@ -2243,6 +2300,7 @@ function breakRallyCore(S, side, hand, log) {
     }
   }
   endRally(S, log, side);
+  S.teams.forEach((t) => { const c = active(t); if (c) c.anaOn = false; });   // 解析は、次のじゃんけんのラリーまで持ち越さない
 }
 
 // ブレイク時にCPUが選ぶ手:倒せるなら倒す、そうでなければ一番得な手
@@ -3420,6 +3478,8 @@ function statusList(t, f) {
   if (f.teamAtk) add(`全体ATK+${f.teamAtk}`, `味方全員 ATK+${f.teamAtk}(永続・重複可能${capTxt(f.teamAtkCap, f.teamAtkFree)})`, 'up');
   if (f.teamDfs) add(`全体DFS+${f.teamDfs}`, `味方全員 DFS+${f.teamDfs}(永続・重複可能${capTxt(f.teamDfsCap, f.teamDfsFree)})`, 'up');
   if (f.dfsGain) add(`不動DFS+${f.dfsGain}`, `特性で上がったDFS+${f.dfsGain}`, 'up');
+  { const m = traitOf(f, 'mood'); if (m && f.mood) add(`ごきげんATK+${f.mood}`, `ごきげん ATK+${f.mood}(勝つと+${m.step}・負けると半分。最大+${m.cap})`, 'up'); }
+  if (f.anaOn) add('解析済み', '解析:相手が同じ手を2回続けた。このラリーは自分の技が1段階強い', 'up');
   if (f.markAtk) add(`刻印ATK${f.markAtk}`, `刻印 ATK${f.markAtk}(永続・重複可能)`, 'down');
   if (f.markDfs) add(`刻印DFS${f.markDfs}`, `刻印 DFS${f.markDfs}(永続・重複可能)`, 'down');
   if (f.noHeal) add(`回復封じ·${f.noHeal}`, `回復封じ(残り${f.noHeal}ラリー。回復できない)`, 'down');
@@ -3852,6 +3912,17 @@ async function traitFx() {
 const ENTRY_TRAITS = ['burnout', 'rush', 'enterDispel', 'giantSlayer'];
 async function entryFx() {
   if (!S || S.over) return;
+  // 降臨:1階(門下生3体)と2階(ボス)の始まりにカットイン
+  if (S.stage && S.stage.quest) {
+    const n = S.teams[1].idx, floor = n >= 3 ? 2 : 1;
+    if (floor !== S.questFloor) {
+      S.questFloor = floor;
+      const boss = S.teams[1].cards[3];
+      Sound.cue(floor === 2 ? 3 : 1);
+      if (floor === 2) { flash('#ffffff'); shake(true); }
+      await cutin(`${floor}階`, floor === 2 ? `${boss ? dispName(boss.ch) : 'ボス'}降臨` : '門下生3体', floor === 2 ? 'evil' : 'gold', floor === 2 ? 1500 : 900);
+    }
+  }
   // 刻練場:新しい層に入ったら、層の番号を出す
   if (S.kr) {
     const f = active(S.teams[1]).ch;
@@ -4002,12 +4073,21 @@ async function finale() {
         let r = null;
         try { r = run ? await verRpc('solo_reward', { p_run: run }) : null; } catch (e) { if (e.code === 'KV001') verOld(); }
         walletSet(r); soloUnlocked(r);
+        S.questGot = r && Array.isArray(r.unlocked) ? r.unlocked.filter((id) => ['emo', 'rizu'].includes(id)) : [];
         n = r ? r.given : 0; total = shardCount(); first = !!(r && r.first);
       } else { n = S.stage.reward[firstClear ? 0 : 1]; total = await shardAdd(n); }
       if (n) {
         log(`${SHARD_NAME} +${n}(${first ? '初回クリア' : 'クリア'}・所持 ${total})`);
         await cutin(`${SHARD_NAME} +${n}`, `${first ? '初回クリア! ' : ''}所持 ${total}`, 'gold', 1500);
       } else log(`${SHARD_NAME}:この挑戦は記録できませんでした(所持 ${total})`);
+      // 降臨:抽選に当たったら、ボスのキャラが使えるようになる
+      for (const id of S.questGot || []) {
+        const ch = ALL_CHARS.find((c) => c.unlock === id);
+        if (!ch) continue;
+        Sound.fanfare(); Particles.shower(COLORS.rainbow, 200); flash('#ffffff');
+        log(`キャラ解放:${ch.name}が使えるようになった`);
+        await cutin('キャラ解放!', `${ch.name}が使えるようになった`, 'rainbow', 2200);
+      }
     }
   } else if (S.winner === 1) {
     Sound.defeat(); Particles.shower(COLORS.violet, 80);
@@ -5225,7 +5305,7 @@ async function accSignOut() {
 // 称号の一覧(50個)を決めるまでは、画面に出さず、解放もしない
 const TITLES_ON = true;
 const TITLE_TIERS = { 1: '#38bdf8', 2: '#4ade80', 3: '#f5c451', 4: '#b57bff', 5: '#ff2a3d' };
-const SOLO_STAGES = () => STAGES.filter((x) => !x.rush && !x.kr && !x.corridor && !['k4', 'k5'].includes(x.id)).map((x) => x.id);   // 「刻の覇者」は最初の11ステージ
+const SOLO_STAGES = () => STAGES.filter((x) => !x.rush && !x.kr && !x.corridor && !x.quest && !['k4', 'k5'].includes(x.id)).map((x) => x.id);   // 「刻の覇者」は最初の11ステージ
 const hasClear = (c, ...ids) => ids.every((id) => c.cleared.includes(id));
 // c:{ cleared, wins, rating, stats }。stats は progress 表に保存している数え上げ
 const st = (c, k) => c.stats[k] || 0;
@@ -5296,6 +5376,8 @@ const TITLES = [
   { id: 'kr40', tier: 5, name: '百刻を制す者', desc: '刻練場で10層(100体)を突破する(オソレが使えるようになる)', test: (c) => st(c, 'krBest') >= 10 },
   { id: 'krUtsuro', tier: 5, name: '虚ろを見た者', desc: '刻練場で累計2000体を倒す(ウツロが使えるようになる)', test: (c) => st(c, 'krTotal') >= 2000 },
   { id: 'tengan', tier: 5, name: '天眼の果てを見た者', desc: '刻の回廊★★★★★「天眼の果て」をクリア(ツル・天眼が使えるようになる)', test: (c) => hasClear(c, 'r4_5') },
+  { id: 'emo', tier: 4, name: '感情に触れし者', desc: '降臨「エモ降臨」のクリアで、まれに手に入る(エモが使えるようになる)', test: () => false },
+  { id: 'rizu', tier: 4, name: '論理を解きし者', desc: '降臨「リズ降臨」のクリアで、まれに手に入る(リズが使えるようになる)', test: () => false },
   { id: 'trio', tier: 5, name: '三つの刻を束ねし者', desc: 'カジ・レイ・ツルの3枚でトキバミを倒す', hidden: true, test: (c) => st(c, 'trioToki') >= 1 },
 ];
 const titleOf = (id) => TITLES.find((t) => t.id === id);
@@ -5670,30 +5752,34 @@ async function accInit() {
 // ソロ:ベーシックは今までのステージ、アドバンスは刻の回廊。区分けと選んでいるステージを合わせる
 function soloFixStage() {
   const adv = FORMAT === 'advance';
-  if (krSel()) { $('stages').classList.add('hidden'); $('corrStages').classList.add('hidden'); return; }   // スコアアタックは一覧を出さない
+  $('questStages').classList.toggle('hidden', !questSel());
+  if (krSel() || questSel()) { $('stages').classList.add('hidden'); $('corrStages').classList.add('hidden'); return; }   // スコアアタックは一覧を出さない
   if (adv !== soloCorr()) SOLO.stage = adv ? 'r1_2' : 'a1';
   $('stages').classList.toggle('hidden', adv);
   $('corrStages').classList.toggle('hidden', !adv);
 }
 function renderStages() {
   soloFixStage();
-  [...$('stages').children, ...$('corrStages').children].forEach((b) => {
+  [...$('stages').children, ...$('corrStages').children, ...$('questStages').children].forEach((b) => {
     if (!b.dataset.id) return;   // 回廊の見出し
     // 敵のアイコンも出す(★1・★2は兵士3体を小さく、★3以上はボス)。ゼノは名前が明かされるまでシルエット
     const s = STAGES.find((x) => x.id === b.dataset.id);
-    const boss = `<span class="foes">${stageFoes(s).filter((f) => !f.hiddenUntilActive).map((f) => iconHtml(f, s.stars >= 3 ? 'md' : 'sm')).join('')}</span>`;
-    const head = s.corridor ? '★'.repeat(s.stars) : `${s.faction} ${'★'.repeat(s.stars)}`;   // 回廊は見出しに名前があるので★だけ
+    const boss = `<span class="foes">${stageFoes(s).filter((f) => !f.hiddenUntilActive && (!s.quest || f.boss)).map((f) => iconHtml(f, s.stars >= 3 ? 'md' : 'sm')).join('')}</span>`;   // 降臨はボスだけ
+    const head = s.corridor ? '★'.repeat(s.stars) : s.quest ? `降臨 ${'★'.repeat(s.stars)}` : `${s.faction} ${'★'.repeat(s.stars)}`;   // 回廊は見出しに名前があるので★だけ
     b.innerHTML = `<b>${head}</b>${boss}${s.name}`;
     b.classList.toggle('chain', !!s.chainFrom);
     b.classList.toggle('picked', b.dataset.id === SOLO.stage);
     b.classList.toggle('cleared', SOLO.cleared.includes(b.dataset.id));
-    b.classList.toggle('locked', !corrOpen(s));
+    b.classList.toggle('locked', !corrOpen(s) || (!!s.quest && !questOpen()));
     if (!corrOpen(s)) b.innerHTML = `<b>${head}</b><span class="foes">🔒</span>${s.name}`;
   });
   const st = STAGES.find((x) => x.id === SOLO.stage), foes = stageFoes(st);
   const shown = foes.filter((f) => !f.hiddenUntilActive || xenoKnown());   // ★5は、倒すまで1体に見せる
   const from = st.chainFrom && STAGES.find((x) => x.id === st.chainFrom);
-  $('stageNote').textContent = from
+  $('stageNote').textContent = st.quest
+    ? `降臨「${st.name}」${'★'.repeat(st.stars)} ${questWhen()}。毎日 12:00・18:00・21:00 から1時間だけ挑める。1階で門下生3体、2階でボスの${st.foes.map((id) => ENEMIES[id]).pop().name}(HPは持ち越し)。パーティは${FORMATS[st.qfmt]}で組む(★4以上は1体まで)。`
+      + `クリアで💠${SHARD_NAME}:初回${st.reward[0]}個、2回目から${st.reward[1]}個。クリアするたび${(st.drop * 100).toFixed(1).replace(/\.0$/, '')}%の確率で${st.foes.map((id) => ENEMIES[id]).pop().name}が使えるようになる(ログインが必要)。`
+    : from
     ? `${st.faction} ${'★'.repeat(st.stars)}「${st.name}」 敵:${shown.map(dispName).join('・')}(ボス1体と3対1)。${'★'.repeat(from.stars)}「${from.name}」をクリアした直後だけ、結果画面の「続けて【始】に挑む」から、同じパーティで挑めます(全回復します)。`
     : st.kr
     ? `刻練場「${st.name}」 弱めの門下生が次々と出てくる。こちらのHPは引き継いだまま、全滅するまで戦い続けて撃破数を競う。1層は10体(敵3体×3戦+ボス)。層の最後のボスを倒すと全回復(10層まで)。10層(100体)の突破が目標。こちらは回復できず、DFSは5000まで。パーティはアドバンスで組む(★4以上は1体まで)。最高記録:${Number(localStorage.getItem('kokusen.krBest') || 0)}体・累計 ${(ACC.stats && ACC.stats.krTotal) || Number(localStorage.getItem('kokusen.krTotal') || 0)}体`
@@ -5726,8 +5812,19 @@ const rarityOf = (ch) => ch.rarity || 3;
 const rarHtml = (ch) => `<span class="rar r${rarityOf(ch)}">${'★'.repeat(rarityOf(ch))}</span>`;
 // ★4以上は1パーティに1枚まで(ソロは除く。ソロのボス攻略では隔絶やカジ【始】を組み合わせてよい)
 const HIGH_MAX = 1;
+// 降臨クエスト:毎日 12時・18時・21時(日本時間)からの1時間だけ。開いているかはサーバーも確かめる
+const QUEST_HOURS = [12, 18, 21];
+const jstNow = () => new Date(Date.now() + 9 * 3600e3);   // getUTC系で日本時間として読む
+const questOpen = () => QUEST_HOURS.includes(jstNow().getUTCHours());
+function questWhen() {   // 開催中なら残り、閉じていれば次の開始
+  const n = jstNow(), h = n.getUTCHours(), m = n.getUTCMinutes();
+  if (QUEST_HOURS.includes(h)) return `開催中 あと${60 - m}分(${h + 1}:00まで)`;
+  const nx = QUEST_HOURS.find((x) => x > h);
+  return nx != null ? `次の降臨:今日 ${nx}:00〜${nx + 1}:00` : `次の降臨:明日 ${QUEST_HOURS[0]}:00〜${QUEST_HOURS[0] + 1}:00`;
+}
+const questSel = () => { const st = typeof SOLO !== 'undefined' && STAGES.find((x) => x.id === SOLO.stage); return !!(st && st.quest); };
 const krSel = () => { const st = typeof SOLO !== 'undefined' && STAGES.find((x) => x.id === SOLO.stage); return !!(st && st.kr); };   // 刻練場を選んでいるか
-const highLimit = () => MODE !== 'solo' || krSel();   // 刻練場は★4以上1体まで
+const highLimit = () => MODE !== 'solo' || krSel() || questSel();   // 刻練場は★4以上1体まで
 // その枚数制限で、このキャラをもう入れられないか
 const highFull = (ch, ids) => highLimit() && rarityOf(ch) >= 4 && ids.map(charById).filter((o) => o && rarityOf(o) >= 4).length >= HIGH_MAX;
 const sameClash = (ch, ids) => ids.map(charById).some((o) => o && (o.sameAs === ch.id || ch.sameAs === o.id));
@@ -5736,7 +5833,7 @@ const FORMATS = { basic: 'ベーシック', advance: 'アドバンス' };
 let FORMAT = 'basic';
 try { const f = localStorage.getItem('kokusen.format'); if (FORMATS[f]) FORMAT = f; } catch (e) { /* 読めなければベーシック */ }
 const soloCorr = () => { const st = STAGES.find((x) => x.id === SOLO.stage); return !!(st && st.corridor); };
-const fmtNow = () => (MODE === 'solo' ? (soloCorr() || krSel() ? 'advance' : 'basic') : FORMAT);   // 刻練場はアドバンスで組む
+const fmtNow = () => (MODE === 'solo' ? (questSel() ? STAGES.find((x) => x.id === SOLO.stage).qfmt : soloCorr() || krSel() ? 'advance' : 'basic') : FORMAT);   // 刻練場はアドバンスで組む
 const inFormat = (ch, fmt = fmtNow()) => fmt === 'advance' || (!ch.gacha && !ch.adv);
 // そのパーティがルールに合っているか(区分け・★5は1枚まで・同じ人物は1枚)。合っていなければ理由
 function teamNg(ids, fmt = fmtNow()) {
@@ -5784,7 +5881,7 @@ async function accCheckMaster() {
   if (IS_MASTER) { try { renderStages(); renderTitleAcc(); renderAcct(); } catch (e) { /* 画面がまだなくてもよい */ } }
 }
 // キャラが使えるようになる称号は、サーバーの unlocks 表が正(SQLの17回目)。関数がないときは、これまでどおり profiles.titles
-const UNLOCK_IDS = ['kr300', 'kr500', 'kr1000', 'krUtsuro', 'kr32', 'kr36', 'kr40', 'tengan', 'shiToki', 'kaji', 'rush5', 'trio'];
+const UNLOCK_IDS = ['kr300', 'kr500', 'kr1000', 'krUtsuro', 'kr32', 'kr36', 'kr40', 'tengan', 'shiToki', 'kaji', 'rush5', 'trio', 'emo', 'rizu'];
 const UNLOCK_STAGES = ['k5', 'x5', 'rush', 't4'];   // クリアで称号が解放されるソロのステージ(天眼の果ては報酬のあるステージとして記録する)
 const UNL = { ready: false, ids: [] };
 async function unlockLoad() {
@@ -6874,20 +6971,20 @@ function pvpKindNg(fp) {
 }
 // 相手を決める画面の「キャラを選ぶ」を押せるか
 function canPick() {
-  if (MODE === 'solo') { const st = STAGES.find((x) => x.id === SOLO.stage); return !!st && !st.chainFrom && corrOpen(st); }
+  if (MODE === 'solo') { const st = STAGES.find((x) => x.id === SOLO.stage); return !!st && !st.chainFrom && corrOpen(st) && (!st.quest || questOpen()); }
   if (MODE === 'pvp') { const f = pvpFoe(); return PVP.phase !== 'idle' && !PVP.spec && !!f && !pvpKindNg(f.presence); }
   return true;
 }
 function renderFormats() {
   const solo = MODE === 'solo';
   // ソロのときだけ「スコアアタック」(刻練場)のボタンを並べる
-  $('formats').style.gridTemplateColumns = solo ? '1fr 1fr 1fr' : '1fr 1fr';
+  $('formats').style.gridTemplateColumns = solo ? '1fr 1fr 1fr 1fr' : '1fr 1fr';
   [...$('formats').children].forEach((b) => {
-    b.classList.toggle('hidden', b.dataset.f === 'kr' && !solo);
-    b.classList.toggle('picked', solo && krSel() ? b.dataset.f === 'kr' : b.dataset.f === fmtNow());
+    b.classList.toggle('hidden', (b.dataset.f === 'kr' || b.dataset.f === 'quest') && !solo);
+    b.classList.toggle('picked', solo && krSel() ? b.dataset.f === 'kr' : solo && questSel() ? b.dataset.f === 'quest' : b.dataset.f === fmtNow());
     b.disabled = PVP.on && PVP.phase !== 'idle';
   });
-  $('formatNote').textContent = solo && krSel() ? 'スコアアタック:刻練場で、何体倒せるかに挑む。パーティはアドバンスで組む(★4以上は1体まで)。' : solo ? (soloCorr() ? '刻の回廊:持っているガチャキャラも使える。★4以上の制限なし。' : 'ソロのステージ(ガチャキャラ以外)。アドバンスにすると「刻の回廊」。') : fmtNow() === 'advance' ? 'アドバンス:すべてのキャラが使える(ガチャキャラも)。★4以上は1パーティに1枚まで。' : 'ベーシック:ガチャキャラ以外のキャラで戦う。★4以上は1パーティに1枚まで。';
+  $('formatNote').textContent = solo && questSel() ? `降臨:期間限定のボスに挑む。${questWhen()}。` : solo && krSel() ? 'スコアアタック:刻練場で、何体倒せるかに挑む。パーティはアドバンスで組む(★4以上は1体まで)。' : solo ? (soloCorr() ? '刻の回廊:持っているガチャキャラも使える。★4以上の制限なし。' : 'ソロのステージ(ガチャキャラ以外)。アドバンスにすると「刻の回廊」。') : fmtNow() === 'advance' ? 'アドバンス:すべてのキャラが使える(ガチャキャラも)。★4以上は1パーティに1枚まで。' : 'ベーシック:ガチャキャラ以外のキャラで戦う。★4以上は1パーティに1枚まで。';
   [...$('cpuPicks').children].forEach((b) => b.classList.toggle('picked', b.dataset.c === CPU_PICK));
 }
 function renderSelHead() {
@@ -7022,6 +7119,7 @@ function start() {
 }
 // opt:level はCPUの深さ、read はボスが読みに頼る割合、stage はソロのステージ、noDecay は刻の抜け落ちを止める
 const startSolo = (mine, st, seed) => {
+  if (st.quest && !questOpen()) { openSheet('降臨', `<p class="sub">降臨は時間外です。${questWhen()}</p>`); renderStages(); return; }
   const sd = st.kr ? (seed != null ? seed : Math.floor(Math.random() * 2147483647)) : 0;   // 刻練場:敵の並びを決める種
   return startMatch(mine, st.kr ? krFoes(sd) : stageFoes(st), '敵', { level: st.level, read: st.read, stage: st, noDecay: true, krSeed: sd });
 };
@@ -7142,12 +7240,14 @@ function init() {
     b.classList.add('s' + st.stars);   // ★の数で色を変える
     if (st.corridor) b.classList.add('corr');
     b.onclick = () => { SOLO.stage = st.id; try { localStorage.setItem('kokusen.stage', st.id); } catch (e) { /* 保存できなくても動く */ } renderStages(); };
-    $(st.corridor ? 'corrStages' : 'stages').appendChild(b);
+    if (st.quest && st.stars === 3) { const h = document.createElement('p'); h.className = 'corr-h'; h.textContent = `${st.name}(${FORMATS[st.qfmt]})`; $('questStages').appendChild(h); }
+    $(st.quest ? 'questStages' : st.corridor ? 'corrStages' : 'stages').appendChild(b);
   });
   renderStages();
   try { const v = JSON.parse(localStorage.getItem('kokusen.vol') || 'null'); if (v) { FX.bgmVol = +v.b >= 0 ? +v.b : 1; FX.seVol = +v.s >= 0 ? +v.s : 1; } } catch (e) { /* 保存できなくても動く */ }
   accInit();
   setInterval(pvpWatch, 1000);
+  setInterval(() => { if (MODE === 'solo' && questSel() && !$('select').classList.contains('hidden')) renderStages(); }, 30000);   // 降臨の残り時間・開始の表示を更新
   // タイトル画面
   $('tVer').textContent = `ver ${APP_VER}`;
   $('tVer').title = `ルール ${RULES_VER.slice(0, 6)}`;   // 対人の版合わせに使うルールの番号
@@ -7245,7 +7345,8 @@ function init() {
   [...$('formats').children].forEach((b) => { b.onclick = () => { if (b.disabled) return;
     // スコアアタック:ステージを刻練場にする(FORMAT は変えない)。ほかを押したら、その一覧の最初のステージに戻す
     if (b.dataset.f === 'kr') { SOLO.stage = 'kr'; try { localStorage.setItem('kokusen.stage', 'kr'); } catch (e) { /* 保存できなくても動く */ } Sound.click(); renderStages(); return; }
-    if (krSel()) SOLO.stage = b.dataset.f === 'advance' ? 'r1_2' : 'a1';
+    if (b.dataset.f === 'quest') { if (!questSel()) SOLO.stage = 'qe3'; Sound.click(); renderStages(); return; }
+    if (krSel() || questSel()) SOLO.stage = b.dataset.f === 'advance' ? 'r1_2' : 'a1';
     FORMAT = b.dataset.f; try { localStorage.setItem('kokusen.format', FORMAT); } catch (e) { /* 保存できなくても動く */ } Sound.click(); if (MODE === 'solo') renderStages(); else renderSelect(); }; });
   [...$('cpuPicks').children].forEach((b) => { b.onclick = () => { CPU_PICK = b.dataset.c; try { localStorage.setItem('kokusen.cpuPick', CPU_PICK); } catch (e) { /* 保存できなくても動く */ } Sound.click(); renderSelect(); }; });
   [...$('pickSide').children].forEach((b) => { b.onclick = () => { if (b.dataset.s !== pickSide) { Sound.click(); setPickSide(b.dataset.s); } }; });
