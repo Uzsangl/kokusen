@@ -4932,8 +4932,8 @@ function renderMode() {
 }
 
 // ----- ソロモード -----
-const MODES = [['CPUと対戦', 'cpu'], ['ソロ', 'solo'], ['オンライン対人', 'pvp']];
-let MODE = 'cpu';
+const MODES = [['ソロ', 'solo'], ['オンライン対人', 'pvp'], ['CPUと対戦', 'cpu']];   // メニューを開くと、まずソロ
+let MODE = 'solo';
 const SOLO = { stage: 'a1', cleared: [], rush: 0 };
 // クリア記録は、ログインしていないとき(ゲスト)とアカウントで分けて持つ。
 // ゲスト:端末の「kokusen.cleared」。アカウント:サーバーの profiles.cleared(端末にもアカウント別に控えを置く)
