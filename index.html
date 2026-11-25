@@ -1161,7 +1161,7 @@ const SPECIAL_CHARS = [
     trait: { key: 'analyze', name: '解析', desc: '相手が同じ手を2回続けたら、次のラリーは自分の技が1段階強くなる' },
     actions: {
       rock:     { name: '証明終了', rate: RATE.big, up: { rate: RATE.max, when: 'analyzed', text: '解析が効いているときは極大' } },
-      scissors: { name: '反証',     rate: RATE.normal, dispel: 1 },
+      scissors: { name: '反証',     rate: RATE.normal, heal: 2000 },
       paper:    { name: '最適化',   rate: RATE.normal, atkUp: 1000, mods: [selfDfs(1500, 2)] } } },
 ];
 
