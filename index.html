@@ -1241,10 +1241,11 @@ const ENEMIES = {
       scissors: { name: 'ひらめき', rate: RATE.normal, streak: 1 },
       paper:    { name: 'ありがと!', rate: RATE.normal, heal: 1500 } } },
   qb_rizu: { name: 'リズ', faction: '零', hp: 30000, atk: 2500, dfs: 1800, phys: 1.0, boss: true,
-    traits: [{ key: 'analyze', name: '解析', desc: '相手が同じ手を2回続けたら、次のラリーは自分の技が1段階強くなる' },
-      { key: 'nullScissors', name: '棄却', desc: '相手のチョキ(跳躍)の技は、効果のないただの大ダメージになる' }],
+    traits: [{ key: 'analyze', name: '解析', desc: '相手が同じ手を2回続けたら、次のラリーは自分の技がすべて極大になる', max: 1 },
+      { key: 'nullScissors', name: '棄却', desc: '相手のチョキ(跳躍)の技は、効果のないただの大ダメージになる' },
+      { key: 'wear', name: '論破', desc: '毎ラリー、相手のDFS−200(永続・重複可能。最大−5000)', v: 200, cap: 5000 }],
     actions: {
-      rock:     { name: '証明終了', rate: RATE.big, foeTeamMark: { stat: 'atk', v: 600, cap: 3000 }, up: { rate: RATE.max, when: 'analyzed', text: '解析が効いているときは極大' } },
+      rock:     { name: '証明終了', rate: RATE.huge, foeTeamMark: { stat: 'atk', v: 600, cap: 3000 }, up: { rate: RATE.max, when: 'analyzed', text: '解析が効いているときは極大' } },
       scissors: { name: '反証',     rate: RATE.normal, dispel: 1, foeTeamMark: { stat: 'dfs', v: 600, cap: 3000 } },
       paper:    { name: '最適化',   rate: RATE.normal, foeTeamMark: [{ stat: 'atk', v: 300, cap: 3000 }, { stat: 'dfs', v: 300, cap: 3000 }], mods: [selfDfs(1500, 2)] } } },
   // --- 錨:硬くて回復する ---
@@ -1565,7 +1566,7 @@ const baseAtk = (c) => (traitOf(c, 'void') ? c.atk : Math.min(ATK_MAX, Math.max(
 // 現在のDFS(変身・特性・渡された強化・バフ/デバフ込み。次の被弾だけの上乗せ dfsUp は含めない)
 const baseDfs = (c) => {
   if (traitOf(c, 'void')) return c.dfs;   // ウツロの「虚ろ」:DFSも元の値のまま
-  const v = c.dfs + c.dfsGain + c.dfsBonus + c.teamDfs + c.markDfs + (c.facDfs || 0) + modSum(c, 'dfs');
+  const v = c.dfs + c.dfsGain + c.dfsBonus + c.teamDfs + c.markDfs + (c.wearDfs || 0) + (c.facDfs || 0) + modSum(c, 'dfs');
   // 特性「鋼の刻」:DFSはデバフや刻印で下がらない
   return Math.max(0, Math.min(c.dfsCap || DFS_MAX, traitOf(c, 'hardshell') ? Math.max(c.dfs, v) : v));
 };
@@ -1608,7 +1609,7 @@ const rateOf = (a, att, def, n, isBreak) => {
   const b = traitOf(att, 'burnout'); if (b && a.rate && (att.boN || 0) < b.until) { trig(att, 'burnout'); return RATE.max; }
   const r = upActive(a, att, def, n, isBreak) ? a.up.rate : a.rate;
   // リズの「解析」:相手が同じ手を2回続けたあとのラリーは、技が1段階強くなる
-  if (r && att.anaOn && traitOf(att, 'analyze')) { trig(att, 'analyze'); return RATE_NEXT[r] || r; }
+  if (r && att.anaOn && traitOf(att, 'analyze')) { trig(att, 'analyze'); return traitOf(att, 'analyze').max ? RATE.max : RATE_NEXT[r] || r; }   // max:すべて極大(降臨のリズ)
   return r;
 };
 
@@ -2051,6 +2052,13 @@ function dispel(S, side, log) {
 // ラリーの締め:時蝕 → 特性「処置」 → バフ・デバフの残りラリー数 → 抜け落ち → 倒れたカードの交代
 // winSide: このラリーのじゃんけんに勝った側(あいこは -1)
 function endRally(S, log, winSide) {
+  // 降臨のリズ「論破」:毎ラリー、相手のDFSが下がっていく(永続)
+  S.teams.forEach((t, side) => {
+    const c = active(t), w = traitOf(c, 'wear'), f = active(S.teams[1 - side]);
+    if (!w || c.hp <= 0 || !f || f.hp <= 0 || traitOf(f, 'void')) return;
+    const before = f.wearDfs || 0; f.wearDfs = Math.max(-w.cap, before - w.v);
+    if (f.wearDfs !== before) { trig(c, 'wear'); log(`　${nameOf(c)}の「${w.name}」:${nameOf(f)}のDFS${f.wearDfs}`); }
+  });
   // エモの「ごきげん」:勝つとATKが上がり、負けると半分になる(あいこは変わらない)
   if (winSide >= 0) S.teams.forEach((t, side) => {
     const f = active(t), m = traitOf(f, 'mood');
@@ -3512,6 +3520,7 @@ function statusList(t, f) {
   if (f.teamDfs) add(`全体DFS+${f.teamDfs}`, `味方全員 DFS+${f.teamDfs}(永続・重複可能${capTxt(f.teamDfsCap, f.teamDfsFree)})`, 'up');
   if (f.dfsGain) add(`不動DFS+${f.dfsGain}`, `特性で上がったDFS+${f.dfsGain}`, 'up');
   { const m = traitOf(f, 'mood'); if (m && f.mood) add(`ごきげんATK+${f.mood}`, `ごきげん ATK+${f.mood}(勝つと+${m.step}・負けると半分。最大+${m.cap})`, 'up'); }
+  if (f.wearDfs) add(`論破DFS${f.wearDfs}`, `論破 DFS${f.wearDfs}(リズの特性。永続・重複可能。最大−5000)`, 'down');
   if (f.anaOn) add('解析済み', '解析:相手が同じ手を2回続けた。このラリーは自分の技が1段階強い', 'up');
   if (f.markAtk) add(`刻印ATK${f.markAtk}`, `刻印 ATK${f.markAtk}(永続・重複可能)`, 'down');
   if (f.markDfs) add(`刻印DFS${f.markDfs}`, `刻印 DFS${f.markDfs}(永続・重複可能)`, 'down');
