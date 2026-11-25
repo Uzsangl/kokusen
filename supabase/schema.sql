@@ -1250,7 +1250,7 @@ end $$;
 revoke execute on function public.admin_stats() from public, anon;
 grant execute on function public.admin_stats() to authenticated;
 
--- ===== 19回目:降臨クエスト(毎日12時・18時・21時からの1時間だけ挑める) =====
+-- ===== 19回目:降臨クエスト(毎日 12:00〜14:00・18:00〜19:00・21:00〜22:00 だけ挑める) =====
 -- ・開いているかは、サーバーの時計(日本時間)で決める。時間外に始めた挑戦は記録しない
 -- ・報酬のカケラは、これまでのソロの報酬(solo_rewards)と同じしくみ(初回は多め)
 -- ・クリアするたびに、ステージごとの確率でボスのキャラが解放される(抽選もサーバー)
@@ -1273,10 +1273,10 @@ insert into public.solo_rewards (stage, first, again) values
   ('qr3', 100, 10), ('qr4', 200, 20), ('qr5', 1000, 30)
   on conflict (stage) do update set first = excluded.first, again = excluded.again;
 
--- 降臨が開いているか(日本時間で 12時台・18時台・21時台)
+-- 降臨が開いているか(日本時間で 12時台・13時台・18時台・21時台)
 create or replace function public.quest_open() returns boolean
   language sql stable set search_path = '' as $$
-  select extract(hour from (now() at time zone 'Asia/Tokyo'))::int in (12, 18, 21)
+  select extract(hour from (now() at time zone 'Asia/Tokyo'))::int in (12, 13, 18, 21)
 $$;
 
 -- ソロの挑戦の開始:降臨のステージは、開いている時間だけ始められる
