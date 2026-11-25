@@ -3235,8 +3235,10 @@ const Bgm = (() => {
 // 対人戦:相手の残りが1枚になったとき。CPU戦:相手チーム全体の残りHPが25%以下になったとき
 // (ストーリーモードはまだないので、CPU戦をその代わりにしている)
 function climaxReady() {
-  if (!S || S.over || S.climax || (S.stage && ((S.stage.bgm === 'xeno' && !S.stage.climaxOk) || S.stage.rush || S.stage.kr || S.stage.quest))) return false;   // ゼノの曲の戦いは、ずっとその曲のまま(climaxOk のステージは切り替える)
+  if (!S || S.over || S.climax || (S.stage && ((S.stage.bgm === 'xeno' && !S.stage.climaxOk) || S.stage.rush || S.stage.kr))) return false;   // ゼノの曲の戦いは、ずっとその曲のまま(climaxOk のステージは切り替える)
   const cards = S.teams[1].cards;
+  // 降臨:2階のボスのHPが25%以下になったら
+  if (S.stage && S.stage.quest) { const b = cards[3]; return S.teams[1].idx >= 3 && !!b && b.hp > 0 && b.hp <= b.max * 0.25; }
   const left = cards.filter((c) => c.hp > 0 && c.result !== 'lose');
   const hp = left.reduce((s, c) => s + c.hp, 0), max = cards.reduce((s, c) => s + c.max, 0);
   return PVP.on ? left.length <= 1 : hp <= max * 0.25;
