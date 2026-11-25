@@ -1243,9 +1243,9 @@ const ENEMIES = {
     traits: [{ key: 'analyze', name: '解析', desc: '相手が同じ手を2回続けたら、次のラリーは自分の技が1段階強くなる' },
       { key: 'nullScissors', name: '棄却', desc: '相手のチョキ(跳躍)の技は、効果のないただの大ダメージになる' }],
     actions: {
-      rock:     { name: '証明終了', rate: RATE.big, mods: [foeAtk(1500, 3)], up: { rate: RATE.max, when: 'analyzed', text: '解析が効いているときは極大' } },
-      scissors: { name: '反証',     rate: RATE.normal, dispel: 1, mods: [foeDfs(2000, 3)] },
-      paper:    { name: '最適化',   rate: RATE.normal, mods: [foeAtk(1000, 3), foeDfs(1000, 3), selfDfs(1500, 2)] } } },
+      rock:     { name: '証明終了', rate: RATE.big, foeTeamMark: { stat: 'atk', v: 600, cap: 3000 }, up: { rate: RATE.max, when: 'analyzed', text: '解析が効いているときは極大' } },
+      scissors: { name: '反証',     rate: RATE.normal, dispel: 1, foeTeamMark: { stat: 'dfs', v: 600, cap: 3000 } },
+      paper:    { name: '最適化',   rate: RATE.normal, foeTeamMark: [{ stat: 'atk', v: 300, cap: 3000 }, { stat: 'dfs', v: 300, cap: 3000 }], mods: [selfDfs(1500, 2)] } } },
   // --- 錨:硬くて回復する ---
   a_guard: { name: '錨の衛士', faction: '錨', hp: 9000, atk: 2100, dfs: 1800, phys: 1.0,
     trait: { key: 'immovable', name: '不動', desc: '被弾するたびにDFS+400(最大+2000)', gain: 400, cap: 2000 },
@@ -1686,7 +1686,7 @@ function describe(a, rate, short) {
   if (a.voidCharge) parts.push(short ? '次のあいこ×2' : '次のあいこの「無の間」のダメージが2倍');
   if (a.purge) parts.push(short ? '強化・弱体消し' : '相手の強化と弱体をすべて消す');
   if (a.nextCut) parts.push(short ? '次番手被ダメ↓' : '次の番手が受けるダメージ−5%(永続・重複不可)。レイなら効果がアップ');
-  if (a.foeTeamMark) { const L = a.foeTeamMark.stat === 'atk' ? 'ATK' : 'DFS'; parts.push(short ? `敵全員${L}−${a.foeTeamMark.v}` : `相手の全員(控えも)の${L}−${a.foeTeamMark.v}(永続・重複可能。最大−${a.foeTeamMark.cap})`); }
+  if (a.foeTeamMark) [].concat(a.foeTeamMark).forEach((fm) => { const L = fm.stat === 'atk' ? 'ATK' : 'DFS'; parts.push(short ? `敵全員${L}−${fm.v}` : `相手の全員(控えも)の${L}−${fm.v}(永続・重複可能。最大−${fm.cap})`); });
   if (a.selfPerm) { const sp = [a.selfPerm.atk && `ATK+${a.selfPerm.atk}`, a.selfPerm.dfs && `DFS+${a.selfPerm.dfs}`].filter(Boolean).join('・'); parts.push(short ? `自${sp}永続` : `自分の${sp}(永続・重複可能)`); }
   if (a.team) { const L = a.team.stat === 'atk' ? 'ATK' : 'DFS'; parts.push(short ? `${a.team.bench ? '控え' : '全員'}${L}+${a.team.v}` : a.team.bench ? `控えの味方全員の${L}+${a.team.v}(永続・重複可能。上限なし)${a.team.rei ? '。レイなら効果がアップ' : ''}` : `味方全員(控えも)の${L}+${a.team.v}(永続・重複可能。最大+${a.team.cap})`); }
   if (a.nextAtkUp) parts.push(short ? `次番手ATK+${a.nextAtkUp}` : `次の番手の最初の攻撃ATK+${a.nextAtkUp}(重複不可)`);
@@ -1916,12 +1916,12 @@ function act(S, side, hand, log, isBreak) {
     S.events.push({ type: 'mod', side: 1 - side, text: `${label}刻印`, good: false });
     log(`　${nameOf(l)}に${label}の刻印(${label}${l[k]})`);
   }
-  if (a.foeTeamMark) {   // 相手の控えも含めた全員に、消えない弱体
-    const k = a.foeTeamMark.stat === 'atk' ? 'markAtk' : 'markDfs', label = a.foeTeamMark.stat === 'atk' ? 'ATK' : 'DFS';
-    lt.cards.forEach((c) => { if (c.result !== 'lose' && !traitOf(c, 'void')) c[k] = Math.max(-a.foeTeamMark.cap, c[k] - a.foeTeamMark.v); });
+  if (a.foeTeamMark) [].concat(a.foeTeamMark).forEach((fm) => {   // 相手の控えも含めた全員に、消えない弱体(ATKとDFSの両方もある)
+    const k = fm.stat === 'atk' ? 'markAtk' : 'markDfs', label = fm.stat === 'atk' ? 'ATK' : 'DFS';
+    lt.cards.forEach((c) => { if (c.result !== 'lose' && !traitOf(c, 'void')) c[k] = Math.max(-fm.cap, c[k] - fm.v); });
     S.events.push({ type: 'mod', side: 1 - side, text: `全員${label}刻印`, good: false });
     log(`　${lt.label}の全員に${label}の刻印(${label}${l[k]})`);
-  }
+  });
   if (a.selfPerm && w.hp > 0 && !traitOf(w, 'void')) {   // 自分に、消えない強化(重ねがけできる)
     w.atkBonus += a.selfPerm.atk || 0; w.dfsBonus += a.selfPerm.dfs || 0;
     w.permAtk = (w.permAtk || 0) + (a.selfPerm.atk || 0); w.permDfs = (w.permDfs || 0) + (a.selfPerm.dfs || 0); w.permName = a.name;   // 画面で「継承」と分けて出すため
