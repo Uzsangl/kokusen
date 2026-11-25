@@ -3746,7 +3746,7 @@ async function puchun() {
   if (S && S.questReward) {
     const r = await S.questReward;
     const got = r && Array.isArray(r.unlocked) ? r.unlocked.filter((id) => QUEST_LINES[id]) : [];
-    if (got.length) { S.questFxDone = true; await questUnlockFx(got); }
+    if (got.length) { S.questFxDone = true; await new Promise((ok) => setTimeout(ok, 530)); await questUnlockFx(got); }   // プチュンのあと暗転のまま0.7秒(ここで0.53秒+演出の始めの0.17秒)あけてから
   }
   g.classList.add('hidden'); g.innerHTML = '';
   flash('#ffffff');                       // 明けた瞬間に一度だけ光る
