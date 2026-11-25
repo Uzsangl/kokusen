@@ -1231,6 +1231,13 @@ const GACHA_CHARS = [
 // 敵の能力値はステージごとに決める。hp と atk は、下の STAGES の倍率(hp, atk)を掛けた値になる。
 // 特性の key の処理は、プレイヤーのキャラと共通(「特性」と書いた箇所)。unbreak はボス用。
 const ENEMIES = {
+  // --- 降臨クエストの1階の3体目(両方の降臨で共通)。HP・ATKはステージごとに決め打ち(over) ---
+  qz_justice: { name: 'ジャスティス', faction: '隔絶', hp: 25000, atk: 3000, dfs: 3000, phys: 1.0,
+    trait: { key: 'drawStreak', name: '正しさ', desc: 'あいこでも連勝が1増える' },
+    actions: {
+      rock:     { name: '断罪', rate: RATE.huge },
+      scissors: { name: '是正', rate: RATE.normal, heal: 3000 },
+      paper:    { name: '審理', rate: RATE.normal } } },
   // --- 降臨クエストのボス(2階)。技と特性はプレイヤー用のエモ・リズと同じ。強さはステージの倍率で上げる ---
   qb_emo: { name: 'エモ', faction: '矢', hp: 30000, atk: 2800, dfs: 2500, phys: 1.0, boss: true,
     traits: [{ key: 'mood', name: 'ごきげん', desc: '勝つたびにATK+500(場にいる間、最大+2500)。負けると半分になる', step: 500, cap: 2500 },
@@ -1479,12 +1486,12 @@ const STAGES = [
   { id: 'r4_5', corridor: 4, faction: '灯と天眼', stars: 5, name: '天眼の果て',   foes: ['c5_tsuru1', 'c5_tsuru'], level: 4, read: 0.6, hp: 1, atk: 1, bgm: 'xeno', bgm2: 'majo', climaxOk: true, reward: [1000, 40] },
   // 降臨クエスト:毎日12時・18時・21時からの1時間だけ挑める。1階で門下生3体、2階でボス(HPは持ち越し)。
   // エモ降臨はアドバンス、リズ降臨はベーシックで組む(★4以上の制限なし)。クリアの抽選でボスのキャラが解放される(サーバーが抽選)
-  { id: 'qe3', quest: 'emo',  qfmt: 'advance', faction: '矢', stars: 3, name: 'エモ降臨', foes: ['y_runner', 'y_archer', 'y_seer', 'qb_emo'], level: 4, read: 0.35, hp: 0.46, atk: 1.0, reward: [100, 10], drop: 0.002 },
-  { id: 'qe4', quest: 'emo',  qfmt: 'advance', faction: '矢', stars: 4, name: 'エモ降臨', foes: ['y_runner', 'y_archer', 'y_seer', 'qb_emo'], level: 4, read: 0.45, hp: 0.845, atk: 1.15, reward: [200, 20], drop: 0.005 },
-  { id: 'qe5', quest: 'emo',  qfmt: 'advance', faction: '矢', stars: 5, name: 'エモ降臨', foes: ['y_runner', 'y_archer', 'y_seer', 'qb_emo'], level: 4, read: 1, hp: 1.328, atk: 1.3, bossHp: 80000, reward: [1000, 30], drop: 0.25 },
-  { id: 'qr3', quest: 'rizu', qfmt: 'basic',   faction: '零', stars: 3, name: 'リズ降臨', foes: ['z_mask', 'z_wind', 'z_sand', 'qb_rizu'], level: 4, read: 0.35, hp: 0.73, atk: 1.0, reward: [100, 10], drop: 0.002 },
-  { id: 'qr4', quest: 'rizu', qfmt: 'basic',   faction: '零', stars: 4, name: 'リズ降臨', foes: ['z_mask', 'z_wind', 'z_sand', 'qb_rizu'], level: 4, read: 0.45, hp: 1.118, atk: 1.15, reward: [200, 20], drop: 0.005 },
-  { id: 'qr5', quest: 'rizu', qfmt: 'basic',   faction: '零', stars: 5, name: 'リズ降臨', foes: ['z_mask', 'z_wind', 'z_sand', 'qb_rizu'], level: 4, read: 1, hp: 1.904, atk: 1.3, bossHp: 200000, reward: [1000, 30], drop: 0.25 },
+  { id: 'qe3', quest: 'emo',  qfmt: 'advance', faction: '矢', stars: 3, name: 'エモ降臨', foes: ['y_runner', 'y_archer', 'qz_justice', 'qb_emo'], level: 4, read: 0.35, hp: 0.46, atk: 1.0, over: { qz_justice: { hp: 10000, atk: 2300 } }, reward: [100, 10], drop: 0.002 },
+  { id: 'qe4', quest: 'emo',  qfmt: 'advance', faction: '矢', stars: 4, name: 'エモ降臨', foes: ['y_runner', 'y_archer', 'qz_justice', 'qb_emo'], level: 4, read: 0.45, hp: 0.845, atk: 1.15, over: { qz_justice: { hp: 16000, atk: 2650 } }, reward: [200, 20], drop: 0.005 },
+  { id: 'qe5', quest: 'emo',  qfmt: 'advance', faction: '矢', stars: 5, name: 'エモ降臨', foes: ['y_runner', 'y_archer', 'qz_justice', 'qb_emo'], level: 4, read: 1, hp: 1.328, atk: 1.3, bossHp: 80000, over: { qz_justice: { hp: 25000, atk: 3000 } }, reward: [1000, 30], drop: 0.25 },
+  { id: 'qr3', quest: 'rizu', qfmt: 'basic',   faction: '零', stars: 3, name: 'リズ降臨', foes: ['z_mask', 'z_wind', 'qz_justice', 'qb_rizu'], level: 4, read: 0.35, hp: 0.73, atk: 1.0, over: { qz_justice: { hp: 10000, atk: 2300 } }, reward: [100, 10], drop: 0.002 },
+  { id: 'qr4', quest: 'rizu', qfmt: 'basic',   faction: '零', stars: 4, name: 'リズ降臨', foes: ['z_mask', 'z_wind', 'qz_justice', 'qb_rizu'], level: 4, read: 0.45, hp: 1.118, atk: 1.15, over: { qz_justice: { hp: 16000, atk: 2650 } }, reward: [200, 20], drop: 0.005 },
+  { id: 'qr5', quest: 'rizu', qfmt: 'basic',   faction: '零', stars: 5, name: 'リズ降臨', foes: ['z_mask', 'z_wind', 'qz_justice', 'qb_rizu'], level: 4, read: 1, hp: 1.904, atk: 1.3, bossHp: 200000, over: { qz_justice: { hp: 25000, atk: 3000 } }, reward: [1000, 30], drop: 0.25 },
 ];
 // ステージの敵を、倍率を掛けた能力値で作る(元のデータは書き換えない)
 // ----- 刻練場(百刻スコアアタック) -----
@@ -1547,6 +1554,8 @@ function stageFoes(stage) {
   return stage.foes.map((id) => {
     const e = ENEMIES[id];
     const r10 = (v) => (stage.hp === 1 && stage.atk === 1 ? v : Math.max(1, Math.round(v / 10) * 10));   // 倍率1なら数字そのまま(44444など)
+    const ov = stage.over && stage.over[id];   // 決め打ちの数値(降臨のジャスティス)
+    if (ov) return { ...e, id, ...ov };
     return { ...e, id, hp: e.boss && stage.bossHp ? stage.bossHp : r10(e.hp * stage.hp), atk: r10(e.atk * stage.atk) };   // bossHp:ボスだけHPを決め打ち(降臨の★5)
   });
 }
