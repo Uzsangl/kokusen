@@ -1184,7 +1184,7 @@ const GACHA_CHARS = [
     actions: { rock: { rate: RATE.normal, name: '潮受け', mods: [foeAtk(500, 2)] }, scissors: N('しぶき'), paper: { rate: RATE.normal, name: '満ち潮', heal: 1600 } } },
   { id: 'g_a3c', name: 'カイ', faction: '錨', rarity: 3, gacha: true, role: '硬い相手を割る', hp: 12300, atk: 2600, dfs: 1300, phys: 1.15,
     actions: { rock: { rate: RATE.huge, name: '大鎚', up: { rate: RATE.max, when: 'foeDfsAtLeast', v: 2000, text: '相手のDFSが2000以上なら極大' } }, scissors: { rate: RATE.normal, name: '鋲打ち', mods: [foeDfs(800, 3)] }, paper: N('櫂返し') } },
-  { id: 'g_a4', name: 'トモシ', faction: '錨', rarity: 4, gacha: true, role: '抜け落ち勝ち', hp: 28000, atk: 1500, dfs: 2600, phys: 0.9,
+  { id: 'g_a4', name: 'トモシ', faction: '錨', rarity: 4, gacha: true, role: '抜け落ち勝ち', hp: 23000, atk: 1500, dfs: 2600, phys: 0.9,
     traits: [{ key: 'decayGuard', name: '錨泊', desc: '刻の抜け落ちを受けない。相手が受ける抜け落ちダメージ+50%', boost: 0.5 },
       { key: 'unbreak', name: '消えぬ灯', desc: `${BREAK_NAME}で受けるダメージを半分にする`, cut: 0.5 }],
     actions: { rock: { rate: RATE.normal, name: '灯台守り', mods: [selfDfs(2000, 2)] }, scissors: N('灯し火'), paper: { rate: RATE.normal, name: '常夜灯', heal: 3000 } } },
