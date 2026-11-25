@@ -1477,7 +1477,7 @@ const STAGES = [
   { id: 'r4_4', corridor: 4, faction: '灯と天眼', stars: 4, name: '消えぬ灯',     foes: ['c4_tomoshi'], level: 4, read: 0.35, hp: 1, atk: 1, bgm: 'cirque', reward: [200, 20] },
   { id: 'r4_5', corridor: 4, faction: '灯と天眼', stars: 5, name: '天眼の果て',   foes: ['c5_tsuru1', 'c5_tsuru'], level: 4, read: 0.6, hp: 1, atk: 1, bgm: 'xeno', bgm2: 'majo', climaxOk: true, reward: [1000, 40] },
   // 降臨クエスト:毎日12時・18時・21時からの1時間だけ挑める。1階で門下生3体、2階でボス(HPは持ち越し)。
-  // エモ降臨はアドバンス、リズ降臨はベーシックで組む(★4以上は1体まで)。クリアの抽選でボスのキャラが解放される(サーバーが抽選)
+  // エモ降臨はアドバンス、リズ降臨はベーシックで組む(★4以上の制限なし)。クリアの抽選でボスのキャラが解放される(サーバーが抽選)
   { id: 'qe3', quest: 'emo',  qfmt: 'advance', faction: '矢', stars: 3, name: 'エモ降臨', foes: ['y_runner', 'y_archer', 'y_seer', 'qb_emo'], level: 4, read: 0.35, hp: 0.46, atk: 1.0, reward: [100, 10], drop: 0.002 },
   { id: 'qe4', quest: 'emo',  qfmt: 'advance', faction: '矢', stars: 4, name: 'エモ降臨', foes: ['y_runner', 'y_archer', 'y_seer', 'qb_emo'], level: 4, read: 0.45, hp: 0.845, atk: 1.15, reward: [200, 20], drop: 0.005 },
   { id: 'qe5', quest: 'emo',  qfmt: 'advance', faction: '矢', stars: 5, name: 'エモ降臨', foes: ['y_runner', 'y_archer', 'y_seer', 'qb_emo'], level: 4, read: 1, hp: 1.328, atk: 1.3, bossHp: 80000, reward: [1000, 30], drop: 0.25 },
@@ -5811,7 +5811,7 @@ function renderStages() {
   const shown = foes.filter((f) => !f.hiddenUntilActive || xenoKnown());   // ★5は、倒すまで1体に見せる
   const from = st.chainFrom && STAGES.find((x) => x.id === st.chainFrom);
   $('stageNote').textContent = st.quest
-    ? `降臨「${st.name}」${'★'.repeat(st.stars)} ${questWhen()}。毎日 12:00・18:00・21:00 から1時間だけ挑める。1階で門下生3体、2階でボスの${st.foes.map((id) => ENEMIES[id]).pop().name}(HPは持ち越し)。パーティは${FORMATS[st.qfmt]}で組む(★4以上は1体まで)。`
+    ? `降臨「${st.name}」${'★'.repeat(st.stars)} ${questWhen()}。毎日 12:00・18:00・21:00 から1時間だけ挑める。1階で門下生3体、2階でボスの${st.foes.map((id) => ENEMIES[id]).pop().name}(HPは持ち越し)。パーティは${FORMATS[st.qfmt]}で組む(★4以上の制限なし)。`
       + `クリアで💠${SHARD_NAME}:初回${st.reward[0]}個、2回目から${st.reward[1]}個。クリアするたび${(st.drop * 100).toFixed(1).replace(/\.0$/, '')}%の確率で${st.foes.map((id) => ENEMIES[id]).pop().name}が使えるようになる(ログインが必要)。`
     : from
     ? `${st.faction} ${'★'.repeat(st.stars)}「${st.name}」 敵:${shown.map(dispName).join('・')}(ボス1体と3対1)。${'★'.repeat(from.stars)}「${from.name}」をクリアした直後だけ、結果画面の「続けて【始】に挑む」から、同じパーティで挑めます(全回復します)。`
@@ -5858,7 +5858,7 @@ function questWhen() {   // 開催中なら残り、閉じていれば次の開�
 }
 const questSel = () => { const st = typeof SOLO !== 'undefined' && STAGES.find((x) => x.id === SOLO.stage); return !!(st && st.quest); };
 const krSel = () => { const st = typeof SOLO !== 'undefined' && STAGES.find((x) => x.id === SOLO.stage); return !!(st && st.kr); };   // 刻練場を選んでいるか
-const highLimit = () => MODE !== 'solo' || krSel() || questSel();   // 刻練場は★4以上1体まで
+const highLimit = () => MODE !== 'solo' || krSel();   // 降臨は★4以上の制限なし   // 刻練場は★4以上1体まで
 // その枚数制限で、このキャラをもう入れられないか
 const highFull = (ch, ids) => highLimit() && rarityOf(ch) >= 4 && ids.map(charById).filter((o) => o && rarityOf(o) >= 4).length >= HIGH_MAX;
 const sameClash = (ch, ids) => ids.map(charById).some((o) => o && (o.sameAs === ch.id || ch.sameAs === o.id));
