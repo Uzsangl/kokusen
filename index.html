@@ -1160,7 +1160,7 @@ const SPECIAL_CHARS = [
   { id: 'q_rizu', name: 'リズ', faction: '零', group: '零', bonusOk: true, adv: true, rarity: 3, role: '論理・癖を解析する', unlock: 'rizu', hp: 14000, atk: 2300, dfs: 1600, phys: 1.0,
     traits: [{ key: 'analyze', name: '解析', desc: '相手が同じ手を2回続けたら、次のラリーは自分の技が1段階強くなる' },
       { key: 'nullScissors', name: '棄却', desc: '相手のチョキ(跳躍)の技は、効果のないただの大ダメージになる' },
-      { key: 'legacy', name: '結論', desc: '倒れたとき、控えの味方全員の最大HPとHPを+2000', atk: 0, dfs: 0, hp: 2000 }],
+      { key: 'legacy', name: '結論', desc: 'パーティが全員零陣営なら、倒れたとき控えの味方全員の最大HPとHPを+2000', atk: 0, dfs: 0, hp: 2000, needFaction: '零' }],
     actions: {
       rock:     { name: '証明終了', rate: RATE.big, foeTeamMark: { stat: 'atk', v: 300, cap: 1500 }, up: { rate: RATE.max, when: 'analyzed', text: '解析が効いているときは極大' } },
       scissors: { name: '反証',     rate: RATE.normal, heal: 2000, foeTeamMark: { stat: 'dfs', v: 300, cap: 1500 } },
@@ -2200,7 +2200,7 @@ function endRally(S, log, winSide) {
     }
     // 特性「舫い」「羽渡し」:倒れたとき、控えの味方全員を強化する
     const lg = traitOf(f, 'legacy'), bench = t.cards.slice(t.idx + 1);
-    if (ko[side] && lg && bench.length) {
+    if (ko[side] && lg && bench.length && (!lg.needFaction || t.cards.every((c) => c.ch.faction === lg.needFaction))) {   // needFaction:パーティ全員がその陣営のときだけ(リズの結論)
       bench.forEach((c) => { if (traitOf(c, 'void')) return; c.atkBonus += lg.atk; c.dfsBonus += lg.dfs; c.max += lg.hp; c.hp += lg.hp; });
       trig(f, 'legacy');
       relay(t, 'lg:' + f.ch.id, lg.name, `${f.ch.name}が倒れて、控えの味方全員に` + [lg.atk && `ATK+${lg.atk}`, lg.dfs && `DFS+${lg.dfs}`, lg.hp && `最大HP+${lg.hp}`].filter(Boolean).join('・') + '(永続・重複可能)');
