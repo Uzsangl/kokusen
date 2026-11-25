@@ -1234,7 +1234,8 @@ const ENEMIES = {
   // --- 降臨クエストのボス(2階)。技と特性はプレイヤー用のエモ・リズと同じ。強さはステージの倍率で上げる ---
   qb_emo: { name: 'エモ', faction: '矢', hp: 30000, atk: 2800, dfs: 2500, phys: 1.0, boss: true,
     traits: [{ key: 'mood', name: 'ごきげん', desc: '勝つたびにATK+500(場にいる間、最大+2500)。負けると半分になる', step: 500, cap: 2500 },
-      { key: 'breakReflect', name: '照れ隠し', desc: `${BREAK_NAME}の一撃で受けたダメージ×(自分のDFS÷10000)を相手に返す` }],
+      { key: 'breakReflect', name: '照れ隠し', desc: `${BREAK_NAME}の一撃で受けたダメージ×(自分のDFS÷10000)を相手に返す` },
+      { key: 'breakShield', name: '本音', desc: `HPが最大の62.5%(★5なら50000)を下回る一撃は、そこで止まる。そのあとは${BREAK_NAME}のダメージを受けず、受けるはずだったダメージをそのまま返す`, ratio: 0.625 }],
     actions: {
       rock:     { name: '全力ハグ', rate: RATE.huge, up: { rate: RATE.max, when: 'moodMax', text: 'ごきげんが最大なら極大' } },
       scissors: { name: 'ひらめき', rate: RATE.normal, streak: 1 },
@@ -1834,9 +1835,21 @@ function act(S, side, hand, log, isBreak) {
   if (a.rate) {
     const rate = rateOf(a, w, l, w.turn, isBreak);
     const dfs = dfsVs(w, l, isBreak);
-    const d = damage(S, w, l, rate, isBreak);
+    let d = damage(S, w, l, rate, isBreak);
     w.atkUp = 0;
     l.dfsUp = 0;
+    // 降臨のエモ「本音」:HPが一定(★5は50000)を下回る一撃は、そこで止まる。そのあとはBREAKのダメージを受けず、受けるはずだったダメージをそのまま返す
+    const sh = traitOf(l, 'breakShield');
+    let shieldRef = 0;
+    if (sh && d > 0) {
+      const line = Math.round(l.max * sh.ratio);
+      if (l.shieldOn && isBreak) { shieldRef = d; d = 0; }
+      else if (!l.shieldOn && l.hp > line && l.hp - d <= line) {
+        d = l.hp - line; l.shieldOn = true; trig(l, 'breakShield');
+        S.events.push({ type: 'mod', side: 1 - side, text: sh.name, good: true });
+        log(`　${nameOf(l)}の「${sh.name}」:HP${line}で踏みとどまった。ここからは${BREAK_NAME}のダメージを受けずに返す`);
+      }
+    }
     l.hp = Math.max(0, l.hp - d);
     undyingCheck(S, l, isBreak, 1 - side, log);
     S.hit.dmg = d; S.hit.rate = rate;
@@ -1848,6 +1861,13 @@ function act(S, side, hand, log, isBreak) {
       w.hp = Math.max(0, w.hp - t.dmg);
       S.ticks.push({ side, dmg: t.dmg, label: t.name });
       log(`　${nameOf(l)}の「${t.name}」→ ${nameOf(w)}に${t.dmg}ダメージ`);
+    }
+    if (shieldRef > 0) {   // 本音:BREAKのダメージをそのまま返す
+      trig(l, 'breakShield');
+      w.hp = Math.max(0, w.hp - shieldRef);
+      undyingCheck(S, w, false, side, log);
+      S.ticks.push({ side, dmg: shieldRef, label: sh.name });
+      log(`　${nameOf(l)}の「${sh.name}」:${BREAK_NAME}を受け流し、${nameOf(w)}に${shieldRef}ダメージ`);
     }
     // 降臨のエモ「照れ隠し」:BREAKの一撃で受けたダメージ×(自分のDFS(強化込み)÷10000)を相手に返す(倒れても返す)
     if (isBreak && (t = traitOf(l, 'breakReflect')) && d > 0) {
