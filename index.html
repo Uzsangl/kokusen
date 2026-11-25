@@ -1486,7 +1486,7 @@ const STAGES = [
   { id: 'r4_3', corridor: 4, faction: '灯と天眼', stars: 3, name: '満ち潮の番人', foes: ['c3_iso'], level: 4, read: 0.35, hp: 1, atk: 1 },
   { id: 'r4_4', corridor: 4, faction: '灯と天眼', stars: 4, name: '消えぬ灯',     foes: ['c4_tomoshi'], level: 4, read: 0.35, hp: 1, atk: 1, bgm: 'cirque', reward: [200, 20] },
   { id: 'r4_5', corridor: 4, faction: '灯と天眼', stars: 5, name: '天眼の果て',   foes: ['c5_tsuru1', 'c5_tsuru'], level: 4, read: 0.6, hp: 1, atk: 1, bgm: 'xeno', bgm2: 'majo', climaxOk: true, reward: [1000, 40] },
-  // 降臨クエスト:毎日 12:00〜14:00・18:00〜19:00・21:00〜22:00 だけ挑める。1階で門下生3体、2階でボス(HPは持ち越し)。
+  // 降臨クエスト:毎日 8:00〜10:00・12:00〜14:00・18:00〜20:00・21:00〜24:00 だけ挑める。1階で門下生3体、2階でボス(HPは持ち越し)。
   // エモ降臨はアドバンス、リズ降臨はベーシックで組む(★4以上の制限なし)。クリアの抽選でボスのキャラが解放される(サーバーが抽選)
   { id: 'qe3', quest: 'emo',  qfmt: 'advance', faction: '矢', stars: 3, name: 'エモ降臨', foes: ['y_runner', 'y_archer', 'qz_justice', 'qb_emo'], level: 4, read: 0.35, hp: 0.46, atk: 1.0, justice: [[0.55, 'Jzz'], [0.45, 'JzJ']], over: { qz_justice: { hp: 10000, atk: 2300, dfs: 2000 }, qb_emo: { hp: 20000, atk: 2800, dfs: 1500 } }, bossBgm: 'cirque', reward: [100, 10], drop: 0.002 },
   { id: 'qe4', quest: 'emo',  qfmt: 'advance', faction: '矢', stars: 4, name: 'エモ降臨', foes: ['y_runner', 'y_archer', 'qz_justice', 'qb_emo'], level: 4, read: 0.6, hp: 0.845, atk: 1.15, justice: [[0.55, 'Jzz'], [0.45, 'JzJ']], over: { qz_justice: { hp: 16000, atk: 2650, dfs: 2500 }, qb_emo: { hp: 40000, atk: 3200, dfs: 2000 } }, bossBgm: 'cirque', reward: [200, 20], drop: 0.005 },
@@ -5873,7 +5873,7 @@ function renderStages() {
   const shown = foes.filter((f) => !f.hiddenUntilActive || xenoKnown());   // ★5は、倒すまで1体に見せる
   const from = st.chainFrom && STAGES.find((x) => x.id === st.chainFrom);
   $('stageNote').textContent = st.quest
-    ? `降臨「${st.name}」${'★'.repeat(st.stars)} ${questWhen()}。毎日 12:00〜14:00・18:00〜19:00・21:00〜22:00 だけ挑める。1階で門下生3体(顔ぶれは戦うまで分からない)、2階でボスの${st.foes.map((id) => ENEMIES[id]).pop().name}(HPは持ち越し)。パーティは${FORMATS[st.qfmt]}で組む(★4以上の制限なし)。`
+    ? `降臨「${st.name}」${'★'.repeat(st.stars)} ${questWhen()}。毎日 8:00〜10:00・12:00〜14:00・18:00〜20:00・21:00〜24:00 だけ挑める。1階で門下生3体(顔ぶれは戦うまで分からない)、2階でボスの${st.foes.map((id) => ENEMIES[id]).pop().name}(HPは持ち越し)。パーティは${FORMATS[st.qfmt]}で組む(★4以上の制限なし)。`
       + `クリアで💠${SHARD_NAME}:初回${st.reward[0]}個、2回目から${st.reward[1]}個。クリアするたび${(st.drop * 100).toFixed(1).replace(/\.0$/, '')}%の確率で${st.foes.map((id) => ENEMIES[id]).pop().name}が使えるようになる(ログインが必要)。`
     : from
     ? `${st.faction} ${'★'.repeat(st.stars)}「${st.name}」 敵:${shown.map(dispName).join('・')}(ボス1体と3対1)。${'★'.repeat(from.stars)}「${from.name}」をクリアした直後だけ、結果画面の「続けて【始】に挑む」から、同じパーティで挑めます(全回復します)。`
@@ -5908,13 +5908,13 @@ const rarityOf = (ch) => ch.rarity || 3;
 const rarHtml = (ch) => `<span class="rar r${rarityOf(ch)}">${'★'.repeat(rarityOf(ch))}</span>`;
 // ★4以上は1パーティに1枚まで(ソロは除く。ソロのボス攻略では隔絶やカジ【始】を組み合わせてよい)
 const HIGH_MAX = 1;
-// 降臨クエスト:毎日 12:00〜14:00・18:00〜19:00・21:00〜22:00(日本時間)。開いているかはサーバーも確かめる
+// 降臨クエスト:毎日 8:00〜10:00・12:00〜14:00・18:00〜20:00・21:00〜24:00(日本時間)。開いているかはサーバーも確かめる
 // 降臨のキャラ解放のときのセリフ:[負けたときの一言, 仲間になったときの決めゼリフ]
 const QUEST_LINES = {
   emo: ['えへへ…負けちゃった。でも、楽しかった!', 'よーし、いっしょに行こっ!'],
   rizu: ['…計算外。いえ、あなたが正しかったのね', '論理的に考えて、あなたと組むのが最適解よ'],
 };
-const QUEST_HOURS = [12, 13, 18, 21];   // 開いている「時」の一覧(続いている時は1つの枠)
+const QUEST_HOURS = [8, 9, 12, 13, 18, 19, 21, 22, 23];   // 開いている「時」の一覧(続いている時は1つの枠)
 const questEnd = (h) => { let e = h; while (QUEST_HOURS.includes(e)) e++; return e; };   // h時から続く枠の終わり
 const jstNow = () => new Date(Date.now() + 9 * 3600e3);   // getUTC系で日本時間として読む
 const questOpen = () => QUEST_HOURS.includes(jstNow().getUTCHours());
