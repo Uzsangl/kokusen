@@ -3742,6 +3742,12 @@ async function puchun() {
   g.classList.remove('hidden');
   Sound.gachaPuchun();   // ガチャと同じプチュンの音(音声ファイル)
   await wait(800);                        // 真っ暗で無音
+  // 降臨:キャラ解放に当たっていたら、暗転のまま金色の破片の演出へ
+  if (S && S.questReward) {
+    const r = await S.questReward;
+    const got = r && Array.isArray(r.unlocked) ? r.unlocked.filter((id) => QUEST_LINES[id]) : [];
+    if (got.length) { S.questFxDone = true; await questUnlockFx(got); }
+  }
   g.classList.add('hidden'); g.innerHTML = '';
   flash('#ffffff');                       // 明けた瞬間に一度だけ光る
   Bgm.duck(false);
@@ -3804,6 +3810,9 @@ async function strike(side, hand, a, o, isBreak) {
   // このラリーを戦ったカードのまま描く。倒れたカードは、HPゲージが空になっていくところを見せる
   render(o.cards); flushLog(); pops(o, big);
   if (kill) {
+    // 降臨:勝ちが決まった瞬間に、報酬(とキャラ解放の抽選)をサーバーに聞いておく。当たっていればプチュンのあとすぐ解放の演出
+    if (lastKill && S.stage && S.stage.quest && S.stage.reward && walletOn() && S.soloRun && !S.questReward)
+      S.questReward = (async () => { const run = await S.soloRun; try { return run ? await verRpc('solo_reward', { p_run: run }) : null; } catch (e) { if (e.code === 'KV001') verOld(); return null; } })();
     await new Promise((r) => setTimeout(r, Math.max(1000, 1500 * FX.speed)));   // ダメージとゲージを見せる間
     if (lastKill) await puchun();
   } else {
@@ -4157,9 +4166,12 @@ async function finale() {
       S.shardDone = true;
       let n, total, first = firstClear;
       if (walletOn()) {   // 報酬はサーバーが決めて財布に入れる(始めてから45秒たたない報告は断られる)
-        const run = S.soloRun && await S.soloRun;
         let r = null;
-        try { r = run ? await verRpc('solo_reward', { p_run: run }) : null; } catch (e) { if (e.code === 'KV001') verOld(); }
+        if (S.questReward) r = await S.questReward;   // 降臨:勝ちが決まった瞬間に聞いておいた結果
+        else {
+          const run = S.soloRun && await S.soloRun;
+          try { r = run ? await verRpc('solo_reward', { p_run: run }) : null; } catch (e) { if (e.code === 'KV001') verOld(); }
+        }
         walletSet(r); soloUnlocked(r);
         S.questGot = r && Array.isArray(r.unlocked) ? r.unlocked.filter((id) => ['emo', 'rizu'].includes(id)) : [];
         n = r ? r.given : 0; total = shardCount(); first = !!(r && r.first);
@@ -4169,7 +4181,7 @@ async function finale() {
         await cutin(`${SHARD_NAME} +${n}`, `${first ? '初回クリア! ' : ''}所持 ${total}`, 'gold', 1500);
       } else log(`${SHARD_NAME}:この挑戦は記録できませんでした(所持 ${total})`);
       // 降臨:抽選に当たったら、ボスのキャラが使えるようになる。ガチャの★5と同じ赤いガラスの破片 → ボスの一言 → 仲間になった → 決めゼリフ
-      await questUnlockFx(S.questGot || []);
+      if (!S.questFxDone) await questUnlockFx(S.questGot || []);   // プチュンのあとに出していなければ、ここで
     }
   } else if (S.winner === 1) {
     Sound.defeat(); Particles.shower(COLORS.violet, 80);
