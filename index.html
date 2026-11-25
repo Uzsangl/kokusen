@@ -4908,6 +4908,8 @@ function retryMatch() {
   const { mine, theirs, foeLabel, opt } = LAST_MATCH;
   // ソロは敵を作り直す(★★★★★の巻き戻しなどの状態を持ち越さない)
   if (opt.stage && opt.stage.chainFrom) { const from = STAGES.find((x) => x.id === opt.stage.chainFrom); return startSolo(mine, from); }
+  // 刻練場は、始めるときと同じく120層ぶんの敵を新しく抽選する(stageFoes は画面の説明用の1層ぶんだけ)
+  if (opt.stage && opt.stage.kr) return startSolo(mine, opt.stage);
   const foes = opt.stage ? stageFoes(opt.stage) : theirs;
   startMatch(mine, foes, foeLabel, opt);
 }
