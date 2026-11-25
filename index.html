@@ -1156,13 +1156,13 @@ const SPECIAL_CHARS = [
     actions: {
       rock:     { name: '全力ハグ', rate: RATE.huge, up: { rate: RATE.max, when: 'moodMax', text: 'ごきげんが最大なら極大' } },
       scissors: { name: 'ひらめき', rate: RATE.normal, streak: 1 },
-      paper:    { name: 'ありがと!', rate: RATE.normal, heal: 1500, team: { stat: 'atk', v: 300, cap: 0, bench: 1 } } } },
+      paper:    { name: 'ありがと!', rate: RATE.normal, heal: 1500, team: { stat: 'dfs', v: 300, cap: 0, bench: 1 } } } },
   { id: 'q_rizu', name: 'リズ', faction: '零', group: '零', bonusOk: true, adv: true, rarity: 3, role: '論理・癖を解析する', unlock: 'rizu', hp: 11000, atk: 2300, dfs: 1600, phys: 1.0,
     trait: { key: 'analyze', name: '解析', desc: '相手が同じ手を2回続けたら、次のラリーは自分の技が1段階強くなる' },
     actions: {
-      rock:     { name: '証明終了', rate: RATE.big, up: { rate: RATE.max, when: 'analyzed', text: '解析が効いているときは極大' } },
-      scissors: { name: '反証',     rate: RATE.normal, heal: 2000 },
-      paper:    { name: '最適化',   rate: RATE.normal, atkUp: 1000, mods: [selfDfs(1500, 2)] } } },
+      rock:     { name: '証明終了', rate: RATE.big, foeTeamMark: { stat: 'atk', v: 300, cap: 1500 }, up: { rate: RATE.max, when: 'analyzed', text: '解析が効いているときは極大' } },
+      scissors: { name: '反証',     rate: RATE.normal, heal: 2000, foeTeamMark: { stat: 'dfs', v: 300, cap: 1500 } },
+      paper:    { name: '最適化',   rate: RATE.normal, foeTeamMark: [{ stat: 'atk', v: 150, cap: 1500 }, { stat: 'dfs', v: 150, cap: 1500 }], mods: [selfDfs(1500, 2)] } } },
 ];
 
 // ===== ガチャキャラ(仮。名前・技名はあとで決める)=====
