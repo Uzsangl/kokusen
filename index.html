@@ -1237,7 +1237,7 @@ const ENEMIES = {
     actions: {
       rock:     { name: 'キック', rate: RATE.huge },
       scissors: { name: 'おやつ休憩', rate: RATE.normal, heal: 3000 },
-      paper:    { name: 'ビンタ', rate: RATE.normal } } },
+      paper:    { name: '盗み食い', rate: RATE.normal, heal: 4000 } } },
   // --- 降臨クエストのボス(2階)。技と特性はプレイヤー用のエモ・リズと同じ。強さはステージの倍率で上げる ---
   qb_emo: { name: 'エモ', faction: '矢', hp: 30000, atk: 2800, dfs: 2500, phys: 1.0, boss: true,
     traits: [{ key: 'mood', name: 'ごきげん', desc: '勝つたびにATK+500(場にいる間、最大+2500)。負けると半分になる', step: 500, cap: 2500 },
