@@ -1246,7 +1246,7 @@ const ENEMIES = {
       { key: 'wear', name: '論破', desc: '毎ラリー、相手のDFS−200(永続・重複可能。最大−5000)', v: 200, cap: 5000 }],
     actions: {
       rock:     { name: '証明終了', rate: RATE.huge, foeTeamMark: { stat: 'atk', v: 600, cap: 3000 }, up: { rate: RATE.max, when: 'analyzed', text: '解析が効いているときは極大' } },
-      scissors: { name: '反証',     rate: RATE.normal, dispel: 1, foeTeamMark: { stat: 'dfs', v: 600, cap: 3000 } },
+      scissors: { name: '反証',     rate: RATE.normal, heal: 2000, foeTeamMark: { stat: 'dfs', v: 600, cap: 3000 } },
       paper:    { name: '最適化',   rate: RATE.normal, foeTeamMark: [{ stat: 'atk', v: 300, cap: 3000 }, { stat: 'dfs', v: 300, cap: 3000 }], mods: [selfDfs(1500, 2)] } } },
   // --- 錨:硬くて回復する ---
   a_guard: { name: '錨の衛士', faction: '錨', hp: 9000, atk: 2100, dfs: 1800, phys: 1.0,
