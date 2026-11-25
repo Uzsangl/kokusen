@@ -1151,14 +1151,15 @@ const SPECIAL_CHARS = [
       scissors: { name: '虚', rate: RATE.big, voidCharge: 1 },
       paper:    { name: '無', rate: RATE.normal } } },
   // 降臨クエストのクリアで、まれに解放されるキャラ(★3・アドバンスだけ)
-  { id: 'q_emo', name: 'エモ', faction: '矢', group: '矢', bonusOk: true, adv: true, rarity: 3, role: '感情・ごきげんで強くなる', unlock: 'emo', hp: 10000, atk: 2600, dfs: 1100, phys: 1.0,
+  { id: 'q_emo', name: 'エモ', faction: '矢', group: '矢', bonusOk: true, adv: true, rarity: 3, role: '感情・ごきげんで強くなる', unlock: 'emo', hp: 13000, atk: 2600, dfs: 1100, phys: 1.0,
     trait: { key: 'mood', name: 'ごきげん', desc: '勝つたびにATK+500(場にいる間、最大+2500)。負けると半分になる', step: 500, cap: 2500 },
     actions: {
       rock:     { name: '全力ハグ', rate: RATE.huge, up: { rate: RATE.max, when: 'moodMax', text: 'ごきげんが最大なら極大' } },
       scissors: { name: 'ひらめき', rate: RATE.normal, streak: 1 },
-      paper:    { name: 'ありがと!', rate: RATE.normal, heal: 1500, team: { stat: 'dfs', v: 300, cap: 0, bench: 1 } } } },
-  { id: 'q_rizu', name: 'リズ', faction: '零', group: '零', bonusOk: true, adv: true, rarity: 3, role: '論理・癖を解析する', unlock: 'rizu', hp: 11000, atk: 2300, dfs: 1600, phys: 1.0,
-    trait: { key: 'analyze', name: '解析', desc: '相手が同じ手を2回続けたら、次のラリーは自分の技が1段階強くなる' },
+      paper:    { name: 'ありがと!', rate: RATE.normal, heal: 1500, streak: 1, team: { stat: 'dfs', v: 300, cap: 0, bench: 1 } } } },
+  { id: 'q_rizu', name: 'リズ', faction: '零', group: '零', bonusOk: true, adv: true, rarity: 3, role: '論理・癖を解析する', unlock: 'rizu', hp: 14000, atk: 2300, dfs: 1600, phys: 1.0,
+    traits: [{ key: 'analyze', name: '解析', desc: '相手が同じ手を2回続けたら、次のラリーは自分の技が1段階強くなる' },
+      { key: 'nullScissors', name: '棄却', desc: '相手のチョキ(跳躍)の技は、効果のないただの大ダメージになる' }],
     actions: {
       rock:     { name: '証明終了', rate: RATE.big, foeTeamMark: { stat: 'atk', v: 300, cap: 1500 }, up: { rate: RATE.max, when: 'analyzed', text: '解析が効いているときは極大' } },
       scissors: { name: '反証',     rate: RATE.normal, heal: 2000, foeTeamMark: { stat: 'dfs', v: 300, cap: 1500 } },
