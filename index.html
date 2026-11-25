@@ -4064,6 +4064,24 @@ async function aftermath(o) {
   }
 }
 
+// 降臨のキャラ解放の演出
+async function questUnlockFx(ids) {
+  for (const id of ids) {
+    const ch = ALL_CHARS.find((c) => c.unlock === id), ln = QUEST_LINES[id] || ['', ''];
+    if (!ch) continue;
+    const g = $('bpuchun');
+    Bgm.duck(true); g.innerHTML = ''; g.classList.remove('hidden');
+    await sleep(170);
+    if (!REDUCE) await secShards(g, 'gold');   // ガチャの★5と同じ破片を、金色で
+    flash('#ffd24a'); Sound.secReveal(); await sleep(450);
+    g.classList.add('hidden'); g.innerHTML = ''; Bgm.duck(false);
+    if (ln[0]) await cutin(ch.name, `「${ln[0]}」`, 'violet', 2400);
+    Sound.fanfare(); Particles.shower(COLORS.rainbow, 220); flash('#ffffff');
+    log(`キャラ解放:${ch.name}が仲間になった(使えるようになった)`);
+    await cutin('キャラ解放!', `${ch.name}が仲間になった`, 'rainbow', 2200);
+    if (ln[1]) await cutin(ch.name, `「${ln[1]}」`, 'gold', 2400);
+  }
+}
 // 試合の決着
 async function finale() {
   clearTimeout(tickTimer);
@@ -4150,14 +4168,8 @@ async function finale() {
         log(`${SHARD_NAME} +${n}(${first ? '初回クリア' : 'クリア'}・所持 ${total})`);
         await cutin(`${SHARD_NAME} +${n}`, `${first ? '初回クリア! ' : ''}所持 ${total}`, 'gold', 1500);
       } else log(`${SHARD_NAME}:この挑戦は記録できませんでした(所持 ${total})`);
-      // 降臨:抽選に当たったら、ボスのキャラが使えるようになる
-      for (const id of S.questGot || []) {
-        const ch = ALL_CHARS.find((c) => c.unlock === id);
-        if (!ch) continue;
-        Sound.fanfare(); Particles.shower(COLORS.rainbow, 200); flash('#ffffff');
-        log(`キャラ解放:${ch.name}が使えるようになった`);
-        await cutin('キャラ解放!', `${ch.name}が使えるようになった`, 'rainbow', 2200);
-      }
+      // 降臨:抽選に当たったら、ボスのキャラが使えるようになる。ガチャの★5と同じ赤いガラスの破片 → ボスの一言 → 仲間になった → 決めゼリフ
+      await questUnlockFx(S.questGot || []);
     }
   } else if (S.winner === 1) {
     Sound.defeat(); Particles.shower(COLORS.violet, 80);
@@ -5885,6 +5897,11 @@ const rarHtml = (ch) => `<span class="rar r${rarityOf(ch)}">${'★'.repeat(rarit
 // ★4以上は1パーティに1枚まで(ソロは除く。ソロのボス攻略では隔絶やカジ【始】を組み合わせてよい)
 const HIGH_MAX = 1;
 // 降臨クエスト:毎日 12:00〜14:00・18:00〜19:00・21:00〜22:00(日本時間)。開いているかはサーバーも確かめる
+// 降臨のキャラ解放のときのセリフ:[負けたときの一言, 仲間になったときの決めゼリフ]
+const QUEST_LINES = {
+  emo: ['えへへ…負けちゃった。でも、楽しかった!', 'よーし、いっしょに行こっ!'],
+  rizu: ['…計算外。いえ、あなたが正しかったのね', '論理的に考えて、あなたと組むのが最適解よ'],
+};
 const QUEST_HOURS = [12, 13, 18, 21];   // 開いている「時」の一覧(続いている時は1つの枠)
 const questEnd = (h) => { let e = h; while (QUEST_HOURS.includes(e)) e++; return e; };   // h時から続く枠の終わり
 const jstNow = () => new Date(Date.now() + 9 * 3600e3);   // getUTC系で日本時間として読む
@@ -6081,7 +6098,8 @@ function gachaRoll(rates = GACHA_RATES) {
 // ★5の演出:赤いガラスの破片が、奥(z が大きい)から手前へ飛んでくる。緩(ゆっくり近づく)→ 止まる → 急(一気に飛び抜ける)
 // 一点から広がる・止まる・飛び抜ける(ミリ秒)。飛び抜けは前半 rushA は等速、残りは1.8倍速で一気に抜ける
 const SEC_T = { slow: 370, hold: 220, rush: 520, rushA: 320 };
-function secShards(host) {
+function secShards(host, theme) {   // theme:'gold' なら金色の破片(降臨のキャラ解放)
+  const G = theme === 'gold';
   return new Promise((done) => {
     const cv = document.createElement('canvas'), dpr = Math.min(2, window.devicePixelRatio || 1);
     const W = innerWidth, H = innerHeight;
@@ -6126,7 +6144,7 @@ function secShards(host) {
       c.clearRect(0, 0, W, H);
       // 奥の赤い光(破片が来る前の気配)
       const glow = c.createRadialGradient(cx, cy, 0, cx, cy, Math.min(W, H) * (0.12 + k * 0.25));
-      glow.addColorStop(0, `rgba(255,40,60,${0.25 + 0.3 * Math.min(1, k * 1.6)})`); glow.addColorStop(1, 'rgba(255,0,30,0)');
+      glow.addColorStop(0, G ? `rgba(255,200,60,${0.25 + 0.3 * Math.min(1, k * 1.6)})` : `rgba(255,40,60,${0.25 + 0.3 * Math.min(1, k * 1.6)})`); glow.addColorStop(1, G ? 'rgba(255,170,0,0)' : 'rgba(255,0,30,0)');
       c.fillStyle = glow; c.fillRect(0, 0, W, H);
       const sx = shake ? (Math.random() - 0.5) * shake : 0, sy = shake ? (Math.random() - 0.5) * shake : 0;
       const M = Math.min(W, H), u = t / total, rushX = t > T.slow + T.hold ? (t - T.slow - T.hold) / T.rush : 0;
@@ -6136,14 +6154,14 @@ function secShards(host) {
         const q = Math.max(0, u - m.d), dist = M * 0.05 + M * m.v * (q * 0.35 + rushX * rushX * 0.9);
         if (q <= 0 || dist > M * 1.2) return;
         const x = cx + sx + Math.cos(m.a) * dist, y = cy + sy + Math.sin(m.a) * dist, tail = 2 + rushX * 40 * m.v;
-        c.strokeStyle = m.hue < 0.5 ? `rgba(255,${90 + m.hue * 200},${110 + m.hue * 120},${0.8 - q * 0.3})` : `rgba(255,${210 + m.hue * 40},200,${0.7 - q * 0.3})`;
+        c.strokeStyle = G ? (m.hue < 0.5 ? `rgba(255,${190 + m.hue * 100},${60 + m.hue * 80},${0.8 - q * 0.3})` : `rgba(255,${235 + m.hue * 20},180,${0.7 - q * 0.3})`) : m.hue < 0.5 ? `rgba(255,${90 + m.hue * 200},${110 + m.hue * 120},${0.8 - q * 0.3})` : `rgba(255,${210 + m.hue * 40},200,${0.7 - q * 0.3})`;
         c.lineWidth = m.s; c.beginPath(); c.moveTo(x, y); c.lineTo(x - Math.cos(m.a) * tail, y - Math.sin(m.a) * tail); c.stroke();
       });
       // 中心の光の玉:緩でふくらみ、止まるときにいちばん強く、急で弾ける
       const coreR = M * (0.025 + 0.04 * Math.min(1, k * 2.2)) * (1 + (shake ? 0.25 * Math.random() : 0)) * (1 - rushX * 0.8);
       if (coreR > 1) {
         const cg = c.createRadialGradient(cx + sx, cy + sy, 0, cx + sx, cy + sy, coreR * 3);
-        cg.addColorStop(0, 'rgba(255,255,255,1)'); cg.addColorStop(0.25, 'rgba(255,120,140,0.9)'); cg.addColorStop(1, 'rgba(255,0,40,0)');
+        cg.addColorStop(0, 'rgba(255,255,255,1)'); cg.addColorStop(0.25, G ? 'rgba(255,210,90,0.9)' : 'rgba(255,120,140,0.9)'); cg.addColorStop(1, G ? 'rgba(255,170,0,0)' : 'rgba(255,0,40,0)');
         c.fillStyle = cg; c.beginPath(); c.arc(cx + sx, cy + sy, coreR * 3, 0, 6.28); c.fill();
       }
       // 光の輪:緩のあいだ玉を囲んで少しずつ広がり、急の入りで衝撃波のように一気に広がる
@@ -6163,7 +6181,7 @@ function secShards(host) {
         if (life <= 0 || life >= 1) return;
         const a2 = 1 - life, x = cx + Math.cos(o.a) * M * o.r, y = cy + Math.sin(o.a) * M * o.r, sz2 = o.s * (0.6 + life);
         const pg = c.createRadialGradient(x, y, 0, x, y, sz2 * 1.6);
-        pg.addColorStop(0, `rgba(255,255,230,${a2})`); pg.addColorStop(0.4, `rgba(255,140,60,${a2 * 0.8})`); pg.addColorStop(1, 'rgba(255,40,40,0)');
+        pg.addColorStop(0, `rgba(255,255,230,${a2})`); pg.addColorStop(0.4, G ? `rgba(255,200,70,${a2 * 0.8})` : `rgba(255,140,60,${a2 * 0.8})`); pg.addColorStop(1, G ? 'rgba(255,180,0,0)' : 'rgba(255,40,40,0)');
         c.fillStyle = pg; c.fillRect(x - sz2 * 1.6, y - sz2 * 1.6, sz2 * 3.2, sz2 * 3.2);
       });
       c.globalCompositeOperation = 'source-over';
@@ -6175,11 +6193,11 @@ function secShards(host) {
         c.save(); c.translate(px, py); c.rotate(p.rot + p.spin * (t / 1000));
         c.beginPath(); p.pts.forEach(([u, v], i) => (i ? c.lineTo(u * sz, v * sz) : c.moveTo(u * sz, v * sz))); c.closePath();
         const gr = c.createLinearGradient(-sz, -sz, sz, sz);
-        gr.addColorStop(0, `rgba(255,${120 + p.tone * 80},${130 + p.tone * 60},${0.85 * fade})`);
-        gr.addColorStop(0.5, `rgba(220,10,40,${0.75 * fade})`);
+        gr.addColorStop(0, G ? `rgba(255,${230 + p.tone * 25},${140 + p.tone * 80},${0.85 * fade})` : `rgba(255,${120 + p.tone * 80},${130 + p.tone * 60},${0.85 * fade})`);
+        gr.addColorStop(0.5, G ? `rgba(215,150,10,${0.75 * fade})` : `rgba(220,10,40,${0.75 * fade})`);
         gr.addColorStop(1, `rgba(90,0,20,${0.85 * fade})`);
         c.fillStyle = gr; c.fill();
-        c.lineWidth = Math.max(0.6, sz * 0.04); c.strokeStyle = `rgba(255,220,225,${0.9 * fade})`; c.stroke();   // ガラスのふちの光
+        c.lineWidth = Math.max(0.6, sz * 0.04); c.strokeStyle = G ? `rgba(255,240,190,${0.9 * fade})` : `rgba(255,220,225,${0.9 * fade})`; c.stroke();   // ガラスのふちの光
         c.restore();
       });
       if (t < total) requestAnimationFrame(frame); else { cv.remove(); done(); }
