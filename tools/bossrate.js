@@ -48,7 +48,8 @@ function makeFoes(api, o) {
   if (o.stage) {
     const st = api.STAGES.find((s) => s.id === o.stage);
     if (!st) throw new Error('ステージが見つからない: ' + o.stage);
-    return { foes: api.stageFoes(st).map((f) => ({ ...f, hp: Math.round(f.hp * o.hpMul / 10) * 10 })), level: st.level, read: st.read || 0 };
+    const mk = () => api.stageFoes(st).map((f) => ({ ...f, hp: Math.round(f.hp * o.hpMul / 10) * 10 }));
+    return { foes: mk(), mk: st.justice ? mk : null, level: st.level, read: st.read || 0 };   // 降臨:敵の顔ぶれが毎回変わるので、試合ごとに引き直す
   }
   const r10 = (v) => Math.max(1, Math.round(v / 10) * 10);
   const all = [...api.CHARACTERS, ...api.SPECIAL_CHARS, ...api.GACHA_CHARS];
@@ -62,7 +63,7 @@ function makeFoes(api, o) {
 }
 // 1試合。hard=true なら自分も考えて打つ(深さ3)
 function play(api, party, F, hard) {
-  const S = api.newMatch(party, F.foes.map((f) => ({ ...f }))); S.noDecay = true; if (F.read) S.bossRead = F.read;
+  const S = api.newMatch(party, (F.mk ? F.mk() : F.foes).map((f) => ({ ...f }))); S.noDecay = true; if (F.read) S.bossRead = F.read;
   const noLog = () => {};
   let g = 0;
   while (!S.over && g++ < 4000) {

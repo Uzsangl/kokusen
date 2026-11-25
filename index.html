@@ -1486,12 +1486,12 @@ const STAGES = [
   { id: 'r4_5', corridor: 4, faction: '灯と天眼', stars: 5, name: '天眼の果て',   foes: ['c5_tsuru1', 'c5_tsuru'], level: 4, read: 0.6, hp: 1, atk: 1, bgm: 'xeno', bgm2: 'majo', climaxOk: true, reward: [1000, 40] },
   // 降臨クエスト:毎日12時・18時・21時からの1時間だけ挑める。1階で門下生3体、2階でボス(HPは持ち越し)。
   // エモ降臨はアドバンス、リズ降臨はベーシックで組む(★4以上の制限なし)。クリアの抽選でボスのキャラが解放される(サーバーが抽選)
-  { id: 'qe3', quest: 'emo',  qfmt: 'advance', faction: '矢', stars: 3, name: 'エモ降臨', foes: ['y_runner', 'y_archer', 'qz_justice', 'qb_emo'], level: 4, read: 0.35, hp: 0.46, atk: 1.0, over: { qz_justice: { hp: 10000, atk: 2300 } }, reward: [100, 10], drop: 0.002 },
-  { id: 'qe4', quest: 'emo',  qfmt: 'advance', faction: '矢', stars: 4, name: 'エモ降臨', foes: ['y_runner', 'y_archer', 'qz_justice', 'qb_emo'], level: 4, read: 0.45, hp: 0.845, atk: 1.15, over: { qz_justice: { hp: 16000, atk: 2650 } }, reward: [200, 20], drop: 0.005 },
-  { id: 'qe5', quest: 'emo',  qfmt: 'advance', faction: '矢', stars: 5, name: 'エモ降臨', foes: ['y_runner', 'y_archer', 'qz_justice', 'qb_emo'], level: 4, read: 1, hp: 1.328, atk: 1.3, bossHp: 80000, over: { qz_justice: { hp: 25000, atk: 3000 } }, reward: [1000, 30], drop: 0.25 },
-  { id: 'qr3', quest: 'rizu', qfmt: 'basic',   faction: '零', stars: 3, name: 'リズ降臨', foes: ['z_mask', 'z_wind', 'qz_justice', 'qb_rizu'], level: 4, read: 0.35, hp: 0.73, atk: 1.0, over: { qz_justice: { hp: 10000, atk: 2300 } }, reward: [100, 10], drop: 0.002 },
-  { id: 'qr4', quest: 'rizu', qfmt: 'basic',   faction: '零', stars: 4, name: 'リズ降臨', foes: ['z_mask', 'z_wind', 'qz_justice', 'qb_rizu'], level: 4, read: 0.45, hp: 1.118, atk: 1.15, over: { qz_justice: { hp: 16000, atk: 2650 } }, reward: [200, 20], drop: 0.005 },
-  { id: 'qr5', quest: 'rizu', qfmt: 'basic',   faction: '零', stars: 5, name: 'リズ降臨', foes: ['z_mask', 'z_wind', 'qz_justice', 'qb_rizu'], level: 4, read: 1, hp: 1.904, atk: 1.3, bossHp: 200000, over: { qz_justice: { hp: 25000, atk: 3000 } }, reward: [1000, 30], drop: 0.25 },
+  { id: 'qe3', quest: 'emo',  qfmt: 'advance', faction: '矢', stars: 3, name: 'エモ降臨', foes: ['y_runner', 'y_archer', 'qz_justice', 'qb_emo'], level: 4, read: 0.35, hp: 0.46, atk: 1.0, justice: [0.65, 0.30, 0.05], over: { qz_justice: { hp: 10000, atk: 2300 } }, reward: [100, 10], drop: 0.002 },
+  { id: 'qe4', quest: 'emo',  qfmt: 'advance', faction: '矢', stars: 4, name: 'エモ降臨', foes: ['y_runner', 'y_archer', 'qz_justice', 'qb_emo'], level: 4, read: 0.45, hp: 0.845, atk: 1.15, justice: [0.65, 0.30, 0.05], over: { qz_justice: { hp: 16000, atk: 2650 } }, reward: [200, 20], drop: 0.005 },
+  { id: 'qe5', quest: 'emo',  qfmt: 'advance', faction: '矢', stars: 5, name: 'エモ降臨', foes: ['y_runner', 'y_archer', 'qz_justice', 'qb_emo'], level: 4, read: 1, hp: 1.328, atk: 1.3, bossHp: 80000, justice: [0.65, 0.30, 0.05], over: { qz_justice: { hp: 25000, atk: 3000 } }, reward: [1000, 30], drop: 0.25 },
+  { id: 'qr3', quest: 'rizu', qfmt: 'basic',   faction: '零', stars: 3, name: 'リズ降臨', foes: ['z_mask', 'z_wind', 'qz_justice', 'qb_rizu'], level: 4, read: 0.35, hp: 0.73, atk: 1.0, justice: [0.65, 0.30, 0.05], over: { qz_justice: { hp: 10000, atk: 2300 } }, reward: [100, 10], drop: 0.002 },
+  { id: 'qr4', quest: 'rizu', qfmt: 'basic',   faction: '零', stars: 4, name: 'リズ降臨', foes: ['z_mask', 'z_wind', 'qz_justice', 'qb_rizu'], level: 4, read: 0.45, hp: 1.118, atk: 1.15, justice: [0.65, 0.30, 0.05], over: { qz_justice: { hp: 16000, atk: 2650 } }, reward: [200, 20], drop: 0.005 },
+  { id: 'qr5', quest: 'rizu', qfmt: 'basic',   faction: '零', stars: 5, name: 'リズ降臨', foes: ['z_mask', 'z_wind', 'qz_justice', 'qb_rizu'], level: 4, read: 1, hp: 1.904, atk: 1.3, bossHp: 200000, justice: [0.65, 0.30, 0.05], over: { qz_justice: { hp: 25000, atk: 3000 } }, reward: [1000, 30], drop: 0.25 },
 ];
 // ステージの敵を、倍率を掛けた能力値で作る(元のデータは書き換えない)
 // ----- 刻練場(百刻スコアアタック) -----
@@ -1551,7 +1551,14 @@ function stageFoes(stage) {
   if (stage.kr) return krFoes(1, 4);   // 画面の説明用(実際の試合は startSolo で抽選する)
   // ボスラッシュ:元のステージの強さのまま並べる。read は、そのボスが読みに頼る割合
   if (stage.rush) return stage.rush.flatMap((sid) => { const sub = STAGES.find((x) => x.id === sid); return stageFoes(sub).map((f) => ({ ...f, rush: true, read: sub.read, hp: sid === 'x5' ? f.hp : Math.max(1, Math.round(f.hp * stage.rushHp / 10) * 10) })); });   // ゼノだけは通常の強さのまま
-  return stage.foes.map((id) => {
+  // 降臨:1階の3体のうち、ジャスティスが何体出るかは毎回の抽選(1体65%・2体30%・3体5%)。ジャスティスは後ろにまとまる
+  let ids = stage.foes;
+  if (stage.justice) {
+    const r = Math.random(), k = r < stage.justice[0] ? 1 : r < stage.justice[0] + stage.justice[1] ? 2 : 3;
+    const zako = stage.foes.filter((id) => id !== 'qz_justice' && !ENEMIES[id].boss), boss = stage.foes.filter((id) => ENEMIES[id].boss);
+    ids = [...zako.slice(0, 3 - k), ...Array(k).fill('qz_justice'), ...boss];
+  }
+  return ids.map((id) => {
     const e = ENEMIES[id];
     const r10 = (v) => (stage.hp === 1 && stage.atk === 1 ? v : Math.max(1, Math.round(v / 10) * 10));   // 倍率1なら数字そのまま(44444など)
     const ov = stage.over && stage.over[id];   // 決め打ちの数値(降臨のジャスティス)
@@ -3448,6 +3455,7 @@ function teamHead(el, t) {
   const krNow = kr && active(t).ch;
   const chips = kr ? `<span class="chip on">${dispName(krNow)}(Lv${krNow.krLv})</span><span class="chip">第${krFloor(krNow.krLayer)}層・${krWaveText(krNow)}</span><span class="chip on">${S.teams[0].wins < 100 ? `${S.teams[0].wins} / 100体撃破` : `${S.teams[0].wins}体撃破`}</span>` : rush ? `<span class="chip on">${dispName(active(t).ch)}</span><span class="chip">${rushCount(t) + (S.over && S.winner === 0 ? 0 : 1)} / ${S.stage.rush.length}体目</span>` : t.cards.map((c, i) => {
     if (c.ch.hiddenUntilActive && i > t.idx) return '';   // ★5の精神離脱体は、出てくるまで隠す
+    if (S.stage && S.stage.quest && t === S.teams[1] && i > t.idx && i < 3) return `<span class="chip">？</span>`;   // 降臨:1階の顔ぶれ(ジャスティスの数)は、出てくるまで伏せる
     const cls = c.result === 'lose' ? 'chip ko' : i === t.idx && !c.result ? 'chip on' : 'chip';
     return `<span class="${cls}">${dispName(c.ch)}${c.result ? mark[c.result] : ''}</span>`;
   }).join('');
@@ -5829,7 +5837,7 @@ function renderStages() {
   const shown = foes.filter((f) => !f.hiddenUntilActive || xenoKnown());   // ★5は、倒すまで1体に見せる
   const from = st.chainFrom && STAGES.find((x) => x.id === st.chainFrom);
   $('stageNote').textContent = st.quest
-    ? `降臨「${st.name}」${'★'.repeat(st.stars)} ${questWhen()}。毎日 12:00・18:00・21:00 から1時間だけ挑める。1階で門下生3体、2階でボスの${st.foes.map((id) => ENEMIES[id]).pop().name}(HPは持ち越し)。パーティは${FORMATS[st.qfmt]}で組む(★4以上の制限なし)。`
+    ? `降臨「${st.name}」${'★'.repeat(st.stars)} ${questWhen()}。毎日 12:00・18:00・21:00 から1時間だけ挑める。1階で門下生3体(顔ぶれは戦うまで分からない)、2階でボスの${st.foes.map((id) => ENEMIES[id]).pop().name}(HPは持ち越し)。パーティは${FORMATS[st.qfmt]}で組む(★4以上の制限なし)。`
       + `クリアで💠${SHARD_NAME}:初回${st.reward[0]}個、2回目から${st.reward[1]}個。クリアするたび${(st.drop * 100).toFixed(1).replace(/\.0$/, '')}%の確率で${st.foes.map((id) => ENEMIES[id]).pop().name}が使えるようになる(ログインが必要)。`
     : from
     ? `${st.faction} ${'★'.repeat(st.stars)}「${st.name}」 敵:${shown.map(dispName).join('・')}(ボス1体と3対1)。${'★'.repeat(from.stars)}「${from.name}」をクリアした直後だけ、結果画面の「続けて【始】に挑む」から、同じパーティで挑めます(全回復します)。`
