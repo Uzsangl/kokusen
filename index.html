@@ -1007,10 +1007,12 @@
   /* ステージの ⓘ:ボスの性格 */
   .bp { margin-top: 10px; display: grid; gap: 6px; }
   .bp > b { color: var(--gold); font-size: .9rem; }
-  .bpk { display: grid; grid-template-columns: 5.5em 1fr; gap: 8px; align-items: center; padding: 6px 10px; border-radius: 8px; font-size: .82rem; color: var(--sub);
+  .bph { display: flex; justify-content: space-between; align-items: baseline; }
+  .bph small { color: var(--sub); font-weight: 500; font-variant-numeric: tabular-nums; }
+  .bpm { margin: 0; padding: 10px 12px; border-radius: 8px; font-size: .88rem; line-height: 1.8; color: var(--sub);
     border: 2px solid transparent; background: linear-gradient(180deg, #161a38, #0f1229) padding-box, var(--goldThin) border-box; }
-  .bpk i { font-style: normal; font-weight: 900; color: #ffe08a; }
-  .bpk.q i { color: var(--sub); letter-spacing: .1em; }
+  .bpm b { color: #fff3cf; font-weight: 500; }
+  .bpm .q { color: var(--sub); letter-spacing: .1em; }
 </style>
 </head>
 <body>
@@ -3910,29 +3912,26 @@ const PERSONA_INFO = {
   rage: ['激昂', '一番火力の出る技で攻める'], bias: ['偏り読み', '一番多く出す手に勝つ手を出す'], hunt: ['狩り', 'ピンチの回復・守りの技を狙う'],
   bait: ['撒き餌', 'わざと負けて、偏りを育てる'], tilt: ['ティルト', '連敗で崩れ、手がばらばらになる'],
 };
-// 見抜いた性格(戦いの中でボスがその性格になったら解放)。ログイン中はアカウント、ゲストは端末に保存
-function bossSeen() {
-  let a = {}; try { a = JSON.parse(localStorage.getItem('kokusen.bossSeen') || '{}') || {}; } catch (e) { /* 読めなくても動く */ }
-  const b = (ACC.stats && ACC.stats.bossSeen) || {};
-  const out = {}; [a, b].forEach((o) => Object.entries(o).forEach(([k, v]) => { out[k] = [...new Set([...(out[k] || []), ...(v || [])])]; }));
-  return out;
-}
-function bossSeenAdd(id, kind) {
-  const all = bossSeen(); if ((all[id] || []).includes(kind)) return;
-  all[id] = [...(all[id] || []), kind];
-  try { localStorage.setItem('kokusen.bossSeen', JSON.stringify(all)); } catch (e) { /* 保存できなくても動く */ }
-  if (ACC.stats && accUid()) { ACC.stats.bossSeen = all; mailSave(); }
-  log(`🔓 ${PERSONA_INFO[kind] ? PERSONA_INFO[kind][0] : kind} を見抜いた(ステージの i で見られる)`);
-}
-// ステージの ⓘ に出す「ボスの性格」(見抜いたものだけ名前と説明。まだのものは ？？？)
+// ボスの取扱説明書:1つの文に3つの性格のヒント(どの部分がどの性格かは書かない)
+const BOSS_MANUAL = {
+  qb_emo: [['prey', '楽しいリズムが続くと次も同じだと信じて待ちかまえ'], ['bias', 'あなたのお気に入りは本人より先に覚えていて'], ['bait', '負けてもにこにこしているけれど、その笑顔が本心とは限らない']],
+  qb_rizu: [['sight', '並んだものには必ず続きがあると考え'], ['rewind', '失敗した直後の人間の動きを何より信用し'], ['bias', '最後に頼るのは感情ではなく回数を数えた結果']],
+  xeno_body: [['prey', '同じ足跡を二度見せた相手を三歩目で待ち'], ['hunt', '弱って守りに入った瞬間を見逃さず'], ['bait', 'それでいて勝たせることを恐れない']],
+  xeno_spirit: [['sight', '並んだものを順になぞるように見つめ'], ['prey', '同じものが二つ並ぶと目をそらさなくなり'], ['bait', '差し出されたものはそのまま受け取る……ように見える']],
+  b_kaji_shi: [['rage', '熱くなるといちばん重い一撃しか見えなくなり'], ['sight', 'それでいて流れを読むのは得意で'], ['prey', '同じ手を二度許すほど甘くはない']],
+  c5_mask: [['rewind', '負けたあとの顔をよく覚えていて'], ['bias', '仮面の奥からあなたの好みを数え'], ['bait', '負けても仮面は笑ったまま']],
+  c5_nagare: [['rage', '迷ったらいちばん大きいのを撃つ全力ばかりで'], ['prey', '勢いに乗ると同じ流れを見逃さず'], ['hunt', '守りに入った星から落としにいく']],
+  c5_tsuru: [['sight', '眠そうにしているのに順番だけはしっかり見ていて'], ['bias', '未来でもあなたは同じ手を選ぶと思っており'], ['bait', '「勝っていいよ、どうせ結末は知っているから」と笑う']],
+};
+// ステージの ⓘ に出す「ボスの取扱説明書」
 function bossPersonaHtml(st) {
   if (!st || st.stars !== 5) return '';
-  const seen = bossSeen(), done = new Set();
-  return stageFoes(st).filter((f) => ADAPT[f.id || ''] || ADAPT[(Object.entries(ENEMIES).find(([, e]) => e === f) || [])[0]]).map((f) => {
-    const id0 = f.id || (Object.entries(ENEMIES).find(([, e]) => e === f) || [])[0], key = HINT_ALIAS[id0] || id0;
-    if (done.has(key)) return ''; done.add(key);
-    const have = seen[key] || [];
-    return `<div class="bp"><b>${escHtml(f.name)}の性格</b>${ADAPT[id0].kinds.map((k) => have.includes(k) ? `<span class="bpk"><i>${PERSONA_INFO[k][0]}</i>${PERSONA_INFO[k][1]}</span>` : '<span class="bpk q"><i>？？？</i>戦って見抜くと解放</span>').join('')}</div>`;
+  const done = new Set();
+  return stageFoes(st).filter((f) => ADAPT[f.id]).map((f) => {
+    const key = HINT_ALIAS[f.id] || f.id, man = BOSS_MANUAL[key];
+    if (!man || done.has(key)) return ''; done.add(key);
+    const text = man.map(([, t]) => `<b>${t}</b>`).join('、') + '。';   // 初めから全部読める(どの性格のことかは考察してもらう)
+    return `<div class="bp"><b class="bph">${escHtml(f.name)}の取扱説明書</b><p class="bpm">${text}</p></div>`;
   }).join('');
 }
 function bossHint(S) {
@@ -3940,7 +3939,6 @@ function bossHint(S) {
   if (!L || !S.stage || S.stage.stars !== 5 || !S.adapt) return;
   const key = S.adapt.tilt > 0 ? 'tilt' : (S.adapt.kind && L[S.adapt.kind] ? S.adapt.kind : 'base');
   if (key === me.hintKey && S.rally - (me.hintAt || 0) < 3) return;
-  if (key !== me.hintKey && L[key] && key !== 'base' && key !== 'tilt') bossSeenAdd(id, key);   // その性格を見抜いた
   me.hintKey = key; me.hintAt = S.rally;
   const keys = Object.keys(L), shown = Math.random() < 0.9 ? key : pickOne(keys.filter((k) => k !== key));
   log(`💬 ${nameOf(me)}「${pickOne(L[shown])}」`);
@@ -6391,7 +6389,7 @@ const RULEBOOK = {
     <ul class="rb sm">
       <li>★5のボスは<b>3つの性格</b>を持ち、あなたのクセを見て切り替える</li>
       <li>ログの一言で、いまの性格がわかる(ときどきウソ)</li>
-      <li>戦って見抜いた性格は、ステージの <b>i</b> で見られる</li>
+      <li>ステージの <b>i</b> に、ボスの<b>取扱説明書</b>がある</li>
     </ul>
     <table class="rbt">${['prey', 'rewind', 'sight', 'rage', 'bias', 'hunt', 'bait', 'tilt'].map((k) => `<tr><td>${PERSONA_INFO[k][0]}</td><td>${PERSONA_INFO[k][1]}</td></tr>`).join('')}</table>
     <p class="rbnote">ソロではHPが減っていくことも、100ラリー判定もない</p>`,
