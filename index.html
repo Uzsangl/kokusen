@@ -6502,7 +6502,8 @@ function openCharDetail(ch, back) {   // back:閉じたあとに戻る画面(ガ
   const order = picked.indexOf(ch.id), unlocked = charUnlocked(ch);
   const hide = secretOn(ch) && !ch.secretUnlock;   // ツル・天眼は、名前とアイコンだけ伏せて能力は見せる
   const clash = order < 0 && (sameClash(ch, picked) || highFull(ch, picked));
-  const canToggle = !back && unlocked && !(PVP.on && PVP.phase === 'ready') && (order >= 0 || (!clash && picked.length < TEAM_SIZE));
+  const onPick = !$('select').classList.contains('hidden') && $('select').dataset.step === 'pick' && !(!$('sheet').classList.contains('hidden') && $('sheetTitle').textContent === 'キャラ一覧');   // パーティを選んでいる画面から開いたときだけ
+  const canToggle = onPick && !back && unlocked && !(PVP.on && PVP.phase === 'ready') && (order >= 0 || (!clash && picked.length < TEAM_SIZE));
   openSheet(dispName(ch), `<div class="cdetail"><div class="crow">${iconHtml(ch, 'lg')}<div>` +
     `<div class="name">${dispName(ch)}${hide ? '' : `<span class="role">${ch.role || ''}</span>`}</div>` +
     (hide ? '' : `<div>${rarHtml(ch)}${ch.gacha || ch.adv ? ' <small class="sub">アドバンス専用</small>' : ''}</div>`) +
