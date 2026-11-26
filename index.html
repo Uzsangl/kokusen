@@ -2821,7 +2821,7 @@ const PERSONA_OF = {
 };
 // カジ【始】は残りHPで性格が変わる(激昂 → 天眼 → 捕食)。性格は裏の数値なので画面には出さない
 const personaOf = (c) => (c.ch.id === 'b_kaji_shi' ? (c.hp > c.max * 0.67 ? 'rage' : c.hp > c.max * 0.34 ? 'sight' : 'prey') : PERSONA_OF[c.ch.id] || 'guard');
-const PERSONA_CAP = { guard: 0.7, rewind: 1, sight: 1.3, prey: 1, rage: 1, abyss: 1.3, bias: 1, hunt: 1, bait: 1, tilt: 1, none: 1 };   // 読みに賭ける上限の倍率
+const PERSONA_CAP = { guard: 0.7, rewind: 1, sight: 1.3, prey: 1, rage: 1, abyss: 1.3, bias: 1, hunt: 1, bait: 1, tilt: 1, ura: 1, none: 1 };   // 読みに賭ける上限の倍率
 const lowHp = (c) => c.hp <= c.max / 2;
 
 // ===== ★5のボス:プレイヤーの法則を見て、性格を切り替える =====
@@ -2889,12 +2889,13 @@ function adaptKind(S, side, me) {
   const tbl = ADAPT[me.ch.id];
   if (!tbl || !S.stage || S.stage.stars !== 5) return null;
   const r3 = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
-  const A = S.adapt || (S.adapt = { seen: 0, lost: 0, next: r3(3, 5), streak: 0, tiltAt: r3(5, 7), tilt: 0, kind: null, low: [] });
+  const A = S.adapt || (S.adapt = { seen: 0, lost: 0, next: r3(3, 5), streak: 0, tiltAt: r3(5, 7), tilt: 0, kind: null, low: [], tgt: [], ura: 0, uraFrom: 0 });
   const foe = active(S.teams[1 - side]);
   for (; A.seen < S.hist.length; A.seen++) {
     const j = judge(S.hist[A.seen][side], S.hist[A.seen][1 - side]);
     if (j < 0) { A.lost++; A.streak++; } else if (j > 0) A.streak = 0;   // あいこは連敗を切らない
     if (A.tilt > 0) A.tilt--;
+    if (A.ura > 0 && --A.ura === 0) A.uraFrom = A.seen + 1;   // 裏読みが明けたら、そこから数え直す
   }
   A.low[S.hist.length] = foe && lowHp(foe) ? HAND_KEYS.filter((h) => guardHand(foe, h)) : null;   // このラリーの前に、相手がピンチで守りの技を持っていたか
   const repick = () => {
@@ -2910,7 +2911,18 @@ function adaptKind(S, side, me) {
   // ティルト:5〜7回(くじ)続けて負けたら、1〜5ラリー(くじ)のあいだ3つの手を33%ずつ出す。明けたら性格を決め直す
   if (A.tilt === 0 && A.streak >= A.tiltAt) { A.tilt = r3(1, 5); A.streak = 0; A.tiltAt = r3(5, 7); A.wasTilt = true; }
   if (A.tilt > 0) return 'tilt';
-  if (A.wasTilt) { A.wasTilt = false; repick(); return A.kind; }
+  if (A.wasTilt) { A.wasTilt = false; A.ura = 0; A.uraFrom = S.hist.length; repick(); return A.kind; }
+  // 裏読み:直近10手のうち、狙いの手があったラリーが5回以上あり、その60%以上で狙いに勝つ手を出されていたら
+  // 「読まれている」とみなし、2〜3ラリーのあいだ、その対策の手に勝つ手を出す
+  if (A.ura === 0 && A.kind) {
+    let n = 0, hit = 0;
+    for (let i = Math.max(A.uraFrom, S.hist.length - 10); i < S.hist.length; i++) {
+      const t = A.tgt[i]; if (!t) continue;
+      n++; if (S.hist[i][1 - side] === beaterOf(t)) hit++;
+    }
+    if (n >= 5 && hit / n >= 0.6) A.ura = r3(2, 3);
+  }
+  if (A.ura > 0) return 'ura';
   if (A.lost >= A.next) repick();
   return A.kind;
 }
@@ -3023,8 +3035,15 @@ function aiHand(S, side, level) {
   // ★5のボス:性格ごとの決め打ち。狙いの手があれば、決めた割合でそれを出す(外れたら上で決めた手のまま)
   if (kind === 'tilt' || me.ch.id === 'qz_justice') { hand = randomHand(); mood = 'calm'; }   // ティルト:3つの手を33%ずつ。ジャスティスはずっとティルト
   else if (side === 1 && ADAPT[me.ch.id] && S.stage && S.stage.stars === 5) {
-    const t = personaTarget(S, side, kind, me);
-    if (t && Math.random() < t.p) { hand = t.hand; mood = kind === 'bait' ? 'calm' : 'read'; }
+    const A = S.adapt;
+    if (kind === 'ura') {   // 裏読み:本来の狙いに勝つ手(=相手の対策)に、さらに勝つ手
+      const t0 = personaTarget(S, side, A.kind, me);
+      if (t0 && Math.random() < 0.8) { hand = beaterOf(beaterOf(t0.hand)); mood = 'read'; }
+    } else {
+      const t = personaTarget(S, side, kind, me);
+      if (A) A.tgt[S.hist.length] = t ? t.hand : null;   // 読まれているかを見るために、このラリーの狙いを覚えておく
+      if (t && Math.random() < t.p) { hand = t.hand; mood = kind === 'bait' ? 'calm' : 'read'; }
+    }
   }
   if (pr.peak && (mood === 'read' || kind === 'guard' || kind === 'rage') && Math.random() < 0.35) mood = 'peak';
   return { hand, why: speak(me, mood), mood };
@@ -3857,6 +3876,7 @@ const HINT_LINES = {
   qb_emo: {
     base: ['よーし、いっぱい遊ぼ!', 'どんな手でくるかな〜', 'ねえねえ、楽しいね!'],
     tilt: ['もー!わかんなくなっちゃった!', 'えいっ、もうなんでもいいや!', 'むむむ……頭ぐるぐる〜!'],
+    ura: ['あれれ〜?わたしのこと、読んでるでしょ!', 'ふふん、その手はお見通しだよ〜', 'ずるっこはダメなんだから!'],
     prey: ['おんなじの、また来るでしょ?', 'ふふっ、そのリズム好きだよ!', '2回きたら……次はわかっちゃう!'],
     bias: ['その手、お気に入りなんだね!', 'いっぱい出してるの、ちゃんと見てるよ〜', '好きなもの、バレバレだよ?'],
     bait: ['いいよいいよ、どんどんおいで!', 'えへへ、負けちゃった〜……ほんとに?', '気持ちよく勝っていいからね!'],
@@ -3864,6 +3884,7 @@ const HINT_LINES = {
   qb_rizu: {
     base: ['観測を開始する', 'まだ判断材料が足りない', '……続けて'],
     tilt: ['……仮説が崩れた。いったん白紙に戻す', '誤差の範囲外。再計算する', 'ノイズが多すぎる……'],
+    ura: ['……こちらを観測しているな', '読まれていることも、計算に入れる', 'その対策は、想定内だ'],
     sight: ['その並び、前にも見た', '順番には、必ず意味がある', '次の項は、もう導ける'],
     rewind: ['負けたあとの君は、いつも同じ', 'あいこのあと、何を選ぶか知っている', '直後の手は、正直だ'],
     bias: ['出現率に偏りがある', 'その手の比率、高すぎる', '好みは、数字に出る'],
@@ -3871,6 +3892,7 @@ const HINT_LINES = {
   xeno_body: {
     base: ['……来い', '急ぐな。結末は知っている', 'まずは、見せてもらおう'],
     tilt: ['……どこで、間違えた', '記憶が、混ざる', '……結末が、見えない'],
+    ura: ['……読んだつもりか', 'その先も、知っている', '狩る側を、間違えたな'],
     prey: ['同じ一歩を、二度踏んだな', 'その足跡は、もう覚えた', '繰り返す者から、喰われる'],
     hunt: ['息が上がっているな', '守りに入ったか。……遅い', '傷を庇う手は、よく見える'],
     bait: ['好きなだけ、勝つといい', 'その手が気に入ったか', '……どうぞ。続けろ'],
@@ -3878,6 +3900,7 @@ const HINT_LINES = {
   xeno_spirit: {
     base: ['……', '…………', '……?'],
     tilt: ['……っ', '……、……', '……!'],
+    ura: ['……よまれた', '……うら', '……そのさき'],
     sight: ['……つぎ', '……ならび', '……みえる'],
     prey: ['……また', '……おなじ', '……くう'],
     bait: ['……どうぞ', '……いいよ', '……すきに'],
@@ -3885,6 +3908,7 @@ const HINT_LINES = {
   b_kaji_shi: {
     base: ['……来い。全部受ける', '始まりは、静かだな', 'まずは、見てやる'],
     tilt: ['くそっ、読めねえ', '……姉さん、どっちだ', '腕が、言うこと聞かねえ'],
+    ura: ['読んでるな。……なら、その上だ', 'その対策ごと、止める', '姉さんの読み、なめんなよ'],
     rage: ['ここからだ。全部ぶつける', '止まれ。……止めてみろ', '一番重いのをくれてやる'],
     sight: ['その並び、もう通った', '次の一手、見えてる', '流れは、もう決まってる'],
     prey: ['同じ手、二度目だな', '続けたな?次で止める', '三度目は、ねえよ'],
@@ -3892,6 +3916,7 @@ const HINT_LINES = {
   c5_mask: {
     base: ['仮面の奥で、見ている', '……さあ', '素顔は、まだ見せない'],
     tilt: ['仮面が、ずれる', '……ひびが、入った', '向こう側が、揺れている'],
+    ura: ['仮面の裏を、覗いたつもりかい', '読まれた顔は、もう捨てた', 'その答えも、仮面は知っている'],
     rewind: ['負けたあと、君は戻る', 'あいこの次を、仮面は覚えている', 'その直後は、いつも同じ顔だ'],
     bias: ['君の好みは、仮面越しにも見える', 'その手ばかりだね', '偏りは、隠せない'],
     bait: ['もっと勝っていい', '仮面は、負けても笑っている', 'どうぞ。好きな手で'],
@@ -3899,6 +3924,7 @@ const HINT_LINES = {
   c5_nagare: {
     base: ['いくぞ、全力で!', 'まだ燃え始めだ', '流れに乗せてもらう'],
     tilt: ['くっ、燃えすぎた……!', '軌道が、ぶれる……!', 'もう、どこに落ちるかわからねえ!'],
+    ura: ['読んだな!なら軌道を変える!', 'その一手、待ってたぜ!', '読み合いなら、負けねえ!'],
     rage: ['一番でかいのを、ぶち込む!', '燃え尽きるまで撃つ!', '全力だ、受けてみろ!'],
     prey: ['同じ手、続いたな!', 'その流れ、もらった!', '二度あることは、三度目で終わりだ!'],
     hunt: ['弱ってきたな!', '守りに入ったな、そこを撃つ!', '傷ついた星から、落ちるんだよ!'],
@@ -3906,6 +3932,7 @@ const HINT_LINES = {
   c5_tsuru: {
     base: ['……眠い', 'どれでも、同じ結末だけど', '……見てるよ'],
     tilt: ['……未来が、ぼやけた', 'あれ、見えない', '……雨の音しかしない'],
+    ura: ['……読まれてる未来も、見えてた', 'その対策、さっきの未来で見た', '……ふふ、そっちか'],
     sight: ['その次、知ってる', 'その並び、前の未来でも見た', '……三手先まで見えた'],
     bias: ['その手、多いね', '好きな手は、未来でも同じ', '……また、それ'],
     bait: ['勝っていいよ。どうせ', '……どうぞ', 'その手のままで、いい'],
@@ -3917,6 +3944,7 @@ const PERSONA_INFO = {
   prey: ['捕食', '同じ手が2回続いたら、3回目を狙う'], rewind: ['巻戻', '負け・あいこの直後のクセを読む'], sight: ['天眼', '直前2手の並びから次を読む'],
   rage: ['激昂', '一番火力の出る技で攻める'], bias: ['偏り読み', '一番多く出す手に勝つ手を出す'], hunt: ['狩り', 'ピンチの回復・守りの技を狙う'],
   bait: ['撒き餌', 'わざと負けて、偏りを育てる'], tilt: ['ティルト', '連敗で崩れ、手がばらばらになる'],
+  ura: ['裏読み', '読まれていると気づくと、その対策の裏をかく'],
 };
 // ボスの取扱説明書:1つの文に3つの性格のヒント(どの部分がどの性格かは書かない)
 const BOSS_MANUAL = {
@@ -3943,7 +3971,7 @@ function bossPersonaHtml(st) {
 function bossHint(S) {
   const me = active(S.teams[1]), id = HINT_ALIAS[me.ch.id] || me.ch.id, L = HINT_LINES[id];
   if (!L || !S.stage || S.stage.stars !== 5 || !S.adapt) return;
-  const key = S.adapt.tilt > 0 ? 'tilt' : (S.adapt.kind && L[S.adapt.kind] ? S.adapt.kind : 'base');
+  const key = S.adapt.tilt > 0 ? 'tilt' : S.adapt.ura > 0 ? 'ura' : (S.adapt.kind && L[S.adapt.kind] ? S.adapt.kind : 'base');
   if (key === me.hintKey && S.rally - (me.hintAt || 0) < 3) return;
   me.hintKey = key; me.hintAt = S.rally;
   const keys = Object.keys(L), shown = Math.random() < 0.9 ? key : pickOne(keys.filter((k) => k !== key));
@@ -6397,7 +6425,7 @@ const RULEBOOK = {
       <li>ログの一言で、いまの性格がわかる(ときどきウソ)</li>
       <li>ステージの <b>i</b> で、ボスの<b>性格</b>のヒントが読める</li>
     </ul>
-    <table class="rbt">${['prey', 'rewind', 'sight', 'rage', 'bias', 'hunt', 'bait', 'tilt'].map((k) => `<tr><td>${PERSONA_INFO[k][0]}</td><td>${PERSONA_INFO[k][1]}</td></tr>`).join('')}</table>
+    <table class="rbt">${['prey', 'rewind', 'sight', 'rage', 'bias', 'hunt', 'bait', 'tilt', 'ura'].map((k) => `<tr><td>${PERSONA_INFO[k][0]}</td><td>${PERSONA_INFO[k][1]}</td></tr>`).join('')}</table>
     <p class="rbnote">ソロではHPが減っていくことも、100ラリー判定もない</p>`,
   '対人': `<table class="rbt">
       <tr><td>フリー</td><td>自動で相手を探す</td></tr>
