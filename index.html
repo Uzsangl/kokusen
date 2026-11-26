@@ -957,7 +957,7 @@
     animation: hue 1s linear infinite; }
 
   /* カンスト:ゲージが細かく震える */
-  .gauge.maxed .mini { border-color: #fff; box-shadow: 0 0 6px rgba(255,255,255,.7); animation: gaugeShake .12s linear infinite; }
+  .gauge.maxed .mini { border-color: #fff; box-shadow: 0 0 6px rgba(255,255,255,.85), 0 0 12px rgba(181,123,255,.6); }   /* カンスト:震えずに光るだけ */
   .gauge.maxed .mini i { filter: brightness(1.35) saturate(1.2); }
   .gauge.maxed { padding: 2px 3px; border-radius: 6px; background: radial-gradient(ellipse at 50% 60%, rgba(181,123,255,.3), transparent 75%); animation: auraBreath 1.6s ease-in-out infinite alternate; }   /* 紫をふわっとまとう */
   @keyframes auraBreath { from { box-shadow: 0 0 8px rgba(139,108,255,.25); } to { box-shadow: 0 0 16px rgba(181,123,255,.5); } }
