@@ -881,6 +881,13 @@
     background: radial-gradient(circle at 50% 35%, #2a3060, #12152e) padding-box, var(--goldGrad) border-box; box-shadow: inset 0 0 0 3px rgba(8,10,24,.85), inset 0 0 0 4px rgba(232,184,74,.4), 0 4px 10px rgba(0,0,0,.6); }
   .hubsmall button b svg { width: 100%; height: 100%; display: block; }
   .hubsmall button:active b { transform: translateY(2px); }
+
+  /* シートの見出しは上に固定して、右に ✕(閉じる)。下の「閉じる」までスクロールしなくても閉じられる */
+  #sheet .sheethead, #accModal .sheethead { position: sticky; top: -16px; z-index: 5; display: flex; align-items: center; gap: 8px; margin: -16px -16px 8px; padding: 12px 12px 10px 16px;
+    background: linear-gradient(180deg, var(--panel) 80%, rgba(0,0,0,0)); }
+  #sheet .sheethead h2, #accModal .sheethead h2 { flex: 1; min-width: 0; margin: 0; }
+  #sheet .sheetx, #accModal .sheetx { flex: none; width: 36px; height: 36px; min-height: 0; padding: 0; border-radius: 50%; font-size: 1rem; line-height: 1; color: #f0c040; border: 2px solid transparent;
+    background: radial-gradient(circle at 50% 35%, #2a3060, #151935) padding-box, var(--goldGrad) border-box; }
 </style>
 </head>
 <body>
@@ -1038,14 +1045,14 @@
 </main>
   <div id="sheet" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
     <div class="box">
-      <h2 id="sheetTitle"></h2>
+      <div class="sheethead"><h2 id="sheetTitle"></h2><button id="sheetX" class="sheetx" aria-label="閉じる">✕</button></div>
       <div id="sheetBody"></div>
       <div class="row"><button id="sheetClose">閉じる</button></div>
     </div>
   </div>
   <div id="accModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="accTitle">
     <div class="box">
-      <h2 id="accTitle">アカウント</h2>
+      <div class="sheethead"><h2 id="accTitle">アカウント</h2><button id="accX" class="sheetx" aria-label="閉じる">✕</button></div>
       <div id="accBody"></div>
       <p class="msg" id="accMsg" aria-live="polite"></p>
       <div class="row"><button id="accClose">閉じる</button></div>
@@ -6166,6 +6173,7 @@ async function accInit() {
   try { ACC.session = JSON.parse(localStorage.getItem('kokusen.auth') || 'null'); } catch (e) { ACC.session = null; }
   accCheckMaster();
   $('accClose').onclick = () => $('accModal').classList.add('hidden');
+  $('accX').onclick = () => $('accClose').click();
   $('accModal').onclick = (e) => { if (e.target === $('accModal')) $('accModal').classList.add('hidden'); };
   renderAcct();
   if (!ACC.session) return;
@@ -7751,8 +7759,10 @@ function init() {
   $('tDaily').onclick = () => openDaily();
   $('tGacha').onclick = () => openGacha();
   $('sheetClose').onclick = () => $('sheet').classList.add('hidden');
+  $('sheetX').onclick = () => $('sheetClose').click();   // 上の ✕ でも閉じる(長い一覧を下までスクロールしなくていいように)
   // シートが開いている間は、後ろの画面をスクロールさせない(iPhoneで中身のスクロールが後ろに取られないように)
-  new MutationObserver(() => document.body.classList.toggle('sheet-open', !$('sheet').classList.contains('hidden'))).observe($('sheet'), { attributes: true, attributeFilter: ['class'] });
+  const sheetLock = () => document.body.classList.toggle('sheet-open', !$('sheet').classList.contains('hidden') || !$('accModal').classList.contains('hidden'));
+  ['sheet', 'accModal'].forEach((id) => new MutationObserver(sheetLock).observe($(id), { attributes: true, attributeFilter: ['class'] }));
   $('sheet').onclick = (e) => { if (e.target === $('sheet')) $('sheet').classList.add('hidden'); };
   showTitle(true);
   Bgm.stop();               // 最初の画面では曲を流さない(ガラスが砕け終わってから流す)
