@@ -857,6 +857,10 @@
   /* ロゴは絵に合わせて置く:トキバミの顔の下(絵の上から28%)〜3人の頭(50%)の間いっぱい。絵の高さ=横幅×1.5 */
   #title .tlogo { position: absolute; left: 50%; top: calc(-16px + 100vw * 1.5 * .39); transform: translate(-50%, -50%); width: 60vw; margin: 0; }
   #title .tlogo img { width: 100%; }
+  /* ロゴのまわりだけ絵を暗く薄くして、ロゴを浮き出させる */
+  #title .tlogo { isolation: isolate; }
+  #title .tlogo::before { content: ''; position: absolute; inset: -30% -22%; z-index: -1; pointer-events: none;
+    background: radial-gradient(ellipse at 50% 50%, rgba(6, 6, 18, .92) 0%, rgba(6, 6, 18, .78) 40%, rgba(6, 6, 18, .35) 60%, transparent 74%); }
   #title .tplay { margin-top: min(calc(100vw * 1.5 * .95 - 74px), 52vh); }
   @media (min-width: 1000px) and (min-height: 560px) {   /* 横長の画面:横長の絵(3人が横に並ぶ)を上に出し、ロゴは3人の顔より下に */
     .tkv img { max-height: 64vh; object-position: 50% 8%;
