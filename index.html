@@ -1196,13 +1196,13 @@ const CHARACTERS = [
       scissors: { name: '踏み越し', rate: RATE.normal, mods: [selfAtk(1000, 3)] },
       paper:    { name: '構え直し', rate: RATE.normal, atkUp: 2250, mods: [foeDfs(1000, 2)] } } },
   { id: 'tomari', name: 'トマリ', faction: '錨', role: '耐久', hp: 15300, atk: 1600, dfs: 2000, phys: 1.1,
-    trait: { key: 'immovable', name: '不動', desc: '攻撃を受けるたびにDFS+500(場にいる間、最大+3000)', gain: 500, cap: 3000 },
+    trait: { key: 'immovable', name: '不動', desc: '攻撃を受けるたびにDFS+500(場にいる間・最大+3000)', gain: 500, cap: 3000 },
     actions: {
       rock:     { name: '凪',   rate: RATE.normal, mods: [selfDfs(3000, 2)] },
       scissors: { name: '先着', rate: RATE.big, mods: [foeAtk(600, 3)], up: { rate: RATE.huge, when: 'gainMax', v: 3000, text: '不動が最大のとき特大' } },
       paper:    { name: '繕い', rate: RATE.normal, heal: 1500 } } },
   { id: 'mio', name: 'ミオ', faction: '錨', role: '支援・継承', hp: 9100, atk: 2500, dfs: 1400, phys: 0.95,
-    trait: { key: 'record', name: '記録', desc: '倒れたとき、次の番手にATK+1000とDFS+1500を渡す(永続・重複可能)', atk: 1000, dfs: 1500 },
+    trait: { key: 'record', name: '記録', desc: '倒れたとき、次の番手にATK+1000・DFS+1500を渡す(永続・重複可能)', atk: 1000, dfs: 1500 },
     actions: {
       rock:     { name: '留め置き', rate: RATE.big, nextAtkUp: 1500 },
       scissors: { name: '水先',     rate: RATE.normal, mods: [foeDfs(1000, 3), foeAtk(500, 3)] },
@@ -1218,7 +1218,7 @@ const CHARACTERS = [
       scissors: { name: '先消し',       rate: RATE.normal, seal: 1, mods: [foeAtk(600, 2)] },
       paper:    { name: '無かったこと', rate: RATE.normal, heal: 600, keep: 1, cleanse: 1 } } },
   { id: 'hajime', name: 'ハジメ', faction: '零', role: '回復', hp: 11700, atk: 1750, dfs: 1600, phys: 1.0,
-    trait: { key: 'regen', name: '処置', desc: 'ラリーが終わるたびにHPを400回復', heal: 400 },
+    trait: { key: 'regen', name: '処置', desc: 'ラリーが終わるたびにHP400回復', heal: 400 },
     actions: {
       rock:     { name: '止血', rate: RATE.big, mods: [foeAtk(600, 2)] },
       scissors: { name: '先診', rate: RATE.normal, mods: [selfDfs(2000, 3)] },
@@ -1244,14 +1244,14 @@ const CHARACTERS = [
 
   // --- ソロ攻略向けの支援キャラ(各陣営2体)。対人・CPU戦でも使える ---
   { id: 'moyai', name: 'モヤイ', faction: '錨', role: 'チーム強化', hp: 15700, atk: 1900, dfs: 1700, phys: 1.0,
-    traits: [{ key: 'legacy', name: '舫い', desc: '倒れたとき、控えの味方全員にDFS+1000と最大HP+1500(永続・重複可能)', atk: 0, dfs: 1000, hp: 1500 },
+    traits: [{ key: 'legacy', name: '舫い', desc: '倒れたとき、控えの味方全員にDFS+1000・最大HP+1500(永続・重複可能)', atk: 0, dfs: 1000, hp: 1500 },
       { key: 'giantSlayer', name: '一点留め', desc: 'ソロのボス戦(相手がボス1体)のとき、ATK+1200・DFS+800', atk: 1200, dfs: 800 }],
     actions: {
       rock:     { name: '結び留め', rate: RATE.normal, mods: [foeAtk(600, 3)] },
       scissors: { name: '投げ綱',   rate: RATE.big, mods: [foeDfs(800, 3)] },
       paper:    { name: '繋ぎ直し', rate: RATE.normal, team: { stat: 'dfs', v: 300, cap: 1200 } } } },
   { id: 'shio', name: 'シオ', faction: '錨', role: '回復・回復封じ', hp: 14450, atk: 1800, dfs: 1500, phys: 0.95,
-    traits: [{ key: 'regen', name: '満ち潮', desc: 'ラリーが終わるたびにHPを350回復', heal: 350 },
+    traits: [{ key: 'regen', name: '満ち潮', desc: 'ラリーが終わるたびにHP350回復', heal: 350 },
       { key: 'giantSlayer', name: '一点留め', desc: 'ソロのボス戦(相手がボス1体)のとき、ATK+1200・DFS+800', atk: 1200, dfs: 800 }],
     actions: {
       rock:     { name: '凪ぎ払い', rate: RATE.normal, noheal: 3 },
@@ -1265,7 +1265,7 @@ const CHARACTERS = [
       scissors: { name: '遡り読み', rate: RATE.normal, seal: 1 },
       paper:    { name: '原点回帰', rate: RATE.normal, heal: 1500, cleanse: 1 } } },
   { id: 'kasumi', name: 'カスミ', faction: '零', role: '刻印(弱体)', hp: 12500, atk: 2200, dfs: 1300, phys: 1.0,
-    traits: [{ key: 'hazeMark', name: '霞の刻', desc: '攻撃が当たるたびに相手のATK−250(刻印。最大−1500)', v: 250, cap: 1500 },
+    traits: [{ key: 'hazeMark', name: '霞の刻', desc: '技を当てるたびに相手のATK−250(刻印。永続・重複可能。最大−1500)', v: 250, cap: 1500 },
       { key: 'giantSlayer', name: '巻き戻しの刃', desc: 'ソロのボス戦(相手がボス1体)のとき、ATK+1200・DFS+800', atk: 1200, dfs: 800 }],
     actions: {
       rock:     { name: '霞斬り',   rate: RATE.normal, mark: { stat: 'dfs', v: 600, cap: 3000 } },
@@ -1298,8 +1298,8 @@ const CHARACTERS = [
 // まだキャラ選択には出していない。強さは、入れたチームがランダムな3枚に勝つ率で トキバミ約60%・ゼノ約65% に合わせた
 const SPECIAL_CHARS = [
   { id: 'p_tokibami', name: 'トキバミ', faction: '刻喰', role: '耐久・吸収', unlock: 'trio', hp: 20000, atk: 2000, dfs: 1000, phys: 1.0,
-    traits: [{ key: 'outside', name: '時の外側', desc: '被ダメージ−20%', cut: 0.2 },
-      { key: 'devour', name: '刻喰い', desc: '与ダメージの20%回復', rate: 0.2 }],
+    traits: [{ key: 'outside', name: '時の外側', desc: '受けるダメージ−20%', cut: 0.2 },
+      { key: 'devour', name: '刻喰い', desc: '与えたダメージの20%回復', rate: 0.2 }],
     actions: {
       rock:     { name: '止め喰い', rate: RATE.big, mods: [foeAtk(600, 3)] },
       scissors: { name: '先喰い',   rate: RATE.huge },
@@ -1320,7 +1320,7 @@ const SPECIAL_CHARS = [
   { id: 'p_kaji_shi', name: 'カジ【始】', faction: '錨', group: '錨', bonusOk: true, sameAs: 'kaji', role: '始まり', unlock: 'shiToki', hp: 9999, atk: 3600, dfs: 1400, phys: 1.5,
     traits: [
       { key: 'breakGrow', name: '始の刻', desc: `${BREAK_NAME}するたびにATK+1000(永続・重複可能)`, add: 1000 },
-      { key: 'backwaterAll', name: '背水・始', desc: '残りHPが50%以下でATKとDFS+1000', below: 0.5, add: 1000 } ],
+      { key: 'backwaterAll', name: '背水・始', desc: '残りHPが半分以下でATK+1000・DFS+1000', below: 0.5, add: 1000 } ],
     actions: {
       rock:     { name: '始の一閃', rate: RATE.huge },
       scissors: { name: '間を跳ぶ', rate: RATE.normal, streak: 1 },
@@ -1362,7 +1362,7 @@ const SPECIAL_CHARS = [
       scissors: { name: '翳り',     rate: RATE.normal, mods: [foeDfs(800, 3)] },
       paper:    { name: '憂さ晴らし', rate: RATE.normal, mods: [selfAtk(800, 3)] } } },
   { id: 'k_isami', name: 'イサミ', faction: '矢', group: '矢', bonusOk: true, role: '勇気・連勝を積む', unlock: 'kr1000', hp: 9000, atk: 3500, dfs: 1200, phys: 1.4,
-    traits: [{ key: 'backwaterSteps', name: '勇み足', desc: '残りHPが75%・50%・25%を切るごとにATK+800', steps: [0.75, 0.5, 0.25], add: 800 },
+    traits: [{ key: 'backwaterSteps', name: '勇み足', desc: '残りHPが75%・50%・25%を切るたびにATK+800(最大+2400)', steps: [0.75, 0.5, 0.25], add: 800 },
       { key: 'rouse', name: '奮起', desc: 'HPが半分を切ったとき、一度だけ連勝+1', below: 0.5, add: 1 }],
     actions: {
       rock:     { name: '踏み込み', rate: RATE.huge, streak: 1, up: { rate: RATE.max, when: 'hpBelow', v: 0.5, text: '残りHP半分以下で極大' } },
@@ -1389,7 +1389,7 @@ const SPECIAL_CHARS = [
       paper:    { name: '無', rate: RATE.normal } } },
   // 降臨クエストのクリアで、まれに解放されるキャラ(★3・アドバンスだけ)
   { id: 'q_emo', name: 'エモ', faction: '矢', group: '矢', bonusOk: true, adv: true, rarity: 3, role: '感情・ごきげんで強くなる', unlock: 'emo', hp: 13000, atk: 2600, dfs: 1100, phys: 1.0,
-    trait: { key: 'mood', name: 'ごきげん', desc: '勝つたびにATK+500(場にいる間、最大+2500)。負けると半分になる', step: 500, cap: 2500 },
+    trait: { key: 'mood', name: 'ごきげん', desc: '勝つたびにATK+500(場にいる間・最大+2500)。負けると半分になる', step: 500, cap: 2500 },
     actions: {
       rock:     { name: '全力ハグ', rate: RATE.huge, up: { rate: RATE.max, when: 'moodMax', text: 'ごきげんが最大なら極大' } },
       scissors: { name: 'ひらめき', rate: RATE.normal, streak: 1 },
@@ -1397,7 +1397,7 @@ const SPECIAL_CHARS = [
   { id: 'q_rizu', name: 'リズ', faction: '零', group: '零', bonusOk: true, adv: true, rarity: 3, role: '論理・癖を解析する', unlock: 'rizu', hp: 14000, atk: 2300, dfs: 1600, phys: 1.0,
     traits: [{ key: 'analyze', name: '解析', desc: '相手が同じ手を2回続けたら、次のラリーは自分の技が1段階強くなる' },
       { key: 'nullScissors', name: '棄却', desc: '相手のチョキ(跳躍)の技は、効果のないただの大ダメージになる' },
-      { key: 'legacy', name: '結論', desc: 'パーティが全員零陣営なら、倒れたとき控えの味方全員の最大HPとHPを+2000', atk: 0, dfs: 0, hp: 2000, needFaction: '零' }],
+      { key: 'legacy', name: '結論', desc: 'パーティが全員零陣営なら、倒れたとき控えの味方全員に最大HP+2000・HP+2000', atk: 0, dfs: 0, hp: 2000, needFaction: '零' }],
     actions: {
       rock:     { name: '証明終了', rate: RATE.big, foeTeamMark: { stat: 'atk', v: 300, cap: 1500 }, up: { rate: RATE.max, when: 'analyzed', text: '解析が効いているときは極大' } },
       scissors: { name: '反証',     rate: RATE.normal, heal: 2000, foeTeamMark: { stat: 'dfs', v: 300, cap: 1500 } },
@@ -1417,13 +1417,13 @@ const GACHA_CHARS = [
     trait: { key: 'passStats', name: '継ぎ', desc: '倒れたとき、自分のATKとDFS(永続の強化も込み)をそのまま次の番手に足す(永続・重複可能)' },
     actions: { rock: { rate: RATE.big, name: '旗打ち' }, scissors: { rate: RATE.normal, name: '旗掲げ', mods: [selfDfs(1000, 2)] }, paper: { rate: RATE.normal, name: '託し', selfPerm: { atk: 500, dfs: 500 } } } },
   { id: 'g_a3b', name: 'イソ', faction: '錨', rarity: 3, gacha: true, role: '回復耐久', hp: 18600, atk: 1500, dfs: 1900, phys: 0.95,
-    trait: { key: 'regen', name: '潮だまり', desc: 'ラリーが終わるたびにHPを400回復', heal: 400 },
+    trait: { key: 'regen', name: '潮だまり', desc: 'ラリーが終わるたびにHP400回復', heal: 400 },
     actions: { rock: { rate: RATE.normal, name: '潮受け', mods: [foeAtk(500, 2)] }, scissors: N('しぶき'), paper: { rate: RATE.normal, name: '満ち潮', heal: 1600 } } },
   { id: 'g_a3c', name: 'カイ', faction: '錨', rarity: 3, gacha: true, role: '硬い相手を割る', hp: 12300, atk: 2600, dfs: 1300, phys: 1.15,
     actions: { rock: { rate: RATE.huge, name: '大鎚', up: { rate: RATE.max, when: 'foeDfsAtLeast', v: 2000, text: '相手のDFSが2000以上なら極大' } }, scissors: { rate: RATE.normal, name: '鋲打ち', mods: [foeDfs(800, 3)] }, paper: N('櫂返し') } },
   { id: 'g_a4', name: 'トモシ', faction: '錨', rarity: 4, gacha: true, role: '抜け落ち勝ち', hp: 23000, atk: 1500, dfs: 2600, phys: 0.9,
     traits: [{ key: 'decayGuard', name: '錨泊', desc: '刻の抜け落ちを受けない。相手が受ける抜け落ちダメージ+50%', boost: 0.5 },
-      { key: 'unbreak', name: '消えぬ灯', desc: `${BREAK_NAME}で受けるダメージを半分にする`, cut: 0.5 }],
+      { key: 'unbreak', name: '消えぬ灯', desc: `${BREAK_NAME}で受けるダメージ半減`, cut: 0.5 }],
     actions: { rock: { rate: RATE.normal, name: '灯台守り', mods: [selfDfs(2000, 2)] }, scissors: N('灯し火'), paper: { rate: RATE.normal, name: '常夜灯', heal: 3000 } } },
   // --- 零 ---
   { id: 'g_z1', name: 'カラ', faction: '零', rarity: 1, gacha: true, role: '(仮)', hp: 6000, atk: 1800, dfs: 800, phys: 0.9,
@@ -1431,7 +1431,7 @@ const GACHA_CHARS = [
   { id: 'g_z2', name: 'アキ', faction: '零', rarity: 2, gacha: true, role: '弱い時蝕', hp: 8000, atk: 1600, dfs: 1000, phys: 0.9,
     actions: { rock: { rate: RATE.normal, name: '砂留め', poison: 2 }, scissors: N('こぼれ砂'), paper: N('砂戻し') } },
   { id: 'g_z3a', name: 'シラ', faction: '零', rarity: 3, gacha: true, role: '相手全体に永続デバフ', hp: 13500, atk: 1900, dfs: 1300, phys: 0.95,
-    trait: { key: 'teamCurse', name: '呪い', desc: '技を当てるたびに、相手の控えも含めた全員のATK−150(永続・重複可能。最大−2000)', v: 150, cap: 2000 },
+    trait: { key: 'teamCurse', name: '呪い', desc: '技を当てるたびに、相手の全員(控えも)のATK−150(永続・重複可能。最大−2000)', v: 150, cap: 2000 },
     actions: { rock: N('白封じ'), scissors: { rate: RATE.big, name: '白紙送り' }, paper: { rate: RATE.normal, name: '名消し', foeTeamMark: { stat: 'dfs', v: 200, cap: 2000 } } } },
   { id: 'g_z3b', name: 'マタ', faction: '零', rarity: 3, gacha: true, role: '一度だけ耐える', hp: 13300, atk: 2300, dfs: 1100, phys: 1.0,
     trait: { key: 'secondWind', name: '立ち直り', desc: '一度だけ、倒れたときにHP30%で立ち上がる', hp: 0.3 },
@@ -1443,7 +1443,7 @@ const GACHA_CHARS = [
     trait: { key: 'mirrorAtk', name: '鏡写し', desc: '攻撃するとき、自分のATKの代わりに相手の今のATKを使う' },
     actions: { rock: { rate: RATE.big, name: '鏡面' }, scissors: { rate: RATE.normal, name: '映し誘い', mods: [{ to: 'foe', stat: 'atk', v: 500, t: 2 }] }, paper: { rate: RATE.normal, name: '鏡の修復', heal: 1500 } } },
   { id: 'g_z5', name: 'ゼノ【仮面】', faction: '零', group: '隔絶', rarity: 5, gacha: true, role: '10ラリー目からBREAK10倍', hp: 11500, atk: 2500, dfs: 1500, phys: 1.5,
-    traits: [{ key: 'lateBreak', name: '遅咲きの刻', desc: `場に出て10ラリー目以降、自分の${BREAK_NAME}の攻撃だけATKが10倍`, from: 10, mul: 10 },
+    traits: [{ key: 'lateBreak', name: '遅咲きの刻', desc: `場に出て10ラリー目以降、${BREAK_NAME}の一撃だけATKが10倍`, from: 10, mul: 10 },
       { key: 'drawHeal', name: '凪の間', desc: 'あいこのたびにHP1000回復', heal: 1000 }],
     actions: { rock: N('針止め'), scissors: { rate: RATE.max, name: '十の跳躍' }, paper: { rate: RATE.normal, name: '仮面の内', mods: [selfDfs(1500, 2)], keep: 1, heal: 3000 } } },
   // --- 矢 ---
@@ -1456,7 +1456,7 @@ const GACHA_CHARS = [
     trait: { key: 'pierceMark', name: '穿ち', desc: '技を当てるたびに、場の相手のDFS−250(永続・重複可能。最大−1500)', v: 250, cap: 1500 },
     actions: { rock: N('鏑止め'), scissors: { rate: RATE.big, name: '鳴り鏑' }, paper: { rate: RATE.normal, name: '研ぎ直し', mods: [foeAtk(400, 2)] } } },
   { id: 'g_y3b', name: 'マト', faction: '矢', rarity: 3, gacha: true, role: 'BREAK特化', hp: 11500, atk: 2600, dfs: 1000, phys: 1.05,
-    trait: { key: 'foresight', name: '必中', desc: `自分の${BREAK_NAME}の攻撃はATK+2000`, add: 2000 },
+    trait: { key: 'foresight', name: '必中', desc: `${BREAK_NAME}の一撃はATK+2000`, add: 2000 },
     actions: { rock: { rate: RATE.big, name: '狙い澄まし' }, scissors: { rate: RATE.normal, name: '一矢', streak: 1 }, paper: N('残心') } },
   { id: 'g_y3c', name: 'エビラ', faction: '矢', rarity: 3, gacha: true, role: '連続で勝つほど強い', hp: 15300, atk: 2300, dfs: 1000, phys: 1.05,
     trait: { key: 'winStack', name: '連射', desc: '勝つたびに次の攻撃のATK+400が重なる(負けると消える)', v: 400 },
@@ -1479,7 +1479,7 @@ const ENEMIES = {
       paper:    { name: '盗み食い', rate: RATE.normal, heal: 4000 } } },
   // --- 降臨クエストのボス(2階)。技と特性はプレイヤー用のエモ・リズと同じ。強さはステージの倍率で上げる ---
   qb_emo: { name: 'エモ', faction: '矢', hp: 30000, atk: 2800, dfs: 2500, phys: 1.0, boss: true,
-    traits: [{ key: 'mood', name: 'ごきげん', desc: '勝つたびにATK+500(場にいる間、最大+2500)。負けると半分になる', step: 500, cap: 2500 },
+    traits: [{ key: 'mood', name: 'ごきげん', desc: '勝つたびにATK+500(場にいる間・最大+2500)。負けると半分になる', step: 500, cap: 2500 },
       { key: 'breakReflect', name: '照れ隠し', desc: `${BREAK_NAME}の一撃で受けたダメージ×(自分のDFS÷10000)を相手に返す` },
       { key: 'breakShield', name: '本音', desc: `HPが最大の62.5%(★5なら50000)を下回る一撃は、そこで止まる。そのあとは${BREAK_NAME}のダメージを受けず、受けるはずだったダメージをそのまま返す`, ratio: 0.625 }],
     actions: {
@@ -1496,7 +1496,7 @@ const ENEMIES = {
       paper:    { name: '最適化',   rate: RATE.normal, foeTeamMark: [{ stat: 'atk', v: 300, cap: 3000 }, { stat: 'dfs', v: 300, cap: 3000 }], mods: [selfDfs(1500, 2)] } } },
   // --- 錨:硬くて回復する ---
   a_guard: { name: '錨の衛士', faction: '錨', hp: 9000, atk: 2100, dfs: 1800, phys: 1.0,
-    trait: { key: 'immovable', name: '不動', desc: '被弾するたびにDFS+400(最大+2000)', gain: 400, cap: 2000 },
+    trait: { key: 'immovable', name: '不動', desc: '攻撃を受けるたびにDFS+400(場にいる間・最大+2000)', gain: 400, cap: 2000 },
     actions: {
       rock:     { name: '盾打ち', rate: RATE.normal, mods: [selfDfs(2000, 2)] },
       scissors: { name: '突き',   rate: RATE.big },
@@ -1508,7 +1508,7 @@ const ENEMIES = {
       scissors: { name: '絡め',   rate: RATE.normal, mods: [foeAtk(500, 2)] },
       paper:    { name: '締め',   rate: RATE.normal, mods: [foeDfs(800, 2)] } } },
   a_lamp: { name: '錨の灯守', faction: '錨', hp: 8500, atk: 2300, dfs: 1500, phys: 0.95,
-    trait: { key: 'regen', name: '灯り', desc: 'ラリーが終わるたびにHP+300', heal: 300 },
+    trait: { key: 'regen', name: '灯り', desc: 'ラリーが終わるたびにHP300回復', heal: 300 },
     actions: {
       rock:     { name: '灯撃',   rate: RATE.big },
       scissors: { name: '照らし', rate: RATE.normal, mods: [foeDfs(800, 2)] },
@@ -1521,13 +1521,13 @@ const ENEMIES = {
       scissors: { name: '刻削ぎ', rate: RATE.normal, poison: 3 },
       paper:    { name: '戻し',   rate: RATE.normal, heal: 700, cleanse: 1 } } },
   z_wind: { name: '零の巻き手', faction: '零', hp: 8800, atk: 2200, dfs: 1500, phys: 1.0,
-    trait: { key: 'regen', name: '巻き戻し', desc: 'ラリーが終わるたびにHP+350', heal: 350 },
+    trait: { key: 'regen', name: '巻き戻し', desc: 'ラリーが終わるたびにHP350回復', heal: 350 },
     actions: {
       rock:     { name: '巻撃', rate: RATE.big },
       scissors: { name: '逆巻', rate: RATE.normal, seal: 1 },
       paper:    { name: '巻戻', rate: RATE.normal, heal: 1100 } } },
   z_sand: { name: '零の砂使い', faction: '零', hp: 7800, atk: 2400, dfs: 1200, phys: 0.95,
-    trait: { key: 'oldwound', name: '風化', desc: '時蝕は重ねがけで加算。時蝕中の相手にはATK+600', add: 600 },
+    trait: { key: 'oldwound', name: '風化', desc: '時蝕は重ねがけで毎ラリーのダメージが加算。時蝕中の相手を攻撃するときATK+600', add: 600 },
     actions: {
       rock:     { name: '砂嵐', rate: RATE.huge, up: { rate: RATE.max, when: 'foeStacks', v: 2, text: '時蝕2回以上の相手には極大' } },
       scissors: { name: '砂蝕', rate: RATE.normal, poison: 3 },
@@ -1555,9 +1555,9 @@ const ENEMIES = {
   // --- ボス(★★★、1体で3人を相手にする。特性3つ) ---
   b_tomari: { name: '大錨トマリ', faction: '錨', hp: 30000, atk: 2600, dfs: 2400, phys: 1.1, boss: true,
     traits: [
-      { key: 'immovable', name: '不沈', desc: '被弾でDFS+500(最大+3000)', gain: 500, cap: 3000 },
-      { key: 'regen', name: '港の灯', desc: '毎ラリーHP+500', heal: 500 },
-      { key: 'unbreak', name: '大錨', desc: `${BREAK_NAME}の被ダメージ半減`, cut: 0.5 } ],
+      { key: 'immovable', name: '不沈', desc: '攻撃を受けるたびにDFS+500(場にいる間・最大+3000)', gain: 500, cap: 3000 },
+      { key: 'regen', name: '港の灯', desc: 'ラリーが終わるたびにHP500回復', heal: 500 },
+      { key: 'unbreak', name: '大錨', desc: `${BREAK_NAME}で受けるダメージ半減`, cut: 0.5 } ],
     actions: {
       rock:     { name: '大凪',   rate: RATE.normal, mods: [selfDfs(3000, 2)] },
       scissors: { name: '錨鎖',   rate: RATE.big, mods: [foeAtk(800, 3)] },
@@ -1570,7 +1570,7 @@ const ENEMIES = {
           scissors: { name: '先消し',       rate: RATE.big, seal: 1, mods: [foeAtk(1000, 2)] },
           paper:    { name: '無かったこと', rate: RATE.normal, heal: 2000, keep: 1, cleanse: 1 } } },
       { key: 'backwater', name: '執念', desc: '残りHPが半分以下でATK+1200', below: 0.5, add: 1200 },
-      { key: 'unbreak', name: '始まりの前', desc: `${BREAK_NAME}の被ダメージ半減`, cut: 0.5 } ],
+      { key: 'unbreak', name: '始まりの前', desc: `${BREAK_NAME}で受けるダメージ半減`, cut: 0.5 } ],
     actions: {
       rock:     { name: '白紙',         rate: RATE.big },
       scissors: { name: '先消し',       rate: RATE.normal, seal: 1, mods: [foeAtk(600, 2)] },
@@ -1579,7 +1579,7 @@ const ENEMIES = {
     traits: [
       { key: 'foresight', name: '天眼', desc: `${BREAK_NAME}の一撃はATK+2500`, add: 2500 },
       { key: 'rush', name: '先回り', desc: '場に出て1〜4ラリー目はATK+1500', until: 4, early: 1500, from: 999, late: 0 },
-      { key: 'unbreak', name: '結末を知る者', desc: `${BREAK_NAME}の被ダメージ半減`, cut: 0.5 } ],
+      { key: 'unbreak', name: '結末を知る者', desc: `${BREAK_NAME}で受けるダメージ半減`, cut: 0.5 } ],
     actions: {
       rock:     { name: '張り詰め', rate: RATE.big, up: { rate: RATE.max, when: 'inBreak', text: `${BREAK_NAME}中は極大` } },
       scissors: { name: '先読み',   rate: RATE.normal, streak: 1 },
@@ -1588,9 +1588,9 @@ const ENEMIES = {
   // --- ★★★★:トキバミ(時の流れの外にいる大敵。三陣営の共通の敵) ---
   tokibami: { name: 'トキバミ', faction: '刻喰', hp: 45000, atk: 3400, dfs: 2000, phys: 1.0, boss: true,
     traits: [
-      { key: 'outside', name: '時の外側', desc: '被ダメージ−60%', cut: 0.6 },
+      { key: 'outside', name: '時の外側', desc: '受けるダメージ−60%', cut: 0.6 },
       { key: 'weakness', name: '三刻の重ね', desc: `${BREAK_NAME}で3つの力を当てると時の外側が消える` },
-      { key: 'devour', name: '刻喰い', desc: '与ダメージの30%回復', rate: 0.3 } ],
+      { key: 'devour', name: '刻喰い', desc: '与えたダメージの30%回復', rate: 0.3 } ],
     actions: {
       rock:     { name: '止め喰い', rate: RATE.big, mods: [foeAtk(800, 3)] },
       scissors: { name: '先喰い',   rate: RATE.huge, up: { rate: RATE.max, when: 'captured', text: '今に捕らえられると極大' } },
@@ -1606,7 +1606,7 @@ const ENEMIES = {
   b_kaji_shi: { name: 'カジ【始】', faction: '錨', hp: 133200, atk: 3360, dfs: 1800, phys: 1.0, boss: true,
     traits: [
       { key: 'breakGrow', name: '始の刻', desc: `${BREAK_NAME}するたびにATK+2000(永続・重複可能)`, add: 2000 },
-      { key: 'backwaterAll', name: '背水・始', desc: '残りHPが50%以下でATKとDFS+2000', below: 0.5, add: 2000 } ],
+      { key: 'backwaterAll', name: '背水・始', desc: '残りHPが半分以下でATK+2000・DFS+2000', below: 0.5, add: 2000 } ],
     actions: {
       rock:     { name: '始の一閃', rate: RATE.huge },
       scissors: { name: '間を跳ぶ', rate: RATE.big, streak: 1 },
@@ -1616,7 +1616,7 @@ const ENEMIES = {
   xeno_body: { name: 'ゼノ', secret: '？？？', faction: '始', hp: 10000, atk: 9000, dfs: 9000, phys: 1.2, boss: true,
     traits: [
       { key: 'hardshell', name: '鋼の刻', desc: 'DFSは下げられない。巻き戻るたびに半減' },
-      { key: 'regen', name: '刻戻り', desc: 'ラリーが終わるたびにHP+1600', heal: 1600 } ],
+      { key: 'regen', name: '刻戻り', desc: 'ラリーが終わるたびにHP1600回復', heal: 1600 } ],
     actions: {
       rock:     { name: '圧し止め', rate: RATE.big, mods: [foeAtk(1500, 3)], seal: 1 },
       scissors: { name: '先喰い',   rate: RATE.huge, mods: [foeDfs(2500, 3)] },
@@ -1643,15 +1643,15 @@ Object.assign(ENEMIES, {
     traits: [...ENEMIES.tokibami.traits, { key: 'eatMove', name: '喰い残し', desc: '相手のカードを倒すたびに、そのカードのいちばん強い技を喰い、同じ手の技と入れ替える' }] },
   c4_kagami: gBoss('g_z4', { hp: 274970,
     traits: [GACHA_CHARS.find((x) => x.id === 'g_z4').trait,
-      { key: 'outside', name: '割れぬ鏡', desc: '被ダメージ−20%', cut: 0.2 },
+      { key: 'outside', name: '割れぬ鏡', desc: '受けるダメージ−20%', cut: 0.2 },
       { key: 'drawHeal', name: '映し合い', desc: 'あいこのたびにHP1500回復', heal: 1500 }] }),
   c4_nagare: gBoss('g_y4', { hp: 200040,
     traits: [{ key: 'burnout', name: '全力', desc: '場に出てから勝ち負けが5回つくまで(あいこは数えない)、技がすべて極大。そのあとは毎ラリーATK−500(最大−5000)', until: 5, step: 500, cap: 5000 },
       { key: 'pierce', name: '射抜き', desc: '相手のDFSを1000低いものとして攻撃する', v: 1000 }] }),
   c4_tomoshi: gBoss('g_a4', { hp: 242640, atk: 2600,
-    traits: [{ key: 'immovable', name: '灯台', desc: '被弾でDFS+500(最大+3000)', gain: 500, cap: 3000 },
-      { key: 'regen', name: '常夜の灯', desc: 'ラリーが終わるたびにHP+800', heal: 800 },
-      { key: 'unbreak', name: '消えぬ灯', desc: `${BREAK_NAME}の被ダメージ半減`, cut: 0.5 }] }),
+    traits: [{ key: 'immovable', name: '灯台', desc: '攻撃を受けるたびにDFS+500(場にいる間・最大+3000)', gain: 500, cap: 3000 },
+      { key: 'regen', name: '常夜の灯', desc: 'ラリーが終わるたびにHP800回復', heal: 800 },
+      { key: 'unbreak', name: '消えぬ灯', desc: `${BREAK_NAME}で受けるダメージ半減`, cut: 0.5 }] }),
 });
 // ----- 刻の回廊の★5ボス -----
 Object.assign(ENEMIES, {
@@ -1659,9 +1659,9 @@ Object.assign(ENEMIES, {
   c5_xeno_body: { ...ENEMIES.xeno_body, hp: 20900, phys: 1.25 },
   c5_xeno_spirit: { ...ENEMIES.xeno_spirit, hp: 41800, phys: 1.1, traits: ENEMIES.xeno_spirit.traits.map((t) => (t.key === 'rewindRite' ? { ...t, desc: '7ラリーで倒せないと刻が巻き戻る(巻き戻るのはゼノだけ。こちらは今のまま)', limit: 7, keepMe: true } : t)) },
   c5_mask: gBoss('g_z5', { hp: 197670, phys: 1.8,
-    traits: [{ key: 'lateBreak', name: '遅咲きの刻', desc: `場に出て6ラリー目以降、自分の${BREAK_NAME}の攻撃だけATKが10倍`, from: 6, mul: 10 },
+    traits: [{ key: 'lateBreak', name: '遅咲きの刻', desc: `場に出て6ラリー目以降、${BREAK_NAME}の一撃だけATKが10倍`, from: 6, mul: 10 },
       { key: 'drawHeal', name: '凪の間', desc: 'あいこのたびにHP2000回復', heal: 2000 },
-      { key: 'outside', name: '仮面の外側', desc: '被ダメージ−20%', cut: 0.2 }] }),
+      { key: 'outside', name: '仮面の外側', desc: '受けるダメージ−20%', cut: 0.2 }] }),
   c5_nagare: gBoss('g_y4', { name: 'ナガレ【フルパワー】', hp: 192940, phys: 1.5,
     traits: [{ key: 'burnout', name: '全力・極', desc: '技がずっとすべて極大(減速しない)', until: 9999, step: 0, cap: 0 },
       { key: 'pierce', name: '射抜き', desc: '相手のDFSを1000低いものとして攻撃する', v: 1000 },
@@ -1928,7 +1928,7 @@ function describe(a, rate, short) {
   if (a.rate) parts.push(short ? RATE_SHORT[rate || a.rate] + (a.up && !rate ? `(${a.up.text})` : '') : RATE_LABEL[rate || a.rate] + (a.up ? `(${a.up.text})` : ''));
   if (a.heal) parts.push(`HP${a.heal}回復`);
   if (a.atkUp) parts.push(short ? `次撃ATK+${a.atkUp}` : `次の攻撃ATK+${a.atkUp}`);
-  if (a.dfsUp) parts.push(short ? `次被弾DFS+${a.dfsUp}` : `次の被弾DFS+${a.dfsUp}`);
+  if (a.dfsUp) parts.push(short ? `次被弾DFS+${a.dfsUp}` : `次に攻撃を受けるときDFS+${a.dfsUp}`);
   (a.mods || []).forEach((m) => parts.push(modText(m, short)));
   if (a.poison) parts.push(short ? `時蝕${a.poison}` : `時蝕${a.poison}ラリー`);
   if (a.cleanse) parts.push(short ? 'デバフ・時蝕解除' : '自分のデバフと時蝕を消す');
@@ -1944,12 +1944,12 @@ function describe(a, rate, short) {
   if (a.teamBreak) parts.push(short ? `控え${BREAK_NAME}ATK+${a.teamBreak.v}` : `控えの味方全員の「${BREAK_NAME}の一撃 ATK」+${a.teamBreak.v}(永続・重複可能。最大+${a.teamBreak.cap})`);
   if (a.voidCharge) parts.push(short ? '次のあいこ×2' : '次のあいこの「無の間」のダメージが2倍');
   if (a.purge) parts.push(short ? '強化・弱体消し' : '相手の強化と弱体をすべて消す');
-  if (a.nextCut) parts.push(short ? '次番手被ダメ↓' : '次の番手が受けるダメージ−5%(永続・重複不可)。レイなら効果がアップ');
+  if (a.nextCut) parts.push(short ? '次番手被ダメ↓' : '次の番手が受けるダメージ−5%(永続・重複不可)。レイなら効果がアップする');
   if (a.foeTeamMark) [].concat(a.foeTeamMark).forEach((fm) => { const L = fm.stat === 'atk' ? 'ATK' : 'DFS'; parts.push(short ? `敵全員${L}−${fm.v}` : `相手の全員(控えも)の${L}−${fm.v}(永続・重複可能。最大−${fm.cap})`); });
   if (a.selfPerm) { const sp = [a.selfPerm.atk && `ATK+${a.selfPerm.atk}`, a.selfPerm.dfs && `DFS+${a.selfPerm.dfs}`].filter(Boolean).join('・'); parts.push(short ? `自${sp}永続` : `自分の${sp}(永続・重複可能)`); }
-  if (a.team) { const L = a.team.stat === 'atk' ? 'ATK' : 'DFS'; parts.push(short ? `${a.team.bench ? '控え' : '全員'}${L}+${a.team.v}` : a.team.bench ? `控えの味方全員の${L}+${a.team.v}(永続・重複可能。上限なし)${a.team.rei ? '。レイなら効果がアップ' : ''}` : `味方全員(控えも)の${L}+${a.team.v}(永続・重複可能。最大+${a.team.cap})`); }
+  if (a.team) { const L = a.team.stat === 'atk' ? 'ATK' : 'DFS'; parts.push(short ? `${a.team.bench ? '控え' : '全員'}${L}+${a.team.v}` : a.team.bench ? `控えの味方全員の${L}+${a.team.v}(永続・重複可能)${a.team.rei ? '。レイなら効果がアップする' : ''}` : `味方全員(控えも)の${L}+${a.team.v}(永続・重複可能。最大+${a.team.cap})`); }
   if (a.nextAtkUp) parts.push(short ? `次番手ATK+${a.nextAtkUp}` : `次の番手の最初の攻撃ATK+${a.nextAtkUp}(重複不可)`);
-  if (a.nextDfsUp) parts.push(short ? `次番手DFS+${a.nextDfsUp}` : `次の番手の最初の被弾DFS+${a.nextDfsUp}(重複不可)`);
+  if (a.nextDfsUp) parts.push(short ? `次番手DFS+${a.nextDfsUp}` : `次の番手が最初に攻撃を受けるときDFS+${a.nextDfsUp}(重複不可)`);
   return parts.join(short ? '・' : '、');
 }
 
