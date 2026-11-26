@@ -3931,7 +3931,7 @@ function bossPersonaHtml(st) {
     const key = HINT_ALIAS[f.id] || f.id, man = BOSS_MANUAL[key];
     if (!man || done.has(key)) return ''; done.add(key);
     const text = man.map(([, t]) => `<b>${t}</b>`).join('、') + '。';   // 初めから全部読める(どの性格のことかは考察してもらう)
-    return `<div class="bp"><b class="bph">${escHtml(f.name)}の取扱説明書</b><p class="bpm">${text}</p></div>`;
+    return `<div class="bp"><b class="bph">${escHtml(f.name)}の性格</b><p class="bpm">${text}</p></div>`;
   }).join('');
 }
 function bossHint(S) {
@@ -6389,7 +6389,7 @@ const RULEBOOK = {
     <ul class="rb sm">
       <li>★5のボスは<b>3つの性格</b>を持ち、あなたのクセを見て切り替える</li>
       <li>ログの一言で、いまの性格がわかる(ときどきウソ)</li>
-      <li>ステージの <b>i</b> に、ボスの<b>取扱説明書</b>がある</li>
+      <li>ステージの <b>i</b> で、ボスの<b>性格</b>のヒントが読める</li>
     </ul>
     <table class="rbt">${['prey', 'rewind', 'sight', 'rage', 'bias', 'hunt', 'bait', 'tilt'].map((k) => `<tr><td>${PERSONA_INFO[k][0]}</td><td>${PERSONA_INFO[k][1]}</td></tr>`).join('')}</table>
     <p class="rbnote">ソロではHPが減っていくことも、100ラリー判定もない</p>`,
