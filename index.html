@@ -3015,7 +3015,7 @@ function aiHand(S, side, level) {
     mood = hand === d.best && d.trust >= 0.2 ? 'read' : 'calm';
   }
   // ★5のボス:性格ごとの決め打ち。狙いの手があれば、決めた割合でそれを出す(外れたら上で決めた手のまま)
-  if (kind === 'tilt') { hand = randomHand(); mood = 'calm'; }   // ティルト:3つの手を33%ずつ
+  if (kind === 'tilt' || me.ch.id === 'qz_justice') { hand = randomHand(); mood = 'calm'; }   // ティルト:3つの手を33%ずつ。ジャスティスはずっとティルト
   else if (side === 1 && ADAPT[me.ch.id] && S.stage && S.stage.stars === 5) {
     const t = personaTarget(S, side, kind, me);
     if (t && Math.random() < t.p) { hand = t.hand; mood = kind === 'bait' ? 'calm' : 'read'; }
