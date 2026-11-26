@@ -5612,8 +5612,8 @@ function renderHub() {
   mountTop($('hub'));
 }
 // 上の段(もどる・フレンド・ランキング・称号と、アカウントの欄)は、どの画面でも同じものを使う。いま出している画面の先頭へ移す
-// 広告の場所(320×100+上下の余白で110px、そのさらに上に38pxの間)と、iPhoneの下端の余白を空けて、パネルの下の端をそろえる
-const AD_RESERVE = 148;
+// 広告の場所(320×100+上下の余白で110px、そのさらに上に33pxの間)と、iPhoneの下端の余白を空けて、パネルの下の端をそろえる
+const AD_RESERVE = 143;
 function fitHub(panel) {
   if (!panel || !['hub', 'soloHub', 'groupHub'].includes(panel.id)) return;
   panel.style.minHeight = '';
