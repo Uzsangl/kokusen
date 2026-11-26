@@ -791,8 +791,6 @@
   </section>
 
   <section id="hub" class="panel hidden">
-    <div class="hubtop"><button id="hubBack" class="back">◀ タイトルへ</button></div>
-    <button class="hubacc" id="hubAcc"></button>
     <div class="hubbig">
       <button id="hubSolo">ソロ<small>ステージ・刻の回廊・スコアアタック・降臨</small></button>
       <button id="hubPvp">対人<small>ランク・フリー・プラベ</small></button>
@@ -807,8 +805,6 @@
   </section>
 
   <section id="soloHub" class="panel hidden">
-    <div class="hubtop"><button id="soloBack" class="back">◀ もどる</button></div>
-    <button class="hubacc" id="soloAcc"></button>
     <div class="hubbig">
       <button data-sf="basic">ベーシック<small>錨・零・矢のステージ(ガチャキャラ以外)</small></button>
       <button data-sf="advance">アドバンス<small>刻の回廊(持っているガチャキャラも使える)</small></button>
@@ -5603,13 +5599,21 @@ function showTitle(on) {
 }
 // プレイを押したあとの画面(ハブ)。ソロ・対人・CPU戦を選ぶと、いつものメニューへ
 function renderHub() {
-  hubAccHtml($('hubAcc'));
+  mountTop($('hub'));
+}
+// 上の段(もどる・フレンド・ランキング・称号と、アカウントの欄)は、どの画面でも同じものを使う。いま出している画面の先頭へ移す
+function mountTop(panel) {
+  const top = document.querySelector('.seltop'), acct = $('acct');
+  const into = panel.id === 'select' ? panel.querySelector('.selL') : panel;
+  into.prepend(acct); into.prepend(top);
+  $('toTitle').textContent = panel.id === 'hub' ? '◀ タイトルへ' : '◀ もどる';
+  renderAcct();
 }
 // ソロの入り口:ベーシック・アドバンス・スコアアタック・降臨
 function showSoloHub() {
   $('hub').classList.add('hidden'); $('select').classList.add('hidden'); $('soloHub').classList.remove('hidden');
   window.scrollTo(0, 0);
-  hubAccHtml($('soloAcc'));
+  mountTop($('soloHub'));
 }
 function openSolo(f) {
   if (f === 'kr') SOLO.stage = 'kr';
@@ -5620,17 +5624,13 @@ function openSolo(f) {
   openMode('solo');
   renderStages();
 }
-function hubAccHtml(el) {
-  const p = ACC.profile;
-  if (!p) el.innerHTML = `<span style="font-size:28px">👤</span><div><div class="nm">ゲスト</div><div class="meta">ログインすると、記録やカケラを保存できます</div></div>`;
-  else { const fav = favChar(p); el.innerHTML = `${fav ? iconHtml(fav, 'lg') : '<span style="font-size:28px">👤</span>'}<div><div class="nm">${titleTag(p.title)}${escHtml(p.name)}</div><div><span class="rate">レート${p.rating}</span> <span class="meta">(${p.wins}勝${p.losses}敗) 💠${shardCount()}</span></div></div>`; }
-}
 function openMode(m) {
   if (PVP.spec) specStop(); else if (PVP.on && m !== 'pvp' && PVP.phase !== 'idle') pvpLeave();
   if (m !== 'pvp') { rankCancel(); rndCancel(); }
   MODE = m; PVP.on = m === 'pvp';
   $('hub').classList.add('hidden'); $('select').classList.remove('hidden');
   window.scrollTo(0, 0);
+  mountTop($('select'));
   renderMode(); setStep('menu');
 }
 function backToHub() {
@@ -7451,12 +7451,12 @@ function init() {
   $('tVer').textContent = `ver ${APP_VER}`;
   $('tVer').title = `ルール ${RULES_VER.slice(0, 6)}`;   // 対人の版合わせに使うルールの番号
   $('tPlay').onclick = () => { Sound.wake(); Bgm.unlock && Bgm.unlock(); showTitle(false); };
-  $('toTitle').onclick = () => backToHub();
-  $('hubBack').onclick = () => showTitle(true);
-  $('hubAcc').onclick = () => accOpen();
+  $('toTitle').onclick = () => {   // ハブ → タイトル、ソロの入り口 → ハブ、メニュー → ハブ(ソロはソロの入り口)
+    if (!$('hub').classList.contains('hidden')) showTitle(true);
+    else if (!$('soloHub').classList.contains('hidden')) { $('soloHub').classList.add('hidden'); $('hub').classList.remove('hidden'); window.scrollTo(0, 0); renderHub(); }
+    else backToHub();
+  };
   $('hubSolo').onclick = () => { Sound.click(); showSoloHub(); };
-  $('soloBack').onclick = () => { $('soloHub').classList.add('hidden'); $('hub').classList.remove('hidden'); window.scrollTo(0, 0); renderHub(); };
-  $('soloAcc').onclick = () => accOpen();
   document.querySelectorAll('#soloHub [data-sf]').forEach((b) => { b.onclick = () => { Sound.click(); openSolo(b.dataset.sf); }; });
   $('hubPvp').onclick = () => { Sound.click(); openMode('pvp'); };
   $('hubCpu').onclick = () => { Sound.click(); openMode('cpu'); };
