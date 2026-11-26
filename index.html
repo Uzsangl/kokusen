@@ -943,15 +943,13 @@
   .rbt td { padding: 6px 8px; border-bottom: 1px solid rgba(240,192,64,.18); }
   .rbt td:first-child { width: 6.5em; color: #ffe08a; font-weight: 700; white-space: nowrap; }
 
-  /* BREAK中:手のボタンの枠も中も虹色に(押せることがひと目でわかるように) */
+  /* BREAK中:手のボタンを、大きいモニター(盤面)の「うっすら虹」と同じ見た目に(押せることがわかるように) */
   #battle #hands.breaking button:not(:disabled), #battle #hands.breaking button.warm:not(:disabled), #battle #hands.breaking button.hot:not(:disabled) {
-    border: 2px solid transparent; color: #fff; text-shadow: 0 1px 3px #000, 0 0 6px #000;
-    background: linear-gradient(90deg, rgba(255,77,94,.55), rgba(245,196,81,.55), rgba(74,222,128,.55), rgba(56,189,248,.55), rgba(139,108,255,.55), rgba(255,77,94,.55)) padding-box,
-      linear-gradient(90deg, #ff4d5e, #f5c451, #4ade80, #38bdf8, #8b6cff, #ff4d5e) border-box;
-    background-size: 200% 100%, 200% 100%;
-    box-shadow: 0 0 16px rgba(255,255,255,.45), 0 0 26px rgba(139,108,255,.55);
-    animation: hue 1.2s linear infinite, pulse .5s ease-in-out infinite alternate; }
-  #battle #hands.breaking button:not(:disabled) * { color: #fff; }
+    border: 2px solid #fff;
+    background: linear-gradient(90deg, #3a0d16, #3a300d, #0d3a1c, #0d2a3a, #1c0d3a, #3a0d16);
+    background-size: 300% 100%;
+    box-shadow: 0 0 14px rgba(255,255,255,.55), 0 0 26px rgba(139,108,255,.5);
+    animation: hue 1s linear infinite; }
 </style>
 </head>
 <body>
