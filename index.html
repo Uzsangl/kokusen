@@ -1013,6 +1013,12 @@
     border: 2px solid transparent; background: linear-gradient(180deg, #161a38, #0f1229) padding-box, var(--goldThin) border-box; }
   .bpm b { color: #fff3cf; font-weight: 500; }
   .bpm .q { color: var(--sub); letter-spacing: .1em; }
+
+  /* ガチャの先バレ期待度 */
+  .gc-pk { display: grid; gap: 6px; margin: 4px 0 10px; }
+  .gc-pk > span { font-size: .85rem; font-weight: 700; }
+  .gc-pk small { display: block; font-weight: 400; color: var(--sub); font-size: .72rem; min-height: 1.5em; }
+  .gc-pk .seg4 { display: flex; } .gc-pk .seg4 button { flex: 1; }
 </style>
 </head>
 <body>
@@ -6307,10 +6313,8 @@ function openSettings() {
     <div class="srow"><div>効果音の音量</div><input type="range" id="sSeVol" min="0" max="100" value="${Math.round(FX.seVol * 100)}" aria-label="効果音の音量"></div>
     <div class="srow"><div>演出パターン<small>${FX_PATTERNS[FX.pattern].note}</small></div><div class="seg seg4">${Object.entries(FX_PATTERNS).map(([k, v]) => `<button data-pt="${k}" class="${FX.pattern === k ? 'on' : ''}">${v.name}</button>`).join('')}</div></div>
     <div class="srow"><div>先バレ<small>手を出した瞬間に赤く光ったら、じゃんけん勝ち確定</small></div>${sw('sSaki', FX.sakibare)}</div>
-    <div class="srow"><div>ガチャの先バレ期待度<small>${GACHA_PK_MODES[FX.gachaPk].note}</small></div><div class="seg seg4">${['off', '40', '90', 'ex'].map((k) => [k, GACHA_PK_MODES[k]]).map(([k, v]) => `<button data-gp="${k}" class="${FX.gachaPk === k ? 'on' : ''}">${v.name}</button>`).join('')}</div></div>
     <div class="srow" style="border:0"><div>クレジット</div><button id="sCredit">見る</button></div>`);
   document.querySelectorAll('#sheetBody [data-pt]').forEach((b) => { b.onclick = () => { FX.pattern = b.dataset.pt; try { localStorage.setItem('kokusen.pattern', FX.pattern); } catch (e) { /* 保存できなくても動く */ } openSettings(); }; });
-  document.querySelectorAll('#sheetBody [data-gp]').forEach((b) => { b.onclick = () => { FX.gachaPk = b.dataset.gp; try { localStorage.setItem('kokusen.gachaPk', FX.gachaPk); } catch (e) { /* 保存できなくても動く */ } openSettings(); }; });
   $('sSaki').onclick = () => { FX.sakibare = !FX.sakibare; saveOpt('kokusen.sakibare', FX.sakibare); openSettings(); };
   $('sBgm').onclick = () => { FX.bgm = !FX.bgm; saveOpt('kokusen.bgm', FX.bgm); applyOpts(); openSettings(); };
   $('sSe').onclick = () => { FX.sound = !FX.sound; saveOpt('kokusen.sound', FX.sound); applyOpts(); if (FX.sound) { Sound.wake(); Sound.click(); } openSettings(); };
@@ -7317,12 +7321,15 @@ function openGacha(results, sim) {
   openSheet('ガチャ', `<div class="gc-top"><span>${SHARD_IC}${SHARD_NAME}</span><b>${n}</b></div>` +
     (login ? '' : '<p class="sub" style="color:var(--gold)">ガチャはログインが必要です。カケラはオンライン対人(フリー戦・ランク戦)で手に入ります。</p>') +
     `<div class="gc-btns"><button id="gc1"${login && n >= GACHA_COST ? '' : ' disabled'}>1回引く<small>${SHARD_IC}${GACHA_COST}</small></button><button id="gc11"${login && n >= GACHA_COST11 ? '' : ' disabled'}>11回引く<small>${SHARD_IC}${GACHA_COST11}(1回分お得)</small></button></div>` +
+    `<div class="gc-pk"><span>先バレ期待度<small>${GACHA_PK_MODES[FX.gachaPk].note}</small></span><div class="seg seg4">${['off', '40', '90', 'ex'].map((k) => `<button data-gp="${k}" class="${FX.gachaPk === k ? 'on' : ''}">${GACHA_PK_MODES[k].name}</button>`).join('')}</div></div>` +
     `<div class="gc-sim"><b>🎲 お試しガチャ</b><span class="sub">無料で何回でも。演出だけ楽しめます(キャラは手に入りません)</span><div class="gc-btns"><button id="gs1">1回 お試し</button><button id="gs11">11回 お試し</button></div></div>` +
     (login && IS_MASTER ? `<button id="gcMaster" class="gc-master">${SHARD_IC}${SHARD_NAME}を${MASTER_SHARDS}個足す(マスター用)</button>` : '') +
     res +
     (sim ? '' : `<p class="sub">引いたキャラは、アドバンスで使えます(ダブりはそのまま数えます)。</p>`) +
     `<details><summary class="sub">確率</summary><table class="gc-rates">${rateRows}</table><p class="sub">同じ★の中では同じ確率。11回でも保証はありません。</p></details>` +
     `<details${results ? '' : ' open'}><summary class="sub">持っているキャラ(長押しで能力)</summary><div class="gc-own">${own}</div></details>`);
+  // 先バレ期待度(ガチャの演出のカスタム)
+  document.querySelectorAll('#sheetBody [data-gp]').forEach((b) => { b.onclick = () => { Sound.click(); FX.gachaPk = b.dataset.gp; try { localStorage.setItem('kokusen.gachaPk', FX.gachaPk); } catch (e) { /* 保存できなくても動く */ } const sc = $('sheet').querySelector('.box').scrollTop; openGacha(results, sim); $('sheet').querySelector('.box').scrollTop = sc; }; });
   // 引いた結果:長押しで能力
   if (results) document.querySelectorAll('#sheetBody .gc-res .gc-card').forEach((el) => bindPress(el, () => {}, () => openCharDetail(results[+el.dataset.i].c, () => openGacha(results, sim))));
   // お試しガチャ:だれでも、無料で。持ち物には何も足さない
