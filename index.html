@@ -871,6 +871,15 @@
     #title .tlogo img { width: min(86%, 300px, 34vh); }
     #title .tplay { margin-top: 18px; }
   }
+
+  /* 最初のメニューの下の4つ:丸い金の紋章に金の線のアイコン、名前はその下 */
+  .hubsmall { gap: 6px; }
+  .hubsmall button { background: none; border: none; box-shadow: none; padding: 0; color: #e9dcb4; font-size: .72rem; letter-spacing: .06em; text-shadow: 0 1px 3px #000; }
+  .hubsmall button span { display: block; white-space: nowrap; }
+  .hubsmall button b { width: 64px; height: 64px; margin: 0 auto 6px; padding: 15px; box-sizing: border-box; border-radius: 50%; color: #f0c040; border: 2px solid transparent;
+    background: radial-gradient(circle at 50% 35%, #2a3060, #12152e) padding-box, var(--goldGrad) border-box; box-shadow: inset 0 0 0 3px rgba(8,10,24,.85), inset 0 0 0 4px rgba(232,184,74,.4), 0 4px 10px rgba(0,0,0,.6); }
+  .hubsmall button b svg { width: 100%; height: 100%; display: block; }
+  .hubsmall button:active b { transform: translateY(2px); }
 </style>
 </head>
 <body>
@@ -916,10 +925,10 @@
       <button id="hubGacha">ガチャ<small>新しいキャラを手に入れる</small></button>
     </div>
     <div class="hubsmall">
-      <button id="hubCpu"><b>🤖</b>CPU戦</button>
-      <button id="hubChars"><b>🃏</b>キャラ一覧</button>
-      <button id="hubRule"><b>📖</b>ルール<br>ブック</button>
-      <button id="hubDaily"><b>📅</b>デイリー</button>
+      <button id="hubCpu"><b><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="7.5" width="14" height="11" rx="2.5"/><path d="M12 7.5V4.5"/><circle cx="12" cy="3.5" r="1"/><circle cx="9.2" cy="12" r="1.3"/><circle cx="14.8" cy="12" r="1.3"/><path d="M9.5 15.5h5M3 11v4M21 11v4"/></svg></b><span>CPU戦</span></button>
+      <button id="hubChars"><b><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3c-3.3 0-5.5 2.4-5.5 5.6 0 3.4 2.4 6.4 5.5 6.4s5.5-3 5.5-6.4C17.5 5.4 15.3 3 12 3z"/><path d="M9.3 9.2h1.6M13.1 9.2h1.6M12 15v6M7 21h10"/></svg></b><span>キャラ一覧</span></button>
+      <button id="hubRule"><b><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 6.5C9.8 5 7 4.6 3.5 5v13.5c3.5-.4 6.3 0 8.5 1.5 2.2-1.5 5-1.9 8.5-1.5V5c-3.5-.4-6.3 0-8.5 1.5z"/><path d="M12 6.5V20"/></svg></b><span>ルールブック</span></button>
+      <button id="hubDaily"><b><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 3h11M6.5 21h11M7.5 3c0 4.5 4.5 5.5 4.5 9s-4.5 4.5-4.5 9M16.5 3c0 4.5-4.5 5.5-4.5 9s4.5 4.5 4.5 9"/><path d="M9.5 18.5h5"/></svg></b><span>デイリー</span></button>
     </div>
   </section>
 
