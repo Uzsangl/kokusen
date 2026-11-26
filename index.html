@@ -491,6 +491,12 @@
   #hub .hubbig button, #soloHub .hubbig button, #groupHub .hubbig button { flex: 1; max-height: 150px; }
   #hub .hubsmall { margin-top: 16px; }
   .stages .gh { display: none !important; }   /* ソロ:選んだ陣営・回廊のステージだけ出す */
+  /* 陣営・回廊を選んだあとのステージ:横長のボタンを縦に並べる(左に★、まん中に敵、右に名前) */
+  .stages.vlist { grid-template-columns: 1fr !important; gap: 10px; }
+  .stages.vlist .corr-h { display: none; }
+  .stages.vlist button { grid-column: 1 / -1 !important; display: grid; grid-template-columns: 96px auto 1fr; align-items: center; gap: 10px; min-height: 78px; padding: 8px 14px; font-size: .95rem; text-align: left; border-radius: 16px; }
+  .stages.vlist button b { font-size: .85rem; letter-spacing: 0; white-space: nowrap; }
+  .stages.vlist button .foes { justify-content: flex-start; margin: 0; }
   .hubtop { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
   .hubacc { width: 100%; display: flex; align-items: center; gap: 10px; text-align: left; padding: 12px 14px; border-radius: 16px; margin-bottom: 14px; }
   .hubacc .cico { flex: none; }
@@ -5992,6 +5998,7 @@ function soloFixStage() {
 }
 function renderStages() {
   soloFixStage();
+  ['stages', 'corrStages'].forEach((id) => $(id).classList.toggle('vlist', SOLO.group != null));   // 陣営・回廊を選んだときは縦の一覧
   [...$('stages').children, ...$('corrStages').children, ...$('questStages').children].forEach((b) => {
     if (b.dataset.cor) b.classList.toggle('gh', SOLO.group != null && +b.dataset.cor !== SOLO.group);   // 回廊の見出し
     if (!b.dataset.id) return;
@@ -5999,7 +6006,7 @@ function renderStages() {
     // 敵のアイコンも出す(★1・★2は兵士3体を小さく、★3以上はボス)。ゼノは名前が明かされるまでシルエット
     const s = STAGES.find((x) => x.id === b.dataset.id);
     const boss = `<span class="foes">${stageFoes(s).filter((f) => !f.hiddenUntilActive && (!s.quest || f.boss)).map((f) => iconHtml(f, s.stars >= 3 ? 'md' : 'sm')).join('')}</span>`;   // 降臨はボスだけ
-    const head = s.corridor ? '★'.repeat(s.stars) : s.quest ? `降臨 ${'★'.repeat(s.stars)}` : `${s.faction} ${'★'.repeat(s.stars)}`;   // 回廊は見出しに名前があるので★だけ
+    const head = s.corridor || (SOLO.group != null && !s.quest && !s.rush) ? '★'.repeat(s.stars) : s.quest ? `降臨 ${'★'.repeat(s.stars)}` : `${s.faction} ${'★'.repeat(s.stars)}`;   // 陣営を選んだあとは★だけ   // 回廊は見出しに名前があるので★だけ
     b.innerHTML = `<b>${head}</b>${boss}${s.name}`;
     b.classList.toggle('chain', !!s.chainFrom);
     b.classList.toggle('picked', b.dataset.id === SOLO.stage);
