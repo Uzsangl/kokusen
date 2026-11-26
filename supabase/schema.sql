@@ -1503,3 +1503,14 @@ revoke execute on function public.stamina_get() from public, anon;
 grant execute on function public.stamina_get() to authenticated;
 revoke execute on function public.stamina_refill() from public, anon;
 grant execute on function public.stamina_refill() to authenticated;
+
+-- ===== 22回目:クリアでもらえる経験値を10倍にする(消費スタミナはそのまま)=====
+-- 何度流しても同じ結果になるように、10倍にした値をそのまま書く
+insert into public.stage_stamina (stage, cost, exp) values
+  ('a1', 10, 10), ('z1', 10, 10), ('y1', 10, 10),
+  ('a2', 10, 10), ('z2', 10, 10), ('y2', 10, 10), ('r1_2', 10, 10), ('r2_2', 10, 10), ('r3_2', 10, 10), ('r4_2', 10, 10),
+  ('a3', 20, 200), ('z3', 20, 200), ('y3', 20, 200), ('r1_3', 20, 200), ('r2_3', 20, 200), ('r3_3', 20, 200), ('r4_3', 20, 200), ('qe3', 20, 200), ('qr3', 20, 200),
+  ('t4', 20, 1000), ('k4', 20, 1000), ('r1_4', 20, 1000), ('r2_4', 20, 1000), ('r3_4', 20, 1000), ('r4_4', 20, 1000), ('qe4', 20, 1000), ('qr4', 20, 1000),
+  ('x5', 25, 1000), ('k5', 25, 2000), ('r1_5', 25, 2000), ('r2_5', 25, 2000), ('r3_5', 25, 2000), ('r4_5', 25, 3000), ('qe5', 25, 2000), ('qr5', 25, 2000),
+  ('rush', 25, 2000)
+  on conflict (stage) do update set cost = excluded.cost, exp = excluded.exp;

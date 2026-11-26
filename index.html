@@ -6884,10 +6884,10 @@ function acctBoard(p) {
 // ステージの消費スタミナと経験値(スコアアタックはなし)。サーバーの stage_stamina と同じ
 function stageStamina(st) {
   if (!st || st.kr) return null;
-  if (st.rush) return { cost: 25, exp: 200 };
-  if (st.id === 'x5') return { cost: 25, exp: 100 };    // ベーシックのゼノ「始まりの前」
-  if (st.id === 'r4_5') return { cost: 25, exp: 300 };  // 刻の回廊「天眼の果て」
-  return ({ 1: { cost: 10, exp: 1 }, 2: { cost: 10, exp: 1 }, 3: { cost: 20, exp: 20 }, 4: { cost: 20, exp: 100 }, 5: { cost: 25, exp: 200 } })[st.stars] || null;
+  if (st.rush) return { cost: 25, exp: 2000 };
+  if (st.id === 'x5') return { cost: 25, exp: 1000 };    // ベーシックのゼノ「始まりの前」
+  if (st.id === 'r4_5') return { cost: 25, exp: 3000 };  // 刻の回廊「天眼の果て」
+  return ({ 1: { cost: 10, exp: 10 }, 2: { cost: 10, exp: 10 }, 3: { cost: 20, exp: 200 }, 4: { cost: 20, exp: 1000 }, 5: { cost: 25, exp: 2000 } })[st.stars] || null;
 }
 const STAM = { on: false, val: 0, max: 50, next: 0, at: 0 };   // at:サーバーから受け取った時刻(端末の時計)
 function stamSet(r) {
