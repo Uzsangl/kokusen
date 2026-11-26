@@ -495,6 +495,8 @@
   #groupHub.gq .hubbig button { flex: 0 0 auto; min-height: 110px; max-height: none; }
   #groupHub.gq .hubbig button { position: relative; overflow: hidden; isolation: isolate; }
   #groupHub.gq .hubbig button::before { content: ''; position: absolute; inset: 0; z-index: -1; background-size: 115% auto; background-position: 50% 27%; opacity: .26; filter: saturate(.8); -webkit-mask-image: linear-gradient(90deg, transparent, #000 25%, #000 75%, transparent); mask-image: linear-gradient(90deg, transparent, #000 25%, #000 75%, transparent); }   /* うっすら目元 */
+  #soloHub button[data-sf="kr"] { position: relative; overflow: hidden; isolation: isolate; }
+  #soloHub button[data-sf="kr"]::before { content: ''; position: absolute; inset: 0; z-index: -1; background: url(icons/k_utsuro.webp) 50% 36% / 115% auto no-repeat; opacity: .26; -webkit-mask-image: linear-gradient(90deg, transparent, #000 25%, #000 75%, transparent); mask-image: linear-gradient(90deg, transparent, #000 25%, #000 75%, transparent); }   /* 刻練場:ウツロの目元をうっすら */
   #groupHub.gq .hubbig button[data-g="emo"]::before { background-image: url(icons/emo.webp); }
   #groupHub.gq .hubbig button[data-g="rizu"]::before { background-image: url(icons/rizu.webp); background-position: 50% 26%; }
   .stages .gh { display: none !important; }   /* ソロ:選んだ陣営・回廊のステージだけ出す */
