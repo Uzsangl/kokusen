@@ -569,7 +569,7 @@
   .ml .gift .got { color: var(--sub); }
   .ib { width: 42px; height: 42px; border-radius: 50%; padding: 0; font-size: 18px; display: grid; place-items: center; }
   .tlogo { position: relative; z-index: 2; text-align: center; margin-top: min(84px, 11vh); }
-  .tlogo img { width: min(100%, 350px, 44vh); height: auto; filter: drop-shadow(0 8px 24px #000c); animation: logoIn .9s ease-out both; }
+  .tlogo img { width: min(100%, 250px, 31vh); height: auto; filter: drop-shadow(0 8px 24px #000c); animation: logoIn .9s ease-out both; }
   @keyframes logoIn { from { opacity: 0; transform: scale(.92); } }
   .tplay { position: relative; z-index: 2; margin-top: 14px; }
   .btn-play { width: 100%; padding: min(18px, 2.2vh); border-radius: 18px; border: 2px solid #ffe8a3; font-size: 1.5rem; font-weight: 900; letter-spacing: .3em; color: #1a1200;
@@ -684,7 +684,7 @@
   @media (prefers-reduced-motion: reduce) { .tlogo img, .btn-play { animation: none; } }
   /* 縦が短い画面(ブラウザのバーが出ているスマホなど)では、1画面に収まるよう詰める */
   @media (max-height: 760px) {
-    .tlogo { margin-top: 9vh; } .tlogo img { width: min(100%, 330px, 38vh); }
+    .tlogo { margin-top: 9vh; } .tlogo img { width: min(100%, 235px, 27vh); }
     .tbg img { width: min(31%, 15vh); }
     .tnote { display: none; }
     .tsub { margin-top: 8px; } .tsub button { padding: 9px; }
@@ -712,7 +712,7 @@
   /* 最初の画面 */
   #splash { position: fixed; inset: 0; z-index: 9; background: radial-gradient(700px 500px at 50% 40%, #2a1f55 0%, #0b0d1c 60%, #05060d 100%);
     display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; }
-  #splash img { width: min(80%, 340px, 46vh); height: auto; filter: drop-shadow(0 0 30px #f5c45144) brightness(.9); animation: splashBreath 3s ease-in-out infinite; }
+  #splash img { width: min(80%, 240px, 33vh); height: auto; filter: drop-shadow(0 0 30px #f5c45144) brightness(.9); animation: splashBreath 3s ease-in-out infinite; }
   #splash .tap { margin-top: 24px; font-weight: 900; letter-spacing: .4em; margin-left: .4em; color: var(--gold); text-shadow: 0 0 12px #f5c45188; animation: tapBlink 1.4s ease-in-out infinite; }
   #splash .tap2 { margin-top: 6px; font-size: .75rem; color: var(--sub); }
   #splash.go { animation: splashOut .45s ease-in forwards; pointer-events: none; }
@@ -755,7 +755,7 @@
     /* タイトル */
     #title { max-width: 980px; margin: 0 auto; }
     .tbg { gap: 4%; } .tbg img { width: min(26%, 26vh); }
-    .tlogo { margin-top: min(120px, 12vh); } .tlogo img { width: min(100%, 520px, 52vh); }
+    .tlogo { margin-top: min(120px, 12vh); } .tlogo img { width: min(100%, 370px, 37vh); }
     .tplay { max-width: 760px; width: 100%; margin: 18px auto 0; }
     .tsub { grid-template-columns: 1fr 1fr 1fr; }
     /* キャラ選択:左に対戦相手とステージ、右にキャラ */
@@ -863,7 +863,7 @@
 
   <!-- 最初の画面:ここをタップした瞬間に、音を鳴らせるようになる(ブラウザは、触れる前の再生を許さないため) -->
   <div id="splash" role="button" tabindex="0" aria-label="タップしてスタート">
-    <img src="img/logo.webp" alt="刻戦 KOKUSEN" width="720" height="636">
+    <img src="img/logo-v.webp" alt="刻戦 KOKUSEN" width="450" height="636">
     <div class="tap">TAP TO START</div>
     <div class="tap2">画面をタップ</div>
   </div>
@@ -871,7 +871,7 @@
   <section id="title">
     <div class="tbg" aria-hidden="true"><img src="icons/rei.webp" alt=""><img src="icons/kaji.webp" alt=""><img src="icons/tsuru.webp" alt=""></div>
     <div class="ttop"><button class="ib" id="tFriend" aria-label="フレンド">👥<i class="badge hidden" id="tFriendN"></i></button><button class="ib" id="tMail" aria-label="メールボックス">✉<i class="badge hidden" id="tMailN"></i></button><button class="ib" id="tRank" aria-label="ランキング">🏆</button><button class="ib" id="tSet" aria-label="設定">⚙</button></div>
-    <div class="tlogo"><img src="img/logo.webp" alt="刻戦 KOKUSEN" width="720" height="636"></div>
+    <div class="tlogo"><img src="img/logo-v.webp" alt="刻戦 KOKUSEN" width="450" height="636"></div>
     <div class="tplay">
       <button id="tPlay" class="btn-play">プレイ</button>
       <div class="tnote">CPU戦・ソロ・オンライン対人</div>
