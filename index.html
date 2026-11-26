@@ -47,7 +47,7 @@
   body::before { content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
     background: linear-gradient(180deg, rgba(8, 10, 26, .55), rgba(8, 10, 26, .35) 40%, rgba(8, 10, 26, .6)), url(bg/tower.webp) center / cover no-repeat, var(--bg); }
   body.in-battle::before { background: linear-gradient(rgba(8, 10, 26, .82), rgba(8, 10, 26, .82)), url(bg/tower.webp) center / cover no-repeat, var(--bg); }
-  #hub, #soloHub, #groupHub, #select { background: linear-gradient(180deg, rgba(24, 29, 58, .5), rgba(18, 22, 46, .62)); -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); }   /* メニューのパネルは少し透かして背景を見せる */
+  #hub, #soloHub, #groupHub, #select { background: linear-gradient(180deg, rgba(24, 29, 58, .5), rgba(18, 22, 46, .62)); }   /* メニューのパネルは少し透かして背景を見せる */
   main { max-width: 640px; margin: 0 auto; }
   header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
   #optBgm, #optSound { display: none !important; }   /* 右上の曲・音の切り替えは出さない(設定から変えられる) */
@@ -460,7 +460,9 @@
   .acct button { padding: 5px 12px; font-size: .8rem; border-radius: 16px; }
   .modal { position: fixed; inset: 0; z-index: 60; background: #000a; display: flex; align-items: center; justify-content: center; padding: 16px; }
   .modal.hidden { display: none; }
-  .modal .box { width: 100%; max-width: 420px; max-height: calc(100vh - 32px); overflow-y: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px; }
+  .modal .box * { touch-action: pan-y; }   /* iPhone:ボタンの上から指を動かしても、中身がスクロールするように */
+  body.sheet-open { overflow: hidden; }
+  .modal .box { width: 100%; max-width: 420px; max-height: calc(100vh - 32px); max-height: calc(100dvh - 32px); overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; touch-action: pan-y; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px; }
   .modal label { display: block; font-size: .8rem; color: var(--sub); margin: 10px 0 4px; }
   .modal input { width: 100%; font: inherit; font-size: 16px; color: var(--text); background: #0b0d1c; border: 1px solid var(--line); border-radius: 10px; padding: 10px; }
   .modal .row { display: flex; gap: 8px; margin-top: 12px; }
@@ -7650,6 +7652,8 @@ function init() {
   $('tDaily').onclick = () => openDaily();
   $('tGacha').onclick = () => openGacha();
   $('sheetClose').onclick = () => $('sheet').classList.add('hidden');
+  // シートが開いている間は、後ろの画面をスクロールさせない(iPhoneで中身のスクロールが後ろに取られないように)
+  new MutationObserver(() => document.body.classList.toggle('sheet-open', !$('sheet').classList.contains('hidden'))).observe($('sheet'), { attributes: true, attributeFilter: ['class'] });
   $('sheet').onclick = (e) => { if (e.target === $('sheet')) $('sheet').classList.add('hidden'); };
   showTitle(true);
   Bgm.stop();               // 最初の画面では曲を流さない(ガラスが砕け終わってから流す)
