@@ -678,20 +678,20 @@
   /* SEC:暗転して、10本の針が回る */
   .gsec { position: fixed; inset: 0; z-index: 8; background: #000; display: flex; align-items: center; justify-content: center; }
   .gsec.hidden { display: none; }
-  /* プチュン:青白い閃光 → 上下からつぶれて横一本の光の筋 → 筋が縮み、中心のひし形の光だけが残って消える */
+  /* プチュン:オレンジの閃光(主人公の色) → 上下からつぶれて横一本の光の筋 → 筋が縮み、中心のひし形の光だけが残って消える */
   .gsec b { position: absolute; inset: 0; pointer-events: none; }
   .gsec b::before { content: ''; position: absolute; inset: 0; transform-origin: 50% 40%;
     background: radial-gradient(ellipse 38% 26% at 50% 40%, #fff 0 35%, #fff0 100%),
       linear-gradient(90deg, #fff0, #fff 50%, #fff0) 0 40% / 100% 22% no-repeat,
       linear-gradient(#fff0, #fff 50%, #fff0) 50% 0 / 26% 80% no-repeat,
-      radial-gradient(ellipse 80% 60% at 50% 40%, #d8fbff, #3fd0f2 55%, #0c5568);
+      radial-gradient(ellipse 80% 60% at 50% 40%, #fff4d6, #ffb02e 55%, #6a2a06);
     animation: puchunGlare 0.55s cubic-bezier(.55, 0, .9, .4) forwards; }
   .gsec b::after { content: ''; position: absolute; left: 0; right: 0; top: 40%; height: 90px; margin-top: -45px; opacity: 0;
-    background: radial-gradient(closest-side, #fff, #d4f8ff 25%, #4fdcff66 60%, #4fdcff00) 50% 50% / 46px 46px no-repeat,
-      linear-gradient(#4fdcff00, #fff 50%, #4fdcff00) 50% 50% / 3px 100% no-repeat,
-      linear-gradient(90deg, #4fdcff00, #9eeeff 30%, #fff 50%, #9eeeff 70%, #4fdcff00) 50% 50% / 100% 3px no-repeat,
-      linear-gradient(90deg, #4fdcff00, #4fdcff55 50%, #4fdcff00) 50% 50% / 100% 14px no-repeat;
-    filter: drop-shadow(0 0 6px #4fdcff);
+    background: radial-gradient(closest-side, #fff, #fff1c4 25%, #ffb43866 60%, #ffb43800) 50% 50% / 46px 46px no-repeat,
+      linear-gradient(#ffb43800, #fff 50%, #ffb43800) 50% 50% / 3px 100% no-repeat,
+      linear-gradient(90deg, #ffb43800, #ffd98a 30%, #fff 50%, #ffd98a 70%, #ffb43800) 50% 50% / 100% 3px no-repeat,
+      linear-gradient(90deg, #ffb43800, #ffa22a55 50%, #ffb43800) 50% 50% / 100% 14px no-repeat;
+    filter: drop-shadow(0 0 6px #ff9d2e);
     animation: puchunStreak 0.55s linear forwards; }
   @keyframes puchunGlare { 0% { transform: scale(1, 1); opacity: 1; } 18% { transform: scale(1.04, 1); opacity: 1; } 34% { transform: scale(1, 0.02); opacity: 1; } 40% { transform: scale(1, 0.01); opacity: 0; } 100% { opacity: 0; } }
   @keyframes puchunStreak { 0%, 28% { opacity: 0; transform: scale(1, 1); } 34% { opacity: 1; transform: scale(1, 1); } 70% { opacity: 1; transform: scale(0.45, 0.7); } 90% { opacity: 1; transform: scale(0.08, 0.35); } 100% { opacity: 0; transform: scale(0, 0); } }
