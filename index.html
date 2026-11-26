@@ -3659,7 +3659,7 @@ async function cutin(big, small, cls, ms) {
   $('cutBig').textContent = big;
   $('cutBig').style.fontSize = `min(${(78 / Math.max(3, [...big].length)).toFixed(1)}vw, 5rem)`;
   $('cutBig').className = 'big' + (cls === 'rainbow' ? ' rainbow' : '');
-  $('cutSmall').textContent = small || '';
+  $('cutSmall').innerHTML = withShard(small || '');   // 💠は空間のカケラの絵にする
   el.className = 'show ' + cls;
   await sleep(ms);
   el.className = '';
@@ -4221,7 +4221,7 @@ async function cutinHold(big, small, cls) {
   $('cutBig').textContent = big;
   $('cutBig').style.fontSize = `min(${(78 / Math.max(3, [...big].length)).toFixed(1)}vw, 5rem)`;
   $('cutBig').className = 'big';
-  $('cutSmall').textContent = small || '';
+  $('cutSmall').innerHTML = withShard(small || '');   // 💠は空間のカケラの絵にする
   el.className = 'show ' + cls;
   const cover = document.createElement('div');   // 画面全体でタップを受ける(下のボタンは押せない)
   cover.style.cssText = 'position:fixed;inset:0;z-index:7;';
@@ -6526,6 +6526,7 @@ function openCharDetail(ch, back) {   // back:閉じたあとに戻る画面(ガ
 // ログイン中はアカウント(progress の stats.shards)、ログインしていないときは端末に貯める
 const SHARD_NAME = '空間のカケラ';
 const SHARD_IC = '<img class="shardic" src="img/shard.webp" alt="💠">';   // 空間のカケラのアイコン
+const withShard = (t) => escHtml(t).replace(/💠/g, SHARD_IC);   // 文字の中の💠を、カケラの絵にして出す
 const SHARD_KEY = 'kokusen.shards';
 const shardOnAcc = () => !!accUid() && ACC.progMode === 'table';   // アカウントに貯めるか(サーバーの表が使えるとき)
 // 財布(SQLの16回目):ログイン中のカケラ・持っているキャラ・受け取り済みのメールは、サーバーの wallet 表が正。増減はサーバーの関数だけが行う
@@ -7427,7 +7428,7 @@ async function openMail() {
     (canAll ? '<div class="row" style="margin:0 0 8px"><button id="mlAll" style="border-color:var(--gold);color:var(--gold);font-weight:700">すべて受け取る</button></div>' : '') +
     list.map((m) => `<div class="ml${read.includes(m.id) ? '' : ' new'}"><h4>${read.includes(m.id) ? '' : '<i>NEW</i>'}${escHtml(m.title)}</h4>` +
       `<div class="dt">${escHtml(m.date)}${m.until ? `　受け取り期限 ${escHtml(m.until)}まで` : ''}</div><p>${escHtml(m.body)}</p>` +
-      (m.gift ? `<div class="gift"><span>🎁 ${escHtml(giftText(m.gift))}</span>${got.includes(m.id) ? '<span class="got">受け取り済み</span>' : `<button data-m="${m.id}">受け取る</button>`}</div>` : '') + '</div>').join(''));
+      (m.gift ? `<div class="gift"><span>🎁 ${withShard(giftText(m.gift))}</span>${got.includes(m.id) ? '<span class="got">受け取り済み</span>' : `<button data-m="${m.id}">受け取る</button>`}</div>` : '') + '</div>').join(''));
   const take = async (ids) => {
     const r = await mailClaim(ids);
     if (!r.length) return;
