@@ -7131,10 +7131,11 @@ const GACHA_WHITE_POKYUN = 0.01;  // 白発展+ぽきゅん:★4以上の1%だ�
 const GACHA_RAINBOW_RATE = 0.2;   // ★5を引いたときに、虹の先バレ(ぽぽぽぽぽきゅん)が出る割合
 const GACHA_POKYUN_HI = 0.6, GACHA_POKYUN_HIT = 0.4;   // HI:★4以上のときに出る割合(占有率) HIT:出たときに★4以上の割合
 // ガチャの先バレ期待度(設定):off なし / 40 出たら★4以上40% / 90 出たら★4以上90% / ex 90%+★5は必ず虹の先バレ。どれも★4以上での出る割合(占有率)は同じ
-const GACHA_PK_MODES = { off: { name: 'OFF', note: 'ガチャの先バレ(ぽきゅん)を出さない' }, 40: { name: '40%', note: 'ぽきゅんが来たら★4以上の期待度40%' }, 90: { name: '90%', note: 'ぽきゅんが来たら★4以上の期待度90%' }, ex: { name: 'EX', note: '期待度90%。★5は必ず虹のぽきゅん(★5濃厚)' } };
-const gachaPkHit = () => (FX.gachaPk === '90' || FX.gachaPk === 'ex' ? 0.9 : GACHA_POKYUN_HIT);
+const GACHA_PK_MODES = { off: { name: 'OFF', note: 'ガチャの先バレ(ぽきゅん)を出さない' }, 40: { name: '40%', note: 'ぽきゅんが来たら★4以上の期待度40%' }, 90: { name: '90%', note: 'ぽきゅんが来たら★4以上の期待度90%' }, ex: { name: 'EX', note: '虹のぽきゅんしか来ない(来たら★5確定)。★5の9割で来る' } };
+const gachaPkHit = () => (FX.gachaPk === '90' ? 0.9 : GACHA_POKYUN_HIT);
 // 外れのぽきゅんは★3が入っている(オレンジまで上がる)ときだけ出す。白で割れる外れにはぽきゅんを出さない
 function gachaPokyunRate(hasHigh, n, has3, R = GACHA_RATES) {
+  if (FX.gachaPk === 'ex' || FX.gachaPk === 'off') return 0;   // EXは虹だけ・OFFはなし
   if (hasHigh) return GACHA_POKYUN_HI;
   if (!has3) return 0;
   const p45 = R[5] + R[4];
@@ -7152,13 +7153,14 @@ function gachaShow(r, rates = GACHA_RATES) {
     // 寒い演出(実は★4以上):'w' は白のまま、'g' はオレンジ止まり。どちらもぽきゅん無しで、めくる瞬間にプチュン
     // 'wp' は白のままぽきゅんが来る(とても薄い・★4以上確定)
     const pkOff = FX.gachaPk === 'off', pkEx = FX.gachaPk === 'ex';
-    const instant = top >= 4 && !(pkEx && top >= 5) && Math.random() < GACHA_INSTANT_RATE;   // 押した瞬間にプチュン(EXの★5は虹の先バレを必ず見せるので出さない)
+    const exRb = pkEx && top >= 5 && Math.random() < 0.9;   // EX:★5の9割で虹のぽきゅん
+    const instant = top >= 4 && !exRb && Math.random() < GACHA_INSTANT_RATE;   // 押した瞬間にプチュン(EXの★5は虹の先バレを必ず見せるので出さない)
     // 残りの演出の割合は「★4以上全体に対して」の値のまま保つ(instant のぶんを先に除いて引く)
     const cr = top >= 4 ? (instant ? 1 : Math.random() * (1 - GACHA_INSTANT_RATE)) : 1;
     // 虹の先バレ(★5確定):★5のとき全体の GACHA_RAINBOW_RATE。押した瞬間のプチュンでは先バレが出ないので、そのぶんを除いて引く
-    const rb = !pkOff && top >= 5 && !instant && (pkEx || Math.random() < GACHA_RAINBOW_RATE / (1 - GACHA_INSTANT_RATE));
+    const rb = pkEx ? exRb : !pkOff && top >= 5 && !instant && Math.random() < GACHA_RAINBOW_RATE / (1 - GACHA_INSTANT_RATE);
     const cold0 = rb ? '' : cr < GACHA_COLD_RATE ? 'w' : cr < GACHA_COLD_RATE + GACHA_COLD_GOLD_RATE ? 'g' : cr < GACHA_COLD_RATE + GACHA_COLD_GOLD_RATE + GACHA_WHITE_POKYUN ? 'wp' : '';
-    const cold = pkOff && cold0 === 'wp' ? 'w' : cold0;   // OFF:白のままのぽきゅんも出さない
+    const cold = (pkOff || pkEx) && cold0 === 'wp' ? 'w' : cold0;   // OFF・EX:白のままのぽきゅんも出さない
     const white = cold === 'w' || cold === 'wp';
     const steps = white ? [0, 0] : [lv[a], lv[b]];
     const paneLv = white ? 0 : fin;   // 割れるときの色
@@ -7174,7 +7176,7 @@ function gachaShow(r, rates = GACHA_RATES) {
     const keep = top >= 4 ? 1 - GACHA_INSTANT_RATE - GACHA_COLD_RATE - GACHA_COLD_GOLD_RATE - GACHA_WHITE_POKYUN : 1;   // 寒い演出のぶんを除いた残り
     // 白発展+ぽきゅんのぶんを引いて、★4以上全体のぽきゅん占有率を保つ
     const pkRate = top >= 4 ? (GACHA_POKYUN_HI - GACHA_WHITE_POKYUN) / keep : gachaPokyunRate(false, r.length, top >= 3, rates);
-    const pk = !pkOff && !instant && (rb || cold === 'wp' || (!cold && Math.random() < pkRate));
+    const pk = pkEx ? rb : !pkOff && !instant && (rb || cold === 'wp' || (!cold && Math.random() < pkRate));   // EXは虹だけ
     if (pk) setTimeout(() => (rb ? sakibareRainbowFx() : sakibareFx()), 60);   // ぽきゅんは、押せない0.5秒の間に出す。虹の「ぽぽぽぽぽきゅん」は★5確定
     const flipPu = !!cold || (pk && top >= 4 && Math.random() < GACHA_POKYUN_FLIP);   // めくる瞬間にプチュン
     // ひびのプチュン:めくりプチュンにならなかった残りから出して、★4以上全体の占有率を GACHA_PUCHUN_RATE に保つ
