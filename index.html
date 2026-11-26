@@ -493,12 +493,15 @@
   #groupHub .hubbig button { max-height: none; }   /* 陣営・回廊・降臨の選択:ボタンが少なくても線まで埋める */
   #groupHub.gq .hubbig { justify-content: flex-start; }   /* 降臨(エモ降臨・リズ降臨)だけ:細くして上に詰める(下は空いてよい) */
   #groupHub.gq .hubbig button { flex: 0 0 auto; min-height: 110px; max-height: none; }
-  #groupHub.gq .hubbig button { position: relative; overflow: hidden; isolation: isolate; }
-  #groupHub.gq .hubbig button::before { content: ''; position: absolute; inset: 0; z-index: -1; background-size: 115% auto; background-position: 50% 27%; opacity: .26; filter: saturate(.8); -webkit-mask-image: linear-gradient(90deg, transparent, #000 25%, #000 75%, transparent); mask-image: linear-gradient(90deg, transparent, #000 25%, #000 75%, transparent); }   /* うっすら目元 */
-  #soloHub button[data-sf="kr"] { position: relative; overflow: hidden; isolation: isolate; }
-  #soloHub button[data-sf="kr"]::before { content: ''; position: absolute; inset: 0; z-index: -1; background: url(icons/k_utsuro.webp) 50% 36% / 115% auto no-repeat; opacity: .26; -webkit-mask-image: linear-gradient(90deg, transparent, #000 25%, #000 75%, transparent); mask-image: linear-gradient(90deg, transparent, #000 25%, #000 75%, transparent); }   /* 刻練場:ウツロの目元をうっすら */
-  #groupHub.gq .hubbig button[data-g="emo"]::before { background-image: url(icons/emo.webp); }
-  #groupHub.gq .hubbig button[data-g="rizu"]::before { background-image: url(icons/rizu.webp); background-position: 50% 26%; }
+  /* ボタンの後ろに、キャラの目元をうっすら(--eye は画像の上からの目の高さ。ボタンのまん中に目が来る) */
+  .hasface { position: relative; overflow: hidden; isolation: isolate; }
+  .faces { position: absolute; inset: 0; z-index: -1; display: flex; opacity: .26; pointer-events: none; -webkit-mask-image: linear-gradient(90deg, transparent, #000 25%, #000 75%, transparent); mask-image: linear-gradient(90deg, transparent, #000 25%, #000 75%, transparent); }
+  .faces .face { position: relative; flex: 1; overflow: hidden; }
+  .faces .face img { position: absolute; left: 50%; top: 50%; width: 115%; transform: translate(-50%, calc(var(--eye) * -100%)); }
+  .faces.two { -webkit-mask-image: none; mask-image: none; }
+  .faces.two .face img { width: 135%; }
+  .faces.two .face:first-child { -webkit-mask-image: linear-gradient(90deg, transparent, #000 30%, #000 70%, transparent); mask-image: linear-gradient(90deg, transparent, #000 30%, #000 70%, transparent); }
+  .faces.two .face:last-child { -webkit-mask-image: linear-gradient(90deg, transparent, #000 30%, #000 70%, transparent); mask-image: linear-gradient(90deg, transparent, #000 30%, #000 70%, transparent); }
   .stages .gh { display: none !important; }   /* ソロ:選んだ陣営・回廊のステージだけ出す */
   /* 陣営・回廊を選んだあとのステージ:横長のボタンを縦に並べる(左に★、まん中に敵、右に名前) */
   .stages.vlist { grid-template-columns: 1fr !important; gap: 8px; }
@@ -5673,6 +5676,22 @@ function showSoloHub() {
 }
 // ベーシックは陣営(錨・零・矢・隔絶=★4以上と連戦)、アドバンスは回廊ごとに分けて選ぶ
 const stageGroup = (st) => (st.quest ? st.quest : st.corridor ? st.corridor : ['錨', '零', '矢'].includes(st.faction) ? st.faction : '隔絶');   // カジの★4・★5(錨)は錨に入る
+// メニューのボタンの後ろにうっすら出すキャラ([アイコン, 目の高さ(画像の上から0〜1)])
+const FACES = {
+  hubSolo: [['kaji_shi', 0.5]], hubPvp: [['rei_open', 0.4]], hubGacha: [['g_z5', 0.44]],
+  'sf:basic': [['kaji', 0.5]], 'sf:advance': [['g_z5', 0.44]], 'sf:kr': [['k_utsuro', 0.44]], 'sf:quest': [['emo', 0.31], ['rizu', 0.35]],
+  'g:錨': [['kaji_shi', 0.5]], 'g:零': [['rei_open', 0.4]], 'g:矢': [['tsuru', 0.26]], 'g:隔絶': [['tokibami', 0.34]],
+  'g:1': [['xeno_spirit', 0.46]], 'g:2': [['g_z4', 0.38]], 'g:3': [['g_y4', 0.25]], 'g:4': [['g_a4', 0.21]],
+  'g:emo': [['emo', 0.31]], 'g:rizu': [['rizu', 0.35]],
+};
+function addFace(b, key) {
+  const f = FACES[key];
+  if (!b || !f || b.querySelector('.faces')) return;
+  const w = document.createElement('span');
+  w.className = 'faces' + (f.length > 1 ? ' two' : '');
+  w.innerHTML = f.map(([ic, e]) => `<span class="face"><img src="icons/${ic}.webp" alt="" style="--eye:${e}"></span>`).join('');
+  b.prepend(w); b.classList.add('hasface');
+}
 const SOLO_GROUPS = {
   basic: [['錨', '★〜★★★・カジの★★★★・★★★★★'], ['零', '★〜★★★のステージ'], ['矢', '★〜★★★のステージ'], ['隔絶', '刻喰らいの淵・始まりの前・ボスラッシュ']],
   advance: Object.entries(CORRIDORS).map(([k, v]) => [+k, v, '★★〜★★★★★']),
@@ -5687,6 +5706,7 @@ function showGroupHub(f) {
   window.scrollTo(0, 0);
   const named = f === 'advance' || f === 'quest';   // 回廊・降臨は名前と説明、陣営は陣営の名前と説明
   $('groupBtns').innerHTML = SOLO_GROUPS[f].map((g) => `<button data-g="${g[0]}">${named ? g[1] : g[0]}<small>${named ? g[2] : g[1]}</small></button>`).join('');
+  $('groupBtns').querySelectorAll('button').forEach((b) => addFace(b, 'g:' + b.dataset.g));
   $('groupBtns').querySelectorAll('button').forEach((b) => { b.onclick = () => { Sound.click(); openSolo(f, f === 'advance' ? +b.dataset.g : b.dataset.g); }; });
   mountTop($('groupHub'));
 }
@@ -7549,6 +7569,8 @@ function init() {
     else backToHub();
   };
   $('hubSolo').onclick = () => { Sound.click(); showSoloHub(); };
+  ['hubSolo', 'hubPvp', 'hubGacha'].forEach((id) => addFace($(id), id));
+  document.querySelectorAll('#soloHub [data-sf]').forEach((b) => addFace(b, 'sf:' + b.dataset.sf));
   document.querySelectorAll('#soloHub [data-sf]').forEach((b) => { b.onclick = () => { Sound.click(); if (['basic', 'advance', 'quest'].includes(b.dataset.sf)) showGroupHub(b.dataset.sf); else openSolo(b.dataset.sf); }; });
   $('hubPvp').onclick = () => { Sound.click(); openMode('pvp'); };
   $('hubCpu').onclick = () => { Sound.click(); openMode('cpu'); };
