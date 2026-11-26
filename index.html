@@ -809,6 +809,37 @@
     #battle .stage.heat2 .cue { font-size: 1.4rem; } #battle .stage.heat3 .cue { font-size: 1.9rem; } #battle .stage.heat4 .cue { font-size: 2.3rem; }
     @media (prefers-reduced-motion: reduce) { #battle::before { animation: none !important; } }
   }
+
+  /* ===== 見た目A:バナーと同じ金で、パネル・ボタン・盤面をそろえる ===== */
+  :root { --goldGrad: linear-gradient(180deg, #fff0b0 0%, #e8b84a 35%, #9a7020 70%, #d9a640 100%); --goldThin: linear-gradient(180deg, rgba(232,184,74,.6), rgba(154,112,32,.35));
+    --corners: linear-gradient(#f0c040,#f0c040) top left / 16px 2px no-repeat, linear-gradient(#f0c040,#f0c040) top left / 2px 16px no-repeat,
+      linear-gradient(#f0c040,#f0c040) top right / 16px 2px no-repeat, linear-gradient(#f0c040,#f0c040) top right / 2px 16px no-repeat,
+      linear-gradient(#f0c040,#f0c040) bottom left / 16px 2px no-repeat, linear-gradient(#f0c040,#f0c040) bottom left / 2px 16px no-repeat,
+      linear-gradient(#f0c040,#f0c040) bottom right / 16px 2px no-repeat, linear-gradient(#f0c040,#f0c040) bottom right / 2px 16px no-repeat; }
+  /* メニューのパネル:金の縁と四隅の飾り */
+  #hub, #soloHub, #groupHub, #select { border: 2px solid #d4a43c; background: linear-gradient(180deg, rgba(22,26,54,.62), rgba(14,17,38,.74));
+    box-shadow: inset 0 0 0 3px rgba(8,10,24,.9), inset 0 0 0 4px rgba(232,184,74,.45), 0 8px 24px rgba(0,0,0,.6); border-radius: 14px; }
+  #hub::after, #soloHub::after, #groupHub::after, #select::after { content: ''; position: absolute; inset: 7px; pointer-events: none; z-index: 0; background: var(--corners); }
+  /* 大きいボタン・右上の丸いボタン・ステージのボタン */
+  .hubbig button { border: 3px solid transparent; border-radius: 14px; background: linear-gradient(180deg, #1d2246, #141833) padding-box, var(--goldGrad) border-box; box-shadow: 0 4px 10px rgba(0,0,0,.5); }
+  .hubbig button.hasface { background: linear-gradient(180deg, rgba(29,34,70,.9), rgba(20,24,51,.9)) padding-box, var(--goldGrad) border-box; }
+  .seltop .ib { border: 2px solid transparent; background: radial-gradient(circle at 50% 35%, #2a3060, #151935) padding-box, var(--goldGrad) border-box; box-shadow: 0 2px 6px rgba(0,0,0,.5); }
+  .stages.vlist button { border: 2px solid transparent; background: linear-gradient(180deg, #1d2246, #141833) padding-box, var(--goldThin) border-box; }
+  .stages.vlist button.picked { background: linear-gradient(180deg, #232a55, #181d3d) padding-box, var(--goldGrad) border-box; }
+  .hubbig button:active, .stages.vlist button:active { transform: translateY(2px); }
+  /* アカウント欄:一段くぼませ、上下に細い金の線 */
+  #hub #acct, #soloHub #acct, #groupHub #acct, #select #acct { background: linear-gradient(180deg, #0b0d1e, #12152c); border: none; border-top: 1px solid rgba(240,192,64,.6); border-bottom: 1px solid rgba(240,192,64,.6); border-radius: 6px; box-shadow: inset 0 3px 8px rgba(0,0,0,.7); }
+  /* バトル:盤面に金の縁と四隅の飾り、チーム表示・手・下のボタンは細い金の縁 */
+  #battle #stage { position: relative; border: 2px solid #d4a43c; box-shadow: inset 0 0 0 3px rgba(8,10,24,.9), inset 0 0 0 4px rgba(232,184,74,.4), 0 6px 18px rgba(0,0,0,.6); }
+  #battle #stage::after { content: ''; position: absolute; inset: 7px; pointer-events: none; background: var(--corners); }
+  #battle .slot { border: 2px solid transparent; background: linear-gradient(180deg, #0c0f22, #141833) padding-box, var(--goldThin) border-box; box-shadow: inset 0 3px 8px rgba(0,0,0,.7); }
+  #battle .team { border: 2px solid transparent; background: linear-gradient(180deg, #1a1f40, #12152c) padding-box, var(--goldThin) border-box; }
+  #battle #hands button { border: 2px solid transparent; background: linear-gradient(180deg, #1d2246, #141833) padding-box, var(--goldThin) border-box; }
+  #battle #hands button.warm { background: linear-gradient(180deg, #262a50, #181c3a) padding-box, linear-gradient(180deg, #ffd29a, #ffa94d 50%, #b8631a) border-box; }
+  #battle #hands button.hot { background: linear-gradient(180deg, #2a2046, #1a1534) padding-box, linear-gradient(180deg, #ff9aa6, #ff4d5e 50%, #a8202e) border-box; }
+  #battle #hands button:active:not(:disabled) { transform: translateY(2px); }
+  #battle .foot button { border: 2px solid transparent; background: linear-gradient(180deg, #1d2246, #141833) padding-box, var(--goldThin) border-box; }
+  #battle .foot button.resign { background: linear-gradient(180deg, #2a1830, #1a1022) padding-box, linear-gradient(180deg, rgba(240,90,110,.7), rgba(140,40,60,.4)) border-box; }
 </style>
 </head>
 <body>
