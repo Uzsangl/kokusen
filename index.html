@@ -3178,7 +3178,7 @@ let SILENCED = false;  // ほかのタブで開き直したため、このタブ
 let frozen = false;    // BREAKで時間が止まっている間
 
 // ----- 設定(音・演出の長さ) -----
-const FX = { pattern: 'normal', sakibare: true, traitCut: false, speed: 1, sound: true, short: false, level: 2, bgm: true, bgmVol: 1, seVol: 1, battleBgm: 'main' };
+const FX = { gachaPk: '40', pattern: 'normal', sakibare: true, traitCut: false, speed: 1, sound: true, short: false, level: 2, bgm: true, bgmVol: 1, seVol: 1, battleBgm: 'main' };
 const REDUCE = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 function loadOpt(key, def) {
   try { const v = localStorage.getItem(key); return v === null ? def : v === '1'; } catch (e) { return def; }
@@ -6307,8 +6307,10 @@ function openSettings() {
     <div class="srow"><div>効果音の音量</div><input type="range" id="sSeVol" min="0" max="100" value="${Math.round(FX.seVol * 100)}" aria-label="効果音の音量"></div>
     <div class="srow"><div>演出パターン<small>${FX_PATTERNS[FX.pattern].note}</small></div><div class="seg seg4">${Object.entries(FX_PATTERNS).map(([k, v]) => `<button data-pt="${k}" class="${FX.pattern === k ? 'on' : ''}">${v.name}</button>`).join('')}</div></div>
     <div class="srow"><div>先バレ<small>手を出した瞬間に赤く光ったら、じゃんけん勝ち確定</small></div>${sw('sSaki', FX.sakibare)}</div>
+    <div class="srow"><div>ガチャの先バレ期待度<small>${GACHA_PK_MODES[FX.gachaPk].note}</small></div><div class="seg seg4">${['off', '40', '90', 'ex'].map((k) => [k, GACHA_PK_MODES[k]]).map(([k, v]) => `<button data-gp="${k}" class="${FX.gachaPk === k ? 'on' : ''}">${v.name}</button>`).join('')}</div></div>
     <div class="srow" style="border:0"><div>クレジット</div><button id="sCredit">見る</button></div>`);
   document.querySelectorAll('#sheetBody [data-pt]').forEach((b) => { b.onclick = () => { FX.pattern = b.dataset.pt; try { localStorage.setItem('kokusen.pattern', FX.pattern); } catch (e) { /* 保存できなくても動く */ } openSettings(); }; });
+  document.querySelectorAll('#sheetBody [data-gp]').forEach((b) => { b.onclick = () => { FX.gachaPk = b.dataset.gp; try { localStorage.setItem('kokusen.gachaPk', FX.gachaPk); } catch (e) { /* 保存できなくても動く */ } openSettings(); }; });
   $('sSaki').onclick = () => { FX.sakibare = !FX.sakibare; saveOpt('kokusen.sakibare', FX.sakibare); openSettings(); };
   $('sBgm').onclick = () => { FX.bgm = !FX.bgm; saveOpt('kokusen.bgm', FX.bgm); applyOpts(); openSettings(); };
   $('sSe').onclick = () => { FX.sound = !FX.sound; saveOpt('kokusen.sound', FX.sound); applyOpts(); if (FX.sound) { Sound.wake(); Sound.click(); } openSettings(); };
@@ -7124,6 +7126,9 @@ const GACHA_MUTE_RATE = 0.25;     // ★4以上のとき、めくる画面にな
 const GACHA_WHITE_POKYUN = 0.01;  // 白発展+ぽきゅん:★4以上の1%だけ。白のまま割れるのにぽきゅんが来たら★4以上確定(外れの白にはぽきゅんを出さない)
 const GACHA_RAINBOW_RATE = 0.2;   // ★5を引いたときに、虹の先バレ(ぽぽぽぽぽきゅん)が出る割合
 const GACHA_POKYUN_HI = 0.6, GACHA_POKYUN_HIT = 0.4;   // HI:★4以上のときに出る割合(占有率) HIT:出たときに★4以上の割合
+// ガチャの先バレ期待度(設定):off なし / 40 出たら★4以上40% / 90 出たら★4以上90% / ex 90%+★5は必ず虹の先バレ。どれも★4以上での出る割合(占有率)は同じ
+const GACHA_PK_MODES = { off: { name: 'OFF', note: 'ガチャの先バレ(ぽきゅん)を出さない' }, 40: { name: '40%', note: 'ぽきゅんが来たら★4以上の期待度40%' }, 90: { name: '90%', note: 'ぽきゅんが来たら★4以上の期待度90%' }, ex: { name: 'EX', note: '期待度90%。★5は必ず虹のぽきゅん(★5濃厚)' } };
+const gachaPkHit = () => (FX.gachaPk === '90' || FX.gachaPk === 'ex' ? 0.9 : GACHA_POKYUN_HIT);
 // 外れのぽきゅんは★3が入っている(オレンジまで上がる)ときだけ出す。白で割れる外れにはぽきゅんを出さない
 function gachaPokyunRate(hasHigh, n, has3, R = GACHA_RATES) {
   if (hasHigh) return GACHA_POKYUN_HI;
@@ -7131,7 +7136,7 @@ function gachaPokyunRate(hasHigh, n, has3, R = GACHA_RATES) {
   const p45 = R[5] + R[4];
   const P = 1 - Math.pow(1 - p45, n);   // その回数で★4以上が1枚以上出る確率
   const P3 = Math.pow(1 - p45, n) - Math.pow(1 - p45 - R[3], n);   // ★3は入るが★4以上は入らない確率
-  return GACHA_POKYUN_HI * P * (1 - GACHA_POKYUN_HIT) / GACHA_POKYUN_HIT / P3;
+  return GACHA_POKYUN_HI * P * (1 - gachaPkHit()) / gachaPkHit() / P3;
 }
 function gachaShow(r, rates = GACHA_RATES) {
   return new Promise((done) => {
@@ -7142,12 +7147,14 @@ function gachaShow(r, rates = GACHA_RATES) {
     const fi = lv.indexOf(fin), a = Math.floor(Math.random() * (fi + 1)), b = Math.max(a, Math.floor(Math.random() * (fi + 1)));
     // 寒い演出(実は★4以上):'w' は白のまま、'g' はオレンジ止まり。どちらもぽきゅん無しで、めくる瞬間にプチュン
     // 'wp' は白のままぽきゅんが来る(とても薄い・★4以上確定)
-    const instant = top >= 4 && Math.random() < GACHA_INSTANT_RATE;   // 押した瞬間にプチュン
+    const pkOff = FX.gachaPk === 'off', pkEx = FX.gachaPk === 'ex';
+    const instant = top >= 4 && !(pkEx && top >= 5) && Math.random() < GACHA_INSTANT_RATE;   // 押した瞬間にプチュン(EXの★5は虹の先バレを必ず見せるので出さない)
     // 残りの演出の割合は「★4以上全体に対して」の値のまま保つ(instant のぶんを先に除いて引く)
     const cr = top >= 4 ? (instant ? 1 : Math.random() * (1 - GACHA_INSTANT_RATE)) : 1;
     // 虹の先バレ(★5確定):★5のとき全体の GACHA_RAINBOW_RATE。押した瞬間のプチュンでは先バレが出ないので、そのぶんを除いて引く
-    const rb = top >= 5 && !instant && Math.random() < GACHA_RAINBOW_RATE / (1 - GACHA_INSTANT_RATE);
-    const cold = rb ? '' : cr < GACHA_COLD_RATE ? 'w' : cr < GACHA_COLD_RATE + GACHA_COLD_GOLD_RATE ? 'g' : cr < GACHA_COLD_RATE + GACHA_COLD_GOLD_RATE + GACHA_WHITE_POKYUN ? 'wp' : '';
+    const rb = !pkOff && top >= 5 && !instant && (pkEx || Math.random() < GACHA_RAINBOW_RATE / (1 - GACHA_INSTANT_RATE));
+    const cold0 = rb ? '' : cr < GACHA_COLD_RATE ? 'w' : cr < GACHA_COLD_RATE + GACHA_COLD_GOLD_RATE ? 'g' : cr < GACHA_COLD_RATE + GACHA_COLD_GOLD_RATE + GACHA_WHITE_POKYUN ? 'wp' : '';
+    const cold = pkOff && cold0 === 'wp' ? 'w' : cold0;   // OFF:白のままのぽきゅんも出さない
     const white = cold === 'w' || cold === 'wp';
     const steps = white ? [0, 0] : [lv[a], lv[b]];
     const paneLv = white ? 0 : fin;   // 割れるときの色
@@ -7163,7 +7170,7 @@ function gachaShow(r, rates = GACHA_RATES) {
     const keep = top >= 4 ? 1 - GACHA_INSTANT_RATE - GACHA_COLD_RATE - GACHA_COLD_GOLD_RATE - GACHA_WHITE_POKYUN : 1;   // 寒い演出のぶんを除いた残り
     // 白発展+ぽきゅんのぶんを引いて、★4以上全体のぽきゅん占有率を保つ
     const pkRate = top >= 4 ? (GACHA_POKYUN_HI - GACHA_WHITE_POKYUN) / keep : gachaPokyunRate(false, r.length, top >= 3, rates);
-    const pk = !instant && (rb || cold === 'wp' || (!cold && Math.random() < pkRate));
+    const pk = !pkOff && !instant && (rb || cold === 'wp' || (!cold && Math.random() < pkRate));
     if (pk) setTimeout(() => (rb ? sakibareRainbowFx() : sakibareFx()), 60);   // ぽきゅんは、押せない0.5秒の間に出す。虹の「ぽぽぽぽぽきゅん」は★5確定
     const flipPu = !!cold || (pk && top >= 4 && Math.random() < GACHA_POKYUN_FLIP);   // めくる瞬間にプチュン
     // ひびのプチュン:めくりプチュンにならなかった残りから出して、★4以上全体の占有率を GACHA_PUCHUN_RATE に保つ
@@ -8396,6 +8403,7 @@ function init() {
   try { const v = localStorage.getItem('kokusen.battleBgm'); if (BATTLE_BGM_CHOICES.some(([k]) => k === v)) FX.battleBgm = v; } catch (e) { /* 読めなければいつもの曲 */ }
   FX.sakibare = loadOpt('kokusen.sakibare', true);
   try { const pt = localStorage.getItem('kokusen.pattern'); FX.pattern = FX_PATTERNS[pt] ? pt : 'normal'; } catch (e) { FX.pattern = 'normal'; }
+  try { const gp = localStorage.getItem('kokusen.gachaPk'); FX.gachaPk = GACHA_PK_MODES[gp] ? gp : '40'; } catch (e) { FX.gachaPk = '40'; }
   FX.bgm = loadOpt('kokusen.bgm', true);
   $('optBgm').onclick = () => { FX.bgm = !FX.bgm; saveOpt('kokusen.bgm', FX.bgm); applyOpts(); };
   Bgm.init();
