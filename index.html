@@ -5621,9 +5621,9 @@ function showSoloHub() {
   mountTop($('soloHub'));
 }
 // ベーシックは陣営(錨・零・矢・隔絶=★4以上と連戦)、アドバンスは回廊ごとに分けて選ぶ
-const stageGroup = (st) => (st.corridor ? st.corridor : st.stars >= 4 || st.rush ? '隔絶' : st.faction);
+const stageGroup = (st) => (st.corridor ? st.corridor : ['錨', '零', '矢'].includes(st.faction) ? st.faction : '隔絶');   // カジの★4・★5(錨)は錨に入る
 const SOLO_GROUPS = {
-  basic: [['錨', '★〜★★★のステージ'], ['零', '★〜★★★のステージ'], ['矢', '★〜★★★のステージ'], ['隔絶', '★★★★・★★★★★・ボスラッシュ']],
+  basic: [['錨', '★〜★★★・カジの★★★★・★★★★★'], ['零', '★〜★★★のステージ'], ['矢', '★〜★★★のステージ'], ['隔絶', '刻喰らいの淵・始まりの前・ボスラッシュ']],
   advance: Object.entries(CORRIDORS).map(([k, v]) => [+k, v, '★★〜★★★★★']),
 };
 let groupFmt = 'basic';
