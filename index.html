@@ -485,6 +485,11 @@
   #title.hidden { display: none; }
   /* プレイを押したあとの画面:アカウント・ソロ・対人・ガチャの大きなボタンと、下に小さなボタン4つ */
   #hub.hidden, #soloHub.hidden, #groupHub.hidden { display: none; }
+  /* ハブ・ソロの入り口・陣営/回廊の選択:画面の下に広告(320×100)の場所を空けて、その上いっぱいまでボタンを広げる */
+  #hub, #soloHub, #groupHub { display: flex; flex-direction: column; margin-bottom: 0; }
+  #hub .hubbig, #soloHub .hubbig, #groupHub .hubbig { flex: 1; display: flex; flex-direction: column; justify-content: space-between; gap: 12px; }
+  #hub .hubbig button, #soloHub .hubbig button, #groupHub .hubbig button { flex: 1; max-height: 150px; }
+  #hub .hubsmall { margin-top: 16px; }
   .stages .gh { display: none !important; }   /* ソロ:選んだ陣営・回廊のステージだけ出す */
   .hubtop { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
   .hubacc { width: 100%; display: flex; align-items: center; gap: 10px; text-align: left; padding: 12px 14px; border-radius: 16px; margin-bottom: 14px; }
@@ -5607,12 +5612,24 @@ function renderHub() {
   mountTop($('hub'));
 }
 // 上の段(もどる・フレンド・ランキング・称号と、アカウントの欄)は、どの画面でも同じものを使う。いま出している画面の先頭へ移す
+// 広告の場所(320×100+上下の余白で110px、そのさらに上に38pxの間)と、iPhoneの下端の余白を空けて、パネルの下の端をそろえる
+const AD_RESERVE = 148;
+function fitHub(panel) {
+  if (!panel || !['hub', 'soloHub', 'groupHub'].includes(panel.id)) return;
+  panel.style.minHeight = '';
+  const top = panel.getBoundingClientRect().top + window.scrollY;
+  const pr = document.createElement('div'); pr.style.cssText = 'position:fixed;bottom:0;height:0;padding-bottom:env(safe-area-inset-bottom,0px);visibility:hidden'; document.body.appendChild(pr);
+  const safe = parseFloat(getComputedStyle(pr).paddingBottom) || 0; pr.remove();   // iPhoneの下端の余白
+  panel.style.minHeight = Math.max(0, window.innerHeight - top - AD_RESERVE - safe) + 'px';
+}
+window.addEventListener('resize', () => ['hub', 'soloHub', 'groupHub'].forEach((id) => { if (!$(id).classList.contains('hidden')) fitHub($(id)); }));
 function mountTop(panel) {
   const top = document.querySelector('.seltop'), acct = $('acct');
   const into = panel.id === 'select' ? panel.querySelector('.selL') : panel;
   into.prepend(acct); into.prepend(top);
   $('toTitle').textContent = panel.id === 'hub' ? '◀ タイトルへ' : '◀ もどる';
   renderAcct();
+  fitHub(panel);
 }
 // ソロの入り口:ベーシック・アドバンス・スコアアタック・降臨
 function showSoloHub() {
