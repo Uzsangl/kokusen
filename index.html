@@ -963,6 +963,7 @@
   @keyframes auraBreath { from { box-shadow: 0 0 8px rgba(139,108,255,.25); } to { box-shadow: 0 0 16px rgba(181,123,255,.5); } }
   @keyframes gaugeShake { 0% { transform: translate(0, 0); } 25% { transform: translate(-1px, .5px); } 50% { transform: translate(1px, -.5px); } 75% { transform: translate(-.5px, -.5px); } 100% { transform: translate(.5px, .5px); } }
   @media (prefers-reduced-motion: reduce) { .gauge.maxed .mini { animation: none; } }
+  .shardic { width: 1.25em; height: 1.25em; vertical-align: -.28em; margin: 0 .05em; filter: drop-shadow(0 0 3px rgba(120,160,255,.6)); }
 </style>
 </head>
 <body>
@@ -6008,7 +6009,7 @@ function renderTitleAcc() {
   const p = ACC.profile;
   if (ACC.shared) { el.innerHTML = `<span></span><div class="meta">このURLではアカウントを使えません。<a href="${HOME_URL}" style="color:var(--gold)">新しいURL</a>で開いてください。</div><span></span>`; return; }
   if (!p) {
-    el.innerHTML = `<span style="font-size:28px">👤</span><div><div class="nm">ゲスト</div><div class="meta">ログインすると、クリア記録・称号・レーティングを保存できます ・ 💠${SHARD_NAME} ${shardCount()}</div></div><button id="tLogin">ログイン</button>`;
+    el.innerHTML = `<span style="font-size:28px">👤</span><div><div class="nm">ゲスト</div><div class="meta">ログインすると、クリア記録・称号・レーティングを保存できます ・ ${SHARD_IC}${SHARD_NAME} ${shardCount()}</div></div><button id="tLogin">ログイン</button>`;
     $('tLogin').onclick = () => accOpen();
     return;
   }
@@ -6016,7 +6017,7 @@ function renderTitleAcc() {
   const stages = STAGES.filter((x) => !x.rush && !x.kr);
   el.innerHTML = `${fav ? iconHtml(fav, 'lg') : '<span style="font-size:28px">👤</span>'}<div><div class="nm">${titleTag(p.title)}${escHtml(p.name)}</div>
     <div><span class="rate">レート${p.rating}</span> <span style="font-size:.8rem;color:var(--sub)">(${p.wins}勝${p.losses}敗)</span></div>
-    <div class="meta">クリア ${stages.filter((x) => SOLO.cleared.includes(x.id)).length} / ${stages.length}ステージ${titleReady() ? ` ・ 称号 ${myTitles().length} / ${TITLES.length}` : ''} ・ 💠${SHARD_NAME} ${shardCount()}</div></div>
+    <div class="meta">クリア ${stages.filter((x) => SOLO.cleared.includes(x.id)).length} / ${stages.length}ステージ${titleReady() ? ` ・ 称号 ${myTitles().length} / ${TITLES.length}` : ''} ・ ${SHARD_IC}${SHARD_NAME} ${shardCount()}</div></div>
     <button id="tAccBtn">アカウント</button>`;
   $('tAccBtn').onclick = () => accOpen();
 }
@@ -6227,10 +6228,10 @@ function renderAcct() {
     return;
   }
   el.innerHTML = p
-    ? `<span class="who">${titleTag(p.title)}<b>${escHtml(p.name)}</b> <span class="rate">レート${p.rating}</span>(${p.wins}勝${p.losses}敗) 💠${shardCount()}</span><button id="accOpen">アカウント</button>`
+    ? `<span class="who">${titleTag(p.title)}<b>${escHtml(p.name)}</b> <span class="rate">レート${p.rating}</span>(${p.wins}勝${p.losses}敗) ${SHARD_IC}${shardCount()}</span><button id="accOpen">アカウント</button>`
     : ACC.session
       ? `<span class="who">ログイン中(読み込んでいます…)</span><button id="accOpen">アカウント</button>`
-      : `<span class="who">ログインすると、クリア記録とレーティングを保存できます(💠${shardCount()})</span><button id="accOpen">ログイン</button>`;
+      : `<span class="who">ログインすると、クリア記録とレーティングを保存できます(${SHARD_IC}${shardCount()})</span><button id="accOpen">ログイン</button>`;
   $('accOpen').onclick = () => accOpen();
 }
 const ACC_LEGAL = '<p class="sub" style="margin-top:12px"><a href="terms.html" target="_blank" rel="noopener" style="color:var(--gold)">利用規約</a> ・ <a href="privacy.html" target="_blank" rel="noopener" style="color:var(--gold)">プライバシーポリシー</a> ・ <a href="https://x.com/kokusenofficial" target="_blank" rel="noopener" style="color:var(--gold)">通報・お問い合わせ(X)</a> ・ <a href="https://line.me/ti/g2/-5DyDGVxiRfsG2cihgbqj2cae0sPVaB6C-ZtPA" target="_blank" rel="noopener" style="color:var(--gold)">公式オープンチャット(LINE)</a></p>';
@@ -6368,8 +6369,8 @@ function renderStages() {
   const st = STAGES.find((x) => x.id === SOLO.stage), foes = stageFoes(st);
   const shown = foes.filter((f) => !f.hiddenUntilActive || xenoKnown());   // ★5は、倒すまで1体に見せる
   const from = st.chainFrom && STAGES.find((x) => x.id === st.chainFrom);
-  $('stageNote').textContent = st.quest
-    ? `降臨「${st.name}」${'★'.repeat(st.stars)} ${questWhen()}。1階で門下生3体(顔ぶれは戦うまで分からない)、2階でボスの${st.foes.map((id) => ENEMIES[id]).pop().name}。${FORMATS[st.qfmt]}で組む。初回💠${st.reward[0]}個・2回目から${st.reward[1]}個。クリアするたび${(st.drop * 100).toFixed(1).replace(/\.0$/, '')}%の確率で${st.foes.map((id) => ENEMIES[id]).pop().name}が手に入る。`
+  $('stageNote').innerHTML = st.quest
+    ? `降臨「${st.name}」${'★'.repeat(st.stars)} ${questWhen()}。1階で門下生3体(顔ぶれは戦うまで分からない)、2階でボスの${st.foes.map((id) => ENEMIES[id]).pop().name}。${FORMATS[st.qfmt]}で組む。初回${SHARD_IC}${st.reward[0]}個・2回目から${st.reward[1]}個。クリアするたび${(st.drop * 100).toFixed(1).replace(/\.0$/, '')}%の確率で${st.foes.map((id) => ENEMIES[id]).pop().name}が手に入る。`
     : from
     ? `${st.faction} ${'★'.repeat(st.stars)}「${st.name}」 敵:${shown.map(dispName).join('・')}(ボス1体と3対1)。${'★'.repeat(from.stars)}「${from.name}」をクリアした直後だけ、結果画面の「続けて【始】に挑む」から、同じパーティで挑めます(全回復します)。`
     : st.kr
@@ -6378,7 +6379,7 @@ function renderStages() {
     ? `連戦「${st.name}」 ★★★のボス3体 → ★★★★ → ★★★★★ を、3対1で続けて戦います(ゼノ以外のボスのHPは通常の28%)。ボスを1体倒すごとに、こちらは全回復して1番手から出直します。最高記録:${SOLO.rush} / ${st.rush.length}体`
     : st.corridor
     ? `${CORRIDORS[st.corridor]} ${'★'.repeat(st.stars)}「${st.name}」 ` + (corrOpen(st) ? `敵:${shown.map(dispName).join('・')}` + (foes.length === 1 ? '(1体と3対1)' : foes.length === 3 ? '(3対3)' : '') : `ひとつ前の ${'★'.repeat(st.stars - 1)}「${corrPrev(st).name}」をクリアすると挑めます`)
-      + `。アドバンス(持っているガチャキャラも使える。★4以上の制限なし)。` + (st.reward ? `クリアで💠${SHARD_NAME}:初回${st.reward[0]}個、2回目から${st.reward[1]}個。` : '') + 'ソロでは刻の抜け落ちは起きません。'
+      + `。アドバンス(持っているガチャキャラも使える。★4以上の制限なし)。` + (st.reward ? `クリアで${SHARD_IC}${SHARD_NAME}:初回${st.reward[0]}個、2回目から${st.reward[1]}個。` : '') + 'ソロでは刻の抜け落ちは起きません。'
     : `${st.faction} ${'★'.repeat(st.stars)}「${st.name}」 敵:${shown.map(dispName).join('・')}`
     + (foes.every((f) => f.boss) ? '(ボス1体と3対1)' : '(3対3)') + `。CPUの考え方:${AI_LEVELS[st.level].name}。ソロでは刻の抜け落ちは起きません。`;
   renderSelect();
@@ -6524,6 +6525,7 @@ function openCharDetail(ch, back) {   // back:閉じたあとに戻る画面(ガ
 // フリー戦:勝ち20・負け5(引き分けも5)。1日200個まで。レート戦:勝ち30・負け0(上限なし)。自分のリタイアや応答なしで負けたときはもらえない。
 // ログイン中はアカウント(progress の stats.shards)、ログインしていないときは端末に貯める
 const SHARD_NAME = '空間のカケラ';
+const SHARD_IC = '<img class="shardic" src="img/shard.webp" alt="💠">';   // 空間のカケラのアイコン
 const SHARD_KEY = 'kokusen.shards';
 const shardOnAcc = () => !!accUid() && ACC.progMode === 'table';   // アカウントに貯めるか(サーバーの表が使えるとき)
 // 財布(SQLの16回目):ログイン中のカケラ・持っているキャラ・受け取り済みのメールは、サーバーの wallet 表が正。増減はサーバーの関数だけが行う
@@ -6939,11 +6941,11 @@ function openGacha(results, sim) {
   const own = [...GACHA_CHARS.filter((c) => c.rarity < 5), ...GACHA_CHARS.filter((c) => c.rarity >= 5)].map((c) =>   // ★5(SEC)は最後に並べる
  { const k = gachaOwned(c.id); return `<span class="${k ? '' : 'no'}" data-id="${c.id}">${iconHtml(c, 'sm')}${k ? `×${k}` : '−'}</span>`; }).join('');
   const res = results ? (sim ? '<p class="sub" style="color:var(--gold)">お試しの結果(キャラは手に入りません)</p>' : '') + `<div class="gc-res">${results.map((r, i) => `<div class="gc-card show r${r.c.rarity}" data-i="${i}">${r.fresh ? '<i class="new">NEW</i>' : ''}${iconHtml(r.c, 'lg')}<div>${rarHtml(r.c)}</div>${escHtml(r.c.name)}</div>`).join('')}</div>` : '';
-  openSheet('ガチャ', `<div class="gc-top"><span>💠${SHARD_NAME}</span><b>${n}</b></div>` +
+  openSheet('ガチャ', `<div class="gc-top"><span>${SHARD_IC}${SHARD_NAME}</span><b>${n}</b></div>` +
     (login ? '' : '<p class="sub" style="color:var(--gold)">ガチャはログインが必要です。カケラはオンライン対人(フリー戦・ランク戦)で手に入ります。</p>') +
-    `<div class="gc-btns"><button id="gc1"${login && n >= GACHA_COST ? '' : ' disabled'}>1回引く<small>💠${GACHA_COST}</small></button><button id="gc11"${login && n >= GACHA_COST11 ? '' : ' disabled'}>11回引く<small>💠${GACHA_COST11}(1回分お得)</small></button></div>` +
+    `<div class="gc-btns"><button id="gc1"${login && n >= GACHA_COST ? '' : ' disabled'}>1回引く<small>${SHARD_IC}${GACHA_COST}</small></button><button id="gc11"${login && n >= GACHA_COST11 ? '' : ' disabled'}>11回引く<small>${SHARD_IC}${GACHA_COST11}(1回分お得)</small></button></div>` +
     `<div class="gc-sim"><b>🎲 お試しガチャ</b><span class="sub">無料で何回でも。演出だけ楽しめます(キャラは手に入りません)</span><div class="gc-btns"><button id="gs1">1回 お試し</button><button id="gs11">11回 お試し</button></div></div>` +
-    (login && IS_MASTER ? `<button id="gcMaster" class="gc-master">💠${SHARD_NAME}を${MASTER_SHARDS}個足す(マスター用)</button>` : '') +
+    (login && IS_MASTER ? `<button id="gcMaster" class="gc-master">${SHARD_IC}${SHARD_NAME}を${MASTER_SHARDS}個足す(マスター用)</button>` : '') +
     res +
     (sim ? '' : `<p class="sub">引いたキャラは、アドバンスで使えます(ダブりはそのまま数えます)。</p>`) +
     `<details><summary class="sub">確率</summary><table class="gc-rates">${rateRows}</table><p class="sub">同じ★の中では同じ確率。11回でも保証はありません。</p></details>` +
@@ -6967,7 +6969,7 @@ function openGacha(results, sim) {
   if (!login) return;
   const go = async (t) => {
     const cost = t === 11 ? GACHA_COST11 : GACHA_COST * t;
-    const yes = await askConfirm(`💠${SHARD_NAME}を<b>${cost}個</b>使って<br><b>${t}回</b>引きます。よろしいですか?<small>所持 ${n} → ${n - cost}</small>`, '引く');
+    const yes = await askConfirm(`${SHARD_IC}${SHARD_NAME}を<b>${cost}個</b>使って<br><b>${t}回</b>引きます。よろしいですか?<small>所持 ${n} → ${n - cost}</small>`, '引く');
     if (!yes) return;
     const r = await gachaPull(t);
     if (!r) return;
@@ -7020,7 +7022,7 @@ async function frReward() {
     if (walletOn()) { await walletLoad(); total = WAL.shards; } else total = await shardAdd(FRIEND_BONUS);   // 財布にはサーバーが入れている
     renderTitleAcc(); renderAcct();
     if (S && !$('battle').classList.contains('hidden')) log(`はじめてのフレンド:${SHARD_NAME} +${FRIEND_BONUS}(所持 ${total})`);
-    else openSheet('はじめてのフレンド', `<p class="sub">はじめてフレンドができました。<br>💠${SHARD_NAME}を<b style="color:var(--gold)">${FRIEND_BONUS}個</b>プレゼント!(所持 ${total})</p>`);
+    else openSheet('はじめてのフレンド', `<p class="sub">はじめてフレンドができました。<br>${SHARD_IC}${SHARD_NAME}を<b style="color:var(--gold)">${FRIEND_BONUS}個</b>プレゼント!(所持 ${total})</p>`);
   } catch (e) { /* 関数がまだない(SQLの9回目の前)・通信の失敗:次に開いたときにもう一度 */ }
   finally { frRewarding = false; }
 }
@@ -7083,7 +7085,7 @@ function openFriends() {
     + (out.length ? `<h2>出した申請</h2>${out.map((f) => `<div class="fr-row">${icon(f)}<div class="fr-main"><b>${escHtml(f.name)}</b><span class="sub">承認待ち</span></div><div class="fr-btns"><button data-rm="${f.id}">取り消し</button></div></div>`).join('')}` : '')
     + `<label class="fr-opt"><input type="checkbox" id="frOff"${me.off ? ' checked' : ''}> フレンドの観戦を受け付けない</label>`
     + '<p class="sub">ソロ・CPU戦を遊んでいる間、フレンドはいつでも観戦に入れます(いつ抜けても大丈夫です)。観戦されても、記録や結果は変わりません。</p>'
-    + (ACC.stats && ACC.stats.friendGot ? '' : `<p class="sub" style="color:var(--gold)">はじめてフレンドができると、💠${SHARD_NAME}${FRIEND_BONUS}個をプレゼント(1回だけ)。</p>`)
+    + (ACC.stats && ACC.stats.friendGot ? '' : `<p class="sub" style="color:var(--gold)">はじめてフレンドができると、${SHARD_IC}${SHARD_NAME}${FRIEND_BONUS}個をプレゼント(1回だけ)。</p>`)
     + `<div class="row"><button id="frReload">更新</button>${IS_MASTER ? '<button id="frAudit" style="border-color:var(--red);color:var(--red)">👁 全プレイヤー(運営)</button><button id="frStats" style="border-color:var(--red);color:var(--red)">📊 利用状況(運営)</button>' : ''}</div>`);
   const msg = (t, err) => { $('frMsg').textContent = t; $('frMsg').className = 'msg' + (err ? ' err' : ''); };
   const act = async (fn) => { try { const t = await fn(); await frLoad(); openFriends(); if (t) setTimeout(() => msg(t), 0); } catch (e) { msg(/^KF/.test(e.code || '') || /[ぁ-んァ-ン]/.test(e.message || '') ? e.message : '通信に失敗しました', true); } };
@@ -7356,10 +7358,10 @@ async function openDaily() {
   if (DAILY.ready) { try { r = await sbFetch('/rest/v1/rpc/daily_me', { method: 'POST', body: {} }); } catch (e) { if (isMissingFn(e)) DAILY.ready = false; } }
   if (!r) { openSheet('📅 デイリー', '<p class="sub">デイリーを読み込めませんでした。少し待ってから開き直してください。</p>'); return; }
   const k = r.streak || 0, g = r.got || 0;
-  const cal = LOGIN_BONUS.map((n, i) => `<div class="${i < k ? 'got' : ''}${i === 6 ? ' big' : ''}">${i + 1}日目<b>💠${n}</b>${i < k ? '受取済' : ''}</div>`).join('');
-  const row = (ok, t, now, need, n) => `<li class="${ok ? 'ok' : ''}"><span>${ok ? '✔ ' : ''}${t}</span><span>${need ? `${Math.min(need, now || 0)}/${need}・` : ''}💠${n}</span></li>`;
+  const cal = LOGIN_BONUS.map((n, i) => `<div class="${i < k ? 'got' : ''}${i === 6 ? ' big' : ''}">${i + 1}日目<b>${SHARD_IC}${n}</b>${i < k ? '受取済' : ''}</div>`).join('');
+  const row = (ok, t, now, need, n) => `<li class="${ok ? 'ok' : ''}"><span>${ok ? '✔ ' : ''}${t}</span><span>${need ? `${Math.min(need, now || 0)}/${need}・` : ''}${SHARD_IC}${n}</span></li>`;
   openSheet('📅 デイリー',
-    `<h4 style="margin:0">ログインボーナス(連続${k}日目)</h4><p class="sub" style="margin:2px 0 0">7日連続で💠150。1日あくと1日目に戻ります。</p><div class="dly-cal">${cal}</div>` +
+    `<h4 style="margin:0">ログインボーナス(連続${k}日目)</h4><p class="sub" style="margin:2px 0 0">7日連続で${SHARD_IC}150。1日あくと1日目に戻ります。</p><div class="dly-cal">${cal}</div>` +
     `<h4 style="margin:0">デイリーミッション</h4><p class="sub" style="margin:2px 0 0">毎朝4時に更新。達成すると自動で受け取ります。</p><ul class="dly-ms">` +
     row(g & 1, '対戦を3回する', r.battles, 3, 20) + row(g & 2, '刻練場を1回遊ぶ', r.kr, 1, 20) + row(g & 4, 'お試しガチャを1回引く', r.gacha, 1, 20) + row(g & 8, 'すべて達成', 0, 0, 40) + '</ul>');
 }
