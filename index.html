@@ -496,7 +496,8 @@
   /* ボタンの後ろに、キャラの目元をうっすら(--eye は画像の上からの目の高さ。ボタンのまん中に目が来る) */
   .hasface { position: relative; overflow: hidden; isolation: isolate; }
   .hasface, .hasface small { text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 4px #000, 0 0 8px rgba(0,0,0,.8); }   /* 背景の目元の上でも読めるように黒縁 */
-  .hasface small { color: #d8dcf0; }
+  .hasface small { color: #d8dcf0; font-weight: 700; }
+  .hasface::after { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: radial-gradient(ellipse 50% 62% at 50% 50%, rgba(8, 10, 28, .6), rgba(8, 10, 28, .25) 70%, transparent); }   /* 文字のあるまん中だけ暗く(端は目元が見える) */
   .faces { position: absolute; inset: 0; z-index: -1; display: flex; opacity: .26; pointer-events: none; -webkit-mask-image: linear-gradient(90deg, transparent, #000 25%, #000 75%, transparent); mask-image: linear-gradient(90deg, transparent, #000 25%, #000 75%, transparent); }
   .faces .face { position: relative; flex: 1; overflow: hidden; }
   .faces .face img { position: absolute; left: 50%; top: 50%; width: 115%; transform: translate(-50%, calc(var(--eye) * -100%)); }
