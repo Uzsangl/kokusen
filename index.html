@@ -954,6 +954,8 @@
   /* カンスト:ゲージが細かく震える */
   .gauge.maxed .mini { border-color: #fff; box-shadow: 0 0 6px rgba(255,255,255,.7); animation: gaugeShake .12s linear infinite; }
   .gauge.maxed .mini i { filter: brightness(1.35) saturate(1.2); }
+  .gauge.maxed { padding: 2px 3px; border-radius: 6px; background: radial-gradient(ellipse at 50% 60%, rgba(181,123,255,.3), transparent 75%); animation: auraBreath 1.6s ease-in-out infinite alternate; }   /* 紫をふわっとまとう */
+  @keyframes auraBreath { from { box-shadow: 0 0 8px rgba(139,108,255,.25); } to { box-shadow: 0 0 16px rgba(181,123,255,.5); } }
   @keyframes gaugeShake { 0% { transform: translate(0, 0); } 25% { transform: translate(-1px, .5px); } 50% { transform: translate(1px, -.5px); } 75% { transform: translate(-.5px, -.5px); } 100% { transform: translate(.5px, .5px); } }
   @media (prefers-reduced-motion: reduce) { .gauge.maxed .mini { animation: none; } }
 </style>
