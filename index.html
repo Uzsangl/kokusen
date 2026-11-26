@@ -2937,8 +2937,8 @@ function adaptKind(S, side, me) {
     if (ok[1] && sc[ok[0]] - sc[ok[1]] <= 0.05 && tbl.map[ok[0]] !== tbl.map[ok[1]]) pick = Math.random() < sc[ok[0]] / (sc[ok[0]] + sc[ok[1]]) ? ok[0] : ok[1];
     A.kind = tbl.map[pick];
   };
-  // ティルト:5〜7回(くじ)続けて負けたら、1〜5ラリー(くじ)のあいだ3つの手を33%ずつ出す。明けたら性格を決め直す
-  if (A.tilt === 0 && A.streak >= A.tiltAt) { A.tilt = r3(1, 5); A.streak = 0; A.tiltAt = r3(5, 7); A.wasTilt = true; }
+  // ティルト:5〜7回(くじ)続けて負けたら、30ラリーのあいだ3つの手を33%ずつ出す。明けたら性格を決め直す
+  if (A.tilt === 0 && A.streak >= A.tiltAt) { A.tilt = 30; A.streak = 0; A.tiltAt = r3(5, 7); A.wasTilt = true; }
   if (A.tilt > 0) return 'tilt';
   if (A.wasTilt) { A.wasTilt = false; A.ura = 0; A.uraFrom = S.hist.length; repick(); return A.kind; }
   // 裏読み:直近10手のうち、狙いの手があったラリーが5回以上あり、その60%以上で狙いに勝つ手を出されていたら
