@@ -6603,6 +6603,8 @@ function acctBoard(p) {
 function stageStamina(st) {
   if (!st || st.kr) return null;
   if (st.rush) return { cost: 25, exp: 200 };
+  if (st.id === 'x5') return { cost: 25, exp: 100 };    // ベーシックのゼノ「始まりの前」
+  if (st.id === 'r4_5') return { cost: 25, exp: 300 };  // 刻の回廊「天眼の果て」
   return ({ 1: { cost: 10, exp: 1 }, 2: { cost: 10, exp: 1 }, 3: { cost: 20, exp: 20 }, 4: { cost: 20, exp: 100 }, 5: { cost: 25, exp: 200 } })[st.stars] || null;
 }
 const STAM = { on: false, val: 0, max: 50, next: 0, at: 0 };   // at:サーバーから受け取った時刻(端末の時計)
