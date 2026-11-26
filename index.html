@@ -760,7 +760,10 @@
   #sheetBody h3 { margin: 12px 0 4px; font-size: .95rem; color: var(--gold); }
   #sheetBody p { margin: 0; font-size: .85rem; color: #cfd3ef; line-height: 1.65; }
   .rank li { display: flex; align-items: center; gap: 6px; padding: 3px 0; }
-  .rank li .r { margin-left: auto; }
+  .rank li .r { margin-left: auto; white-space: nowrap; flex-shrink: 0; }
+  .rank li > * { flex-shrink: 0; }   /* 1行に収める:名前と称号は、長ければ…で切る */
+  .rank li .nm { flex-shrink: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rank li .ttl { flex-shrink: 1; min-width: 0; max-width: 9em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .favs { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-top: 6px; }
   .favs button { padding: 2px; border-radius: 10px; }
   .favs button.picked { border-color: var(--gold); box-shadow: 0 0 10px #f5c45166; }
@@ -6482,9 +6485,9 @@ async function openKrRanking() {
   if (rows === 'missing') { openSheet('🏆 ランキング', rankTabs('kr') + '<p class="sub">刻練場のランキングは、準備中です。</p>'); bindRankTabs(); return; }
   if (!Array.isArray(rows)) { openSheet('🏆 ランキング', rankTabs('kr') + '<p class="sub">読み込めませんでした。通信状態を確かめてください。</p>'); bindRankTabs(); return; }
   const uid = accUid();
-  openSheet('🏆 ランキング', rankTabs('kr') + `<p class="sub">刻練場「百刻スコアアタック」の最高撃破数・上位50人</p>` + (rows.length ? `<ol class="rank">${rows.map((r) => {
+  openSheet('🏆 ランキング', rankTabs('kr') + `<p class="sub">刻練場の最高撃破数・上位50人</p>` + (rows.length ? `<ol class="rank">${rows.map((r) => {
     const fav = favChar(r);
-    return `<li class="${r.id === uid ? 'me' : ''}">${fav ? iconHtml(fav, 'sm') : ''}${titleTag(r.title)}${escHtml(r.name)}<span class="r">${r.best_kills}体(${r.best_layers}層・累計${r.total_kills})</span></li>`;
+    return `<li class="${r.id === uid ? 'me' : ''}">${fav ? iconHtml(fav, 'sm') : ''}${titleTag(r.title)}<span class="nm">${escHtml(r.name)}</span><span class="r">${r.best_kills}体(${r.best_layers}層)</span></li>`;
   }).join('')}</ol>` : '<p class="sub">まだ記録がありません。</p>'));
   bindRankTabs();
 }
@@ -6499,7 +6502,7 @@ async function openRanking() {
   const uid = accUid();
   openSheet('🏆 ランキング', rankTabs('rate') + `<p class="sub">オンライン対人のレーティング上位50人</p><ol class="rank">${rows.map((r) => {
     const fav = favChar(r);
-    return `<li class="${r.id === uid ? 'me' : ''}">${fav ? iconHtml(fav, 'sm') : ''}${typeof r.exp === 'number' ? lvTag(r.exp) : ''}${titleTag(r.title)}${escHtml(r.name)}<span class="r">${r.rating}(${r.wins}勝${r.losses}敗)</span></li>`;
+    return `<li class="${r.id === uid ? 'me' : ''}">${fav ? iconHtml(fav, 'sm') : ''}${typeof r.exp === 'number' ? lvTag(r.exp) : ''}${titleTag(r.title)}<span class="nm">${escHtml(r.name)}</span><span class="r">${r.rating}</span></li>`;
   }).join('')}</ol>`);
   bindRankTabs();
 }
