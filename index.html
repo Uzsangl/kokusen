@@ -7025,7 +7025,7 @@ const GACHA_RATES = { 5: 0.001, 4: 0.01, 3: 0.30, 2: 0.309, 1: 0.38 };
 const gachaOwned = (id) => (walletOn() ? Number(WAL.owned[id]) || 0 : shardOnAcc() && ACC.stats && ACC.stats.owned ? Number(ACC.stats.owned[id]) || 0 : 0);
 // お試しガチャ(無料・キャラは手に入らない・だれでも回せる)の確率。演出を味わってもらうため本番より高い。画面には出さない
 const GACHA_SIM_RATES = (() => {
-  const hi = { 5: 0.01, 4: 0.03, 3: GACHA_RATES[3] };
+  const hi = { 5: 0.03, 4: 0.06, 3: GACHA_RATES[3] };   // ★5は3%・★4は6%
   const rest = 1 - hi[5] - hi[4] - hi[3], low = GACHA_RATES[2] + GACHA_RATES[1];
   return { ...hi, 2: rest * GACHA_RATES[2] / low, 1: rest * GACHA_RATES[1] / low };
 })();
