@@ -516,6 +516,8 @@
   .stages.vlist { grid-template-columns: 1fr !important; gap: 8px; }
   .stages.vlist .corr-h { display: none; }
   .stages.vlist button { grid-column: 1 / -1 !important; display: grid; grid-template-columns: 96px auto 1fr; align-items: center; gap: 10px; min-height: 78px; padding: 4px 14px; font-size: .95rem; text-align: left; border-radius: 16px; }
+  .stages.vlist button { position: relative; }
+  .stages.vlist button.cleared::after { content: '✓'; position: absolute; right: 14px; top: 50%; transform: translateY(-50%); font-size: 1.1rem; }   /* クリア済みの印はボタンの右の端に */
   .stages.vlist button b { font-size: .85rem; letter-spacing: 0; white-space: nowrap; }
   .stages.vlist button .foes { justify-content: flex-start; margin: 0; }
   /* 降臨:左にエモ降臨、右にリズ降臨(★3〜★5を上から) */
