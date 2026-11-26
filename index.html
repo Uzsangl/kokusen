@@ -491,6 +491,8 @@
   #hub .hubbig button, #soloHub .hubbig button, #groupHub .hubbig button { flex: 1; max-height: 150px; }
   #hub .hubsmall { margin-top: 16px; }
   #groupHub .hubbig button { max-height: none; }   /* 陣営・回廊・降臨の選択:ボタンが少なくても線まで埋める */
+  #groupHub.gq .hubbig { justify-content: flex-start; }   /* 降臨(エモ降臨・リズ降臨)だけ:細くして上に詰める(下は空いてよい) */
+  #groupHub.gq .hubbig button { flex: 0 0 auto; min-height: 110px; max-height: none; }
   .stages .gh { display: none !important; }   /* ソロ:選んだ陣営・回廊のステージだけ出す */
   /* 陣営・回廊を選んだあとのステージ:横長のボタンを縦に並べる(左に★、まん中に敵、右に名前) */
   .stages.vlist { grid-template-columns: 1fr !important; gap: 8px; }
@@ -5675,6 +5677,7 @@ function showGroupHub(f) {
   groupFmt = f;
   ['hub', 'soloHub', 'select'].forEach((id) => $(id).classList.add('hidden'));
   $('groupHub').classList.remove('hidden');
+  $('groupHub').classList.toggle('gq', f === 'quest');
   window.scrollTo(0, 0);
   const named = f === 'advance' || f === 'quest';   // 回廊・降臨は名前と説明、陣営は陣営の名前と説明
   $('groupBtns').innerHTML = SOLO_GROUPS[f].map((g) => `<button data-g="${g[0]}">${named ? g[1] : g[0]}<small>${named ? g[2] : g[1]}</small></button>`).join('');
