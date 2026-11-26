@@ -996,8 +996,8 @@
 
   <section id="soloHub" class="panel hidden">
     <div class="hubbig">
-      <button data-sf="basic">ベーシック<small>錨・零・矢のステージ(ガチャキャラ以外)</small></button>
-      <button data-sf="advance">アドバンス<small>刻の回廊(持っているガチャキャラも使える)</small></button>
+      <button data-sf="basic">ベーシック<small>錨・零・矢のステージ(アドバンス専用キャラなし)</small></button>
+      <button data-sf="advance">アドバンス<small>刻の回廊(すべてのキャラが使える)</small></button>
       <button data-sf="kr">スコアアタック<small>刻練場で何体倒せるか</small></button>
       <button data-sf="quest">降臨<small>期間限定のボス・キャラが手に入る</small></button>
     </div>
@@ -5025,7 +5025,7 @@ function rankBox(dr) {
     + `BAN:あなた ${D.ban ? ic(D.ban) : '未定'} ／ 相手 ${D.bans ? ic(D.bans.foe) : D.foeBanSeal ? '決定済み' : '未定'}<br>`
     + `相手が取ったキャラ:${D.foePicks.length ? D.foePicks.map(ic).join(' ') : 'まだなし'}<br>`
     + (seq ? `取る順番:${seq}<br>` : '')
-    + `<span class="dturn">${turn}</span><br><small>★4以上は1体まで・同じ人物は1体まで${FORMAT === 'basic' ? '・ガチャキャラなし' : ''}</small>`;
+    + `<span class="dturn">${turn}</span><br><small>★4以上は1体まで・同じ人物は1体まで${FORMAT === 'basic' ? '・アドバンス専用キャラなし' : ''}</small>`;
 }
 // 1試合が終わったときの3本勝負の記録。引き分けは同じ試合をやり直す。リタイア・応答なしは3本勝負ごと負け
 function rankAfterGame(S) {
@@ -6081,8 +6081,6 @@ const RULEBOOK = {
     </table>
     <p class="rbnote">同じ強化を重ねると、強いほうの値で、ラリー数は足し算</p>`,
   'ソロ': `<ul class="rb">
-      <li>★〜★★:<b>3対3</b></li>
-      <li>★★★〜:<b>ボス1体</b>と戦う</li>
       <li>ボスは<b>手のクセを読む</b></li>
       <li>ボスラッシュ:1体倒すたびに<b>全回復</b></li>
     </ul>
@@ -6096,7 +6094,7 @@ const RULEBOOK = {
     <ul class="rb sm">
       <li>★4以上は<b>1体まで</b></li>
       <li>同じ人物は<b>1体まで</b></li>
-      <li>ベーシックは<b>ガチャキャラなし</b></li>
+      <li>ベーシックは<b>アドバンス専用キャラなし</b>(ガチャ・降臨のキャラ)</li>
     </ul>
     <h3>放置・切断</h3>
     <ul class="rb sm">
@@ -6488,7 +6486,7 @@ function openCharDetail(ch, back) {   // back:閉じたあとに戻る画面(ガ
   const canToggle = !back && unlocked && !(PVP.on && PVP.phase === 'ready') && (order >= 0 || (!clash && picked.length < TEAM_SIZE));
   openSheet(dispName(ch), `<div class="cdetail"><div class="crow">${iconHtml(ch, 'lg')}<div>` +
     `<div class="name">${dispName(ch)}${hide ? '' : `<span class="role">${ch.role || ''}</span>`}</div>` +
-    (hide ? '' : `<div>${rarHtml(ch)}${ch.gacha ? ' <small class="sub">ガチャキャラ(アドバンスのみ)</small>' : ''}</div>`) +
+    (hide ? '' : `<div>${rarHtml(ch)}${ch.gacha || ch.adv ? ' <small class="sub">アドバンス専用</small>' : ''}</div>`) +
     (unlocked ? '' : `<div class="sub" style="color:var(--gold)">🔒 ${unlockText(ch)}</div>`) +
     (clash ? `<div class="sub">${sameClash(ch, picked) ? '同じ人物なので、同じパーティには入れられない' : '★4以上は1パーティに1枚まで(もう入っている)'}</div>` : '') +
     (hide ? '' : `<div class="stats"><span class="s-hp">HP ${ch.hp}</span>　${statLine(ch)}</div><div class="trait">${traitLine(ch)}</div>` + actionList(ch, 'div', 'sub')) +
@@ -7578,7 +7576,7 @@ function renderFormats() {
     b.classList.toggle('picked', solo && krSel() ? b.dataset.f === 'kr' : solo && questSel() ? b.dataset.f === 'quest' : b.dataset.f === fmtNow());
     b.disabled = PVP.on && PVP.phase !== 'idle';
   });
-  $('formatNote').textContent = solo && questSel() ? `降臨:期間限定のボスに挑む。${questWhen()}。` : solo && krSel() ? 'スコアアタック:刻練場で、何体倒せるかに挑む。パーティはアドバンスで組む(★4以上は1体まで)。' : solo ? (soloCorr() ? '刻の回廊:持っているガチャキャラも使える。★4以上の制限なし。' : 'ソロのステージ(ガチャキャラ以外)。アドバンスにすると「刻の回廊」。') : fmtNow() === 'advance' ? 'アドバンス:すべてのキャラが使える(ガチャキャラも)。★4以上は1パーティに1枚まで。' : 'ベーシック:ガチャキャラ以外のキャラで戦う。★4以上は1パーティに1枚まで。';
+  $('formatNote').textContent = solo && questSel() ? `降臨:期間限定のボスに挑む。${questWhen()}。` : solo && krSel() ? 'スコアアタック:刻練場で、何体倒せるかに挑む。パーティはアドバンスで組む(★4以上は1体まで)。' : solo ? (soloCorr() ? '刻の回廊:持っているガチャキャラも使える。★4以上の制限なし。' : 'ソロのステージ(アドバンス専用キャラなし)。アドバンスにすると「刻の回廊」。') : fmtNow() === 'advance' ? 'アドバンス:すべてのキャラが使える。★4以上は1パーティに1枚まで。' : 'ベーシック:アドバンス専用キャラ(ガチャ・降臨のキャラ)は使えない。★4以上は1パーティに1枚まで。';
   [...$('cpuPicks').children].forEach((b) => b.classList.toggle('picked', b.dataset.c === CPU_PICK));
 }
 function renderSelHead() {
