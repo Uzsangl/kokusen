@@ -854,15 +854,16 @@
   /* ===== タイトルの縦長の絵(上にトキバミの時計の顔、下にレイ・カジ・ツル)。ロゴはトキバミの顔と3人の間、プレイは3人の下 ===== */
   .tkv img { max-height: 84vh; object-fit: cover; object-position: 50% 100%;
     -webkit-mask-image: linear-gradient(180deg, #000 72%, transparent 100%); mask-image: linear-gradient(180deg, #000 72%, transparent 100%); }
-  #title .tlogo { margin-top: 12vh; }
-  #title .tlogo img { width: min(56%, 220px, 26vh); }
-  #title .tplay { margin-top: 29vh; }
+  /* ロゴは絵に合わせて置く:トキバミの顔の下(絵の上から28%)〜3人の頭(50%)の間いっぱい。絵の高さ=横幅×1.5 */
+  #title .tlogo { position: absolute; left: 50%; top: calc(-16px + 100vw * 1.5 * .39); transform: translate(-50%, -50%); width: 60vw; margin: 0; }
+  #title .tlogo img { width: 100%; }
+  #title .tplay { margin-top: min(calc(100vw * 1.5 * .95 - 74px), 52vh); }
   @media (min-width: 1000px) and (min-height: 560px) {
     .tkv { left: 50%; right: auto; width: 56vh; transform: translateX(-50%); }   /* 横長の画面:絵は中央に縦長のまま。左右の端はぼかす */
     .tkv img { max-height: none; -webkit-mask-image: linear-gradient(180deg, #000 72%, transparent 100%), linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); -webkit-mask-composite: source-in;
       mask-image: linear-gradient(180deg, #000 72%, transparent 100%), linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); mask-composite: intersect; }
-    #title .tlogo { margin-top: 16vh; } #title .tlogo img { width: min(34vh, 260px); }
-    #title .tplay { margin-top: 36vh; }
+    #title .tlogo { top: calc(-16px + 56vh * 1.5 * .39); width: 34vh; }
+    #title .tplay { margin-top: calc(56vh * 1.5 * .9 - 74px); }
   }
 </style>
 </head>
