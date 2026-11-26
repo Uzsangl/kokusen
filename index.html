@@ -7390,6 +7390,8 @@ function setStep(st) {
   renderSelect();
   placeBanner();
 }
+// ソロ:ステージを押したら、そのままキャラ選択へ(挑めないステージは、一覧に残って理由を出す)
+function goPickNow() { if (MODE === 'solo' && canPick()) { Sound.click(); setStep('pick'); } }
 // キャラ選択の画面にも、画面の名前のバナーを出す(「錨 - キャラ選択」など。◀ はキャラ選択の「戻る」と同じ)
 function placeBanner() {
   const sel = $('select');
@@ -7439,6 +7441,7 @@ function renderSelHead() {
   $('pickInfo').textContent = pickInfoText();
   $('toMenu').textContent = MODE === 'pvp' ? '◀ 部屋を出る' : '◀ 戻る';
   $('toPick').disabled = !canPick();
+  $('toPick').classList.toggle('hidden', MODE === 'solo' && canPick());   // ソロはステージを押せばキャラ選択へ進むので、挑めないときの理由だけ出す
   $('toPick').textContent = MODE === 'pvp' && !canPick() ? (PVP.phase === 'idle' ? (PVP.kind === 'rated' && ACC.profile ? '「相手を探す」で相手を見つけてください' : '合言葉で部屋に入ってください') : '相手を待っています…') : MODE === 'solo' && !canPick() ? (questSel() && !questOpen() ? `時間外(${questWhen()})` : corrOpen(STAGES.find((x) => x.id === SOLO.stage)) ? 'このステージは直接挑めません' : 'ひとつ前の段をクリアすると挑めます') : 'キャラを選ぶ ▶';
 }
 function renderSelect() {
@@ -7683,7 +7686,7 @@ function init() {
   STAGES.forEach((st) => {
     if (st.kr) {   // 刻練場は「スコアアタック」を選んだときの一覧に、1つだけ
       const b = document.createElement('button'); b.dataset.id = st.id; b.classList.add('s0');
-      b.onclick = () => { SOLO.stage = st.id; renderStages(); };
+      b.onclick = () => { SOLO.stage = st.id; renderStages(); goPickNow(); };
       $('krStages').appendChild(b); return;
     }
     // 刻の回廊は、回廊ごとに見出しを付けて別の欄に並べる
@@ -7692,7 +7695,7 @@ function init() {
     b.dataset.id = st.id;
     b.classList.add('s' + st.stars);   // ★の数で色を変える
     if (st.corridor) b.classList.add('corr');
-    b.onclick = () => { SOLO.stage = st.id; try { localStorage.setItem('kokusen.stage', st.id); } catch (e) { /* 保存できなくても動く */ } renderStages(); };
+    b.onclick = () => { SOLO.stage = st.id; try { localStorage.setItem('kokusen.stage', st.id); } catch (e) { /* 保存できなくても動く */ } renderStages(); goPickNow(); };
     if (st.quest && st.stars === 3) { const h = document.createElement('p'); h.className = 'corr-h'; h.textContent = `${st.name}(${FORMATS[st.qfmt]})`; $('questStages').appendChild(h); }
     $(st.quest ? 'questStages' : st.corridor ? 'corrStages' : 'stages').appendChild(b);
   });
