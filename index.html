@@ -490,6 +490,7 @@
   #hub .hubbig, #soloHub .hubbig, #groupHub .hubbig { flex: 1; display: flex; flex-direction: column; justify-content: space-between; gap: 12px; }
   #hub .hubbig button, #soloHub .hubbig button, #groupHub .hubbig button { flex: 1; max-height: 150px; }
   #hub .hubsmall { margin-top: 16px; }
+  #groupHub .hubbig button { max-height: none; }   /* 陣営・回廊・降臨の選択:ボタンが少なくても線まで埋める */
   .stages .gh { display: none !important; }   /* ソロ:選んだ陣営・回廊のステージだけ出す */
   /* 陣営・回廊を選んだあとのステージ:横長のボタンを縦に並べる(左に★、まん中に敵、右に名前) */
   .stages.vlist { grid-template-columns: 1fr !important; gap: 8px; }
@@ -498,9 +499,9 @@
   .stages.vlist button b { font-size: .85rem; letter-spacing: 0; white-space: nowrap; }
   .stages.vlist button .foes { justify-content: flex-start; margin: 0; }
   /* 降臨:左にエモ降臨、右にリズ降臨(★3〜★5を上から) */
-  #questStages.vlist { grid-template-columns: 1fr 1fr !important; grid-template-rows: repeat(3, auto); grid-auto-flow: column; }
-  #questStages.vlist button { grid-column: auto !important; grid-template-columns: auto 1fr; padding: 4px 10px; }
-  #questStages.vlist button b { grid-column: 1 / -1; }
+  #questStages.vlist.two { grid-template-columns: 1fr 1fr !important; grid-template-rows: repeat(3, auto); grid-auto-flow: column; }
+  #questStages.vlist.two button { grid-column: auto !important; grid-template-columns: auto 1fr; padding: 4px 10px; }
+  #questStages.vlist.two button b { grid-column: 1 / -1; }
   .hubtop { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
   .hubacc { width: 100%; display: flex; align-items: center; gap: 10px; text-align: left; padding: 12px 14px; border-radius: 16px; margin-bottom: 14px; }
   .hubacc .cico { flex: none; }
@@ -5643,7 +5644,7 @@ function fitStages() {
   const safe = parseFloat(getComputedStyle(pr).paddingBottom) || 0; pr.remove();
   const sel = $('select'), bottom = sel.getBoundingClientRect().bottom + window.scrollY, line = window.innerHeight - AD_RESERVE - safe;
   const extra = line - bottom;   // 足りなければ縮め、余れば広げる(ボタンの高さは44〜150px)
-  const rows = questSel() ? Math.ceil(btns.length / 2) : btns.length;   // 降臨は2列
+  const rows = questSel() && SOLO.group == null ? Math.ceil(btns.length / 2) : btns.length;   // 降臨を全部出すときは2列
   const h = btns[0].getBoundingClientRect().height, nh = Math.max(44, Math.min(rows === 1 ? 260 : 150, h + extra / rows));
   btns.forEach((b) => { b.style.minHeight = b.style.height = nh + 'px'; });
 }
@@ -5663,10 +5664,11 @@ function showSoloHub() {
   mountTop($('soloHub'));
 }
 // ベーシックは陣営(錨・零・矢・隔絶=★4以上と連戦)、アドバンスは回廊ごとに分けて選ぶ
-const stageGroup = (st) => (st.corridor ? st.corridor : ['錨', '零', '矢'].includes(st.faction) ? st.faction : '隔絶');   // カジの★4・★5(錨)は錨に入る
+const stageGroup = (st) => (st.quest ? st.quest : st.corridor ? st.corridor : ['錨', '零', '矢'].includes(st.faction) ? st.faction : '隔絶');   // カジの★4・★5(錨)は錨に入る
 const SOLO_GROUPS = {
   basic: [['錨', '★〜★★★・カジの★★★★・★★★★★'], ['零', '★〜★★★のステージ'], ['矢', '★〜★★★のステージ'], ['隔絶', '刻喰らいの淵・始まりの前・ボスラッシュ']],
   advance: Object.entries(CORRIDORS).map(([k, v]) => [+k, v, '★★〜★★★★★']),
+  quest: [['emo', 'エモ降臨', 'アドバンスで組む・★★★〜★★★★★'], ['rizu', 'リズ降臨', 'ベーシックで組む・★★★〜★★★★★']],
 };
 let groupFmt = 'basic';
 function showGroupHub(f) {
@@ -5674,18 +5676,20 @@ function showGroupHub(f) {
   ['hub', 'soloHub', 'select'].forEach((id) => $(id).classList.add('hidden'));
   $('groupHub').classList.remove('hidden');
   window.scrollTo(0, 0);
-  $('groupBtns').innerHTML = SOLO_GROUPS[f].map((g) => `<button data-g="${g[0]}">${f === 'advance' ? g[1] : g[0]}<small>${f === 'advance' ? g[2] : g[1]}</small></button>`).join('');
+  const named = f === 'advance' || f === 'quest';   // 回廊・降臨は名前と説明、陣営は陣営の名前と説明
+  $('groupBtns').innerHTML = SOLO_GROUPS[f].map((g) => `<button data-g="${g[0]}">${named ? g[1] : g[0]}<small>${named ? g[2] : g[1]}</small></button>`).join('');
   $('groupBtns').querySelectorAll('button').forEach((b) => { b.onclick = () => { Sound.click(); openSolo(f, f === 'advance' ? +b.dataset.g : b.dataset.g); }; });
   mountTop($('groupHub'));
 }
 function openSolo(f, group) {
   SOLO.group = group == null ? null : group;
-  if (group != null) {   // その陣営・回廊の最初のステージを選んでおく
+  if (group != null) {   // その陣営・回廊・降臨の最初のステージを選んでおく
     const cur = STAGES.find((x) => x.id === SOLO.stage);
-    if (!cur || cur.kr || cur.quest || stageGroup(cur) !== group || !!cur.corridor !== (f === 'advance')) SOLO.stage = STAGES.find((x) => !x.kr && !x.quest && !!x.corridor === (f === 'advance') && stageGroup(x) === group).id;
+    const fit = (x) => !x.kr && (f === 'quest' ? !!x.quest : !x.quest && !!x.corridor === (f === 'advance')) && stageGroup(x) === group;
+    if (!cur || !fit(cur)) SOLO.stage = STAGES.find(fit).id;
   }
   if (f === 'kr') SOLO.stage = 'kr';
-  else if (f === 'quest') { if (!questSel()) SOLO.stage = 'qe3'; }
+  else if (f === 'quest') { if (!questSel()) SOLO.stage = group === 'rizu' ? 'qr3' : 'qe3'; }
   else { FORMAT = f; try { localStorage.setItem('kokusen.format', FORMAT); } catch (e) { /* 保存できなくても動く */ } if (group == null && (krSel() || questSel() || (f === 'advance') !== soloCorr())) SOLO.stage = f === 'advance' ? 'r1_2' : 'a1'; }
   try { localStorage.setItem('kokusen.stage', SOLO.stage); } catch (e) { /* 保存できなくても動く */ }
   $('soloHub').classList.add('hidden'); $('groupHub').classList.add('hidden');
@@ -5702,7 +5706,7 @@ function openMode(m) {
   renderMode(); setStep('menu');
 }
 function backToHub() {
-  if (MODE === 'solo' && !$('select').classList.contains('hidden')) { if (SOLO.group != null && !krSel() && !questSel()) showGroupHub(soloCorr() ? 'advance' : 'basic'); else showSoloHub(); return; }   // ソロのメニューからは、陣営・回廊の選択か、ソロの入り口へ
+  if (MODE === 'solo' && !$('select').classList.contains('hidden')) { if (SOLO.group != null && !krSel()) showGroupHub(questSel() ? 'quest' : soloCorr() ? 'advance' : 'basic'); else showSoloHub(); return; }   // ソロのメニューからは、陣営・回廊の選択か、ソロの入り口へ
   $('soloHub').classList.add('hidden');
   if (PVP.spec) specStop(); else if (PVP.on && PVP.phase !== 'idle') pvpLeave();
   rankCancel(); rndCancel();
@@ -6020,10 +6024,11 @@ function renderStages() {
   soloFixStage();
   ['stages', 'corrStages'].forEach((id) => $(id).classList.toggle('vlist', SOLO.group != null));   // 陣営・回廊を選んだときは縦の一覧
   ['questStages', 'krStages'].forEach((id) => $(id).classList.add('vlist'));   // スコアアタック・降臨も縦の一覧
+  $('questStages').classList.toggle('two', SOLO.group == null);   // 降臨を全部出すときだけ2列
   [...$('stages').children, ...$('corrStages').children, ...$('questStages').children, ...$('krStages').children].forEach((b) => {
     if (b.dataset.cor) b.classList.toggle('gh', SOLO.group != null && +b.dataset.cor !== SOLO.group);   // 回廊の見出し
     if (!b.dataset.id) return;
-    { const s0 = STAGES.find((x) => x.id === b.dataset.id); b.classList.toggle('gh', SOLO.group != null && !s0.quest && stageGroup(s0) !== SOLO.group); }   // 回廊の見出し
+    { const s0 = STAGES.find((x) => x.id === b.dataset.id); b.classList.toggle('gh', SOLO.group != null && !s0.kr && stageGroup(s0) !== SOLO.group); }   // 回廊の見出し
     // 敵のアイコンも出す(★1・★2は兵士3体を小さく、★3以上はボス)。ゼノは名前が明かされるまでシルエット
     const s = STAGES.find((x) => x.id === b.dataset.id);
     const boss = s.kr ? '<span class="foes"></span>' : `<span class="foes">${stageFoes(s).filter((f) => !f.hiddenUntilActive && (!s.quest || f.boss)).map((f) => iconHtml(f, s.stars >= 3 ? 'md' : 'sm')).join('')}</span>`;   // 降臨はボスだけ
@@ -7535,7 +7540,7 @@ function init() {
     else backToHub();
   };
   $('hubSolo').onclick = () => { Sound.click(); showSoloHub(); };
-  document.querySelectorAll('#soloHub [data-sf]').forEach((b) => { b.onclick = () => { Sound.click(); if (b.dataset.sf === 'basic' || b.dataset.sf === 'advance') showGroupHub(b.dataset.sf); else openSolo(b.dataset.sf); }; });
+  document.querySelectorAll('#soloHub [data-sf]').forEach((b) => { b.onclick = () => { Sound.click(); if (['basic', 'advance', 'quest'].includes(b.dataset.sf)) showGroupHub(b.dataset.sf); else openSolo(b.dataset.sf); }; });
   $('hubPvp').onclick = () => { Sound.click(); openMode('pvp'); };
   $('hubCpu').onclick = () => { Sound.click(); openMode('cpu'); };
   $('hubGacha').onclick = () => openGacha();
