@@ -678,7 +678,8 @@
   #battle .foot #chain { color: #ff2a3d; border-color: #ff2a3d; font-weight: 700; box-shadow: 0 0 14px #ff2a3d66; }
   .seltop { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
   /* いまの画面の名前のバナー(左の端から出る帯) */
-  #pageBanner { position: relative; margin: 0 0 12px calc(-1 * var(--pbx, 14px)); width: max-content; min-width: 60%; max-width: calc(100% + var(--pbx, 14px)); height: 40px; display: flex; align-items: center; padding: 0 44px 0 calc(var(--pbx, 14px) + 6px);
+  #pageBanner { position: relative; margin: 0 0 12px calc(-1 * var(--pbx, 14px)); width: calc(92% + var(--pbx, 14px));   /* 長さは固定(いちばん長い「アドバンス - 灯と天眼の回廊」が入る) */
+    height: 40px; display: flex; align-items: center; padding: 0 44px 0 calc(var(--pbx, 14px) + 6px);
     background: linear-gradient(180deg, #3a3418 0%, #6b5a22 45%, #4a3f18 100%); border: 2px solid #f0c040; border-left: none; border-radius: 0 22px 22px 0;
     box-shadow: 0 3px 8px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,240,180,.35); }
   #hub #pageBanner { display: none; }   /* 最初のメニューは出さない(下の小さいボタンまで広告の線に収めるため) */
