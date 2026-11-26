@@ -746,6 +746,11 @@
   .seg button.on { background: var(--gold); color: #1a1200; font-weight: 700; }
   .seg4 button { padding: 6px 8px; font-size: .74rem; }
   .srow:has(.seg4) { flex-wrap: wrap; gap: 6px; }
+  /* 演出パターン:説明の長さで形が変わらないよう、いつも「名前と説明」の下に、横いっぱいの切り替え */
+  .srow:has(.seg4) > div:first-child { flex: 1 1 100%; }
+  .srow:has(.seg4) > div:first-child small { min-height: 3em; line-height: 1.5; }   /* 説明は2行ぶんの高さを取っておく */
+  .srow .seg4 { flex: 1 1 100%; }
+  .srow .seg4 button { flex: 1; }
   .rtabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
   .rtabs button { padding: 4px 10px; border-radius: 12px; font-size: .8rem; }
   .rtabs button.on { background: var(--gold); color: #1a1200; font-weight: 700; border-color: var(--gold); }
