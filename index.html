@@ -492,9 +492,9 @@
   #hub .hubsmall { margin-top: 16px; }
   .stages .gh { display: none !important; }   /* ソロ:選んだ陣営・回廊のステージだけ出す */
   /* 陣営・回廊を選んだあとのステージ:横長のボタンを縦に並べる(左に★、まん中に敵、右に名前) */
-  .stages.vlist { grid-template-columns: 1fr !important; gap: 10px; }
+  .stages.vlist { grid-template-columns: 1fr !important; gap: 8px; }
   .stages.vlist .corr-h { display: none; }
-  .stages.vlist button { grid-column: 1 / -1 !important; display: grid; grid-template-columns: 96px auto 1fr; align-items: center; gap: 10px; min-height: 78px; padding: 8px 14px; font-size: .95rem; text-align: left; border-radius: 16px; }
+  .stages.vlist button { grid-column: 1 / -1 !important; display: grid; grid-template-columns: 96px auto 1fr; align-items: center; gap: 10px; min-height: 78px; padding: 4px 14px; font-size: .95rem; text-align: left; border-radius: 16px; }
   .stages.vlist button b { font-size: .85rem; letter-spacing: 0; white-space: nowrap; }
   .stages.vlist button .foes { justify-content: flex-start; margin: 0; }
   .hubtop { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
@@ -5628,7 +5628,19 @@ function fitHub(panel) {
   const safe = parseFloat(getComputedStyle(pr).paddingBottom) || 0; pr.remove();   // iPhoneの下端の余白
   panel.style.minHeight = Math.max(0, window.innerHeight - top - AD_RESERVE - safe) + 'px';
 }
-window.addEventListener('resize', () => ['hub', 'soloHub', 'groupHub'].forEach((id) => { if (!$(id).classList.contains('hidden')) fitHub($(id)); }));
+// 陣営・回廊のステージ一覧:パネルの下の端を同じ線にそろえ、余った高さはステージのボタンを大きくして埋める
+function fitStages() {
+  const btns = [...$('stages').children, ...$('corrStages').children].filter((b) => b.dataset.id && !b.classList.contains('gh'));
+  btns.forEach((b) => { b.style.minHeight = ''; b.style.height = ''; });
+  if (MODE !== 'solo' || SOLO.group == null || $('select').classList.contains('hidden') || !btns.length) return;
+  const pr = document.createElement('div'); pr.style.cssText = 'position:fixed;bottom:0;height:0;padding-bottom:env(safe-area-inset-bottom,0px);visibility:hidden'; document.body.appendChild(pr);
+  const safe = parseFloat(getComputedStyle(pr).paddingBottom) || 0; pr.remove();
+  const sel = $('select'), bottom = sel.getBoundingClientRect().bottom + window.scrollY, line = window.innerHeight - AD_RESERVE - safe;
+  const extra = line - bottom;   // 足りなければ縮め、余れば広げる(ボタンの高さは44〜150px)
+  const h = btns[0].getBoundingClientRect().height, nh = Math.max(44, Math.min(150, h + extra / btns.length));
+  btns.forEach((b) => { b.style.minHeight = b.style.height = nh + 'px'; });
+}
+window.addEventListener('resize', () => { ['hub', 'soloHub', 'groupHub'].forEach((id) => { if (!$(id).classList.contains('hidden')) fitHub($(id)); }); fitStages(); });
 function mountTop(panel) {
   const top = document.querySelector('.seltop'), acct = $('acct');
   const into = panel.id === 'select' ? panel.querySelector('.selL') : panel;
@@ -6032,6 +6044,7 @@ function renderStages() {
     : `${st.faction} ${'★'.repeat(st.stars)}「${st.name}」 敵:${shown.map(dispName).join('・')}`
     + (foes.every((f) => f.boss) ? '(ボス1体と3対1)' : '(3対3)') + `。CPUの考え方:${AI_LEVELS[st.level].name}。ソロでは刻の抜け落ちは起きません。`;
   renderSelect();
+  fitStages();
 }
 
 // ----- 難易度 -----
