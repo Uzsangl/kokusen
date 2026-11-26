@@ -3835,8 +3835,8 @@ function tickLoop() {
 
 // ----- ログ(演出が終わるまで溜めておく) -----
 // ===== ★5のボスの一言(いまの性格の示唆)=====
-// 性格が変わった瞬間(ティルトの出入りも)と、同じ性格のあいだは5ラリーに1回、ログに一言。
-// 75%はいまの性格のセリフ、25%はほかの4つのどれか(ハズレ)
+// 性格が変わった瞬間(ティルトの出入りも)と、同じ性格のあいだは3ラリーに1回、ログに一言。
+// 90%はいまの性格のセリフ、10%はほかの4つのどれか(ハズレ)
 const HINT_LINES = {
   qb_emo: {
     base: ['よーし、いっぱい遊ぼ!', 'どんな手でくるかな〜', 'ねえねえ、楽しいね!'],
@@ -3900,9 +3900,9 @@ function bossHint(S) {
   const me = active(S.teams[1]), id = HINT_ALIAS[me.ch.id] || me.ch.id, L = HINT_LINES[id];
   if (!L || !S.stage || S.stage.stars !== 5 || !S.adapt) return;
   const key = S.adapt.tilt > 0 ? 'tilt' : (S.adapt.kind && L[S.adapt.kind] ? S.adapt.kind : 'base');
-  if (key === me.hintKey && S.rally - (me.hintAt || 0) < 5) return;
+  if (key === me.hintKey && S.rally - (me.hintAt || 0) < 3) return;
   me.hintKey = key; me.hintAt = S.rally;
-  const keys = Object.keys(L), shown = Math.random() < 0.75 ? key : pickOne(keys.filter((k) => k !== key));
+  const keys = Object.keys(L), shown = Math.random() < 0.9 ? key : pickOne(keys.filter((k) => k !== key));
   log(`💬 ${nameOf(me)}「${pickOne(L[shown])}」`);
 }
 function log(text) {
