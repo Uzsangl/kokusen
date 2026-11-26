@@ -898,6 +898,32 @@
   #select #roomCode { border: 2px solid transparent; background: linear-gradient(180deg, #0b0d1e, #12152c) padding-box, var(--goldThin) border-box; box-shadow: inset 0 3px 8px rgba(0,0,0,.6); }
   #select .selL h2:not(.hidden) { display: flex; align-items: center; gap: 10px; color: #f0c040; font-size: .92rem; letter-spacing: .08em; }
   #select .selL h2::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, rgba(240,192,64,.6), transparent); }
+
+  /* ===== シート(キャラ一覧・ランキング・称号・設定など)とアカウントの枠:メニューのパネルと同じ金の縁と四隅の飾り ===== */
+  .modal .box { border: 2px solid #d4a43c; border-radius: 14px;
+    background: var(--cornersIn) , linear-gradient(180deg, #181d3a, #10132a);
+    box-shadow: inset 0 0 0 3px rgba(8,10,24,.9), inset 0 0 0 4px rgba(232,184,74,.45), 0 10px 30px rgba(0,0,0,.7); }
+  :root { --cornersIn:
+      linear-gradient(#f0c040,#f0c040) 7px 7px / 16px 2px no-repeat, linear-gradient(#f0c040,#f0c040) 7px 7px / 2px 16px no-repeat,
+      linear-gradient(#f0c040,#f0c040) calc(100% - 7px) 7px / 16px 2px no-repeat, linear-gradient(#f0c040,#f0c040) calc(100% - 7px) 7px / 2px 16px no-repeat,
+      linear-gradient(#f0c040,#f0c040) 7px calc(100% - 7px) / 16px 2px no-repeat, linear-gradient(#f0c040,#f0c040) 7px calc(100% - 7px) / 2px 16px no-repeat,
+      linear-gradient(#f0c040,#f0c040) calc(100% - 7px) calc(100% - 7px) / 16px 2px no-repeat, linear-gradient(#f0c040,#f0c040) calc(100% - 7px) calc(100% - 7px) / 2px 16px no-repeat; }
+  #sheet .sheethead, #accModal .sheethead { background: linear-gradient(180deg, #181d3a 80%, rgba(24,29,58,0)); }
+  /* 中のボタン・欄も細い金の縁に(選んでいるものは濃い金) */
+  .modal .box button:not(.sheetx):not(.sw) { border: 2px solid transparent; background: linear-gradient(180deg, #1d2246, #141833) padding-box, var(--goldThin) border-box; }
+  .modal .box button.picked:not(.sheetx), .modal .box .rtabs button.on, .modal .box button.on:not(.sheetx):not(.sw) { color: #fff3cf; background: linear-gradient(180deg, #2a2f5c, #1a1e40) padding-box, var(--goldGrad) border-box; box-shadow: 0 0 10px rgba(240,192,64,.3); }
+  .modal .box button:active:not(:disabled):not(.sheetx) { transform: translateY(2px); }
+  .modal .box input, .modal .box select { border: 2px solid transparent; background: linear-gradient(180deg, #0b0d1e, #12152c) padding-box, var(--goldThin) border-box; }
+
+  /* そのほかの枠も金にそろえる:タイトルのアカウント欄・対戦のログ・マイセット・ガチャのお試し・デイリーの暦・メール・称号の札 */
+  .tacc { border: 2px solid transparent; background: linear-gradient(180deg, rgba(20,24,52,.92), rgba(12,14,32,.92)) padding-box, var(--goldGrad) border-box;
+    box-shadow: inset 0 0 0 2px rgba(8,10,24,.85), inset 0 0 0 3px rgba(232,184,74,.35), 0 6px 16px rgba(0,0,0,.55); }
+  #logPanel { border: 2px solid #d4a43c; box-shadow: inset 0 0 0 3px rgba(8,10,24,.9), inset 0 0 0 4px rgba(232,184,74,.4), 0 6px 18px rgba(0,0,0,.6); }
+  .ms, .ml, .gc-sim { border: 2px solid transparent; border-style: solid; background: linear-gradient(180deg, #161a38, #0f1229) padding-box, var(--goldThin) border-box; }
+  .dly-cal div { border: 2px solid transparent; background: linear-gradient(180deg, #161a38, #0f1229) padding-box, var(--goldThin) border-box; }
+  .dly-cal div.got { background: linear-gradient(180deg, #262a50, #181c3a) padding-box, var(--goldGrad) border-box; }
+  .modal .titles button.picked { box-shadow: 0 0 10px rgba(240,192,64,.35); }
+  .modal .titles button:disabled { opacity: .5; }
 </style>
 </head>
 <body>
