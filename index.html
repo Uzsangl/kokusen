@@ -942,6 +942,16 @@
   .rbt { width: 100%; border-collapse: collapse; margin: 6px 0; font-size: .88rem; }
   .rbt td { padding: 6px 8px; border-bottom: 1px solid rgba(240,192,64,.18); }
   .rbt td:first-child { width: 6.5em; color: #ffe08a; font-weight: 700; white-space: nowrap; }
+
+  /* BREAK中:手のボタンの枠も中も虹色に(押せることがひと目でわかるように) */
+  #battle #hands.breaking button:not(:disabled), #battle #hands.breaking button.warm:not(:disabled), #battle #hands.breaking button.hot:not(:disabled) {
+    border: 2px solid transparent; color: #fff; text-shadow: 0 1px 3px #000, 0 0 6px #000;
+    background: linear-gradient(90deg, rgba(255,77,94,.55), rgba(245,196,81,.55), rgba(74,222,128,.55), rgba(56,189,248,.55), rgba(139,108,255,.55), rgba(255,77,94,.55)) padding-box,
+      linear-gradient(90deg, #ff4d5e, #f5c451, #4ade80, #38bdf8, #8b6cff, #ff4d5e) border-box;
+    background-size: 200% 100%, 200% 100%;
+    box-shadow: 0 0 16px rgba(255,255,255,.45), 0 0 26px rgba(139,108,255,.55);
+    animation: hue 1.2s linear infinite, pulse .5s ease-in-out infinite alternate; }
+  #battle #hands.breaking button:not(:disabled) * { color: #fff; }
 </style>
 </head>
 <body>
