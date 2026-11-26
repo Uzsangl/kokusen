@@ -5079,6 +5079,14 @@ function pvpSpecSync() {
   } : { v: RULES_VER, wait: 1 });
 }
 // 観戦:合言葉の部屋に、観戦者としてつなぐ
+// 観戦を終えたとき:観戦を始めた画面(ハブ・ソロの入り口など)に戻る
+let battleFrom = 'select';
+function backFromWatch() {
+  if (battleFrom === 'hub') showTitle(false);
+  else if (battleFrom === 'soloHub') showSoloHub();
+  else if (battleFrom === 'groupHub') showGroupHub(groupFmt);
+  else { $('select').classList.remove('hidden'); mountTop($('select')); }
+}
 function specStart() {
   const code = $('roomCode').value.trim();
   if (!/^[0-9a-zA-Z]{2,12}$/.test(code)) { pvpStatus('合言葉は、英数字2〜12文字で入れてください。'); return; }
@@ -5091,7 +5099,7 @@ function specStop() {
   PVP.spec = false; PVP.specSnap = null; PVP.specId = null;
   if (PVP.room && PVP.room.leave) PVP.room.leave();
   pvpLeave();
-  if (S && S.spectate) { S.over = true; clearTimeout(tickTimer); Bgm.play('menu'); $('battle').classList.add('hidden'); $('select').classList.remove('hidden'); document.body.classList.remove('in-battle'); }
+  if (S && S.spectate) { S.over = true; clearTimeout(tickTimer); Bgm.play('menu'); $('battle').classList.add('hidden'); document.body.classList.remove('in-battle'); backFromWatch(); }
   renderMode();
 }
 // 受け取った記録を画面に反映する(新しい対戦なら最初から、途中から入ったら早送りで追いつく)
@@ -7059,8 +7067,8 @@ function fwStop(quiet) {
   FW.peer = null; FW.snap = null; FW.id = null;
   if (was && S && S.spectate && !PVP.spec) {
     S.over = true; clearTimeout(tickTimer); Aura.stop(); Bgm.play('menu');
-    $('battle').classList.add('hidden'); $('select').classList.remove('hidden'); document.body.classList.remove('in-battle');
-    renderMode();
+    $('battle').classList.add('hidden'); document.body.classList.remove('in-battle');
+    renderMode(); backFromWatch();
   }
   frBeat(true);
 }
@@ -7513,7 +7521,8 @@ async function startMatch(mine, theirs, foeLabel, opt = {}) {
   setStage('', '');
   $('dmgLine').innerHTML = '';
   setResult('手を選んでください');
-  $('select').classList.add('hidden');
+  battleFrom = ['hub', 'soloHub', 'groupHub', 'select'].find((id) => !$(id).classList.contains('hidden')) || 'select';   // 観戦を終えたら、この画面に戻る
+  ['hub', 'soloHub', 'groupHub', 'select'].forEach((id) => $(id).classList.add('hidden'));   // メニューの画面はどれも隠す(観戦をハブから始めても下に出ないように)
   $('battle').classList.remove('hidden');
   $('logPanel').classList.add('hidden');
   $('logBtn').textContent = 'ログを見る';
