@@ -497,6 +497,10 @@
   .stages.vlist button { grid-column: 1 / -1 !important; display: grid; grid-template-columns: 96px auto 1fr; align-items: center; gap: 10px; min-height: 78px; padding: 4px 14px; font-size: .95rem; text-align: left; border-radius: 16px; }
   .stages.vlist button b { font-size: .85rem; letter-spacing: 0; white-space: nowrap; }
   .stages.vlist button .foes { justify-content: flex-start; margin: 0; }
+  /* 降臨:左にエモ降臨、右にリズ降臨(★3〜★5を上から) */
+  #questStages.vlist { grid-template-columns: 1fr 1fr !important; grid-template-rows: repeat(3, auto); grid-auto-flow: column; }
+  #questStages.vlist button { grid-column: auto !important; grid-template-columns: auto 1fr; padding: 4px 10px; }
+  #questStages.vlist button b { grid-column: 1 / -1; }
   .hubtop { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
   .hubacc { width: 100%; display: flex; align-items: center; gap: 10px; text-align: left; padding: 12px 14px; border-radius: 16px; margin-bottom: 14px; }
   .hubacc .cico { flex: none; }
@@ -849,6 +853,7 @@
       <div class="stages" id="stages"></div>
       <div class="stages corr-list hidden" id="corrStages"></div>
       <div class="stages corr-list hidden" id="questStages"></div>
+      <div class="stages hidden" id="krStages"></div>
       <p class="sub" id="stageNote"></p>
     </div>
     <div id="netOpts" class="hidden">
@@ -5630,14 +5635,16 @@ function fitHub(panel) {
 }
 // 陣営・回廊のステージ一覧:パネルの下の端を同じ線にそろえ、余った高さはステージのボタンを大きくして埋める
 function fitStages() {
-  const btns = [...$('stages').children, ...$('corrStages').children].filter((b) => b.dataset.id && !b.classList.contains('gh'));
-  btns.forEach((b) => { b.style.minHeight = ''; b.style.height = ''; });
-  if (MODE !== 'solo' || SOLO.group == null || $('select').classList.contains('hidden') || !btns.length) return;
+  const list = krSel() ? [...$('krStages').children] : questSel() ? [...$('questStages').children] : [...$('stages').children, ...$('corrStages').children];
+  const btns = list.filter((b) => b.dataset.id && !b.classList.contains('gh'));
+  [...$('stages').children, ...$('corrStages').children, ...$('questStages').children, ...$('krStages').children].forEach((b) => { b.style.minHeight = ''; b.style.height = ''; });
+  if (MODE !== 'solo' || (SOLO.group == null && !krSel() && !questSel()) || $('select').classList.contains('hidden') || !btns.length) return;
   const pr = document.createElement('div'); pr.style.cssText = 'position:fixed;bottom:0;height:0;padding-bottom:env(safe-area-inset-bottom,0px);visibility:hidden'; document.body.appendChild(pr);
   const safe = parseFloat(getComputedStyle(pr).paddingBottom) || 0; pr.remove();
   const sel = $('select'), bottom = sel.getBoundingClientRect().bottom + window.scrollY, line = window.innerHeight - AD_RESERVE - safe;
   const extra = line - bottom;   // 足りなければ縮め、余れば広げる(ボタンの高さは44〜150px)
-  const h = btns[0].getBoundingClientRect().height, nh = Math.max(44, Math.min(150, h + extra / btns.length));
+  const rows = questSel() ? Math.ceil(btns.length / 2) : btns.length;   // 降臨は2列
+  const h = btns[0].getBoundingClientRect().height, nh = Math.max(44, Math.min(rows === 1 ? 260 : 150, h + extra / rows));
   btns.forEach((b) => { b.style.minHeight = b.style.height = nh + 'px'; });
 }
 window.addEventListener('resize', () => { ['hub', 'soloHub', 'groupHub'].forEach((id) => { if (!$(id).classList.contains('hidden')) fitHub($(id)); }); fitStages(); });
@@ -6003,6 +6010,7 @@ async function accInit() {
 function soloFixStage() {
   const adv = FORMAT === 'advance';
   $('questStages').classList.toggle('hidden', !questSel());
+  $('krStages').classList.toggle('hidden', !krSel());
   if (krSel() || questSel()) { $('stages').classList.add('hidden'); $('corrStages').classList.add('hidden'); return; }   // スコアアタックは一覧を出さない
   if (adv !== soloCorr()) SOLO.stage = adv ? 'r1_2' : 'a1';
   $('stages').classList.toggle('hidden', adv);
@@ -6011,14 +6019,15 @@ function soloFixStage() {
 function renderStages() {
   soloFixStage();
   ['stages', 'corrStages'].forEach((id) => $(id).classList.toggle('vlist', SOLO.group != null));   // 陣営・回廊を選んだときは縦の一覧
-  [...$('stages').children, ...$('corrStages').children, ...$('questStages').children].forEach((b) => {
+  ['questStages', 'krStages'].forEach((id) => $(id).classList.add('vlist'));   // スコアアタック・降臨も縦の一覧
+  [...$('stages').children, ...$('corrStages').children, ...$('questStages').children, ...$('krStages').children].forEach((b) => {
     if (b.dataset.cor) b.classList.toggle('gh', SOLO.group != null && +b.dataset.cor !== SOLO.group);   // 回廊の見出し
     if (!b.dataset.id) return;
     { const s0 = STAGES.find((x) => x.id === b.dataset.id); b.classList.toggle('gh', SOLO.group != null && !s0.quest && stageGroup(s0) !== SOLO.group); }   // 回廊の見出し
     // 敵のアイコンも出す(★1・★2は兵士3体を小さく、★3以上はボス)。ゼノは名前が明かされるまでシルエット
     const s = STAGES.find((x) => x.id === b.dataset.id);
-    const boss = `<span class="foes">${stageFoes(s).filter((f) => !f.hiddenUntilActive && (!s.quest || f.boss)).map((f) => iconHtml(f, s.stars >= 3 ? 'md' : 'sm')).join('')}</span>`;   // 降臨はボスだけ
-    const head = s.corridor || (SOLO.group != null && !s.quest && !s.rush) ? '★'.repeat(s.stars) : s.quest ? `降臨 ${'★'.repeat(s.stars)}` : `${s.faction} ${'★'.repeat(s.stars)}`;   // 陣営を選んだあとは★だけ   // 回廊は見出しに名前があるので★だけ
+    const boss = s.kr ? '<span class="foes"></span>' : `<span class="foes">${stageFoes(s).filter((f) => !f.hiddenUntilActive && (!s.quest || f.boss)).map((f) => iconHtml(f, s.stars >= 3 ? 'md' : 'sm')).join('')}</span>`;   // 降臨はボスだけ
+    const head = s.kr ? '刻練場' : s.corridor || s.quest || (SOLO.group != null && !s.rush) ? '★'.repeat(s.stars) : `${s.faction} ${'★'.repeat(s.stars)}`;   // 陣営を選んだあとは★だけ   // 回廊は見出しに名前があるので★だけ
     b.innerHTML = `<b>${head}</b>${boss}${s.name}`;
     b.classList.toggle('chain', !!s.chainFrom);
     b.classList.toggle('picked', b.dataset.id === SOLO.stage);
@@ -6030,8 +6039,7 @@ function renderStages() {
   const shown = foes.filter((f) => !f.hiddenUntilActive || xenoKnown());   // ★5は、倒すまで1体に見せる
   const from = st.chainFrom && STAGES.find((x) => x.id === st.chainFrom);
   $('stageNote').textContent = st.quest
-    ? `降臨「${st.name}」${'★'.repeat(st.stars)} ${questWhen()}。毎日 8:00〜10:00・12:00〜14:00・18:00〜20:00・21:00〜24:00 だけ挑める。1階で門下生3体(顔ぶれは戦うまで分からない)、2階でボスの${st.foes.map((id) => ENEMIES[id]).pop().name}(HPは持ち越し)。パーティは${FORMATS[st.qfmt]}で組む(★4以上の制限なし)。`
-      + `クリアで💠${SHARD_NAME}:初回${st.reward[0]}個、2回目から${st.reward[1]}個。クリアするたび${(st.drop * 100).toFixed(1).replace(/\.0$/, '')}%の確率で${st.foes.map((id) => ENEMIES[id]).pop().name}が使えるようになる(ログインが必要)。`
+    ? `降臨「${st.name}」${'★'.repeat(st.stars)} ${questWhen()}。1階で門下生3体(顔ぶれは戦うまで分からない)、2階でボスの${st.foes.map((id) => ENEMIES[id]).pop().name}。${FORMATS[st.qfmt]}で組む。初回💠${st.reward[0]}個・2回目から${st.reward[1]}個。クリアするたび${(st.drop * 100).toFixed(1).replace(/\.0$/, '')}%の確率で${st.foes.map((id) => ENEMIES[id]).pop().name}が手に入る。`
     : from
     ? `${st.faction} ${'★'.repeat(st.stars)}「${st.name}」 敵:${shown.map(dispName).join('・')}(ボス1体と3対1)。${'★'.repeat(from.stars)}「${from.name}」をクリアした直後だけ、結果画面の「続けて【始】に挑む」から、同じパーティで挑めます(全回復します)。`
     : st.kr
@@ -7496,7 +7504,11 @@ function init() {
   try { SOLO.stage = localStorage.getItem('kokusen.stage') || 'a1'; SOLO.cleared = readCleared(GUEST_KEY); SOLO.rush = Number(localStorage.getItem('kokusen.rush')) || 0; } catch (e) { /* 保存できなくても動く */ }
   if (!STAGES.some((x) => x.id === SOLO.stage)) SOLO.stage = 'a1';
   STAGES.forEach((st) => {
-    if (st.kr) return;   // 刻練場は「スコアアタック」のボタンから選ぶ
+    if (st.kr) {   // 刻練場は「スコアアタック」を選んだときの一覧に、1つだけ
+      const b = document.createElement('button'); b.dataset.id = st.id; b.classList.add('s0');
+      b.onclick = () => { SOLO.stage = st.id; renderStages(); };
+      $('krStages').appendChild(b); return;
+    }
     // 刻の回廊は、回廊ごとに見出しを付けて別の欄に並べる
     if (st.corridor && st.stars === 2) { const h = document.createElement('p'); h.className = 'corr-h'; h.dataset.cor = st.corridor; h.textContent = CORRIDORS[st.corridor]; $('corrStages').appendChild(h); }
     const b = document.createElement('button');
