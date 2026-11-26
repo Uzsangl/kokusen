@@ -888,6 +888,16 @@
   #sheet .sheethead h2, #accModal .sheethead h2 { flex: 1; min-width: 0; margin: 0; }
   #sheet .sheetx, #accModal .sheetx { flex: none; width: 36px; height: 36px; min-height: 0; padding: 0; border-radius: 50%; font-size: 1rem; line-height: 1; color: #f0c040; border: 2px solid transparent;
     background: radial-gradient(circle at 50% 35%, #2a3060, #151935) padding-box, var(--goldGrad) border-box; }
+
+  /* CPU戦・対人のメニューとキャラ選択の中のボタンも、金の縁にそろえる(選んでいるものは濃い金) */
+  #select .levels button, #select .roomrow button, #select #mysetBtn { white-space: nowrap; border: 2px solid transparent; background: linear-gradient(180deg, #1d2246, #141833) padding-box, var(--goldThin) border-box; box-shadow: 0 2px 6px rgba(0,0,0,.45); }
+  #select .levels button.picked { background: linear-gradient(180deg, #2a2f5c, #1a1e40) padding-box, var(--goldGrad) border-box; box-shadow: 0 0 12px rgba(240,192,64,.3), 0 2px 6px rgba(0,0,0,.45); color: #fff3cf; }
+  #select .levels button:disabled { opacity: .45; }
+  #select .levels button:active:not(:disabled), #select .roomrow button:active:not(:disabled) { transform: translateY(2px); }
+  #select .btn-next, #select #start { border: 2px solid transparent; background: linear-gradient(180deg, #262b55, #171b3a) padding-box, var(--goldGrad) border-box; box-shadow: 0 4px 10px rgba(0,0,0,.5); }
+  #select #roomCode { border: 2px solid transparent; background: linear-gradient(180deg, #0b0d1e, #12152c) padding-box, var(--goldThin) border-box; box-shadow: inset 0 3px 8px rgba(0,0,0,.6); }
+  #select .selL h2:not(.hidden) { display: flex; align-items: center; gap: 10px; color: #f0c040; font-size: .92rem; letter-spacing: .08em; }
+  #select .selL h2::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, rgba(240,192,64,.6), transparent); }
 </style>
 </head>
 <body>
