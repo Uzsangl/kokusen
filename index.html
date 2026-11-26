@@ -484,7 +484,7 @@
   #title { position: relative; display: flex; flex-direction: column; }
   #title.hidden { display: none; }
   /* プレイを押したあとの画面:アカウント・ソロ・対人・ガチャの大きなボタンと、下に小さなボタン4つ */
-  #hub.hidden { display: none; }
+  #hub.hidden, #soloHub.hidden { display: none; }
   .hubtop { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
   .hubacc { width: 100%; display: flex; align-items: center; gap: 10px; text-align: left; padding: 12px 14px; border-radius: 16px; margin-bottom: 14px; }
   .hubacc .cico { flex: none; }
@@ -803,6 +803,17 @@
       <button id="hubChars"><b>🃏</b>キャラ一覧</button>
       <button id="hubRule"><b>📖</b>ルール<br>ブック</button>
       <button id="hubDaily"><b>📅</b>デイリー</button>
+    </div>
+  </section>
+
+  <section id="soloHub" class="panel hidden">
+    <div class="hubtop"><button id="soloBack" class="back">◀ もどる</button></div>
+    <button class="hubacc" id="soloAcc"></button>
+    <div class="hubbig">
+      <button data-sf="basic">ベーシック<small>錨・零・矢のステージ(ガチャキャラ以外)</small></button>
+      <button data-sf="advance">アドバンス<small>刻の回廊(持っているガチャキャラも使える)</small></button>
+      <button data-sf="kr">スコアアタック<small>刻練場で何体倒せるか</small></button>
+      <button data-sf="quest">降臨<small>期間限定のボス・キャラが手に入る</small></button>
     </div>
   </section>
 
@@ -5584,7 +5595,7 @@ async function accLoadRanking() {
 function showTitle(on) {
   Bgm.play(on ? 'title' : 'menu');
   $('title').classList.toggle('hidden', !on);
-  $('select').classList.add('hidden');
+  $('select').classList.add('hidden'); $('soloHub').classList.add('hidden');
   $('hub').classList.toggle('hidden', on);
   document.body.classList.toggle('on-title', on);
   window.scrollTo(0, 0);
@@ -5592,7 +5603,25 @@ function showTitle(on) {
 }
 // プレイを押したあとの画面(ハブ)。ソロ・対人・CPU戦を選ぶと、いつものメニューへ
 function renderHub() {
-  const p = ACC.profile, el = $('hubAcc');
+  hubAccHtml($('hubAcc'));
+}
+// ソロの入り口:ベーシック・アドバンス・スコアアタック・降臨
+function showSoloHub() {
+  $('hub').classList.add('hidden'); $('select').classList.add('hidden'); $('soloHub').classList.remove('hidden');
+  window.scrollTo(0, 0);
+  hubAccHtml($('soloAcc'));
+}
+function openSolo(f) {
+  if (f === 'kr') SOLO.stage = 'kr';
+  else if (f === 'quest') { if (!questSel()) SOLO.stage = 'qe3'; }
+  else { FORMAT = f; try { localStorage.setItem('kokusen.format', FORMAT); } catch (e) { /* 保存できなくても動く */ } if (krSel() || questSel() || (f === 'advance') !== soloCorr()) SOLO.stage = f === 'advance' ? 'r1_2' : 'a1'; }
+  try { localStorage.setItem('kokusen.stage', SOLO.stage); } catch (e) { /* 保存できなくても動く */ }
+  $('soloHub').classList.add('hidden');
+  openMode('solo');
+  renderStages();
+}
+function hubAccHtml(el) {
+  const p = ACC.profile;
   if (!p) el.innerHTML = `<span style="font-size:28px">👤</span><div><div class="nm">ゲスト</div><div class="meta">ログインすると、記録やカケラを保存できます</div></div>`;
   else { const fav = favChar(p); el.innerHTML = `${fav ? iconHtml(fav, 'lg') : '<span style="font-size:28px">👤</span>'}<div><div class="nm">${titleTag(p.title)}${escHtml(p.name)}</div><div><span class="rate">レート${p.rating}</span> <span class="meta">(${p.wins}勝${p.losses}敗) 💠${shardCount()}</span></div></div>`; }
 }
@@ -5605,6 +5634,8 @@ function openMode(m) {
   renderMode(); setStep('menu');
 }
 function backToHub() {
+  if (MODE === 'solo' && !$('select').classList.contains('hidden')) { showSoloHub(); return; }   // ソロのメニューからは、ソロの入り口へ
+  $('soloHub').classList.add('hidden');
   if (PVP.spec) specStop(); else if (PVP.on && PVP.phase !== 'idle') pvpLeave();
   rankCancel(); rndCancel();
   $('select').classList.add('hidden'); $('hub').classList.remove('hidden');
@@ -7146,6 +7177,8 @@ function renderFormats() {
   $('formats').style.gridTemplateColumns = solo ? '1fr 1fr 1fr 1fr' : '1fr 1fr';
   [...$('formats').children].forEach((b) => {
     b.classList.toggle('hidden', (b.dataset.f === 'kr' || b.dataset.f === 'quest') && !solo);
+    $('formats').classList.toggle('hidden', solo);   // ソロはソロの入り口で選ぶ
+    $('formatNote').classList.toggle('hidden', solo);
     b.classList.toggle('picked', solo && krSel() ? b.dataset.f === 'kr' : solo && questSel() ? b.dataset.f === 'quest' : b.dataset.f === fmtNow());
     b.disabled = PVP.on && PVP.phase !== 'idle';
   });
@@ -7157,7 +7190,7 @@ function renderSelHead() {
   $('pickInfo').textContent = pickInfoText();
   $('toMenu').textContent = MODE === 'pvp' ? '◀ 部屋を出る' : '◀ 戻る';
   $('toPick').disabled = !canPick();
-  $('toPick').textContent = MODE === 'pvp' && !canPick() ? (PVP.phase === 'idle' ? (PVP.kind === 'rated' && ACC.profile ? '「相手を探す」で相手を見つけてください' : '合言葉で部屋に入ってください') : '相手を待っています…') : MODE === 'solo' && !canPick() ? (corrOpen(STAGES.find((x) => x.id === SOLO.stage)) ? 'このステージは直接挑めません' : 'ひとつ前の段をクリアすると挑めます') : 'キャラを選ぶ ▶';
+  $('toPick').textContent = MODE === 'pvp' && !canPick() ? (PVP.phase === 'idle' ? (PVP.kind === 'rated' && ACC.profile ? '「相手を探す」で相手を見つけてください' : '合言葉で部屋に入ってください') : '相手を待っています…') : MODE === 'solo' && !canPick() ? (questSel() && !questOpen() ? `時間外(${questWhen()})` : corrOpen(STAGES.find((x) => x.id === SOLO.stage)) ? 'このステージは直接挑めません' : 'ひとつ前の段をクリアすると挑めます') : 'キャラを選ぶ ▶';
 }
 function renderSelect() {
   if (!$('select').dataset.step) $('select').dataset.step = selStep;
@@ -7421,7 +7454,10 @@ function init() {
   $('toTitle').onclick = () => backToHub();
   $('hubBack').onclick = () => showTitle(true);
   $('hubAcc').onclick = () => accOpen();
-  $('hubSolo').onclick = () => { Sound.click(); openMode('solo'); };
+  $('hubSolo').onclick = () => { Sound.click(); showSoloHub(); };
+  $('soloBack').onclick = () => { $('soloHub').classList.add('hidden'); $('hub').classList.remove('hidden'); window.scrollTo(0, 0); renderHub(); };
+  $('soloAcc').onclick = () => accOpen();
+  document.querySelectorAll('#soloHub [data-sf]').forEach((b) => { b.onclick = () => { Sound.click(); openSolo(b.dataset.sf); }; });
   $('hubPvp').onclick = () => { Sound.click(); openMode('pvp'); };
   $('hubCpu').onclick = () => { Sound.click(); openMode('cpu'); };
   $('hubGacha').onclick = () => openGacha();
