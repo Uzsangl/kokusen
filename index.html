@@ -43,6 +43,11 @@
     font-family: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
     line-height: 1.5; overflow-x: hidden;
   }
+  /* 固定の背景(時計塔の歯車)。スクロールしても動かない。上に乗るUIが読めるよう暗く重ねる */
+  body::before { content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background: linear-gradient(180deg, rgba(8, 10, 26, .55), rgba(8, 10, 26, .35) 40%, rgba(8, 10, 26, .6)), url(bg/tower.webp) center / cover no-repeat, var(--bg); }
+  body.in-battle::before { background: linear-gradient(rgba(8, 10, 26, .82), rgba(8, 10, 26, .82)), url(bg/tower.webp) center / cover no-repeat, var(--bg); }
+  #hub, #soloHub, #groupHub, #select { background: linear-gradient(180deg, rgba(24, 29, 58, .5), rgba(18, 22, 46, .62)); -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); }   /* メニューのパネルは少し透かして背景を見せる */
   main { max-width: 640px; margin: 0 auto; }
   header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
   #optBgm, #optSound { display: none !important; }   /* 右上の曲・音の切り替えは出さない(設定から変えられる) */
