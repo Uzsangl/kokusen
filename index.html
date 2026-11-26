@@ -45,6 +45,7 @@
   }
   main { max-width: 640px; margin: 0 auto; }
   header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  #optBgm, #optSound { display: none !important; }   /* 右上の曲・音の切り替えは出さない(設定から変えられる) */
   body.in-battle #optBgm, body.in-battle #optSound { display: none; }   /* 曲と音の切り替えは、対戦画面では出さない(設定から変えられる) */
   h1 {
     font-size: 1.6rem; margin: 0; letter-spacing: .2em; font-weight: 900;
@@ -2761,7 +2762,7 @@ let SILENCED = false;  // ほかのタブで開き直したため、このタブ
 let frozen = false;    // BREAKで時間が止まっている間
 
 // ----- 設定(音・演出の長さ) -----
-const FX = { pattern: 'normal', sakibare: true, traitCut: true, speed: 1, sound: true, short: false, level: 2, bgm: true, bgmVol: 1, seVol: 1, battleBgm: 'main' };
+const FX = { pattern: 'normal', sakibare: true, traitCut: false, speed: 1, sound: true, short: false, level: 2, bgm: true, bgmVol: 1, seVol: 1, battleBgm: 'main' };
 const REDUCE = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 function loadOpt(key, def) {
   try { const v = localStorage.getItem(key); return v === null ? def : v === '1'; } catch (e) { return def; }
@@ -3938,7 +3939,7 @@ const TRAIT_EVERY = {
   swapStats: () => '相手のATKとDFSが入れ替わった',
 };
 async function traitShow(c, key) {
-  if (!c || TRAIT_FX_SKIP.has(key) || !FX.traitCut) return;   // 設定で切れる(効果はログで分かる)
+  if (!c || TRAIT_FX_SKIP.has(key) || !FX.traitCut) return;   // 特性のカットインはなくした(traitCut は常に false。効果はログで分かる)
   const t = traitOf(c, key);
   if (!t || !t.name) return;
   const every = TRAIT_EVERY[key];
@@ -5592,11 +5593,9 @@ function openSettings() {
     <div class="srow"><div>効果音の音量</div><input type="range" id="sSeVol" min="0" max="100" value="${Math.round(FX.seVol * 100)}" aria-label="効果音の音量"></div>
     <div class="srow"><div>演出パターン<small>${FX_PATTERNS[FX.pattern].note}</small></div><div class="seg seg4">${Object.entries(FX_PATTERNS).map(([k, v]) => `<button data-pt="${k}" class="${FX.pattern === k ? 'on' : ''}">${v.name}</button>`).join('')}</div></div>
     <div class="srow"><div>先バレ<small>手を出した瞬間に赤く光ったら、じゃんけん勝ち確定</small></div>${sw('sSaki', FX.sakibare)}</div>
-    <div class="srow"><div>特性のカットイン<small>特性が効いたときに、特性の名前を大きく出す(タップで閉じる)</small></div>${sw('sTrait', FX.traitCut)}</div>
     <div class="srow" style="border:0"><div>クレジット</div><button id="sCredit">見る</button></div>`);
   document.querySelectorAll('#sheetBody [data-pt]').forEach((b) => { b.onclick = () => { FX.pattern = b.dataset.pt; try { localStorage.setItem('kokusen.pattern', FX.pattern); } catch (e) { /* 保存できなくても動く */ } openSettings(); }; });
   $('sSaki').onclick = () => { FX.sakibare = !FX.sakibare; saveOpt('kokusen.sakibare', FX.sakibare); openSettings(); };
-  $('sTrait').onclick = () => { FX.traitCut = !FX.traitCut; saveOpt('kokusen.traitCut', FX.traitCut); openSettings(); };
   $('sBgm').onclick = () => { FX.bgm = !FX.bgm; saveOpt('kokusen.bgm', FX.bgm); applyOpts(); openSettings(); };
   $('sSe').onclick = () => { FX.sound = !FX.sound; saveOpt('kokusen.sound', FX.sound); applyOpts(); if (FX.sound) { Sound.wake(); Sound.click(); } openSettings(); };
   $('sBattleBgm').onchange = (e) => { FX.battleBgm = BATTLE_BGM_CHOICES.some(([k]) => k === e.target.value) && bgmOpen(e.target.value) ? e.target.value : 'main'; try { localStorage.setItem('kokusen.battleBgm', FX.battleBgm); } catch (err) { /* 保存できなくても動く */ } };
@@ -7463,7 +7462,6 @@ function init() {
   FX.short = false;   // 演出の短縮は設定から外した(前に短縮にしていた人も、フルに戻す)
   try { const v = localStorage.getItem('kokusen.battleBgm'); if (BATTLE_BGM_CHOICES.some(([k]) => k === v)) FX.battleBgm = v; } catch (e) { /* 読めなければいつもの曲 */ }
   FX.sakibare = loadOpt('kokusen.sakibare', true);
-  FX.traitCut = loadOpt('kokusen.traitCut', true);
   try { const pt = localStorage.getItem('kokusen.pattern'); FX.pattern = FX_PATTERNS[pt] ? pt : 'normal'; } catch (e) { FX.pattern = 'normal'; }
   FX.bgm = loadOpt('kokusen.bgm', true);
   $('optBgm').onclick = () => { FX.bgm = !FX.bgm; saveOpt('kokusen.bgm', FX.bgm); applyOpts(); };
