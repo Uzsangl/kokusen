@@ -678,12 +678,14 @@
   #battle .foot #chain { color: #ff2a3d; border-color: #ff2a3d; font-weight: 700; box-shadow: 0 0 14px #ff2a3d66; }
   .seltop { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
   /* いまの画面の名前のバナー(左の端から出る帯) */
-  #pageBanner { position: relative; margin: 0 0 12px calc(-1 * var(--pbx, 14px)); width: 72%; height: 40px; display: flex; align-items: center; padding: 0 0 0 calc(var(--pbx, 14px) + 6px);
+  #pageBanner { position: relative; margin: 0 0 12px calc(-1 * var(--pbx, 14px)); width: max-content; min-width: 60%; max-width: calc(100% + var(--pbx, 14px)); height: 40px; display: flex; align-items: center; padding: 0 44px 0 calc(var(--pbx, 14px) + 6px);
     background: linear-gradient(180deg, #3a3418 0%, #6b5a22 45%, #4a3f18 100%); border: 2px solid #f0c040; border-left: none; border-radius: 0 22px 22px 0;
     box-shadow: 0 3px 8px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,240,180,.35); }
   #hub #pageBanner { display: none; }   /* 最初のメニューは出さない(下の小さいボタンまで広告の線に収めるため) */
   #pageBanner::after { content: '◆'; position: absolute; right: 14px; color: #f0c040; font-size: .8rem; opacity: .85; }
-  #pageBanner span { font-size: 1.25rem; font-weight: 900; letter-spacing: .18em; color: #fff6dc; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px #000; white-space: nowrap; }
+  #pageBanner span i { font-style: normal; font-size: .9rem; letter-spacing: .08em; color: #e8d9a8; }
+  #pageBanner span em { font-style: normal; font-size: .9rem; margin: 0 .35em 0 .2em; color: #f0c040; letter-spacing: 0; }
+  #pageBanner span { font-size: 1.25rem; font-weight: 900; letter-spacing: .12em; color: #fff6dc; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px #000; white-space: nowrap; }
   .seltop > span { flex: 1; }
   .seltop .back { margin-bottom: 0; }
   .back { padding: 5px 12px; border-radius: 16px; font-size: .8rem; margin-bottom: 10px; }
@@ -5678,7 +5680,8 @@ function mountTop(panel) {
   if (!bn) { bn = document.createElement('div'); bn.id = 'pageBanner'; bn.innerHTML = '<span></span>'; }
   into.prepend(bn); into.prepend(acct); into.prepend(top);
   bn.style.setProperty('--pbx', getComputedStyle(panel).paddingLeft);
-  bn.firstChild.textContent = pageTitle(panel);
+  const t = [].concat(pageTitle(panel));   // [ひとつ前, いま] か [いま]
+  bn.firstChild.innerHTML = t.length > 1 ? `<i>${escHtml(t[0])}</i><em>-</em>${escHtml(t[1])}` : escHtml(t[0]);
   $('toTitle').textContent = panel.id === 'hub' ? '◀ タイトルへ' : '◀ もどる';
   renderAcct();
   fitHub(panel);
@@ -5687,14 +5690,15 @@ function mountTop(panel) {
 function pageTitle(panel) {
   if (panel.id === 'hub') return 'メニュー';
   if (panel.id === 'soloHub') return 'ソロ';
-  if (panel.id === 'groupHub') return { basic: 'ベーシック', advance: 'アドバンス', quest: '降臨' }[groupFmt] || 'ソロ';
+  const FMT = { basic: 'ベーシック', advance: 'アドバンス', quest: '降臨' };
+  if (panel.id === 'groupHub') return ['ソロ', FMT[groupFmt] || 'ソロ'];
   if (MODE === 'pvp') return '対人';
   if (MODE === 'cpu') return 'CPU戦';
-  if (krSel()) return 'スコアアタック';
+  if (krSel()) return ['ソロ', 'スコアアタック'];
   const g = SOLO.group;
   if (g == null) return 'ソロ';
-  if (questSel()) return g === 'rizu' ? 'リズ降臨' : 'エモ降臨';
-  return typeof g === 'number' ? CORRIDORS[g] : g;
+  if (questSel()) return ['降臨', g === 'rizu' ? 'リズ降臨' : 'エモ降臨'];
+  return typeof g === 'number' ? ['アドバンス', CORRIDORS[g]] : ['ベーシック', g];
 }
 // ソロの入り口:ベーシック・アドバンス・スコアアタック・降臨
 function showSoloHub() {
