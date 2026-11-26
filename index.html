@@ -50,7 +50,8 @@
   #hub, #soloHub, #groupHub, #select { background: linear-gradient(180deg, rgba(24, 29, 58, .5), rgba(18, 22, 46, .62)); }   /* メニューのパネルは少し透かして背景を見せる */
   main { max-width: 640px; margin: 0 auto; }
   header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-  #optBgm, #optSound { display: none !important; }   /* 右上の曲・音の切り替えは出さない(設定から変えられる) */
+  #optBgm, #optSound { display: none !important; }
+  #title .tsub { display: none !important; }   /* タイトルのルールブック・称号一覧・デイリー・ガチャは出さない(プレイのあとのメニューにある) */   /* 右上の曲・音の切り替えは出さない(設定から変えられる) */
   body.in-battle #optBgm, body.in-battle #optSound { display: none; }   /* 曲と音の切り替えは、対戦画面では出さない(設定から変えられる) */
   h1 {
     font-size: 1.6rem; margin: 0; letter-spacing: .2em; font-weight: 900;
