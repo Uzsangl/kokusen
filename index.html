@@ -1761,7 +1761,7 @@ const STAGES = [
   { id: 'k4', faction: '錨', stars: 4, name: '激戦の余波', foes: ['b_kaji'], level: 4, read: 0.35, hp: 1.0, atk: 1.0, bgm: 'toki' },
   { id: 'x5', faction: '始', stars: 5, name: '始まりの前', foes: ['xeno_body', 'xeno_spirit'], level: 4, read: 1.0, hp: 1.0, atk: 1.0, bgm: 'xeno' },
   // ★★★★★「始まり」:★★★★「激戦の余波」をクリアした直後だけ挑める(chainFrom)
-  { id: 'k5', faction: '錨', stars: 5, name: '始まり', foes: ['b_kaji_shi'], level: 4, read: 0.6, hp: 1.0, atk: 1.0, bgm: 'xeno', chainFrom: 'k4' },
+  { id: 'k5', faction: '錨', stars: 5, name: '始まり', foes: ['b_kaji_shi'], level: 4, read: 1.0, hp: 1.0, atk: 1.0, bgm: 'xeno', chainFrom: 'k4' },
   // ボスラッシュ:★★★の3体 → ★★★★ → ★★★★★ を続けて戦う。ボスを1体倒すごとに、こちらは全回復する。
   // rushHp は、ゼノ以外のボスのHPの倍率。「むずかしい」で5連勝できる率が約0.01%になるように決めた
   { id: 'kr', faction: '刻練', stars: 0, name: '百刻スコアアタック', kr: true, bgm: 'kosen', level: 3, read: 0.2, hp: 1.0, atk: 1.0 },
@@ -1775,15 +1775,15 @@ const STAGES = [
   { id: 'r2_2', corridor: 2, faction: '鏡', stars: 2, name: '欠けた映し身',   foes: ['c2_2a', 'c2_2b', 'c2_2c'], level: 3, hp: 1, atk: 1 },
   { id: 'r2_3', corridor: 2, faction: '鏡', stars: 3, name: '合わせ鏡の間',   foes: ['c3_ai'], level: 4, read: 0.35, hp: 1, atk: 1 },
   { id: 'r2_4', corridor: 2, faction: '鏡', stars: 4, name: '鏡の奥',         foes: ['c4_kagami'], level: 4, read: 0.35, hp: 1, atk: 1, bgm: 'cirque', reward: [200, 20] },
-  { id: 'r2_5', corridor: 2, faction: '鏡', stars: 5, name: '仮面の向こう',   foes: ['c5_mask'], level: 4, read: 0.5, hp: 1, atk: 1, bgm: 'xeno', climaxOk: true, reward: [1000, 40] },
+  { id: 'r2_5', corridor: 2, faction: '鏡', stars: 5, name: '仮面の向こう',   foes: ['c5_mask'], level: 4, read: 1.0, hp: 1, atk: 1, bgm: 'xeno', climaxOk: true, reward: [1000, 40] },
   { id: 'r3_2', corridor: 3, faction: '流星', stars: 2, name: '星屑の通り道', foes: ['c2_3a', 'c2_3b', 'c2_3c'], level: 3, hp: 1, atk: 1 },
   { id: 'r3_3', corridor: 3, faction: '流星', stars: 3, name: '止まらぬ連射', foes: ['c3_ebira'], level: 4, read: 0.6, hp: 1, atk: 1 },
   { id: 'r3_4', corridor: 3, faction: '流星', stars: 4, name: '流れ星の尾',   foes: ['c4_nagare'], level: 4, read: 0.35, hp: 1, atk: 1, bgm: 'cirque', reward: [200, 20] },
-  { id: 'r3_5', corridor: 3, faction: '流星', stars: 5, name: '燃え尽きる星', foes: ['c5_nagare'], level: 4, read: 0.5, hp: 1, atk: 1, bgm: 'xeno', climaxOk: true, reward: [1000, 40] },
+  { id: 'r3_5', corridor: 3, faction: '流星', stars: 5, name: '燃え尽きる星', foes: ['c5_nagare'], level: 4, read: 1.0, hp: 1, atk: 1, bgm: 'xeno', climaxOk: true, reward: [1000, 40] },
   { id: 'r4_2', corridor: 4, faction: '灯と天眼', stars: 2, name: '灯を待つ者',   foes: ['c2_4a', 'c2_4b', 'c2_4c'], level: 3, hp: 1, atk: 1 },
   { id: 'r4_3', corridor: 4, faction: '灯と天眼', stars: 3, name: '満ち潮の番人', foes: ['c3_iso'], level: 4, read: 0.35, hp: 1, atk: 1 },
   { id: 'r4_4', corridor: 4, faction: '灯と天眼', stars: 4, name: '消えぬ灯',     foes: ['c4_tomoshi'], level: 4, read: 0.35, hp: 1, atk: 1, bgm: 'cirque', reward: [200, 20] },
-  { id: 'r4_5', corridor: 4, faction: '灯と天眼', stars: 5, name: '天眼の果て',   foes: ['c5_tsuru1', 'c5_tsuru'], level: 4, read: 0.6, hp: 1, atk: 1, bgm: 'xeno', bgm2: 'majo', climaxOk: true, reward: [1000, 40] },
+  { id: 'r4_5', corridor: 4, faction: '灯と天眼', stars: 5, name: '天眼の果て',   foes: ['c5_tsuru1', 'c5_tsuru'], level: 4, read: 1.0, hp: 1, atk: 1, bgm: 'xeno', bgm2: 'majo', climaxOk: true, reward: [1000, 40] },
   // 降臨クエスト:毎日 8:00〜10:00・12:00〜14:00・18:00〜20:00・21:00〜24:00 だけ挑める。1階で門下生3体、2階でボス(HPは持ち越し)。
   // エモ降臨はアドバンス、リズ降臨はベーシックで組む(★4以上の制限なし)。クリアの抽選でボスのキャラが解放される(サーバーが抽選)
   { id: 'qe3', quest: 'emo',  qfmt: 'advance', faction: '矢', stars: 3, name: 'エモ降臨', foes: ['y_runner', 'y_archer', 'qz_justice', 'qb_emo'], level: 4, read: 0.35, hp: 0.46, atk: 1.0, justice: [[0.55, 'Jzz'], [0.45, 'JzJ']], over: { qz_justice: { hp: 10000, atk: 2300, dfs: 2000 }, qb_emo: { hp: 20000, atk: 2800, dfs: 1500 } }, bossBgm: 'cirque', reward: [100, 10], drop: 0.002 },
@@ -2805,8 +2805,61 @@ const PERSONA_OF = {
 };
 // カジ【始】は残りHPで性格が変わる(激昂 → 天眼 → 捕食)。性格は裏の数値なので画面には出さない
 const personaOf = (c) => (c.ch.id === 'b_kaji_shi' ? (c.hp > c.max * 0.67 ? 'rage' : c.hp > c.max * 0.34 ? 'sight' : 'prey') : PERSONA_OF[c.ch.id] || 'guard');
-const PERSONA_CAP = { guard: 0.7, rewind: 1, sight: 1.3, prey: 1, rage: 1, abyss: 1.3, none: 1 };   // 読みに賭ける上限の倍率
+const PERSONA_CAP = { guard: 0.7, rewind: 1, sight: 1.3, prey: 1, rage: 1, abyss: 1.3, bias: 1, hunt: 1, bait: 1, none: 1 };   // 読みに賭ける上限の倍率
 const lowHp = (c) => c.hp <= c.max / 2;
+
+// ===== ★5のボス:プレイヤーの法則を見て、性格を切り替える =====
+// ボスがじゃんけんに3〜5回(毎回くじ)負けるたびに、プレイヤーのそれまでの手を5つの法則で採点し、
+// 一番当てはまった法則に合わせて、そのボスの3つの性格のどれかに切り替える。
+//   chain 同じ手の連打 / winStay 勝ったら同じ手 / skew 好きな手に偏る / pinch ピンチで守り / lure 偏りを作って誘導
+// 性格:prey 捕食 / rewind 巻戻 / sight 天眼 / rage 激昂 / bias 偏り読み / hunt 狩り(ピンチの守りを突く) / bait 撒き餌(一番出す手に負ける手を6割)
+const ADAPT = {
+  qb_emo:       { kinds: ['prey', 'bias', 'bait'],   map: { chain: 'prey', winStay: 'prey', skew: 'bias', pinch: 'bias', lure: 'bait' } },
+  qb_rizu:      { kinds: ['sight', 'rewind', 'bias'], map: { chain: 'sight', winStay: 'rewind', skew: 'bias', pinch: 'rewind', lure: 'sight' } },
+  xeno_body:    { kinds: ['prey', 'hunt', 'bait'],   map: { chain: 'prey', winStay: 'prey', skew: 'bait', pinch: 'hunt', lure: 'bait' } },
+  xeno_spirit:  { kinds: ['sight', 'prey', 'bait'],  map: { chain: 'prey', winStay: 'sight', skew: 'sight', pinch: 'prey', lure: 'bait' } },
+  b_kaji_shi:   { kinds: ['rage', 'sight', 'prey'],  map: { chain: 'prey', winStay: 'prey', skew: 'sight', pinch: 'rage', lure: 'sight' } },
+  c5_xeno_body: { kinds: ['prey', 'hunt', 'bait'],   map: { chain: 'prey', winStay: 'prey', skew: 'bait', pinch: 'hunt', lure: 'bait' } },
+  c5_xeno_spirit: { kinds: ['sight', 'prey', 'bait'], map: { chain: 'prey', winStay: 'sight', skew: 'sight', pinch: 'prey', lure: 'bait' } },
+  c5_mask:      { kinds: ['rewind', 'bias', 'bait'], map: { chain: 'bias', winStay: 'rewind', skew: 'bias', pinch: 'rewind', lure: 'bait' } },
+  c5_nagare:    { kinds: ['rage', 'prey', 'hunt'],   map: { chain: 'prey', winStay: 'prey', skew: 'rage', pinch: 'hunt', lure: 'rage' } },
+  c5_tsuru1:    { kinds: ['sight', 'bias', 'bait'],  map: { chain: 'sight', winStay: 'sight', skew: 'bias', pinch: 'bias', lure: 'bait' } },
+  c5_tsuru:     { kinds: ['sight', 'bias', 'bait'],  map: { chain: 'sight', winStay: 'sight', skew: 'bias', pinch: 'bias', lure: 'bait' } },
+};
+const guardHand = (c, h) => { const a = c && c.actions[h]; return !!a && !!(a.heal || a.dfsUp || a.nextDfsUp || (a.team && a.team.stat === 'dfs')); };
+// プレイヤー(side の相手)の手を5つの法則で採点する。当てはまる場面が3回未満の法則は採点しない
+function lawScores(S, side) {
+  const foe = 1 - side, H = S.hist, out = {}, A = S.adapt;
+  const rate = (hit, n, base) => (n >= 3 ? hit / n - base : null);
+  let n = 0, hit = 0, ln = 0, lhit = 0;
+  for (let i = 2; i < H.length; i++) if (H[i - 2][foe] === H[i - 1][foe]) { n++; ln++; if (H[i][foe] === H[i - 1][foe]) hit++; if (H[i][foe] === HANDS[H[i - 1][foe]].beats) lhit++; }
+  out.chain = rate(hit, n, 1 / 3); out.lure = rate(lhit, ln, 1 / 3);
+  n = 0; hit = 0;
+  for (let i = 1; i < H.length; i++) if (judge(H[i - 1][foe], H[i - 1][side]) > 0) { n++; if (H[i][foe] === H[i - 1][foe]) hit++; }
+  out.winStay = rate(hit, n, 1 / 3);
+  const recent = H.slice(-15).map((p) => p[foe]);
+  if (recent.length >= 6) out.skew = Math.max(...HAND_KEYS.map((h) => recent.filter((x) => x === h).length / recent.length)) - 1 / 3;
+  n = 0; hit = 0; let base = 0;
+  (A.low || []).forEach((g, i) => { if (g && H[i]) { n++; base += g.length / 3; if (g.includes(H[i][foe])) hit++; } });
+  out.pinch = n >= 3 ? hit / n - base / n : null;
+  return out;
+}
+// 毎手の前に呼ぶ:負けを数え、くじで決めた回数に届いたら性格を選び直す
+function adaptKind(S, side, me) {
+  const tbl = ADAPT[me.ch.id];
+  if (!tbl || !S.stage || S.stage.stars !== 5) return null;
+  const A = S.adapt || (S.adapt = { seen: 0, lost: 0, next: 3 + Math.floor(Math.random() * 3), kind: null, low: [] });
+  const foe = active(S.teams[1 - side]);
+  for (; A.seen < S.hist.length; A.seen++) if (judge(S.hist[A.seen][side], S.hist[A.seen][1 - side]) < 0) A.lost++;
+  A.low[S.hist.length] = foe && lowHp(foe) ? HAND_KEYS.filter((h) => guardHand(foe, h)) : null;   // このラリーの前に、相手がピンチで守りの技を持っていたか
+  if (A.lost >= A.next) {
+    A.lost = 0; A.next = 3 + Math.floor(Math.random() * 3);
+    const sc = lawScores(S, side);
+    const best = Object.keys(sc).filter((k) => sc[k] != null && sc[k] > 0.08).sort((a, b) => sc[b] - sc[a])[0];
+    if (best) A.kind = tbl.map[best];
+  }
+  return A.kind;
+}
 
 // 相手の直前2手の並びから、次の手を読む(天眼)。end は履歴のどこまでを使うか(1手前の自分の読みを確かめるのに使う)
 function seqRead(S, side, end = S.hist.length) {
@@ -2853,6 +2906,15 @@ function personaRead(S, side, kind) {
     if (missed && kind === 'prey') r.calm = true;
     else if (t) { const q = {}; HAND_KEYS.forEach((h) => { q[h] = h === t ? 0.7 : 0.15; }); r.q = q; r.power = 0.85; r.peak = true; r.calm = false; }
   }
+  if (kind === 'bias') {   // 偏り読み:直近15手で一番多い手に勝つ
+    const rec = H.slice(-15).map((p) => p[foe]);
+    if (rec.length >= 6) { const q = {}; HAND_KEYS.forEach((h) => { q[h] = (rec.filter((x) => x === h).length + 0.5) / (rec.length + 1.5); }); const dev = Math.max(...HAND_KEYS.map((h) => q[h])) - 1 / 3; r.q = q; r.power = Math.min(1, dev / 0.25); r.peak = r.power > 0.5; }
+  }
+  if (kind === 'hunt') {   // 狩り:相手がピンチなら、回復・守りの技を出してくると読む
+    const fc = active(S.teams[foe]);
+    if (fc && lowHp(fc)) { const g = HAND_KEYS.filter((h) => guardHand(fc, h)); if (g.length && g.length < 3) { const q = {}; HAND_KEYS.forEach((h) => { q[h] = g.includes(h) ? 0.75 / g.length : 0.25 / (3 - g.length); }); r.q = q; r.power = 0.8; r.peak = true; } }
+    else r.calm = true;
+  }
   if (kind === 'rage' && !lowHp(me)) r.calm = true;   // 本気になるまでは、読まずに打つ
   if ((kind === 'rage' || kind === 'guard') && lowHp(me)) r.peak = true;
   return r;
@@ -2879,7 +2941,7 @@ function personaHabit(S, side, kind, mix) {
 // CPUの手と、そのときのセリフ。side はCPUの側、level は難易度
 function aiHand(S, side, level) {
   const M = payoffMatrix(S, side), me = active(S.teams[side]);
-  const kind = side === 1 ? personaOf(me) : 'none';   // 性格はCPUの側だけ(シミュレーターでプレイヤー役に使うときは性格なし)
+  const kind = side === 1 ? (adaptKind(S, side, me) || personaOf(me)) : 'none';   // 性格はCPUの側だけ(シミュレーターでプレイヤー役に使うときは性格なし)。★5のボスは、法則を見て切り替える
   let hand, mood;   // mood:read 読みに賭けた / calm 様子見 / peak 見せ場
   const pr = personaRead(S, side, kind);
 
@@ -2903,6 +2965,12 @@ function aiHand(S, side, level) {
     const d = deepRead(S, side, M, level >= 4 ? { naive: 0, trustMax: cap } : { trustMax: cap }, pr);
     hand = pickFrom(personaHabit(S, side, kind, d.mix));
     mood = hand === d.best && d.trust >= 0.2 ? 'read' : 'calm';
+  }
+  // 撒き餌:相手が一番出している手に負ける手を、わざと6割で出す(偏りを育てて、誘導してくる相手を受け流す)
+  if (kind === 'bait' && S.hist.length >= 3) {
+    const rec = S.hist.slice(-15).map((p) => p[1 - side]);
+    const top = argmax((h) => rec.filter((x) => x === h).length);
+    if (Math.random() < 0.6) { hand = HANDS[top].beats; mood = 'calm'; }
   }
   if (pr.peak && (mood === 'read' || kind === 'guard' || kind === 'rage') && Math.random() < 0.35) mood = 'peak';
   return { hand, why: speak(me, mood), mood };
@@ -2939,6 +3007,9 @@ const PERSONA_LINES = {
   sight:  L(['先が見えたぞ', 'その順は読めた'], ['……卦が出ない', 'まだ見えぬ'], ['流れが見えた'], ['今朝の卦、凶だった', '目が乾く']),
   prey:   L(['同じ手だな', '続けたな？'], ['待つ', '隙を探す'], ['三度目は喰う'], ['腹が鳴る', '……いい匂いがする']),
   rage:   L(['遅い！', 'そこだ！'], ['来い', 'まだ本気じゃない'], ['ここからだ！'], ['熱い', 'ああ、もう！']),
+  bias:   L(['またその手か', '好きな手、ばれてるよ'], ['数えている', '偏りを待つ'], ['その手しか出せないのか'], ['……', '数が合わない']),
+  hunt:   L(['弱ったな', '守りに入ったか'], ['まだ追わない', '息が上がるのを待つ'], ['逃がさない'], ['……', '血の匂い']),
+  bait:   L(['好きにしな', 'その手でいいよ'], ['どうぞ', '気持ちよく出しな'], ['もう、こちらの番だ'], ['……', 'いい手だね']),
 };
 const LINE_ALIAS = { p_tsuru_ten: 'tsuru', b_tomari: 'tomari', b_rei: 'rei', b_tsuru: 'tsuru', p_xeno: 'xeno_body', b_kaji: 'kaji', p_kaji_shi: 'b_kaji_shi',
   c5_xeno_body: 'xeno_body', c5_xeno_spirit: 'xeno_spirit', c5_tsuru: 'tsuru', c5_tsuru1: 'tsuru' };   // 刻の回廊のボスは元のキャラのセリフ
