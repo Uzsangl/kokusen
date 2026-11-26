@@ -995,6 +995,13 @@
   .ab-side .sh { color: #c9e6ff; font-size: .95rem; white-space: nowrap; }
   .ab-side .rt { color: var(--gold); font-size: .85rem; white-space: nowrap; }
   .lvtag { display: inline-flex; align-items: center; vertical-align: middle; line-height: 1; padding: 3px 6px; position: relative; top: -1px; }   /* 名前の高さのまん中に */
+
+  /* ステージの説明ボタン(ⓘ) */
+  .stages button { position: relative; }
+  .sinfo { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center;
+    font: italic 900 .85rem/1 Georgia, serif; color: #f0c040; border: 2px solid transparent; background: radial-gradient(circle at 50% 35%, #2a3060, #151935) padding-box, var(--goldGrad) border-box; z-index: 2; }
+  .stages.vlist button { padding-right: 44px; }
+  .stages.vlist button.cleared::after { right: 46px; }
 </style>
 </head>
 <body>
@@ -6396,6 +6403,25 @@ function soloFixStage() {
   $('stages').classList.toggle('hidden', adv);
   $('corrStages').classList.toggle('hidden', !adv);
 }
+// ステージの説明(一覧の下と、ⓘ を押したときに出す)
+function stageNoteHtml(st) {
+  const foes = stageFoes(st);
+  const shown = foes.filter((f) => !f.hiddenUntilActive || xenoKnown());   // ★5は、倒すまで1体に見せる
+  const from = st.chainFrom && STAGES.find((x) => x.id === st.chainFrom);
+  return st.quest
+    ? `降臨「${st.name}」${'★'.repeat(st.stars)} ${questWhen()}。1階で門下生3体(顔ぶれは戦うまで分からない)、2階でボスの${st.foes.map((id) => ENEMIES[id]).pop().name}。${FORMATS[st.qfmt]}で組む。初回${SHARD_IC}${st.reward[0]}個・2回目から${st.reward[1]}個。クリアするたび${(st.drop * 100).toFixed(1).replace(/\.0$/, '')}%の確率で${st.foes.map((id) => ENEMIES[id]).pop().name}が手に入る。`
+    : from
+    ? `${st.faction} ${'★'.repeat(st.stars)}「${st.name}」 敵:${shown.map(dispName).join('・')}(ボス1体と3対1)。${'★'.repeat(from.stars)}「${from.name}」をクリアした直後だけ、結果画面の「続けて【始】に挑む」から、同じパーティで挑めます(全回復します)。`
+    : st.kr
+    ? `刻練場「${st.name}」 弱めの門下生が次々と出てくる。こちらのHPは引き継いだまま、全滅するまで戦い続けて撃破数を競う。1層は10体(敵3体×3戦+ボス)。層の最後のボスを倒すと全回復(10層まで)。10層(100体)の突破が目標。こちらは回復できず、DFSは5000まで。パーティはアドバンスで組む(★4以上は1体まで)。最高記録:${Number(localStorage.getItem('kokusen.krBest') || 0)}体・累計 ${(ACC.stats && ACC.stats.krTotal) || Number(localStorage.getItem('kokusen.krTotal') || 0)}体`
+    : st.rush
+    ? `連戦「${st.name}」 ★★★のボス3体 → ★★★★ → ★★★★★ を、3対1で続けて戦います(ゼノ以外のボスのHPは通常の28%)。ボスを1体倒すごとに、こちらは全回復して1番手から出直します。最高記録:${SOLO.rush} / ${st.rush.length}体`
+    : st.corridor
+    ? `${CORRIDORS[st.corridor]} ${'★'.repeat(st.stars)}「${st.name}」 ` + (corrOpen(st) ? `敵:${shown.map(dispName).join('・')}` + (foes.length === 1 ? '(1体と3対1)' : foes.length === 3 ? '(3対3)' : '') : `ひとつ前の ${'★'.repeat(st.stars - 1)}「${corrPrev(st).name}」をクリアすると挑めます`)
+      + `。アドバンス(持っているガチャキャラも使える。★4以上の制限なし)。` + (st.reward ? `クリアで${SHARD_IC}${SHARD_NAME}:初回${st.reward[0]}個、2回目から${st.reward[1]}個。` : '') + 'ソロでは刻の抜け落ちは起きません。'
+    : `${st.faction} ${'★'.repeat(st.stars)}「${st.name}」 敵:${shown.map(dispName).join('・')}`
+    + (foes.every((f) => f.boss) ? '(ボス1体と3対1)' : '(3対3)') + `。CPUの考え方:${AI_LEVELS[st.level].name}。ソロでは刻の抜け落ちは起きません。`;
+}
 function renderStages() {
   soloFixStage();
   ['stages', 'corrStages'].forEach((id) => $(id).classList.toggle('vlist', SOLO.group != null));   // 陣営・回廊を選んだときは縦の一覧
@@ -6410,29 +6436,17 @@ function renderStages() {
     const boss = s.kr ? '<span class="foes"></span>' : `<span class="foes">${stageFoes(s).filter((f) => !f.hiddenUntilActive && (!s.quest || f.boss)).map((f) => iconHtml(f, s.stars >= 3 ? 'md' : 'sm')).join('')}</span>`;   // 降臨はボスだけ
     const head = s.kr ? '刻練場' : s.corridor || s.quest || (SOLO.group != null && !s.rush) ? '★'.repeat(s.stars) : `${s.faction} ${'★'.repeat(s.stars)}`;   // 陣営を選んだあとは★だけ   // 回廊は見出しに名前があるので★だけ
     const sc = STAM.on && stageStamina(s);
-    b.innerHTML = `<b>${head}${sc ? `<span class="stcost">⚡${sc.cost}</span>` : ''}</b>${boss}${s.name}`;
+    b.innerHTML = `<b>${head}${sc ? `<span class="stcost">⚡${sc.cost}</span>` : ''}</b>${boss}${s.name}<span class="sinfo" data-info="${s.id}" role="button" aria-label="説明">i</span>`;
     b.classList.toggle('chain', !!s.chainFrom);
     b.classList.toggle('picked', b.dataset.id === SOLO.stage);
     b.classList.toggle('cleared', SOLO.cleared.includes(b.dataset.id));
     b.classList.toggle('locked', !corrOpen(s) || (!!s.quest && !questOpen()));
-    if (!corrOpen(s)) b.innerHTML = `<b>${head}</b><span class="foes">🔒</span>${s.name}`;
+    if (!corrOpen(s)) b.innerHTML = `<b>${head}</b><span class="foes">🔒</span>${s.name}<span class="sinfo" data-info="${s.id}" role="button" aria-label="説明">i</span>`;
   });
   const st = STAGES.find((x) => x.id === SOLO.stage), foes = stageFoes(st);
   const shown = foes.filter((f) => !f.hiddenUntilActive || xenoKnown());   // ★5は、倒すまで1体に見せる
   const from = st.chainFrom && STAGES.find((x) => x.id === st.chainFrom);
-  $('stageNote').innerHTML = st.quest
-    ? `降臨「${st.name}」${'★'.repeat(st.stars)} ${questWhen()}。1階で門下生3体(顔ぶれは戦うまで分からない)、2階でボスの${st.foes.map((id) => ENEMIES[id]).pop().name}。${FORMATS[st.qfmt]}で組む。初回${SHARD_IC}${st.reward[0]}個・2回目から${st.reward[1]}個。クリアするたび${(st.drop * 100).toFixed(1).replace(/\.0$/, '')}%の確率で${st.foes.map((id) => ENEMIES[id]).pop().name}が手に入る。`
-    : from
-    ? `${st.faction} ${'★'.repeat(st.stars)}「${st.name}」 敵:${shown.map(dispName).join('・')}(ボス1体と3対1)。${'★'.repeat(from.stars)}「${from.name}」をクリアした直後だけ、結果画面の「続けて【始】に挑む」から、同じパーティで挑めます(全回復します)。`
-    : st.kr
-    ? `刻練場「${st.name}」 弱めの門下生が次々と出てくる。こちらのHPは引き継いだまま、全滅するまで戦い続けて撃破数を競う。1層は10体(敵3体×3戦+ボス)。層の最後のボスを倒すと全回復(10層まで)。10層(100体)の突破が目標。こちらは回復できず、DFSは5000まで。パーティはアドバンスで組む(★4以上は1体まで)。最高記録:${Number(localStorage.getItem('kokusen.krBest') || 0)}体・累計 ${(ACC.stats && ACC.stats.krTotal) || Number(localStorage.getItem('kokusen.krTotal') || 0)}体`
-    : st.rush
-    ? `連戦「${st.name}」 ★★★のボス3体 → ★★★★ → ★★★★★ を、3対1で続けて戦います(ゼノ以外のボスのHPは通常の28%)。ボスを1体倒すごとに、こちらは全回復して1番手から出直します。最高記録:${SOLO.rush} / ${st.rush.length}体`
-    : st.corridor
-    ? `${CORRIDORS[st.corridor]} ${'★'.repeat(st.stars)}「${st.name}」 ` + (corrOpen(st) ? `敵:${shown.map(dispName).join('・')}` + (foes.length === 1 ? '(1体と3対1)' : foes.length === 3 ? '(3対3)' : '') : `ひとつ前の ${'★'.repeat(st.stars - 1)}「${corrPrev(st).name}」をクリアすると挑めます`)
-      + `。アドバンス(持っているガチャキャラも使える。★4以上の制限なし)。` + (st.reward ? `クリアで${SHARD_IC}${SHARD_NAME}:初回${st.reward[0]}個、2回目から${st.reward[1]}個。` : '') + 'ソロでは刻の抜け落ちは起きません。'
-    : `${st.faction} ${'★'.repeat(st.stars)}「${st.name}」 敵:${shown.map(dispName).join('・')}`
-    + (foes.every((f) => f.boss) ? '(ボス1体と3対1)' : '(3対3)') + `。CPUの考え方:${AI_LEVELS[st.level].name}。ソロでは刻の抜け落ちは起きません。`;
+  $('stageNote').innerHTML = stageNoteHtml(st);
   renderSelect();
   fitStages();
 }
@@ -7687,6 +7701,16 @@ function setStep(st) {
   renderSelect();
   placeBanner();
 }
+// ステージの ⓘ:押すと説明だけを出す(キャラ選択へは進まない)
+document.addEventListener('click', (e) => {
+  const i = e.target.closest && e.target.closest('.sinfo');
+  if (!i) return;
+  e.preventDefault(); e.stopPropagation();
+  const st = STAGES.find((x) => x.id === i.dataset.info); if (!st) return;
+  Sound.click();
+  const sc = STAM.on && stageStamina(st);
+  openSheet(st.name, `<p>${stageNoteHtml(st)}</p>${sc ? `<p class="rbnote">消費 ⚡${sc.cost} ・ 経験値 ${sc.exp}(クリアしたとき)</p>` : ''}`);
+}, true);
 // ソロ:ステージを押したら、そのままキャラ選択へ(挑めないステージは、一覧に残って理由を出す)
 function goPickNow() { if (MODE === 'solo' && canPick()) { Sound.click(); setStep('pick'); } }
 // キャラ選択の画面にも、画面の名前のバナーを出す(「錨 - キャラ選択」など。◀ はキャラ選択の「戻る」と同じ)
