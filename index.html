@@ -2844,6 +2844,30 @@ function lawScores(S, side) {
   out.pinch = n >= 3 ? hit / n - base / n : null;
   return out;
 }
+// 性格ごとの狙いの手と、それを出す割合(★5のボス)
+//   捕食 70%:同じ手が2回続いたら、3回目に勝つ手 / 巻戻 70%:勝たれた・あいこの直後に相手が出しがちな手に勝つ手
+//   天眼 90%:直前2手の並びから読んだ手に勝つ手 / 激昂 80%:一番火力の出る技 / 偏り読み 85%:直近15手で一番多い手に勝つ手
+//   狩り 70%:相手のHPが半分を切ったら、相手の火力の出ない技(回復・守り)に勝つ手 / 撒き餌 60%:相手が一番出している手に負ける手
+function personaTarget(S, side, kind, me) {
+  const H = S.hist, foe = 1 - side, n = H.length;
+  const topOf = (arr) => argmax((h) => arr.filter((x) => x === h).length);
+  if (kind === 'prey') { const t = preyTarget(S, side); return t ? { hand: beaterOf(t), p: 0.7 } : null; }
+  if (kind === 'rewind') {
+    const prev = H[n - 1]; if (!prev || judge(prev[side], prev[foe]) > 0) return null;   // 自分が勝った直後は読まない
+    const c = foeHabit(S, side, 60, { r: judge(prev[foe], prev[side]) }); if (c.n < 2) return null;
+    return { hand: beaterOf(argmax((h) => c.q[h])), p: 0.7 };
+  }
+  if (kind === 'sight') { const q = seqRead(S, side); return q ? { hand: beaterOf(q.top), p: 0.9 } : null; }
+  if (kind === 'rage') return { hand: argmax((h) => me.actions[h].rate || 0), p: 0.8 };
+  if (kind === 'bias') { const rec = H.slice(-15).map((x) => x[foe]); return rec.length >= 3 ? { hand: beaterOf(topOf(rec)), p: 0.85 } : null; }
+  if (kind === 'hunt') {
+    const fc = active(S.teams[foe]); if (!fc || !lowHp(fc)) return null;
+    const weak = argmax((h) => (guardHand(fc, h) ? 10 : 0) - (fc.actions[h].rate || 0));   // 回復・守りの技、なければ一番火力の出ない技
+    return { hand: beaterOf(weak), p: 0.7 };
+  }
+  if (kind === 'bait') { const rec = H.slice(-15).map((x) => x[foe]); return rec.length >= 3 ? { hand: HANDS[topOf(rec)].beats, p: 0.6 } : null; }
+  return null;
+}
 // 毎手の前に呼ぶ:負けを数え、くじで決めた回数に届いたら性格を選び直す
 function adaptKind(S, side, me) {
   const tbl = ADAPT[me.ch.id];
@@ -2966,11 +2990,10 @@ function aiHand(S, side, level) {
     hand = pickFrom(personaHabit(S, side, kind, d.mix));
     mood = hand === d.best && d.trust >= 0.2 ? 'read' : 'calm';
   }
-  // 撒き餌:相手が一番出している手に負ける手を、わざと6割で出す(偏りを育てて、誘導してくる相手を受け流す)
-  if (kind === 'bait' && S.hist.length >= 3) {
-    const rec = S.hist.slice(-15).map((p) => p[1 - side]);
-    const top = argmax((h) => rec.filter((x) => x === h).length);
-    if (Math.random() < 0.6) { hand = HANDS[top].beats; mood = 'calm'; }
+  // ★5のボス:性格ごとの決め打ち。狙いの手があれば、決めた割合でそれを出す(外れたら上で決めた手のまま)
+  if (side === 1 && ADAPT[me.ch.id] && S.stage && S.stage.stars === 5) {
+    const t = personaTarget(S, side, kind, me);
+    if (t && Math.random() < t.p) { hand = t.hand; mood = kind === 'bait' ? 'calm' : 'read'; }
   }
   if (pr.peak && (mood === 'read' || kind === 'guard' || kind === 'rage') && Math.random() < 0.35) mood = 'peak';
   return { hand, why: speak(me, mood), mood };
