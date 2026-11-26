@@ -2805,7 +2805,7 @@ const PERSONA_OF = {
 };
 // カジ【始】は残りHPで性格が変わる(激昂 → 天眼 → 捕食)。性格は裏の数値なので画面には出さない
 const personaOf = (c) => (c.ch.id === 'b_kaji_shi' ? (c.hp > c.max * 0.67 ? 'rage' : c.hp > c.max * 0.34 ? 'sight' : 'prey') : PERSONA_OF[c.ch.id] || 'guard');
-const PERSONA_CAP = { guard: 0.7, rewind: 1, sight: 1.3, prey: 1, rage: 1, abyss: 1.3, bias: 1, hunt: 1, bait: 1, none: 1 };   // 読みに賭ける上限の倍率
+const PERSONA_CAP = { guard: 0.7, rewind: 1, sight: 1.3, prey: 1, rage: 1, abyss: 1.3, bias: 1, hunt: 1, bait: 1, tilt: 1, none: 1 };   // 読みに賭ける上限の倍率
 const lowHp = (c) => c.hp <= c.max / 2;
 
 // ===== ★5のボス:プレイヤーの法則を見て、性格を切り替える =====
@@ -2829,20 +2829,20 @@ const ADAPT = {
 const guardHand = (c, h) => { const a = c && c.actions[h]; return !!a && !!(a.heal || a.dfsUp || a.nextDfsUp || (a.team && a.team.stat === 'dfs')); };
 // プレイヤー(side の相手)の手を5つの法則で採点する。当てはまる場面が3回未満の法則は採点しない
 function lawScores(S, side) {
-  const foe = 1 - side, H = S.hist, out = {}, A = S.adapt;
-  const rate = (hit, n, base) => (n >= 3 ? hit / n - base : null);
+  const foe = 1 - side, H0 = S.hist, from = Math.max(0, H0.length - 30), H = H0.slice(from), out = {}, A = S.adapt, cnt = {};   // 直近30手だけを見る
+  const rate = (hit, n, base) => (n >= 3 ? hit / n - base : null);   // 偶然より何割多く当てはまったか(場面が3回未満なら採点しない)
   let n = 0, hit = 0, ln = 0, lhit = 0;
   for (let i = 2; i < H.length; i++) if (H[i - 2][foe] === H[i - 1][foe]) { n++; ln++; if (H[i][foe] === H[i - 1][foe]) hit++; if (H[i][foe] === HANDS[H[i - 1][foe]].beats) lhit++; }
-  out.chain = rate(hit, n, 1 / 3); out.lure = rate(lhit, ln, 1 / 3);
+  out.chain = rate(hit, n, 1 / 3); out.lure = rate(lhit, ln, 1 / 3); cnt.chain = n; cnt.lure = ln;
   n = 0; hit = 0;
   for (let i = 1; i < H.length; i++) if (judge(H[i - 1][foe], H[i - 1][side]) > 0) { n++; if (H[i][foe] === H[i - 1][foe]) hit++; }
-  out.winStay = rate(hit, n, 1 / 3);
+  out.winStay = rate(hit, n, 1 / 3); cnt.winStay = n;
   const recent = H.slice(-15).map((p) => p[foe]);
-  if (recent.length >= 6) out.skew = Math.max(...HAND_KEYS.map((h) => recent.filter((x) => x === h).length / recent.length)) - 1 / 3;
+  if (recent.length >= 6) out.skew = Math.max(...HAND_KEYS.map((h) => recent.filter((x) => x === h).length / recent.length)) - 1 / 3; cnt.skew = recent.length;
   n = 0; hit = 0; let base = 0;
-  (A.low || []).forEach((g, i) => { if (g && H[i]) { n++; base += g.length / 3; if (g.includes(H[i][foe])) hit++; } });
-  out.pinch = n >= 3 ? hit / n - base / n : null;
-  return out;
+  (A.low || []).forEach((g, i) => { if (i >= from && g && H0[i]) { n++; base += g.length / 3; if (g.includes(H0[i][foe])) hit++; } });
+  out.pinch = n >= 3 ? hit / n - base / n : null; cnt.pinch = n;
+  return { sc: out, cnt };
 }
 // 性格ごとの狙いの手と、それを出す割合(★5のボス)
 //   捕食 70%:同じ手が2回続いたら、3回目に勝つ手 / 巻戻 70%:勝たれた・あいこの直後に相手が出しがちな手に勝つ手
@@ -2872,16 +2872,30 @@ function personaTarget(S, side, kind, me) {
 function adaptKind(S, side, me) {
   const tbl = ADAPT[me.ch.id];
   if (!tbl || !S.stage || S.stage.stars !== 5) return null;
-  const A = S.adapt || (S.adapt = { seen: 0, lost: 0, next: 3 + Math.floor(Math.random() * 3), kind: null, low: [] });
+  const r3 = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+  const A = S.adapt || (S.adapt = { seen: 0, lost: 0, next: r3(3, 5), streak: 0, tiltAt: r3(5, 7), tilt: 0, kind: null, low: [] });
   const foe = active(S.teams[1 - side]);
-  for (; A.seen < S.hist.length; A.seen++) if (judge(S.hist[A.seen][side], S.hist[A.seen][1 - side]) < 0) A.lost++;
-  A.low[S.hist.length] = foe && lowHp(foe) ? HAND_KEYS.filter((h) => guardHand(foe, h)) : null;   // このラリーの前に、相手がピンチで守りの技を持っていたか
-  if (A.lost >= A.next) {
-    A.lost = 0; A.next = 3 + Math.floor(Math.random() * 3);
-    const sc = lawScores(S, side);
-    const best = Object.keys(sc).filter((k) => sc[k] != null && sc[k] > 0.08).sort((a, b) => sc[b] - sc[a])[0];
-    if (best) A.kind = tbl.map[best];
+  for (; A.seen < S.hist.length; A.seen++) {
+    const j = judge(S.hist[A.seen][side], S.hist[A.seen][1 - side]);
+    if (j < 0) { A.lost++; A.streak++; } else if (j > 0) A.streak = 0;   // あいこは連敗を切らない
+    if (A.tilt > 0) A.tilt--;
   }
+  A.low[S.hist.length] = foe && lowHp(foe) ? HAND_KEYS.filter((h) => guardHand(foe, h)) : null;   // このラリーの前に、相手がピンチで守りの技を持っていたか
+  const repick = () => {
+    A.lost = 0; A.next = r3(3, 5);
+    const { sc, cnt } = lawScores(S, side);
+    // 基準(偶然より+15%)をこえた法則から、一番点の高いもの。2番目との差が5%以内なら、点数の重みでくじ(読まれにくくするため)
+    const ok = Object.keys(sc).filter((k) => sc[k] != null && sc[k] >= 0.15).sort((a, b) => sc[b] - sc[a] || cnt[b] - cnt[a]);
+    if (!ok.length) return;
+    let pick = ok[0];
+    if (ok[1] && sc[ok[0]] - sc[ok[1]] <= 0.05 && tbl.map[ok[0]] !== tbl.map[ok[1]]) pick = Math.random() < sc[ok[0]] / (sc[ok[0]] + sc[ok[1]]) ? ok[0] : ok[1];
+    A.kind = tbl.map[pick];
+  };
+  // ティルト:5〜7回(くじ)続けて負けたら、1〜5ラリー(くじ)のあいだ3つの手を33%ずつ出す。明けたら性格を決め直す
+  if (A.tilt === 0 && A.streak >= A.tiltAt) { A.tilt = r3(1, 5); A.streak = 0; A.tiltAt = r3(5, 7); A.wasTilt = true; }
+  if (A.tilt > 0) return 'tilt';
+  if (A.wasTilt) { A.wasTilt = false; repick(); return A.kind; }
+  if (A.lost >= A.next) repick();
   return A.kind;
 }
 
@@ -2991,7 +3005,8 @@ function aiHand(S, side, level) {
     mood = hand === d.best && d.trust >= 0.2 ? 'read' : 'calm';
   }
   // ★5のボス:性格ごとの決め打ち。狙いの手があれば、決めた割合でそれを出す(外れたら上で決めた手のまま)
-  if (side === 1 && ADAPT[me.ch.id] && S.stage && S.stage.stars === 5) {
+  if (kind === 'tilt') { hand = randomHand(); mood = 'calm'; }   // ティルト:3つの手を33%ずつ
+  else if (side === 1 && ADAPT[me.ch.id] && S.stage && S.stage.stars === 5) {
     const t = personaTarget(S, side, kind, me);
     if (t && Math.random() < t.p) { hand = t.hand; mood = kind === 'bait' ? 'calm' : 'read'; }
   }
