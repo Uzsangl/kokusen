@@ -964,6 +964,16 @@
   @keyframes gaugeShake { 0% { transform: translate(0, 0); } 25% { transform: translate(-1px, .5px); } 50% { transform: translate(1px, -.5px); } 75% { transform: translate(-.5px, -.5px); } 100% { transform: translate(.5px, .5px); } }
   @media (prefers-reduced-motion: reduce) { .gauge.maxed .mini { animation: none; } }
   .shardic { width: 1.25em; height: 1.25em; vertical-align: -.28em; margin: 0 .05em; filter: brightness(1.3) saturate(1.1) drop-shadow(0 0 1.5px rgba(255,255,255,.8)) drop-shadow(0 0 4px rgba(255,255,255,.45)); }
+
+  /* プレイヤーレベルとスタミナ */
+  .lvtag { display: inline-block; margin-right: 5px; padding: 0 6px; border-radius: 6px; font-size: .72em; font-weight: 900; color: #1a1200; background: linear-gradient(180deg, #fff0b0, #e8b84a); vertical-align: .1em; letter-spacing: .02em; }
+  .stam { display: inline-flex; align-items: center; gap: 3px; padding: 2px 8px; min-height: 0; border-radius: 999px; font-size: .78rem; color: #9fe7ff; border: 1px solid rgba(127,220,255,.5); background: rgba(10,30,50,.6); vertical-align: middle; }
+  .stam b { color: #e6fbff; font-weight: 900; }
+  .stam small { font-size: .68rem; color: var(--sub); margin-left: 2px; }
+  .tacc .stam { margin-top: 4px; }
+  .stambig { text-align: center; font-size: 1.2rem; color: #9fe7ff; margin: 6px 0 2px; }
+  .stambig b { font-size: 2.4rem; color: #e6fbff; }
+  .stcost { display: block; font-size: .7rem; color: #9fe7ff; font-weight: 700; white-space: nowrap; letter-spacing: 0; }
 </style>
 </head>
 <body>
@@ -4072,7 +4082,7 @@ async function strike(side, hand, a, o, isBreak) {
   if (kill) {
     // 降臨:勝ちが決まった瞬間に、報酬(とキャラ解放の抽選)をサーバーに聞いておく。当たっていればプチュンのあとすぐ解放の演出
     if (lastKill && S.stage && S.stage.quest && S.stage.reward && walletOn() && S.soloRun && !S.questReward)
-      S.questReward = (async () => { const run = await S.soloRun; try { return run ? await verRpc('solo_reward', { p_run: run }) : null; } catch (e) { if (e.code === 'KV001') verOld(); return null; } })();
+      S.questReward = soloRewardOnce();
     await new Promise((r) => setTimeout(r, Math.max(1000, 1500 * FX.speed)));   // ダメージとゲージを見せる間
     if (lastKill) await puchun();
   } else {
@@ -4419,19 +4429,14 @@ async function finale() {
     // 刻の回廊の★4・★5:クリアで空間のカケラ(初回は多め)
     if (S.stage && !S.stage.reward && S.soloRun && !S.unlockDone) {   // 称号が解放されるステージ:クリアをサーバーに知らせる
       S.unlockDone = true;
-      const run = await S.soloRun;
-      try { if (run) soloUnlocked(await verRpc('solo_reward', { p_run: run })); } catch (e) { if (e.code === 'KV001') verOld(); }
+      soloUnlocked(await soloRewardOnce());
     }
     if (S.stage && S.stage.reward && !S.shardDone) {
       S.shardDone = true;
       let n, total, first = firstClear;
       if (walletOn()) {   // 報酬はサーバーが決めて財布に入れる(始めてから45秒たたない報告は断られる)
         let r = null;
-        if (S.questReward) r = await S.questReward;   // 降臨:勝ちが決まった瞬間に聞いておいた結果
-        else {
-          const run = S.soloRun && await S.soloRun;
-          try { r = run ? await verRpc('solo_reward', { p_run: run }) : null; } catch (e) { if (e.code === 'KV001') verOld(); }
-        }
+        r = await soloRewardOnce();   // 降臨は、勝ちが決まった瞬間に聞いておいた結果
         walletSet(r); soloUnlocked(r);
         S.questGot = r && Array.isArray(r.unlocked) ? r.unlocked.filter((id) => ['emo', 'rizu'].includes(id)) : [];
         n = r ? r.given : 0; total = shardCount(); first = !!(r && r.first);
@@ -4442,6 +4447,20 @@ async function finale() {
       } else log(`${SHARD_NAME}:この挑戦は記録できませんでした(所持 ${total})`);
       // 降臨:抽選に当たったら、ボスのキャラが使えるようになる。ガチャの★5と同じ赤いガラスの破片 → ボスの一言 → 仲間になった → 決めゼリフ
       if (!S.questFxDone) await questUnlockFx(S.questGot || []);   // プチュンのあとに出していなければ、ここで
+    }
+    // スタミナの消費と経験値(クリアしたときだけ)
+    if (S.stage && S.soloRun && STAM.on && stageStamina(S.stage) && !S.expDone) {
+      S.expDone = true;
+      const r = await soloRewardOnce();
+      if (r && typeof r.exp === 'number') {
+        const before = lvOf(r.exp - (r.exp_got || 0)), after = lvOf(r.exp);
+        if (ACC.profile) ACC.profile.exp = r.exp;
+        stamSet({ stamina: r.stamina, max: r.max, exp: r.exp });
+        log(`経験値 +${r.exp_got}(Lv.${after}) ・ スタミナ −${stageStamina(S.stage).cost}(残り ${r.stamina}/${r.max})`);
+        if (after > before) { Sound.fanfare(); await cutin(`Lv.${after}`, `レベルアップ! スタミナ最大 ${r.max}`, 'gold', 1600); }
+        else await cutin(`経験値 +${r.exp_got}`, `Lv.${after} ・ ⚡${r.stamina}/${r.max}`, 'plain', 1100);
+        renderTitleAcc(); renderAcct();
+      }
     }
   } else if (S.winner === 1) {
     Sound.defeat(); Particles.shower(COLORS.violet, 80);
@@ -5520,6 +5539,7 @@ async function accLoadProfile(name) {
     created = true;
   }
   ACC.profile = p;
+  stamLoad();
   // 非公開の記録
   let server = { cleared: p.cleared || [], stats: {} };
   ACC.progMode = 'legacy';
@@ -6015,9 +6035,9 @@ function renderTitleAcc() {
   }
   const fav = favChar(p);
   const stages = STAGES.filter((x) => !x.rush && !x.kr);
-  el.innerHTML = `${fav ? iconHtml(fav, 'lg') : '<span style="font-size:28px">👤</span>'}<div><div class="nm">${titleTag(p.title)}${escHtml(p.name)}</div>
+  el.innerHTML = `${fav ? iconHtml(fav, 'lg') : '<span style="font-size:28px">👤</span>'}<div><div class="nm">${lvTag(p.exp)}${titleTag(p.title)}${escHtml(p.name)}</div>
     <div><span class="rate">レート${p.rating}</span> <span style="font-size:.8rem;color:var(--sub)">(${p.wins}勝${p.losses}敗)</span></div>
-    <div class="meta">クリア ${stages.filter((x) => SOLO.cleared.includes(x.id)).length} / ${stages.length}ステージ${titleReady() ? ` ・ 称号 ${myTitles().length} / ${TITLES.length}` : ''} ・ ${SHARD_IC}${SHARD_NAME} ${shardCount()}</div></div>
+    <div class="meta">クリア ${stages.filter((x) => SOLO.cleared.includes(x.id)).length} / ${stages.length}ステージ${titleReady() ? ` ・ 称号 ${myTitles().length} / ${TITLES.length}` : ''} ・ ${SHARD_IC}${SHARD_NAME} ${shardCount()}</div>${stamChip()}</div>
     <button id="tAccBtn">アカウント</button>`;
   $('tAccBtn').onclick = () => accOpen();
 }
@@ -6109,6 +6129,14 @@ const RULEBOOK = {
       <li>ボスは<b>手のクセを読む</b></li>
       <li>ボスラッシュ:1体倒すたびに<b>全回復</b></li>
     </ul>
+    <h3>スタミナとLv</h3>
+    <ul class="rb sm">
+      <li>⚡は<b>クリアしたときだけ減る</b>(負けたら減らない)</li>
+      <li>3分で⚡1回復 ・ カケラ25で最大値ぶん回復</li>
+      <li>クリアで経験値 → <b>Lv</b>が上がる。Lv2つごとに⚡最大+1</li>
+    </ul>
+    <div class="rbflow"><span>★1・2<small>⚡10 経験1</small></span><span>★3<small>⚡20 経験20</small></span><span>★4<small>⚡20 経験100</small></span><span>★5<small>⚡25 経験200</small></span></div>
+    <p class="rbnote">刻の回廊・降臨も同じ。スコアアタックはなし ・ ログイン中だけ</p>
     <p class="rbnote">ソロではHPが減っていくことも、100ラリー判定もない</p>`,
   '対人': `<table class="rbt">
       <tr><td>フリー</td><td>自動で相手を探す</td></tr>
@@ -6165,13 +6193,14 @@ async function openRanking() {
   $('accModal').classList.add('hidden');
   openSheet('🏆 ランキング', rankTabs('rate') + '<p class="sub">読み込んでいます…</p>'); bindRankTabs();
   let rows = null;
-  try { rows = await sbFetch('/rest/v1/profiles?select=id,name,title,fav,rating,wins,losses&order=rating.desc&limit=50'); }
-  catch (e) { try { rows = await sbFetch('/rest/v1/profiles?select=id,name,rating,wins,losses&order=rating.desc&limit=50'); } catch (e2) { rows = null; } }
+  for (const cols of ['id,name,title,fav,rating,wins,losses,exp', 'id,name,title,fav,rating,wins,losses', 'id,name,rating,wins,losses']) {   // 古いDBでも読めるように、列を減らしながら試す
+    try { rows = await sbFetch(`/rest/v1/profiles?select=${cols}&order=rating.desc&limit=50`); break; } catch (e) { rows = null; }
+  }
   if (!rows) { openSheet('🏆 ランキング', rankTabs('rate') + '<p class="sub">読み込めませんでした。通信状態を確かめてください。</p>'); bindRankTabs(); return; }
   const uid = accUid();
   openSheet('🏆 ランキング', rankTabs('rate') + `<p class="sub">オンライン対人のレーティング上位50人</p><ol class="rank">${rows.map((r) => {
     const fav = favChar(r);
-    return `<li class="${r.id === uid ? 'me' : ''}">${fav ? iconHtml(fav, 'sm') : ''}${titleTag(r.title)}${escHtml(r.name)}<span class="r">${r.rating}(${r.wins}勝${r.losses}敗)</span></li>`;
+    return `<li class="${r.id === uid ? 'me' : ''}">${fav ? iconHtml(fav, 'sm') : ''}${typeof r.exp === 'number' ? lvTag(r.exp) : ''}${titleTag(r.title)}${escHtml(r.name)}<span class="r">${r.rating}(${r.wins}勝${r.losses}敗)</span></li>`;
   }).join('')}</ol>`);
   bindRankTabs();
 }
@@ -6228,7 +6257,7 @@ function renderAcct() {
     return;
   }
   el.innerHTML = p
-    ? `<span class="who">${titleTag(p.title)}<b>${escHtml(p.name)}</b> <span class="rate">レート${p.rating}</span>(${p.wins}勝${p.losses}敗) ${SHARD_IC}${shardCount()}</span><button id="accOpen">アカウント</button>`
+    ? `<span class="who">${lvTag(p.exp)}${titleTag(p.title)}<b>${escHtml(p.name)}</b> <span class="rate">レート${p.rating}</span>(${p.wins}勝${p.losses}敗) ${SHARD_IC}${shardCount()} ${stamChip()}</span><button id="accOpen">アカウント</button>`
     : ACC.session
       ? `<span class="who">ログイン中(読み込んでいます…)</span><button id="accOpen">アカウント</button>`
       : `<span class="who">ログインすると、クリア記録とレーティングを保存できます(${SHARD_IC}${shardCount()})</span><button id="accOpen">ログイン</button>`;
@@ -6241,7 +6270,7 @@ function renderAccModal() {
   if (p) {
     const uid = accUid();
     const cleared = STAGES.filter((x) => SOLO.cleared.includes(x.id)).map((x) => `${x.faction}${'★'.repeat(x.stars)}`).join(' ') || 'まだありません';
-    body.innerHTML = `<p class="sub">${titleTag(p.title)}<b style="color:var(--text)">${escHtml(p.name)}</b> <span style="color:var(--gold);font-weight:900">レート${p.rating}</span>(${p.wins}勝${p.losses}敗)<br>クリアしたステージ:${cleared}</p>
+    body.innerHTML = `<p class="sub">${lvTag(p.exp)}${titleTag(p.title)}<b style="color:var(--text)">${escHtml(p.name)}</b> <span style="color:var(--gold);font-weight:900">レート${p.rating}</span>(${p.wins}勝${p.losses}敗)<br>クリアしたステージ:${cleared}</p>
       <label for="accName">名前(1〜12文字)</label><input id="accName" maxlength="12" value="${escHtml(p.name)}">
       <div class="row"><button id="accRename">名前を変える</button><button id="accOut">ログアウト</button></div>
       <h2 style="margin-top:14px">お気に入りキャラ</h2>${favReady()
@@ -6359,7 +6388,8 @@ function renderStages() {
     const s = STAGES.find((x) => x.id === b.dataset.id);
     const boss = s.kr ? '<span class="foes"></span>' : `<span class="foes">${stageFoes(s).filter((f) => !f.hiddenUntilActive && (!s.quest || f.boss)).map((f) => iconHtml(f, s.stars >= 3 ? 'md' : 'sm')).join('')}</span>`;   // 降臨はボスだけ
     const head = s.kr ? '刻練場' : s.corridor || s.quest || (SOLO.group != null && !s.rush) ? '★'.repeat(s.stars) : `${s.faction} ${'★'.repeat(s.stars)}`;   // 陣営を選んだあとは★だけ   // 回廊は見出しに名前があるので★だけ
-    b.innerHTML = `<b>${head}</b>${boss}${s.name}`;
+    const sc = STAM.on && stageStamina(s);
+    b.innerHTML = `<b>${head}${sc ? `<span class="stcost">⚡${sc.cost}</span>` : ''}</b>${boss}${s.name}`;
     b.classList.toggle('chain', !!s.chainFrom);
     b.classList.toggle('picked', b.dataset.id === SOLO.stage);
     b.classList.toggle('cleared', SOLO.cleared.includes(b.dataset.id));
@@ -6526,6 +6556,64 @@ function openCharDetail(ch, back) {   // back:閉じたあとに戻る画面(ガ
 // ログイン中はアカウント(progress の stats.shards)、ログインしていないときは端末に貯める
 const SHARD_NAME = '空間のカケラ';
 const SHARD_IC = '<img class="shardic" src="img/shard.webp" alt="💠">';   // 空間のカケラのアイコン
+
+// ===== プレイヤーレベル(経験値)とスタミナ(SQLの21回目)=====
+// Lv n → n+1 に必要な経験値 = round(100 × 1.02^(n−1))。スタミナは3分で1回復、最大は 50 + (Lv−1)÷2
+const LV_BASE = 100, LV_MUL = 1.02, STAMINA_SEC = 180, STAMINA_REFILL = 25;
+const lvNeed = (lv) => Math.round(LV_BASE * Math.pow(LV_MUL, lv - 1));
+function lvInfo(exp) { let lv = 1, left = Math.max(0, exp || 0); while (left >= lvNeed(lv) && lv < 9999) { left -= lvNeed(lv); lv++; } return { lv, into: left, need: lvNeed(lv) }; }
+const lvOf = (exp) => lvInfo(exp).lv;
+const staminaMax = (lv) => 50 + Math.floor((Math.max(1, lv) - 1) / 2);
+const lvTag = (exp) => `<span class="lvtag">Lv.${lvOf(exp)}</span>`;
+// ステージの消費スタミナと経験値(スコアアタックはなし)。サーバーの stage_stamina と同じ
+function stageStamina(st) {
+  if (!st || st.kr) return null;
+  if (st.rush) return { cost: 25, exp: 200 };
+  return ({ 1: { cost: 10, exp: 1 }, 2: { cost: 10, exp: 1 }, 3: { cost: 20, exp: 20 }, 4: { cost: 20, exp: 100 }, 5: { cost: 25, exp: 200 } })[st.stars] || null;
+}
+const STAM = { on: false, val: 0, max: 50, next: 0, at: 0 };   // at:サーバーから受け取った時刻(端末の時計)
+function stamSet(r) {
+  if (!r || typeof r.stamina !== 'number') return;
+  STAM.on = true; STAM.val = r.stamina; STAM.max = r.max || STAM.max; STAM.next = r.next_sec || (r.stamina < STAM.max ? STAMINA_SEC : 0); STAM.at = Date.now();
+  if (typeof r.exp === 'number' && ACC.profile) ACC.profile.exp = r.exp;
+}
+// 今のスタミナ(最後に受け取ってから回復したぶんを足す)と、次の1回復までの秒数
+function stamNow() {
+  if (!STAM.on) return null;
+  if (STAM.val >= STAM.max) return { val: STAM.val, max: STAM.max, next: 0 };
+  const t = (Date.now() - STAM.at) / 1000;
+  if (t < STAM.next) return { val: STAM.val, max: STAM.max, next: Math.ceil(STAM.next - t) };
+  const n = 1 + Math.floor((t - STAM.next) / STAMINA_SEC), val = Math.min(STAM.max, STAM.val + n);
+  return { val, max: STAM.max, next: val >= STAM.max ? 0 : Math.ceil(STAMINA_SEC - ((t - STAM.next) % STAMINA_SEC)) };
+}
+async function stamLoad() {
+  if (!accUid()) { STAM.on = false; return; }
+  try { stamSet(await sbFetch('/rest/v1/rpc/stamina_get', { method: 'POST', body: {} })); } catch (e) { if (isMissingFn(e)) STAM.on = false; }
+  renderTitleAcc(); renderAcct(); if (typeof renderStages === 'function') renderStages();
+}
+const stamChip = () => { const n = stamNow(); return n ? `<button class="stam" data-stam="1" aria-label="スタミナ">⚡<b class="stamv">${n.val}/${n.max}</b><small class="stamt">${n.next ? `${Math.floor(n.next / 60)}:${String(n.next % 60).padStart(2, '0')}` : 'MAX'}</small></button>` : ''; };
+function stamPaint() {
+  const n = stamNow();
+  document.querySelectorAll('.stam').forEach((b) => { if (!n) return; b.querySelector('.stamv').textContent = `${n.val}/${n.max}`; b.querySelector('.stamt').textContent = n.next ? `${Math.floor(n.next / 60)}:${String(n.next % 60).padStart(2, '0')}` : 'MAX'; });
+}
+setInterval(stamPaint, 1000);
+document.addEventListener('click', (e) => { const b = e.target.closest && e.target.closest('[data-stam]'); if (b) { Sound.click(); openStamina(); } });
+// スタミナの画面:カケラ25で最大値ぶん回復
+function openStamina(cost) {
+  const n = stamNow(); if (!n) return;
+  const lv = lvInfo(ACC.profile && ACC.profile.exp);
+  openSheet('⚡ スタミナ', `${cost ? `<p class="sub" style="color:var(--red)">スタミナが足りません(必要 ⚡${cost})</p>` : ''}
+    <div class="stambig">⚡<b>${n.val}</b> / ${n.max}</div>
+    <p class="rbnote">3分で1回復 ・ ${n.next ? `次の回復まで ${Math.floor(n.next / 60)}:${String(n.next % 60).padStart(2, '0')}` : '満タン'}</p>
+    <div class="row"><button id="stamFill"${shardCount() >= STAMINA_REFILL ? '' : ' disabled'}>${SHARD_IC}${STAMINA_REFILL} で ⚡+${n.max} 回復</button></div>
+    <p class="rbnote">Lv.${lv.lv}(次のLvまで ${lv.need - lv.into}) ・ Lvが2上がるたびに最大+1</p>`);
+  $('stamFill').onclick = async () => {
+    const yes = await askConfirm(`${SHARD_IC}${SHARD_NAME}を<b>${STAMINA_REFILL}個</b>使って<br>スタミナを<b>+${n.max}</b>回復します。<small>所持 ${shardCount()} → ${shardCount() - STAMINA_REFILL}</small>`, '回復する');
+    if (!yes) return;
+    try { const r = await sbFetch('/rest/v1/rpc/stamina_refill', { method: 'POST', body: {} }); stamSet(r); if (typeof r.shards === 'number') walletSet({ shards: r.shards }); renderTitleAcc(); renderAcct(); Sound.fanfare(); openStamina(); }
+    catch (e) { openSheet('⚡ スタミナ', `<p class="sub">回復できませんでした。${e.code === 'ST002' ? `${SHARD_NAME}が足りません。` : '通信状態を確かめてください。'}</p>`); }
+  };
+}
 const withShard = (t) => escHtml(t).replace(/💠/g, SHARD_IC);   // 文字の中の💠を、カケラの絵にして出す
 const SHARD_KEY = 'kokusen.shards';
 const shardOnAcc = () => !!accUid() && ACC.progMode === 'table';   // アカウントに貯めるか(サーバーの表が使えるとき)
@@ -7717,7 +7805,7 @@ function renderSelect() {
     const chainSt = MODE === 'solo' && STAGES.find((x) => x.id === SOLO.stage && x.chainFrom);
     $('start').disabled = !full || !!chainSt;
     $('start').textContent = chainSt ? `${'★'.repeat(STAGES.find((x) => x.id === chainSt.chainFrom).stars)}「${STAGES.find((x) => x.id === chainSt.chainFrom).name}」のクリア直後のみ挑めます`
-      : full ? (MODE === 'solo' ? 'この順番でステージに挑む' : 'この順番で対戦開始') : `あと${TEAM_SIZE - picked.length}枚選ぶ`;
+      : full ? (MODE === 'solo' ? `この順番でステージに挑む${STAM.on && stageStamina(STAGES.find((x) => x.id === SOLO.stage)) ? `(⚡${stageStamina(STAGES.find((x) => x.id === SOLO.stage)).cost})` : ''}` : 'この順番で対戦開始') : `あと${TEAM_SIZE - picked.length}枚選ぶ`;
   } else {
     // オンライン対人:部屋に入ってからキャラを決める。決めたあとは選び直せない
     const dr2 = PVP.rank && PVP.draft && PVP.phase === 'lobby' ? rankStage() : null;
@@ -7743,16 +7831,23 @@ function start() {
 // opt:level はCPUの深さ、read はボスが読みに頼る割合、stage はソロのステージ、noDecay は刻の抜け落ちを止める
 const startSolo = (mine, st, seed) => {
   if (st.quest && !questOpen()) { openSheet('降臨', `<p class="sub">降臨は時間外です。${questWhen()}</p>`); renderStages(); return; }
+  const sc = stageStamina(st), sn = stamNow();
+  if (sc && sn && sn.val < sc.cost) { openStamina(sc.cost); return; }   // スタミナが足りない:回復の画面へ(クリアしたときに消費する)
   const sd = st.kr ? (seed != null ? seed : Math.floor(Math.random() * 2147483647)) : 0;   // 刻練場:敵の並びを決める種
   return startMatch(mine, st.kr ? krFoes(sd) : stageFoes(st), '敵', { level: st.level, read: st.read, stage: st, noDecay: true, krSeed: sd });
 };
+// ソロの勝ちの報告は1回だけ(カケラ・称号・降臨の抽選・スタミナと経験値を、まとめてサーバーが返す)
+function soloRewardOnce() {
+  if (S.soloRewardP) return S.soloRewardP;
+  return (S.soloRewardP = (async () => { const run = S.soloRun && await S.soloRun; if (!run) return null; try { return await verRpc('solo_reward', { p_run: run }); } catch (e) { if (e.code === 'KV001') verOld(); return null; } })());
+}
 let LAST_MATCH = null;   // 再挑戦用:直前に始めた対戦の中身
 async function startMatch(mine, theirs, foeLabel, opt = {}) {
   Sound.preload();   // プチュンの音(音声ファイル)を先に読み込む
   // 刻練場:始める前にサーバーに挑戦の開始を知らせる。古い版で断られたら、遊ぶ前に更新を求める(遊んだあとに記録が残らない、を防ぐ)
   let krRun = null;
   // 刻の回廊の★4・★5(報酬のあるステージ):挑戦の開始をサーバーに知らせる(勝ったときの報酬の突き合わせ)
-  const soloOn = opt.stage && !opt.spectate && (opt.stage.reward ? walletOn() : UNLOCK_STAGES.includes(opt.stage.id) && UNL.ready);
+  const soloOn = opt.stage && !opt.spectate && ((STAM.on && !!stageStamina(opt.stage)) || (opt.stage.reward ? walletOn() : UNLOCK_STAGES.includes(opt.stage.id) && UNL.ready));
   const soloRun = soloOn ? verRpc('solo_start', { p_stage: opt.stage.id, p_party: mine.map((c) => c.id) }).catch(() => verRpc('solo_start', { p_stage: opt.stage.id }).catch(() => null)) : null;
   if (opt.stage && opt.stage.kr && !opt.spectate && accUid()) {
     try { krRun = await verRpc('kr_start', {}); } catch (e) { if (e.code === 'KV001') { verOld(); return; } krRun = null; }
