@@ -4787,7 +4787,7 @@ function pvpJoin(codeArg) {
 function pvpReady() {
   PVP.team = picked.slice(); PVP.teamSalt = rnd(); PVP.phase = 'ready';
   const p = ACC.profile;
-  pvpPublish({ ts: seal(PVP.teamSalt + '|' + PVP.team.join(',')), acc: p ? { id: p.id } : null, nm: p ? String(p.name).slice(0, 12) : null, ff: null, rs: null });
+  pvpPublish({ ts: seal(PVP.teamSalt + '|' + PVP.team.join(',')), acc: p ? { id: p.id } : null, nm: p ? String(p.name).slice(0, 12) : null, ff: null, rs: null, afk: null });
   pvpStep();
   renderSelect();
 }
@@ -4795,7 +4795,7 @@ function pvpLeave() {
   PVP.phase = 'idle'; PVP.code = ''; PVP.applying = false;
   if (PVP.rank) { FORMAT = PVP.rank.fmt0; PVP.rank = null; PVP.draft = null; }
   if (PVP.rndFmt0) { FORMAT = PVP.rndFmt0; PVP.rndFmt0 = null; }
-  pvpPublish({ g: null, ts: null, t: null, n: null, c: null, r: null, b: null, last: null, d: null, acc: null, ff: null, rs: null });
+  pvpPublish({ g: null, ts: null, t: null, n: null, c: null, r: null, b: null, last: null, d: null, acc: null, ff: null, rs: null, afk: null });
   if (PVP.room && PVP.room.leave) PVP.room.leave();
   renderSelect();
 }
@@ -5092,7 +5092,7 @@ async function pvpStep() {
     });
     if (PVP.rank) PVP.rank.accP = PVP.foeAccP;
     accVerifyFoe(fp.acc).then((v) => { PVP.foeAcc = v; if (v && S && S.teams[1]) { PVP.foeName = v.name; S.teams[1].label = v.name; render(); } });
-    PVP.hist = []; PVP.matchId = rnd(); PVP.foeIds = t.ids.slice();
+    PVP.hist = []; PVP.matchId = rnd(); PVP.foeIds = t.ids.slice(); PVP.autoStreak = 0; PVP.mySince = 0; PVP.autoNow = false;
     pvpSpecSync();
     await startMatch(PVP.team.map((id) => charById(id)), chars, said || '相手');
     pvpStep();
@@ -5104,6 +5104,7 @@ async function pvpStep() {
   // 相手が「応答なしで不戦勝」を宣言した(こちらが止まっていたか、接続が切れていた)
   if (fp.ff != null && fp.ff >= PVP.n - 1) { await pvpForfeit(1); return; }
   if (fp.rs != null && fp.rs >= PVP.n - 1) { await endByResign('foe'); return; }
+  if (fp.afk != null && fp.afk >= PVP.n - 1) { await pvpAfkLose(1); return; }   // 相手が2回続けて放置した
   const k = PVP.n, turn = pvpTurn();
   // 相手がこのラリーについて公開している内容。相手が先に次へ進んでいたら、ひとつ前の記録を見る
   const fr = fp.n === k ? fp : fp.last && fp.last.n === k ? fp.last : null;
@@ -5126,18 +5127,51 @@ async function pvpStep() {
   await pvpApply(() => normalRally(mine, r.h, null), { n: k, r: { h: mine, s: mySalt }, c: PVP.my.c }, { t: 'r', a: mine, b: r.h });
 }
 
-// 相手の応答を待っている時間を数え、60秒続いたら不戦勝にする。
+// 放置:自分の番で60秒手を出さないと、自動でランダムな手を出す。これが2回続いたら負け(相手の不戦勝)
+const PVP_AUTO = 60;
+// 相手の応答を待っている時間を数え、130秒続いたら不戦勝にする(相手との接続が切れて、自動の手も届かないとき)。
 // 待つのは、こちらが手を選び終わったのに相手が出さないとき・相手のBREAKの番・相手との接続が切れているとき
-const PVP_TIMEOUT = 60;
+const PVP_TIMEOUT = 130;
 function pvpWatch() {
   const playing = PVP.on && PVP.phase === 'play' && S && !S.over && !PVP.applying;
   const turn = playing ? pvpTurn() : '';
+  // 自分の番:60秒で自動の手
+  const myTurn = playing && !busy && PVP.hand === null && (turn === 'pick' || turn === 'mine');
+  if (!myTurn) PVP.mySince = 0;
+  else {
+    if (!PVP.mySince) PVP.mySince = Date.now();
+    const myLeft = PVP_AUTO - Math.floor((Date.now() - PVP.mySince) / 1000);
+    if (myLeft <= 0) { PVP.mySince = 0; pvpAutoHand(); return; }
+    if (myLeft <= 15) setResult(`あと${myLeft}秒で自動で手を出します${PVP.autoStreak ? '(もう一度自動になると負け)' : ''}`);
+    return;
+  }
   const waiting = playing && (!pvpFoe() || turn === 'foe' || (turn === 'pick' && PVP.hand !== null) || (turn === 'mine' && PVP.hand !== null));
   if (!waiting) { PVP.waitSince = 0; return; }
   if (!PVP.waitSince) PVP.waitSince = Date.now();
   const left = PVP_TIMEOUT - Math.floor((Date.now() - PVP.waitSince) / 1000);
   if (left <= 0) { PVP.waitSince = 0; pvpForfeit(0); return; }
-  if (left <= PVP_TIMEOUT - 15) setResult(`相手の応答がありません。あと${left}秒で不戦勝になります`);
+  if (left <= 30) setResult(`相手の応答がありません。あと${left}秒で不戦勝になります`);
+}
+// 60秒手を出さなかった:ランダムな手を自動で出す。2回続けて自動になったら負け
+async function pvpAutoHand() {
+  if (!S || S.over || pvpLocked()) return;
+  if ((PVP.autoStreak || 0) >= 1) { await pvpAfkLose(0); return; }
+  const h = HAND_KEYS[Math.floor(Math.random() * HAND_KEYS.length)];
+  PVP.autoStreak = (PVP.autoStreak || 0) + 1;
+  log(`60秒手を出さなかったので、自動で ${HANDS[h].icon} を出した(もう一度続けて自動になると負け)`);
+  PVP.autoNow = true;
+  try { await pvpPick(h); } finally { PVP.autoNow = false; }
+}
+// 放置で負け。who:放置した側(0=自分、1=相手)
+async function pvpAfkLose(who) {
+  if (!S || S.over) return;
+  const side = who === 0 ? 1 : 0;   // 勝った側
+  S.over = true; S.winner = side; S.forfeit = side;
+  if (PVP.on && !S.spectate) { PVP.hist.push({ t: 'end', w: side, why: 'ff' }); pvpSpecSync(); }
+  if (who === 0) pvpPublish({ afk: PVP.n });   // 相手の画面も終わらせる
+  log(who === 0 ? '2回続けて手を出さなかったため、相手の不戦勝' : '相手が2回続けて手を出さなかったため、不戦勝');
+  busy = true;
+  try { await finale(); } finally { busy = false; flushLog(); render(); }
 }
 // 不戦勝・不戦敗で試合を終える。side:勝った側(0=自分、1=相手)
 // リタイア:確認してから負けにする。オンライン対人では相手に知らせ、相手の勝ちになる
@@ -5181,7 +5215,7 @@ async function pvpForfeit(side) {
   S.over = true; S.winner = side; S.forfeit = side;
   if (PVP.on && !S.spectate) { PVP.hist.push({ t: 'end', w: side, why: 'ff' }); pvpSpecSync(); }
   if (side === 0) pvpPublish({ ff: PVP.n });   // 相手が戻ってきたときに、相手の画面も終わらせる
-  log(side === 0 ? '相手の応答が60秒なかったため、不戦勝' : '応答がなかったため、相手の不戦勝');
+  log(side === 0 ? '相手の応答が長い間なかったため、不戦勝' : '応答がなかったため、相手の不戦勝');
   busy = true;
   try { await finale(); } finally { busy = false; flushLog(); render(); }
 }
@@ -5289,6 +5323,7 @@ async function pvpApply(run, last, rec) {
 // 手のボタンを押したとき(オンライン対人)
 async function pvpPick(hand) {
   if (pvpLocked() || !S || S.over) return;
+  if (!PVP.autoNow) PVP.autoStreak = 0;   // 自分で手を出したら、放置の回数は0に戻す
   const k = PVP.n;
   Sound.lever();
   if (pvpTurn() === 'mine') {
@@ -6011,7 +6046,7 @@ const RULEBOOK = {
   '対人': `<h3>フリー戦</h3><p>「相手を探す」を押すと、ランダムな相手と自動で当たる。形式はアドバンスだけ。お互いにキャラを選んで「準備完了」を押すと対戦が始まる。レートは動かない。ログインなしでも遊べる。</p>
     <h3>プラベ</h3><p>相手と同じ合言葉を入れて部屋に入る(知り合いと遊ぶとき)。レートは動かない。ログインなしでも遊べる。空間のカケラは、フリー戦と合わせて1日200個まで。</p>
     <h3>パーティのルール</h3><p>★4以上は1パーティに1体まで。同じ人物は1パーティに1体まで。ベーシックではガチャキャラは使えない。</p>
-    <h3>切断・放置</h3><p>相手の応答が60秒ないと不戦勝。ランク戦の途中で抜けると負けになる。</p>
+    <h3>切断・放置</h3><p>自分の番で60秒手を出さないと、ランダムな手が自動で出る。2回続けて自動になると負け(相手の不戦勝)。相手との接続が切れて130秒応答がないときも不戦勝。ランク戦の途中で抜けると負けになる。</p>
     <h3>版の確認</h3><p>相手とゲームの版が違うと対戦できない。「版が違います」と出たら、お互いにページを開き直す。</p>`,
   'ランク戦': `<h3>始め方</h3><p>ログインして「ランク戦」→「相手を探す」。レートの近い相手と自動で当たる(待つほど、レートの離れた相手とも当たりやすくなる)。</p>
     <h3>3本勝負</h3><p>第1戦ベーシック → 第2戦アドバンス → 第3戦ベーシック。先に2勝した方の勝ち。引き分けはその試合をやり直す。リタイア・応答なしは3本勝負ごと負け。</p>
