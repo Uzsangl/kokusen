@@ -5875,7 +5875,8 @@ function backToHub() {
 }
 // キャラ一覧:陣営ごとに全キャラ。押すと詳しい説明(持っていないキャラは薄く)
 function openCharList() {
-  const groups = [['錨', (c) => c.faction === '錨'], ['零', (c) => c.faction === '零'], ['矢', (c) => c.faction === '矢'], ['そのほか', (c) => !['錨', '零', '矢'].includes(c.faction)]];
+  const isoChar = (c) => c.id === 'g_z5' || !['錨', '零', '矢'].includes(c.faction);   // ゼノ【仮面】は隔絶に入れる
+  const groups = [['錨', (c) => c.faction === '錨'], ['零', (c) => c.faction === '零' && !isoChar(c)], ['矢', (c) => c.faction === '矢'], ['隔絶', isoChar]];
   const list = ALL_CHARS.filter((c) => !c.boss);
   openSheet('キャラ一覧', `<div class="charlist">${groups.map(([g, f]) => { const cs = list.filter(f); return cs.length ? `<h3>${g}</h3><div class="cl">${cs.map((c) => `<button data-id="${c.id}" class="${charUnlocked(c) ? '' : 'lock'}">${iconHtml(c, 'md')}<span>${escHtml(dispName(c))}</span></button>`).join('')}</div>` : ''; }).join('')}</div>`);
   document.querySelectorAll('#sheetBody .charlist button[data-id]').forEach((b) => { const go = () => openCharDetail(charById(b.dataset.id)); bindPress(b, go, go); });   // タップでも長押しでも名前とステータス(「ガチャに戻る」は出さない)
