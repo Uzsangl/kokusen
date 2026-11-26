@@ -1003,6 +1003,14 @@
   .stages.vlist button { padding-right: 44px; }
   .stages.vlist button.cleared::after { right: 46px; }
   #select #stageNote { display: none; }   /* ステージの説明は ⓘ で見る */
+
+  /* ステージの ⓘ:ボスの性格 */
+  .bp { margin-top: 10px; display: grid; gap: 6px; }
+  .bp > b { color: var(--gold); font-size: .9rem; }
+  .bpk { display: grid; grid-template-columns: 5.5em 1fr; gap: 8px; align-items: center; padding: 6px 10px; border-radius: 8px; font-size: .82rem; color: var(--sub);
+    border: 2px solid transparent; background: linear-gradient(180deg, #161a38, #0f1229) padding-box, var(--goldThin) border-box; }
+  .bpk i { font-style: normal; font-weight: 900; color: #ffe08a; }
+  .bpk.q i { color: var(--sub); letter-spacing: .1em; }
 </style>
 </head>
 <body>
@@ -3896,11 +3904,43 @@ const HINT_LINES = {
   },
 };
 const HINT_ALIAS = { c5_xeno_body: 'xeno_body', c5_xeno_spirit: 'xeno_spirit', c5_tsuru1: 'c5_tsuru' };
+// 性格の名前と短い説明(ステージの ⓘ・ルールブック)
+const PERSONA_INFO = {
+  prey: ['捕食', '同じ手が2回続いたら、3回目を狙う'], rewind: ['巻戻', '負け・あいこの直後のクセを読む'], sight: ['天眼', '直前2手の並びから次を読む'],
+  rage: ['激昂', '一番火力の出る技で攻める'], bias: ['偏り読み', '一番多く出す手に勝つ手を出す'], hunt: ['狩り', 'ピンチの回復・守りの技を狙う'],
+  bait: ['撒き餌', 'わざと負けて、偏りを育てる'], tilt: ['ティルト', '連敗で崩れ、手がばらばらになる'],
+};
+// 見抜いた性格(戦いの中でボスがその性格になったら解放)。ログイン中はアカウント、ゲストは端末に保存
+function bossSeen() {
+  let a = {}; try { a = JSON.parse(localStorage.getItem('kokusen.bossSeen') || '{}') || {}; } catch (e) { /* 読めなくても動く */ }
+  const b = (ACC.stats && ACC.stats.bossSeen) || {};
+  const out = {}; [a, b].forEach((o) => Object.entries(o).forEach(([k, v]) => { out[k] = [...new Set([...(out[k] || []), ...(v || [])])]; }));
+  return out;
+}
+function bossSeenAdd(id, kind) {
+  const all = bossSeen(); if ((all[id] || []).includes(kind)) return;
+  all[id] = [...(all[id] || []), kind];
+  try { localStorage.setItem('kokusen.bossSeen', JSON.stringify(all)); } catch (e) { /* 保存できなくても動く */ }
+  if (ACC.stats && accUid()) { ACC.stats.bossSeen = all; mailSave(); }
+  log(`🔓 ${PERSONA_INFO[kind] ? PERSONA_INFO[kind][0] : kind} を見抜いた(ステージの i で見られる)`);
+}
+// ステージの ⓘ に出す「ボスの性格」(見抜いたものだけ名前と説明。まだのものは ？？？)
+function bossPersonaHtml(st) {
+  if (!st || st.stars !== 5) return '';
+  const seen = bossSeen(), done = new Set();
+  return stageFoes(st).filter((f) => ADAPT[f.id || ''] || ADAPT[(Object.entries(ENEMIES).find(([, e]) => e === f) || [])[0]]).map((f) => {
+    const id0 = f.id || (Object.entries(ENEMIES).find(([, e]) => e === f) || [])[0], key = HINT_ALIAS[id0] || id0;
+    if (done.has(key)) return ''; done.add(key);
+    const have = seen[key] || [];
+    return `<div class="bp"><b>${escHtml(f.name)}の性格</b>${ADAPT[id0].kinds.map((k) => have.includes(k) ? `<span class="bpk"><i>${PERSONA_INFO[k][0]}</i>${PERSONA_INFO[k][1]}</span>` : '<span class="bpk q"><i>？？？</i>戦って見抜くと解放</span>').join('')}</div>`;
+  }).join('');
+}
 function bossHint(S) {
   const me = active(S.teams[1]), id = HINT_ALIAS[me.ch.id] || me.ch.id, L = HINT_LINES[id];
   if (!L || !S.stage || S.stage.stars !== 5 || !S.adapt) return;
   const key = S.adapt.tilt > 0 ? 'tilt' : (S.adapt.kind && L[S.adapt.kind] ? S.adapt.kind : 'base');
   if (key === me.hintKey && S.rally - (me.hintAt || 0) < 3) return;
+  if (key !== me.hintKey && L[key] && key !== 'base' && key !== 'tilt') bossSeenAdd(id, key);   // その性格を見抜いた
   me.hintKey = key; me.hintAt = S.rally;
   const keys = Object.keys(L), shown = Math.random() < 0.9 ? key : pickOne(keys.filter((k) => k !== key));
   log(`💬 ${nameOf(me)}「${pickOne(L[shown])}」`);
@@ -6347,6 +6387,13 @@ const RULEBOOK = {
     </ul>
     <div class="rbflow"><span>★1・2<small>⚡10 経験1</small></span><span>★3<small>⚡20 経験20</small></span><span>★4<small>⚡20 経験100</small></span><span>★5<small>⚡25 経験200</small></span></div>
     <p class="rbnote">刻の回廊・降臨も同じ。スコアアタックはなし ・ ログイン中だけ</p>
+    <h3>★5のボスの性格</h3>
+    <ul class="rb sm">
+      <li>★5のボスは<b>3つの性格</b>を持ち、あなたのクセを見て切り替える</li>
+      <li>ログの一言で、いまの性格がわかる(ときどきウソ)</li>
+      <li>戦って見抜いた性格は、ステージの <b>i</b> で見られる</li>
+    </ul>
+    <table class="rbt">${['prey', 'rewind', 'sight', 'rage', 'bias', 'hunt', 'bait', 'tilt'].map((k) => `<tr><td>${PERSONA_INFO[k][0]}</td><td>${PERSONA_INFO[k][1]}</td></tr>`).join('')}</table>
     <p class="rbnote">ソロではHPが減っていくことも、100ラリー判定もない</p>`,
   '対人': `<table class="rbt">
       <tr><td>フリー</td><td>自動で相手を探す</td></tr>
@@ -7891,7 +7938,7 @@ document.addEventListener('click', (e) => {
   const st = STAGES.find((x) => x.id === i.dataset.info); if (!st) return;
   Sound.click();
   const sc = STAM.on && stageStamina(st);
-  openSheet(st.name, `<p>${stageNoteHtml(st)}</p>${sc ? `<p class="rbnote">消費 ⚡${sc.cost} ・ 経験値 ${sc.exp}(クリアしたとき)</p>` : ''}`);
+  openSheet(st.name, `<p>${stageNoteHtml(st)}</p>${bossPersonaHtml(st)}${sc ? `<p class="rbnote">消費 ⚡${sc.cost} ・ 経験値 ${sc.exp}(クリアしたとき)</p>` : ''}`);
 }, true);
 // ソロ:ステージを押したら、そのままキャラ選択へ(挑めないステージは、一覧に残って理由を出す)
 function goPickNow() { if (MODE === 'solo' && canPick()) { Sound.click(); setStep('pick'); } }
