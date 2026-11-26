@@ -858,12 +858,13 @@
   #title .tlogo { position: absolute; left: 50%; top: calc(-16px + 100vw * 1.5 * .39); transform: translate(-50%, -50%); width: 60vw; margin: 0; }
   #title .tlogo img { width: 100%; }
   #title .tplay { margin-top: min(calc(100vw * 1.5 * .95 - 74px), 52vh); }
-  @media (min-width: 1000px) and (min-height: 560px) {
-    .tkv { left: 50%; right: auto; width: 56vh; transform: translateX(-50%); }   /* 横長の画面:絵は中央に縦長のまま。左右の端はぼかす */
-    .tkv img { max-height: none; -webkit-mask-image: linear-gradient(180deg, #000 72%, transparent 100%), linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); -webkit-mask-composite: source-in;
-      mask-image: linear-gradient(180deg, #000 72%, transparent 100%), linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); mask-composite: intersect; }
-    #title .tlogo { top: calc(-16px + 56vh * 1.5 * .39); width: 34vh; }
-    #title .tplay { margin-top: calc(56vh * 1.5 * .9 - 74px); }
+  @media (min-width: 1000px) and (min-height: 560px) {   /* 横長の画面:横長の絵(3人が横に並ぶ)を上に出し、ロゴは3人の顔より下に */
+    .tkv img { max-height: 64vh; object-position: 50% 8%;
+      -webkit-mask-image: linear-gradient(180deg, #000 72%, transparent 100%), linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent); -webkit-mask-composite: source-in;
+      mask-image: linear-gradient(180deg, #000 72%, transparent 100%), linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent); mask-composite: intersect; }
+    #title .tlogo { position: relative; left: auto; top: auto; transform: none; width: auto; margin-top: 49vh; }
+    #title .tlogo img { width: min(86%, 300px, 34vh); }
+    #title .tplay { margin-top: 18px; }
   }
 </style>
 </head>
@@ -890,7 +891,7 @@
   </div>
   <!-- タイトル画面 -->
   <section id="title">
-    <div class="tkv" aria-hidden="true"><img src="img/title-kv.webp" alt="" width="1024" height="1536"></div>
+    <div class="tkv" aria-hidden="true"><picture><source media="(min-width: 1000px) and (min-height: 560px)" srcset="img/title-kv-wide.webp" width="1536" height="1024"><img src="img/title-kv.webp" alt="" width="1024" height="1536"></picture></div>
     <div class="tbg" aria-hidden="true"><img src="icons/rei.webp" alt=""><img src="icons/kaji.webp" alt=""><img src="icons/tsuru.webp" alt=""></div>
     <div class="ttop"><button class="ib" id="tFriend" aria-label="フレンド">👥<i class="badge hidden" id="tFriendN"></i></button><button class="ib" id="tMail" aria-label="メールボックス">✉<i class="badge hidden" id="tMailN"></i></button><button class="ib" id="tRank" aria-label="ランキング">🏆</button><button class="ib" id="tSet" aria-label="設定">⚙</button></div>
     <div class="tlogo"><img src="img/logo-word.webp" alt="刻戦 KOKUSEN" width="600" height="384"></div>
