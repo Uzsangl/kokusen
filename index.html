@@ -989,6 +989,7 @@
   .bar2 .tr i { display: block; height: 100%; transition: width .4s; }
   .bar2 .v { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
   .bar2 .v small { color: var(--sub); font-weight: 500; margin-left: 3px; }
+  .bar2.exp .v small { margin: 0 3px 0 0; }
   .bar2.exp .lb, .bar2.exp .v { color: #ffd76a; } .bar2.exp .tr i { background: linear-gradient(90deg, #b8862a, #ffe08a); }
   .bar2.sta { cursor: pointer; } .bar2.sta .lb, .bar2.sta .v, .bar2.sta .v b { color: #7fd8ff; } .bar2.sta .tr i { background: linear-gradient(90deg, #2a7fd0, #9fe7ff); }
   .ab-side { display: grid; gap: 4px; justify-items: end; padding-left: 10px; border-left: 1px solid rgba(240,192,64,.35); font-weight: 900; font-variant-numeric: tabular-nums; }
@@ -6873,7 +6874,7 @@ function acctBoard(p) {
   return `<div class="ab">
     <div class="nm">${lvTag(p.exp)}${titleTag(p.title)}<span>${escHtml(p.name)}</span><button id="accOpen">アカウント</button></div>
     <div class="ab-bars">
-      <div class="bar2 exp"><span class="lb">EXP</span><span class="tr"><i style="width:${Math.round(li.into / li.need * 100)}%"></i></span><span class="v">Lv.${li.lv}</span></div>
+      <div class="bar2 exp"><span class="lb">EXP</span><span class="tr"><i style="width:${Math.round(li.into / li.need * 100)}%"></i></span><span class="v"><small>あと</small><b>${(li.need - li.into).toLocaleString()}</b></span></div>
       ${n ? `<div class="bar2 sta" data-stam="1"><span class="lb">スタミナ</span><span class="tr"><i class="stamw" style="width:${Math.min(100, Math.round(n.val / n.max * 100))}%"></i></span><span class="v"><b class="stamv">${n.val}/${n.max}</b><small class="stamt">${t}</small></span></div>` : ''}
     </div>
     <div class="ab-side"><span class="sh">${SHARD_IC}${shardCount().toLocaleString()}</span><span class="rt">レート${p.rating}</span></div>
