@@ -7131,7 +7131,7 @@ const GACHA_WHITE_POKYUN = 0.01;  // 白発展+ぽきゅん:★4以上の1%だ�
 const GACHA_RAINBOW_RATE = 0.2;   // ★5を引いたときに、虹の先バレ(ぽぽぽぽぽきゅん)が出る割合
 const GACHA_POKYUN_HI = 0.6, GACHA_POKYUN_HIT = 0.4;   // HI:★4以上のときに出る割合(占有率) HIT:出たときに★4以上の割合
 // ガチャの先バレ期待度(設定):off なし / 40 出たら★4以上40% / 90 出たら★4以上90% / ex 90%+★5は必ず虹の先バレ。どれも★4以上での出る割合(占有率)は同じ
-const GACHA_PK_MODES = { off: { name: 'OFF', note: 'ガチャの先バレ(ぽきゅん)を出さない' }, 40: { name: '40%', note: 'ぽきゅんが来たら★4以上の期待度40%' }, 90: { name: '90%', note: 'ぽきゅんが来たら★4以上の期待度90%' }, ex: { name: 'EX', note: '虹のぽきゅんしか来ない(来たら★5確定)。★5の9割で来る' } };
+const GACHA_PK_MODES = { off: { name: 'OFF', note: '先バレを出さない' }, 40: { name: '40%', note: '先バレ発生で★4以上の期待度40%' }, 90: { name: '90%', note: '先バレ発生で★4以上の期待度90%' }, ex: { name: 'EX', note: '虹の先バレだけ(発生で★5確定)。★5の9割で発生' } };
 const gachaPkHit = () => (FX.gachaPk === '90' ? 0.9 : GACHA_POKYUN_HIT);
 // 外れのぽきゅんは★3が入っている(オレンジまで上がる)ときだけ出す。白で割れる外れにはぽきゅんを出さない
 function gachaPokyunRate(hasHigh, n, has3, R = GACHA_RATES) {
