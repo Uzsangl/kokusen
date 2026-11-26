@@ -551,12 +551,6 @@
   .charlist .cl button .cico { width: 100%; height: auto; aspect-ratio: 1; display: block; border-radius: 14px; }
   .charlist .cl button.lock { opacity: .4; }
   /* 背景の3人:顔がロゴに隠れないよう、ロゴより上に顔が来るように並べる(ロゴは胸元から下に重なる) */
-  /* タイトルの上の絵(レイ・カジ・ツル)。画面の横いっぱいに出し、下はぼかして背景になじませる */
-  #title { position: relative; }
-  .tkv { position: absolute; top: -16px; left: -16px; right: -16px; pointer-events: none; z-index: 0; }
-  .tkv img { display: block; width: 100%; height: auto; max-height: 62vh; object-fit: cover; object-position: 50% 30%;
-    -webkit-mask-image: linear-gradient(180deg, #000 55%, transparent 100%); mask-image: linear-gradient(180deg, #000 55%, transparent 100%); }
-  #title .tbg { display: none; }   /* 前の3人のアイコンは出さない(上の絵に入っている) */
   .tbg { position: absolute; left: 0; right: 0; top: 34px; display: flex; justify-content: center; gap: 2%; pointer-events: none; }
   .tbg img { width: min(31%, 17vh); aspect-ratio: 1; object-fit: cover; object-position: 50% 30%; opacity: .5; border-radius: 16px;
     -webkit-mask-image: linear-gradient(180deg, #000 45%, transparent 92%); mask-image: linear-gradient(180deg, #000 45%, transparent 92%); }
@@ -850,20 +844,6 @@
   #battle #hands button:active:not(:disabled) { transform: translateY(2px); }
   #battle .foot button { border: 2px solid transparent; background: linear-gradient(180deg, #1d2246, #141833) padding-box, var(--goldThin) border-box; }
   #battle .foot button.resign { background: linear-gradient(180deg, #2a1830, #1a1022) padding-box, linear-gradient(180deg, rgba(240,90,110,.7), rgba(140,40,60,.4)) border-box; }
-
-  /* ===== タイトルの縦長の絵(上に時計、下にレイ・カジ・ツル)。ロゴは時計の上、プレイは3人の下 ===== */
-  .tkv img { max-height: 84vh; object-fit: cover; object-position: 50% 100%;
-    -webkit-mask-image: linear-gradient(180deg, #000 72%, transparent 100%); mask-image: linear-gradient(180deg, #000 72%, transparent 100%); }
-  #title .tlogo { margin-top: 3vh; }
-  #title .tlogo img { width: min(62%, 240px, 30vh); }
-  #title .tplay { margin-top: 34vh; }
-  @media (min-width: 1000px) and (min-height: 560px) {
-    .tkv { left: 50%; right: auto; width: 56vh; transform: translateX(-50%); }   /* 横長の画面:絵は中央に縦長のまま。左右の端はぼかす */
-    .tkv img { max-height: none; -webkit-mask-image: linear-gradient(180deg, #000 72%, transparent 100%), linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); -webkit-mask-composite: source-in;
-      mask-image: linear-gradient(180deg, #000 72%, transparent 100%), linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); mask-composite: intersect; }
-    #title .tlogo { margin-top: 4vh; } #title .tlogo img { width: min(40vh, 300px); }
-    #title .tplay { margin-top: 40vh; }
-  }
 </style>
 </head>
 <body>
@@ -889,7 +869,6 @@
   </div>
   <!-- タイトル画面 -->
   <section id="title">
-    <div class="tkv" aria-hidden="true"><img src="img/title-kv.webp" alt="" width="1024" height="1536"></div>
     <div class="tbg" aria-hidden="true"><img src="icons/rei.webp" alt=""><img src="icons/kaji.webp" alt=""><img src="icons/tsuru.webp" alt=""></div>
     <div class="ttop"><button class="ib" id="tFriend" aria-label="フレンド">👥<i class="badge hidden" id="tFriendN"></i></button><button class="ib" id="tMail" aria-label="メールボックス">✉<i class="badge hidden" id="tMailN"></i></button><button class="ib" id="tRank" aria-label="ランキング">🏆</button><button class="ib" id="tSet" aria-label="設定">⚙</button></div>
     <div class="tlogo"><img src="img/logo-word.webp" alt="刻戦 KOKUSEN" width="600" height="384"></div>
