@@ -483,6 +483,24 @@
   body.on-title { overflow-x: hidden; }
   #title { position: relative; display: flex; flex-direction: column; }
   #title.hidden { display: none; }
+  /* プレイを押したあとの画面:アカウント・ソロ・対人・ガチャの大きなボタンと、下に小さなボタン4つ */
+  #hub.hidden { display: none; }
+  .hubtop { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .hubacc { width: 100%; display: flex; align-items: center; gap: 10px; text-align: left; padding: 12px 14px; border-radius: 16px; margin-bottom: 14px; }
+  .hubacc .cico { flex: none; }
+  .hubacc .nm { font-weight: 900; font-size: 1.05rem; }
+  .hubacc .meta { font-size: .78rem; color: var(--sub); }
+  .hubacc .rate { color: var(--gold); font-weight: 900; }
+  .hubbig { display: grid; gap: 12px; }
+  .hubbig button { min-height: 96px; font-size: 1.5rem; font-weight: 900; letter-spacing: .3em; border-radius: 20px; border: 2px solid var(--gold); }
+  .hubbig button small { display: block; font-size: .72rem; letter-spacing: 0; font-weight: 500; color: var(--sub); margin-top: 4px; }
+  .hubsmall { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 16px; }
+  .hubsmall button { padding: 12px 2px; border-radius: 18px; font-size: .8rem; line-height: 1.3; }
+  .hubsmall button b { display: block; font-size: 1.3rem; }
+  .charlist h3 { margin: 12px 0 6px; font-size: .9rem; color: var(--gold); }
+  .charlist .cl { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 6px; }
+  .charlist .cl button { padding: 6px 2px; font-size: .7rem; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .charlist .cl button.lock { opacity: .4; }
   /* 背景の3人:顔がロゴに隠れないよう、ロゴより上に顔が来るように並べる(ロゴは胸元から下に重なる) */
   .tbg { position: absolute; left: 0; right: 0; top: 34px; display: flex; justify-content: center; gap: 2%; pointer-events: none; }
   .tbg img { width: min(31%, 17vh); aspect-ratio: 1; object-fit: cover; object-position: 50% 30%; opacity: .5; border-radius: 16px;
@@ -772,12 +790,28 @@
     </div>
   </section>
 
+  <section id="hub" class="panel hidden">
+    <div class="hubtop"><button id="hubBack" class="back">◀ タイトルへ</button></div>
+    <button class="hubacc" id="hubAcc"></button>
+    <div class="hubbig">
+      <button id="hubSolo">ソロ<small>ステージ・刻の回廊・スコアアタック・降臨</small></button>
+      <button id="hubPvp">対人<small>ランク・フリー・プラベ</small></button>
+      <button id="hubGacha">ガチャ<small>新しいキャラを手に入れる</small></button>
+    </div>
+    <div class="hubsmall">
+      <button id="hubCpu"><b>🤖</b>CPU戦</button>
+      <button id="hubChars"><b>🃏</b>キャラ一覧</button>
+      <button id="hubRule"><b>📖</b>ルール<br>ブック</button>
+      <button id="hubDaily"><b>📅</b>デイリー</button>
+    </div>
+  </section>
+
   <section id="select" class="panel hidden">
     <div class="selL">
-    <div class="seltop"><button id="toTitle" class="back">◀ タイトルへ</button><span></span><button class="ib" id="selFriend" aria-label="フレンド">👥</button><button class="ib" id="selRank" aria-label="ランキング">🏆</button><button class="ib" id="selTitles" aria-label="称号一覧">🎖</button></div>
+    <div class="seltop"><button id="toTitle" class="back">◀ もどる</button><span></span><button class="ib" id="selFriend" aria-label="フレンド">👥</button><button class="ib" id="selRank" aria-label="ランキング">🏆</button><button class="ib" id="selTitles" aria-label="称号一覧">🎖</button></div>
     <div class="acct" id="acct"></div>
-    <h2>対戦相手</h2>
-    <div class="levels" id="modes"></div>
+    <h2 class="hidden">対戦相手</h2>
+    <div class="levels hidden" id="modes"></div>   <!-- ソロ・対人・CPU戦はハブで選ぶ -->
     <div class="levels" id="formats" style="grid-template-columns:1fr 1fr"><button data-f="basic">ベーシック</button><button data-f="advance">アドバンス</button><button data-f="kr" class="hidden">スコアアタック</button><button data-f="quest" class="hidden">降臨</button></div>
     <p class="sub" id="formatNote"></p>
     <div id="cpuOpts">
@@ -5550,10 +5584,39 @@ async function accLoadRanking() {
 function showTitle(on) {
   Bgm.play(on ? 'title' : 'menu');
   $('title').classList.toggle('hidden', !on);
-  $('select').classList.toggle('hidden', on);
+  $('select').classList.add('hidden');
+  $('hub').classList.toggle('hidden', on);
   document.body.classList.toggle('on-title', on);
   window.scrollTo(0, 0);
-  if (on) renderTitleAcc(); else setStep('menu');
+  if (on) renderTitleAcc(); else renderHub();
+}
+// プレイを押したあとの画面(ハブ)。ソロ・対人・CPU戦を選ぶと、いつものメニューへ
+function renderHub() {
+  const p = ACC.profile, el = $('hubAcc');
+  if (!p) el.innerHTML = `<span style="font-size:28px">👤</span><div><div class="nm">ゲスト</div><div class="meta">ログインすると、記録やカケラを保存できます</div></div>`;
+  else { const fav = favChar(p); el.innerHTML = `${fav ? iconHtml(fav, 'lg') : '<span style="font-size:28px">👤</span>'}<div><div class="nm">${titleTag(p.title)}${escHtml(p.name)}</div><div><span class="rate">レート${p.rating}</span> <span class="meta">(${p.wins}勝${p.losses}敗) 💠${shardCount()}</span></div></div>`; }
+}
+function openMode(m) {
+  if (PVP.spec) specStop(); else if (PVP.on && m !== 'pvp' && PVP.phase !== 'idle') pvpLeave();
+  if (m !== 'pvp') { rankCancel(); rndCancel(); }
+  MODE = m; PVP.on = m === 'pvp';
+  $('hub').classList.add('hidden'); $('select').classList.remove('hidden');
+  window.scrollTo(0, 0);
+  renderMode(); setStep('menu');
+}
+function backToHub() {
+  if (PVP.spec) specStop(); else if (PVP.on && PVP.phase !== 'idle') pvpLeave();
+  rankCancel(); rndCancel();
+  $('select').classList.add('hidden'); $('hub').classList.remove('hidden');
+  window.scrollTo(0, 0);
+  renderHub();
+}
+// キャラ一覧:陣営ごとに全キャラ。押すと詳しい説明(持っていないキャラは薄く)
+function openCharList() {
+  const groups = [['錨', (c) => c.faction === '錨'], ['零', (c) => c.faction === '零'], ['矢', (c) => c.faction === '矢'], ['そのほか', (c) => !['錨', '零', '矢'].includes(c.faction)]];
+  const list = ALL_CHARS.filter((c) => !c.boss);
+  openSheet('キャラ一覧', `<div class="charlist">${groups.map(([g, f]) => { const cs = list.filter(f); return cs.length ? `<h3>${g}</h3><div class="cl">${cs.map((c) => `<button data-id="${c.id}" class="${charUnlocked(c) ? '' : 'lock'}">${iconHtml(c, 'md')}<span>${escHtml(dispName(c))}</span></button>`).join('')}</div>` : ''; }).join('')}</div>`);
+  document.querySelectorAll('#sheetBody .charlist button[data-id]').forEach((b) => { b.onclick = () => openCharDetail(charById(b.dataset.id), openCharList); });
 }
 // アカウント欄:お気に入りキャラ・称号・名前・レート・勝敗・クリア数・称号の数
 function renderTitleAcc() {
@@ -7355,7 +7418,16 @@ function init() {
   $('tVer').textContent = `ver ${APP_VER}`;
   $('tVer').title = `ルール ${RULES_VER.slice(0, 6)}`;   // 対人の版合わせに使うルールの番号
   $('tPlay').onclick = () => { Sound.wake(); Bgm.unlock && Bgm.unlock(); showTitle(false); };
-  $('toTitle').onclick = () => showTitle(true);
+  $('toTitle').onclick = () => backToHub();
+  $('hubBack').onclick = () => showTitle(true);
+  $('hubAcc').onclick = () => accOpen();
+  $('hubSolo').onclick = () => { Sound.click(); openMode('solo'); };
+  $('hubPvp').onclick = () => { Sound.click(); openMode('pvp'); };
+  $('hubCpu').onclick = () => { Sound.click(); openMode('cpu'); };
+  $('hubGacha').onclick = () => openGacha();
+  $('hubChars').onclick = () => openCharList();
+  $('hubRule').onclick = () => openRulebook();
+  $('hubDaily').onclick = () => openDaily();
   // パソコン:キーボードで手を出す(1・2・3 または Q・W・E)。Escで開いている画面を閉じる
   document.addEventListener('keydown', (e) => {
     if (e.target.closest && e.target.closest('input, textarea')) return;
