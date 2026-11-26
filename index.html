@@ -123,6 +123,7 @@
   .btn-next { width: 100%; margin-top: 12px; padding: 14px; font-weight: 700; color: var(--gold); border-color: var(--gold); }
   .picktop { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
   .picktop .back { margin: 0; flex: none; }
+  #select[data-step="pick"] #toMenu { display: none; }   /* 戻るはバナーの ◀ で */
   .picktop #pickInfo { flex: 1; min-width: 0; font-size: .8rem; color: var(--sub); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .picktop #mysetBtn { flex: none; padding: 8px 10px; font-size: .8rem; color: var(--gold); }
   #pickNet:empty { display: none; }
@@ -5774,7 +5775,7 @@ function mountTop(panel) {
   let bn = $('pageBanner');
   if (!bn) {
     bn = document.createElement('div'); bn.id = 'pageBanner'; bn.innerHTML = '<button class="pbBack" aria-label="もどる">◀</button><span></span>';
-    bn.querySelector('.pbBack').onclick = () => $('toTitle').click();   // 上の「もどる」と同じ
+    bn.querySelector('.pbBack').onclick = () => ($('select').dataset.step === 'pick' && !$('select').classList.contains('hidden') ? $('toMenu') : $('toTitle')).click();   // キャラ選択ではキャラ選択の「戻る」、ほかは上の「もどる」と同じ
   }
   into.prepend(bn); into.prepend(acct); into.prepend(top);
   bn.style.setProperty('--pbx', getComputedStyle(panel).paddingLeft);
@@ -7387,6 +7388,16 @@ function setStep(st) {
   $('select').dataset.step = st;
   window.scrollTo(0, 0);
   renderSelect();
+  placeBanner();
+}
+// キャラ選択の画面にも、画面の名前のバナーを出す(「錨 - キャラ選択」など。◀ はキャラ選択の「戻る」と同じ)
+function placeBanner() {
+  const sel = $('select');
+  if (sel.classList.contains('hidden') || !$('pageBanner')) return;
+  if (sel.dataset.step !== 'pick') { mountTop(sel); return; }
+  const bn = $('pageBanner'), t = [].concat(pageTitle(sel));
+  sel.querySelector('.selR').prepend(bn);
+  bn.querySelector('span').innerHTML = `<i>${escHtml(t[t.length - 1])}</i><em>-</em>キャラ選択`;
 }
 // 選んだ相手の説明(キャラ選択の上に出す)
 function pickInfoText() {
