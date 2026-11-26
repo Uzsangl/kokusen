@@ -2889,13 +2889,17 @@ function adaptKind(S, side, me) {
   const tbl = ADAPT[me.ch.id];
   if (!tbl || !S.stage || S.stage.stars !== 5) return null;
   const r3 = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
-  const A = S.adapt || (S.adapt = { seen: 0, lost: 0, next: r3(3, 5), streak: 0, tiltAt: r3(5, 7), tilt: 0, kind: null, low: [], tgt: [], ura: 0, uraFrom: 0 });
+  const A = S.adapt || (S.adapt = { seen: 0, lost: 0, next: r3(3, 5), streak: 0, tiltAt: r3(5, 7), tilt: 0, kind: null, low: [], tgt: [], ura: 0, uraFrom: 0, uraT: [] });
   const foe = active(S.teams[1 - side]);
   for (; A.seen < S.hist.length; A.seen++) {
     const j = judge(S.hist[A.seen][side], S.hist[A.seen][1 - side]);
     if (j < 0) { A.lost++; A.streak++; } else if (j > 0) A.streak = 0;   // あいこは連敗を切らない
     if (A.tilt > 0) A.tilt--;
-    if (A.ura > 0 && --A.ura === 0) A.uraFrom = A.seen + 1;   // 裏読みが明けたら、そこから数え直す
+    if (A.ura > 0) {
+      // 裏読みのあいだも同じ対策を出し続けたら、裏読みを1ラリー延ばす(手を変えるまで抜けられない)。明けたら、そこから数え直す
+      const t = A.uraT[A.seen];
+      if (!(t && S.hist[A.seen][1 - side] === beaterOf(t)) && --A.ura === 0) A.uraFrom = A.seen + 1;
+    }
   }
   A.low[S.hist.length] = foe && lowHp(foe) ? HAND_KEYS.filter((h) => guardHand(foe, h)) : null;   // このラリーの前に、相手がピンチで守りの技を持っていたか
   const repick = () => {
@@ -3038,6 +3042,7 @@ function aiHand(S, side, level) {
     const A = S.adapt;
     if (kind === 'ura') {   // 裏読み:本来の狙いに勝つ手(=相手の対策)に、さらに勝つ手
       const t0 = personaTarget(S, side, A.kind, me);
+      A.uraT[S.hist.length] = t0 ? t0.hand : null;
       if (t0 && Math.random() < 0.8) { hand = beaterOf(beaterOf(t0.hand)); mood = 'read'; }
     } else {
       const t = personaTarget(S, side, kind, me);
@@ -3944,7 +3949,7 @@ const PERSONA_INFO = {
   prey: ['捕食', '同じ手が2回続いたら、3回目を狙う'], rewind: ['巻戻', '負け・あいこの直後のクセを読む'], sight: ['天眼', '直前2手の並びから次を読む'],
   rage: ['激昂', '一番火力の出る技で攻める'], bias: ['偏り読み', '一番多く出す手に勝つ手を出す'], hunt: ['狩り', 'ピンチの回復・守りの技を狙う'],
   bait: ['撒き餌', 'わざと負けて、偏りを育てる'], tilt: ['ティルト', '連敗で崩れ、手がばらばらになる'],
-  ura: ['裏読み', '読まれていると気づくと、その対策の裏をかく'],
+  ura: ['裏読み', '読まれていると気づくと、その対策の裏をかく。対策を変えるまで続く'],
 };
 // ボスの取扱説明書:1つの文に3つの性格のヒント(どの部分がどの性格かは書かない)
 const BOSS_MANUAL = {
