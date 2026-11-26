@@ -5795,7 +5795,7 @@ function openCharList() {
   const groups = [['錨', (c) => c.faction === '錨'], ['零', (c) => c.faction === '零'], ['矢', (c) => c.faction === '矢'], ['そのほか', (c) => !['錨', '零', '矢'].includes(c.faction)]];
   const list = ALL_CHARS.filter((c) => !c.boss);
   openSheet('キャラ一覧', `<div class="charlist">${groups.map(([g, f]) => { const cs = list.filter(f); return cs.length ? `<h3>${g}</h3><div class="cl">${cs.map((c) => `<button data-id="${c.id}" class="${charUnlocked(c) ? '' : 'lock'}">${iconHtml(c, 'md')}<span>${escHtml(dispName(c))}</span></button>`).join('')}</div>` : ''; }).join('')}</div>`);
-  document.querySelectorAll('#sheetBody .charlist button[data-id]').forEach((b) => { b.onclick = () => openCharDetail(charById(b.dataset.id), openCharList); });
+  document.querySelectorAll('#sheetBody .charlist button[data-id]').forEach((b) => { b.onclick = () => openCharDetail(charById(b.dataset.id)); });   // キャラ一覧からは「ガチャに戻る」を出さない
 }
 // アカウント欄:お気に入りキャラ・称号・名前・レート・勝敗・クリア数・称号の数
 function renderTitleAcc() {
