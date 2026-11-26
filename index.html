@@ -491,6 +491,7 @@
   #hub .hubbig button, #soloHub .hubbig button, #groupHub .hubbig button { flex: 1; max-height: 150px; }
   #hub .hubsmall { margin-top: 16px; }
   #groupHub .hubbig button { max-height: none; }   /* 陣営・回廊・降臨の選択:ボタンが少なくても線まで埋める */
+  #soloHub .hubbig button, #groupHub .hubbig button { min-height: 80px; }   /* 画面の名前のバナーのぶん、4つ並びでも広告の線に収める */
   #groupHub.gq .hubbig { justify-content: flex-start; }   /* 降臨(エモ降臨・リズ降臨)だけ:細くして上に詰める(下は空いてよい) */
   #groupHub.gq .hubbig button { flex: 0 0 auto; min-height: 110px; max-height: none; }
   /* ボタンの後ろに、キャラの目元をうっすら(--eye は画像の上からの目の高さ。ボタンのまん中に目が来る) */
@@ -676,6 +677,13 @@
   #battle .foot .resign { color: #ff8a95; border-color: #5a2a36; }
   #battle .foot #chain { color: #ff2a3d; border-color: #ff2a3d; font-weight: 700; box-shadow: 0 0 14px #ff2a3d66; }
   .seltop { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  /* いまの画面の名前のバナー(左の端から出る帯) */
+  #pageBanner { position: relative; margin: 0 0 12px calc(-1 * var(--pbx, 14px)); width: 72%; height: 40px; display: flex; align-items: center; padding: 0 0 0 calc(var(--pbx, 14px) + 6px);
+    background: linear-gradient(180deg, #3a3418 0%, #6b5a22 45%, #4a3f18 100%); border: 2px solid #f0c040; border-left: none; border-radius: 0 22px 22px 0;
+    box-shadow: 0 3px 8px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,240,180,.35); }
+  #hub #pageBanner { display: none; }   /* 最初のメニューは出さない(下の小さいボタンまで広告の線に収めるため) */
+  #pageBanner::after { content: '◆'; position: absolute; right: 14px; color: #f0c040; font-size: .8rem; opacity: .85; }
+  #pageBanner span { font-size: 1.25rem; font-weight: 900; letter-spacing: .18em; color: #fff6dc; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 2px 4px #000; white-space: nowrap; }
   .seltop > span { flex: 1; }
   .seltop .back { margin-bottom: 0; }
   .back { padding: 5px 12px; border-radius: 16px; font-size: .8rem; margin-bottom: 10px; }
@@ -5666,10 +5674,27 @@ window.addEventListener('resize', () => { ['hub', 'soloHub', 'groupHub'].forEach
 function mountTop(panel) {
   const top = document.querySelector('.seltop'), acct = $('acct');
   const into = panel.id === 'select' ? panel.querySelector('.selL') : panel;
-  into.prepend(acct); into.prepend(top);
+  let bn = $('pageBanner');
+  if (!bn) { bn = document.createElement('div'); bn.id = 'pageBanner'; bn.innerHTML = '<span></span>'; }
+  into.prepend(bn); into.prepend(acct); into.prepend(top);
+  bn.style.setProperty('--pbx', getComputedStyle(panel).paddingLeft);
+  bn.firstChild.textContent = pageTitle(panel);
   $('toTitle').textContent = panel.id === 'hub' ? '◀ タイトルへ' : '◀ もどる';
   renderAcct();
   fitHub(panel);
+}
+// いまの画面の名前(上のバナーに出す)
+function pageTitle(panel) {
+  if (panel.id === 'hub') return 'メニュー';
+  if (panel.id === 'soloHub') return 'ソロ';
+  if (panel.id === 'groupHub') return { basic: 'ベーシック', advance: 'アドバンス', quest: '降臨' }[groupFmt] || 'ソロ';
+  if (MODE === 'pvp') return '対人';
+  if (MODE === 'cpu') return 'CPU戦';
+  if (krSel()) return 'スコアアタック';
+  const g = SOLO.group;
+  if (g == null) return 'ソロ';
+  if (questSel()) return g === 'rizu' ? 'リズ降臨' : 'エモ降臨';
+  return typeof g === 'number' ? CORRIDORS[g] : g;
 }
 // ソロの入り口:ベーシック・アドバンス・スコアアタック・降臨
 function showSoloHub() {
