@@ -1202,7 +1202,7 @@ const CHARACTERS = [
       scissors: { name: '先着', rate: RATE.big, mods: [foeAtk(600, 3)], up: { rate: RATE.huge, when: 'gainMax', v: 3000, text: '不動が最大のとき特大' } },
       paper:    { name: '繕い', rate: RATE.normal, heal: 1500 } } },
   { id: 'mio', name: 'ミオ', faction: '錨', role: '支援・継承', hp: 9100, atk: 2500, dfs: 1400, phys: 0.95,
-    trait: { key: 'record', name: '記録', desc: '倒れたとき、次の番手にATK+1000・DFS+1500を渡す(永続・重複可能)', atk: 1000, dfs: 1500 },
+    trait: { key: 'record', name: '記録', desc: '倒れたとき、次の番手にATK+1000・DFS+1500を渡す(刻紋。永続・重複可能)', atk: 1000, dfs: 1500 },
     actions: {
       rock:     { name: '留め置き', rate: RATE.big, nextAtkUp: 1500 },
       scissors: { name: '水先',     rate: RATE.normal, mods: [foeDfs(1000, 3), foeAtk(500, 3)] },
@@ -1244,7 +1244,7 @@ const CHARACTERS = [
 
   // --- ソロ攻略向けの支援キャラ(各陣営2体)。対人・CPU戦でも使える ---
   { id: 'moyai', name: 'モヤイ', faction: '錨', role: 'チーム強化', hp: 15700, atk: 1900, dfs: 1700, phys: 1.0,
-    traits: [{ key: 'legacy', name: '舫い', desc: '倒れたとき、控えの味方全員にDFS+1000・最大HP+1500(永続・重複可能)', atk: 0, dfs: 1000, hp: 1500 },
+    traits: [{ key: 'legacy', name: '舫い', desc: '倒れたとき、控えの味方全員にDFS+1000・最大HP+1500(刻紋。永続・重複可能)', atk: 0, dfs: 1000, hp: 1500 },
       { key: 'giantSlayer', name: '一点留め', desc: 'ソロのボス戦(相手がボス1体)のとき、ATK+1200・DFS+800', atk: 1200, dfs: 800 }],
     actions: {
       rock:     { name: '結び留め', rate: RATE.normal, mods: [foeAtk(600, 3)] },
@@ -1279,7 +1279,7 @@ const CHARACTERS = [
       scissors: { name: '刻み矢',     rate: RATE.normal, mark: { stat: 'dfs', v: 700, cap: 3000 } },
       paper:    { name: '矢じり研ぎ', rate: RATE.normal, mods: [selfAtk(800, 3)] } } },
   { id: 'hane', name: 'ハネ', faction: '矢', role: 'チーム強化・連勝', hp: 9550, atk: 2300, dfs: 1200, phys: 1.0,
-    traits: [{ key: 'legacy', name: '羽渡し', desc: '倒れたとき、控えの味方全員にATK+800(永続・重複可能)', atk: 800, dfs: 0, hp: 0 },
+    traits: [{ key: 'legacy', name: '羽渡し', desc: '倒れたとき、控えの味方全員にATK+800(刻紋。永続・重複可能)', atk: 800, dfs: 0, hp: 0 },
       { key: 'giantSlayer', name: '大物狙い', desc: 'ソロのボス戦(相手がボス1体)のとき、ATK+1200・DFS+800', atk: 1200, dfs: 800 }],
     actions: {
       rock:     { name: '羽撃ち', rate: RATE.big },
@@ -1319,7 +1319,7 @@ const SPECIAL_CHARS = [
   // 錨のタブに並ぶ解放キャラ(group)。陣営ボーナスの対象(bonusOk)。カジとは同じパーティに入れられない(sameAs)
   { id: 'p_kaji_shi', name: 'カジ【始】', faction: '錨', group: '錨', bonusOk: true, sameAs: 'kaji', role: '始まり', unlock: 'shiToki', hp: 9999, atk: 3600, dfs: 1400, phys: 1.5,
     traits: [
-      { key: 'breakGrow', name: '始の刻', desc: `${BREAK_NAME}するたびにATK+1000(永続・重複可能)`, add: 1000 },
+      { key: 'breakGrow', name: '始の刻', desc: `${BREAK_NAME}するたびにATK+1000(刻紋。永続・重複可能)`, add: 1000 },
       { key: 'backwaterAll', name: '背水・始', desc: '残りHPが半分以下でATK+1000・DFS+1000', below: 0.5, add: 1000 } ],
     actions: {
       rock:     { name: '始の一閃', rate: RATE.huge },
@@ -1369,7 +1369,7 @@ const SPECIAL_CHARS = [
       scissors: { name: '鼓舞',     rate: RATE.normal, streak: 1 },
       paper:    { name: '構え',     rate: RATE.normal, streak: 1, mods: [selfAtk(1000, 3)] } } },
   { id: 'k_setsuna', name: 'セツナ', faction: '錨', group: '錨', bonusOk: true, role: '切なさ・散り際に託す', unlock: 'kr36', hp: 14000, atk: 2600, dfs: 1800, phys: 1.3,
-    trait: { key: 'lingerPass', name: '散り際', desc: '倒れたとき、場にいたラリー数×200を、控えの味方全員のATKに足す(永続・重複可能。最大+10000)', per: 200, cap: 10000 },
+    trait: { key: 'lingerPass', name: '散り際', desc: '倒れたとき、場にいたラリー数×200を、控えの味方全員のATKに足す(刻紋。永続・重複可能。最大+10000)', per: 200, cap: 10000 },
     actions: {
       rock:     { name: '名残',     rate: RATE.big },
       scissors: { name: '引き留め', rate: RATE.normal, mark: { stat: 'atk', v: 800, cap: 0 } },
@@ -1414,7 +1414,7 @@ const GACHA_CHARS = [
   { id: 'g_a2', name: 'オモリ', faction: '錨', rarity: 2, gacha: true, role: 'デカブツ', hp: 30000, atk: 700, dfs: 0, phys: 0.8,
     actions: { rock: N('のしかかり'), scissors: N('転がり'), paper: N('据え置き') } },
   { id: 'g_a3a', name: 'ツナギ', faction: '錨', rarity: 3, gacha: true, role: '継承', hp: 6500, atk: 1000, dfs: 1000, phys: 1.0,
-    trait: { key: 'passStats', name: '継ぎ', desc: '倒れたとき、自分のATKとDFS(永続の強化も込み)をそのまま次の番手に足す(永続・重複可能)' },
+    trait: { key: 'passStats', name: '継ぎ', desc: '倒れたとき、自分のATKとDFS(永続の強化も込み)をそのまま次の番手に足す(刻紋。永続・重複可能)' },
     actions: { rock: { rate: RATE.big, name: '旗打ち' }, scissors: { rate: RATE.normal, name: '旗掲げ', mods: [selfDfs(1000, 2)] }, paper: { rate: RATE.normal, name: '託し', selfPerm: { atk: 500, dfs: 500 } } } },
   { id: 'g_a3b', name: 'イソ', faction: '錨', rarity: 3, gacha: true, role: '回復耐久', hp: 18600, atk: 1500, dfs: 1900, phys: 0.95,
     trait: { key: 'regen', name: '潮だまり', desc: 'ラリーが終わるたびにHP400回復', heal: 400 },
@@ -1431,7 +1431,7 @@ const GACHA_CHARS = [
   { id: 'g_z2', name: 'アキ', faction: '零', rarity: 2, gacha: true, role: '弱い時蝕', hp: 8000, atk: 1600, dfs: 1000, phys: 0.9,
     actions: { rock: { rate: RATE.normal, name: '砂留め', poison: 2 }, scissors: N('こぼれ砂'), paper: N('砂戻し') } },
   { id: 'g_z3a', name: 'シラ', faction: '零', rarity: 3, gacha: true, role: '相手全体に永続デバフ', hp: 13500, atk: 1900, dfs: 1300, phys: 0.95,
-    trait: { key: 'teamCurse', name: '呪い', desc: '技を当てるたびに、相手の全員(控えも)のATK−150(永続・重複可能。最大−2000)', v: 150, cap: 2000 },
+    trait: { key: 'teamCurse', name: '呪い', desc: '技を当てるたびに、相手の全員(控えも)のATK−150(刻印。永続・重複可能。最大−2000)', v: 150, cap: 2000 },
     actions: { rock: N('白封じ'), scissors: { rate: RATE.big, name: '白紙送り' }, paper: { rate: RATE.normal, name: '名消し', foeTeamMark: { stat: 'dfs', v: 200, cap: 2000 } } } },
   { id: 'g_z3b', name: 'マタ', faction: '零', rarity: 3, gacha: true, role: '一度だけ耐える', hp: 13300, atk: 2300, dfs: 1100, phys: 1.0,
     trait: { key: 'secondWind', name: '立ち直り', desc: '一度だけ、倒れたときにHP30%で立ち上がる', hp: 0.3 },
@@ -1453,7 +1453,7 @@ const GACHA_CHARS = [
     trait: { key: 'rush', name: '出鼻', desc: '場に出て1ラリー目だけATK+800', until: 1, early: 800, from: 999, late: 0 },
     actions: { rock: { rate: RATE.big, name: '初手' }, scissors: N('駆け抜け'), paper: N('息継ぎ') } },
   { id: 'g_y3a', name: 'カブラ', faction: '矢', rarity: 3, gacha: true, role: '永続デバフ', hp: 16500, atk: 2400, dfs: 1100, phys: 1.0,
-    trait: { key: 'pierceMark', name: '穿ち', desc: '技を当てるたびに、場の相手のDFS−250(永続・重複可能。最大−1500)', v: 250, cap: 1500 },
+    trait: { key: 'pierceMark', name: '穿ち', desc: '技を当てるたびに、場の相手のDFS−250(刻印。永続・重複可能。最大−1500)', v: 250, cap: 1500 },
     actions: { rock: N('鏑止め'), scissors: { rate: RATE.big, name: '鳴り鏑' }, paper: { rate: RATE.normal, name: '研ぎ直し', mods: [foeAtk(400, 2)] } } },
   { id: 'g_y3b', name: 'マト', faction: '矢', rarity: 3, gacha: true, role: 'BREAK特化', hp: 11500, atk: 2600, dfs: 1000, phys: 1.05,
     trait: { key: 'foresight', name: '必中', desc: `${BREAK_NAME}の一撃はATK+2000`, add: 2000 },
@@ -1489,7 +1489,7 @@ const ENEMIES = {
   qb_rizu: { name: 'リズ', faction: '零', hp: 30000, atk: 2500, dfs: 1800, phys: 1.0, boss: true,
     traits: [{ key: 'analyze', name: '解析', desc: '相手が同じ手を2回続けたら、次のラリーは自分の技がすべて極大になる', max: 1 },
       { key: 'nullScissors', name: '棄却', desc: '相手のチョキ(跳躍)の技は、効果のないただの大ダメージになる' },
-      { key: 'wear', name: '論破', desc: '毎ラリー、相手のDFS−200(永続・重複可能。最大−5000)', v: 200, cap: 5000 }],
+      { key: 'wear', name: '論破', desc: '毎ラリー、相手のDFS−200(刻印。永続・重複可能。最大−5000)', v: 200, cap: 5000 }],
     actions: {
       rock:     { name: '証明終了', rate: RATE.huge, foeTeamMark: { stat: 'atk', v: 600, cap: 3000 }, up: { rate: RATE.max, when: 'analyzed', text: '解析が効いているときは極大' } },
       scissors: { name: '反証',     rate: RATE.normal, heal: 2000, foeTeamMark: { stat: 'dfs', v: 600, cap: 3000 } },
@@ -1605,7 +1605,7 @@ const ENEMIES = {
       paper:    { name: '構え直し', rate: RATE.normal, atkUp: 2500, mods: [foeDfs(1000, 2)] } } },
   b_kaji_shi: { name: 'カジ【始】', faction: '錨', hp: 133200, atk: 3360, dfs: 1800, phys: 1.0, boss: true,
     traits: [
-      { key: 'breakGrow', name: '始の刻', desc: `${BREAK_NAME}するたびにATK+2000(永続・重複可能)`, add: 2000 },
+      { key: 'breakGrow', name: '始の刻', desc: `${BREAK_NAME}するたびにATK+2000(刻紋。永続・重複可能)`, add: 2000 },
       { key: 'backwaterAll', name: '背水・始', desc: '残りHPが半分以下でATK+2000・DFS+2000', below: 0.5, add: 2000 } ],
     actions: {
       rock:     { name: '始の一閃', rate: RATE.huge },
@@ -1940,14 +1940,14 @@ function describe(a, rate, short) {
   if (a.noheal) parts.push(short ? `回復封じ${a.noheal}` : `相手の回復を${a.noheal}ラリー封じる`);
   if (a.dispel) parts.push(short ? 'バフ消し' : '相手のラリー数つきの強化を消す(永続の強化は消えない)');
   if (a.resetStreak) parts.push(short ? '連勝リセット' : '相手の連勝を0にする(連勝保護も無視)');
-  if (a.mark) { const L = a.mark.stat === 'atk' ? 'ATK' : 'DFS'; parts.push(short ? `敵${L}−${a.mark.v}永続` : a.mark.cap ? `相手の${L}−${a.mark.v}(刻印。永続・重複可能。最大−${a.mark.cap})` : `相手の${L}−${a.mark.v}(永続・重複可能)`); }
-  if (a.teamBreak) parts.push(short ? `控え${BREAK_NAME}ATK+${a.teamBreak.v}` : `控えの味方全員の「${BREAK_NAME}の一撃 ATK」+${a.teamBreak.v}(永続・重複可能。最大+${a.teamBreak.cap})`);
+  if (a.mark) { const L = a.mark.stat === 'atk' ? 'ATK' : 'DFS'; parts.push(short ? `敵${L}−${a.mark.v}永続` : a.mark.cap ? `相手の${L}−${a.mark.v}(刻印。永続・重複可能。最大−${a.mark.cap})` : `相手の${L}−${a.mark.v}(刻印。永続・重複可能)`); }
+  if (a.teamBreak) parts.push(short ? `控え${BREAK_NAME}ATK+${a.teamBreak.v}` : `控えの味方全員の「${BREAK_NAME}の一撃 ATK」+${a.teamBreak.v}(刻紋。永続・重複可能。最大+${a.teamBreak.cap})`);
   if (a.voidCharge) parts.push(short ? '次のあいこ×2' : '次のあいこの「無の間」のダメージが2倍');
   if (a.purge) parts.push(short ? '強化・弱体消し' : '相手の強化と弱体をすべて消す');
   if (a.nextCut) parts.push(short ? '次番手被ダメ↓' : '次の番手が受けるダメージ−5%(永続・重複不可)。レイなら効果がアップする');
-  if (a.foeTeamMark) [].concat(a.foeTeamMark).forEach((fm) => { const L = fm.stat === 'atk' ? 'ATK' : 'DFS'; parts.push(short ? `敵全員${L}−${fm.v}` : `相手の全員(控えも)の${L}−${fm.v}(永続・重複可能。最大−${fm.cap})`); });
-  if (a.selfPerm) { const sp = [a.selfPerm.atk && `ATK+${a.selfPerm.atk}`, a.selfPerm.dfs && `DFS+${a.selfPerm.dfs}`].filter(Boolean).join('・'); parts.push(short ? `自${sp}永続` : `自分の${sp}(永続・重複可能)`); }
-  if (a.team) { const L = a.team.stat === 'atk' ? 'ATK' : 'DFS'; parts.push(short ? `${a.team.bench ? '控え' : '全員'}${L}+${a.team.v}` : a.team.bench ? `控えの味方全員の${L}+${a.team.v}(永続・重複可能)${a.team.rei ? '。レイなら効果がアップする' : ''}` : `味方全員(控えも)の${L}+${a.team.v}(永続・重複可能。最大+${a.team.cap})`); }
+  if (a.foeTeamMark) [].concat(a.foeTeamMark).forEach((fm) => { const L = fm.stat === 'atk' ? 'ATK' : 'DFS'; parts.push(short ? `敵全員${L}−${fm.v}` : `相手の全員(控えも)の${L}−${fm.v}(刻印。永続・重複可能。最大−${fm.cap})`); });
+  if (a.selfPerm) { const sp = [a.selfPerm.atk && `ATK+${a.selfPerm.atk}`, a.selfPerm.dfs && `DFS+${a.selfPerm.dfs}`].filter(Boolean).join('・'); parts.push(short ? `自${sp}永続` : `自分の${sp}(刻紋。永続・重複可能)`); }
+  if (a.team) { const L = a.team.stat === 'atk' ? 'ATK' : 'DFS'; parts.push(short ? `${a.team.bench ? '控え' : '全員'}${L}+${a.team.v}` : a.team.bench ? `控えの味方全員の${L}+${a.team.v}(刻紋。永続・重複可能)${a.team.rei ? '。レイなら効果がアップする' : ''}` : `味方全員(控えも)の${L}+${a.team.v}(刻紋。永続・重複可能。最大+${a.team.cap})`); }
   if (a.nextAtkUp) parts.push(short ? `次番手ATK+${a.nextAtkUp}` : `次の番手の最初の攻撃ATK+${a.nextAtkUp}(重複不可)`);
   if (a.nextDfsUp) parts.push(short ? `次番手DFS+${a.nextDfsUp}` : `次の番手が最初に攻撃を受けるときDFS+${a.nextDfsUp}(重複不可)`);
   return parts.join(short ? '・' : '、');
@@ -2406,7 +2406,7 @@ function endRally(S, log, winSide) {
     if (ko[side] && tr && next && !traitOf(next, 'void')) {
       next.atkBonus += tr.atk; next.dfsBonus += tr.dfs;
       trig(f, 'record');
-      relay(t, 'rc:' + f.ch.id, tr.name, `${f.ch.name}が倒れて、次の${next.ch.name}にATK+${tr.atk}・DFS+${tr.dfs}(永続・重複可能)`);
+      relay(t, 'rc:' + f.ch.id, tr.name, `${f.ch.name}が倒れて、次の${next.ch.name}にATK+${tr.atk}・DFS+${tr.dfs}(刻紋。永続・重複可能)`);
       log(`　${t.label}の${f.ch.name}の「${tr.name}」→ 次の${next.ch.name}にATK+${tr.atk}・DFS+${tr.dfs}`);
     }
     // 特性「継ぎ」:倒れたとき、自分のATKとDFS(消えない強化も込み)をそのまま次の番手に足す
@@ -2415,7 +2415,7 @@ function endRally(S, log, winSide) {
       const pa = f.atk + f.atkBonus + f.teamAtk + (f.growAtk || 0), pd = f.dfs + f.dfsBonus + f.teamDfs + f.dfsGain;
       next.atkBonus += pa; next.dfsBonus += pd;
       trig(f, 'passStats');
-      relay(t, 'ps:' + f.ch.id, ps.name, `${f.ch.name}が倒れて、次の${next.ch.name}にATK+${pa}・DFS+${pd}(永続・重複可能)`);
+      relay(t, 'ps:' + f.ch.id, ps.name, `${f.ch.name}が倒れて、次の${next.ch.name}にATK+${pa}・DFS+${pd}(刻紋。永続・重複可能)`);
       log(`　${t.label}の${f.ch.name}の「${ps.name}」→ 次の${next.ch.name}にATK+${pa}・DFS+${pd}`);
     }
     // ハレの「日差し」:倒れたとき、次の番手は連勝が増えた状態から始まる
@@ -2432,7 +2432,7 @@ function endRally(S, log, winSide) {
       const v = Math.min(lp.cap, f.turn * lp.per);
       lb2.forEach((c) => { c.atkBonus += v; });
       trig(f, 'lingerPass');
-      relay(t, 'lp:' + f.ch.id, lp.name, `${f.ch.name}が${f.turn}ラリー場にいて倒れ、控えの味方全員にATK+${v}(永続・重複可能)`);
+      relay(t, 'lp:' + f.ch.id, lp.name, `${f.ch.name}が${f.turn}ラリー場にいて倒れ、控えの味方全員にATK+${v}(刻紋。永続・重複可能)`);
       log(`　${t.label}の${f.ch.name}の「${lp.name}」→ 控えの味方全員にATK+${v}`);
     }
     // 特性「舫い」「羽渡し」:倒れたとき、控えの味方全員を強化する
@@ -2440,7 +2440,7 @@ function endRally(S, log, winSide) {
     if (ko[side] && lg && bench.length && (!lg.needFaction || t.cards.every((c) => c.ch.faction === lg.needFaction))) {   // needFaction:パーティ全員がその陣営のときだけ(リズの結論)
       bench.forEach((c) => { if (traitOf(c, 'void')) return; c.atkBonus += lg.atk; c.dfsBonus += lg.dfs; c.max += lg.hp; c.hp += lg.hp; });
       trig(f, 'legacy');
-      relay(t, 'lg:' + f.ch.id, lg.name, `${f.ch.name}が倒れて、控えの味方全員に` + [lg.atk && `ATK+${lg.atk}`, lg.dfs && `DFS+${lg.dfs}`, lg.hp && `最大HP+${lg.hp}`].filter(Boolean).join('・') + '(永続・重複可能)');
+      relay(t, 'lg:' + f.ch.id, lg.name, `${f.ch.name}が倒れて、控えの味方全員に` + [lg.atk && `ATK+${lg.atk}`, lg.dfs && `DFS+${lg.dfs}`, lg.hp && `最大HP+${lg.hp}`].filter(Boolean).join('・') + '(刻紋。永続・重複可能)');
       log(`　${t.label}の${f.ch.name}の「${lg.name}」→ 控えの味方全員に` + [lg.atk && `ATK+${lg.atk}`, lg.dfs && `DFS+${lg.dfs}`, lg.hp && `最大HP+${lg.hp}`].filter(Boolean).join('・'));
     }
   });
@@ -3767,23 +3767,23 @@ function statusList(t, f) {
   if (f.fac) add(`陣営 ${f.fac.text}`, `${f.fac.faction}の陣営ボーナス:${f.fac.text}(永続・重複不可)`, 'up');
   const pa = f.permAtk || 0, pd = f.permDfs || 0;   // 自分の技(託し・竦みなど)で積んだ、消えない強化
   const inh = f.atkBonus - (f.tsuzuri || 0) - pa;   // アワイの「零の綴じ」・自分で積んだぶんは分けて出す
-  if (pa || pd) { const sp = [pa && `ATK+${pa}`, pd && `DFS+${pd}`].filter(Boolean).join('・'); add(`${f.permName || '自己強化'} ${sp}`, `「${f.permName || '自己強化'}」で自分に積んだ強化 ${sp}(永続・重複可能)`, 'up'); }
-  if (inh) add(`継承ATK+${inh}`, `継承 ATK+${inh}(前の番手から受け継いだ強化。永続・重複可能)`, 'up');
+  if (pa || pd) { const sp = [pa && `ATK+${pa}`, pd && `DFS+${pd}`].filter(Boolean).join('・'); add(`${f.permName || '自己強化'} ${sp}`, `「${f.permName || '自己強化'}」で自分に積んだ強化 ${sp}(刻紋。永続・重複可能)`, 'up'); }
+  if (inh) add(`継承ATK+${inh}`, `継承 ATK+${inh}(前の番手から受け継いだ刻紋。永続・重複可能)`, 'up');
   if (f.tsuzuri) add(`零の綴じATK+${f.tsuzuri}`, `零の綴じ ATK+${f.tsuzuri}(アワイの特性。永続・重複不可)`, 'up');
   // アワイの「継ぎ刻」:前の番手にアワイがいれば、BREAKのダメージが上がる
   const ti = t.cards.indexOf(f), tk = ti > 0 ? t.cards.slice(0, ti).map((c) => traitOf(c, 'tsugiKoku')).find(Boolean) : null;
   if (tk) { const m = f.ch.id === 'rei' ? tk.rei : tk.mul; add(`${BREAK_NAME}ダメ×${m}`, `${BREAK_NAME}で与えるダメージ${m}倍(アワイの継ぎ刻。永続・重複不可)`, 'up'); }
   if (f.cut) add(`被ダメ−${Math.round(f.cut * 100)}%`, `受けるダメージ−${Math.round(f.cut * 100)}%(アワイの刻寄せ。永続・重複不可)`, 'up');
-  if (f.dfsBonus - pd) add(`継承DFS+${f.dfsBonus - pd}`, `継承 DFS+${f.dfsBonus - pd}(前の番手から受け継いだ強化。永続・重複可能)`, 'up');
+  if (f.dfsBonus - pd) add(`継承DFS+${f.dfsBonus - pd}`, `継承 DFS+${f.dfsBonus - pd}(前の番手から受け継いだ刻紋。永続・重複可能)`, 'up');
   const capTxt = (cap, free) => (cap && !free ? `。最大+${cap}` : '');   // 上限のある技だけで上がっていれば、上限も出す
-  if (f.teamAtk) add(`全体ATK+${f.teamAtk}`, `味方全員 ATK+${f.teamAtk}(永続・重複可能${capTxt(f.teamAtkCap, f.teamAtkFree)})`, 'up');
-  if (f.teamDfs) add(`全体DFS+${f.teamDfs}`, `味方全員 DFS+${f.teamDfs}(永続・重複可能${capTxt(f.teamDfsCap, f.teamDfsFree)})`, 'up');
+  if (f.teamAtk) add(`全体ATK+${f.teamAtk}`, `味方全員 ATK+${f.teamAtk}(刻紋。永続・重複可能${capTxt(f.teamAtkCap, f.teamAtkFree)})`, 'up');
+  if (f.teamDfs) add(`全体DFS+${f.teamDfs}`, `味方全員 DFS+${f.teamDfs}(刻紋。永続・重複可能${capTxt(f.teamDfsCap, f.teamDfsFree)})`, 'up');
   if (f.dfsGain) add(`不動DFS+${f.dfsGain}`, `特性で上がったDFS+${f.dfsGain}`, 'up');
   { const m = traitOf(f, 'mood'); if (m && f.mood) add(`ごきげんATK+${f.mood}`, `ごきげん ATK+${f.mood}(勝つと+${m.step}・負けると半分。最大+${m.cap})`, 'up'); }
-  if (f.wearDfs) add(`論破DFS${f.wearDfs}`, `論破 DFS${f.wearDfs}(リズの特性。永続・重複可能。最大−5000)`, 'down');
+  if (f.wearDfs) add(`論破DFS${f.wearDfs}`, `論破 DFS${f.wearDfs}(リズの特性。刻印。永続・重複可能。最大−5000)`, 'down');
   if (f.anaOn) add('解析済み', '解析:相手が同じ手を2回続けた。このラリーは自分の技が1段階強い', 'up');
-  if (f.markAtk) add(`刻印ATK${f.markAtk}`, `刻印 ATK${f.markAtk}(永続・重複可能)`, 'down');
-  if (f.markDfs) add(`刻印DFS${f.markDfs}`, `刻印 DFS${f.markDfs}(永続・重複可能)`, 'down');
+  if (f.markAtk) add(`刻印ATK${f.markAtk}`, `刻印 ATK${f.markAtk}(刻印。永続・重複可能)`, 'down');
+  if (f.markDfs) add(`刻印DFS${f.markDfs}`, `刻印 DFS${f.markDfs}(刻印。永続・重複可能)`, 'down');
   if (f.noHeal) add(`回復封じ·${f.noHeal}`, `回復封じ(残り${f.noHeal}ラリー。回復できない)`, 'down');
   if (f.poison) add(`時蝕·${f.poison}`, `時蝕(残り${f.poison}ラリー。毎ラリー${f.poisonDmg}ダメージ)`, 'down');
   if (f.atkUp) add(`次撃ATK+${f.atkUp}`, `次の攻撃だけ ATK+${f.atkUp}`, 'up');
@@ -6075,6 +6075,7 @@ const RULEBOOK = {
       <tr><td>永続</td><td>試合が終わるまで消えない</td></tr>
       <tr><td>重複可能</td><td>何回でも足される</td></tr>
       <tr><td>重複不可</td><td>強いほう1つだけ</td></tr>
+      <tr><td>刻紋</td><td>ずっと残る強化</td></tr>
       <tr><td>刻印</td><td>ずっと残る弱体</td></tr>
       <tr><td>時蝕</td><td>毎ラリーHPが減る</td></tr>
       <tr><td>回復封じ</td><td>回復できない</td></tr>
