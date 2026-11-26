@@ -6771,7 +6771,7 @@ function gachaShow(r, rates = GACHA_RATES) {
     // 白発展+ぽきゅんのぶんを引いて、★4以上全体のぽきゅん占有率を保つ
     const pkRate = top >= 4 ? (GACHA_POKYUN_HI - GACHA_WHITE_POKYUN) / keep : gachaPokyunRate(false, r.length, top >= 3, rates);
     const pk = !instant && (rb || cold === 'wp' || (!cold && Math.random() < pkRate));
-    if (pk) setTimeout(() => (rb ? sakibareRainbowFx() : sakibareFx()), 450);   // 虹の「ぽぽぽぽぽきゅん」は★5確定
+    if (pk) setTimeout(() => (rb ? sakibareRainbowFx() : sakibareFx()), 60);   // ぽきゅんは、押せない0.5秒の間に出す。虹の「ぽぽぽぽぽきゅん」は★5確定
     const flipPu = !!cold || (pk && top >= 4 && Math.random() < GACHA_POKYUN_FLIP);   // めくる瞬間にプチュン
     // ひびのプチュン:めくりプチュンにならなかった残りから出して、★4以上全体の占有率を GACHA_PUCHUN_RATE に保つ
     const crackRate = GACHA_PUCHUN_RATE / keep / (1 - pkRate * GACHA_POKYUN_FLIP);
@@ -6780,6 +6780,8 @@ function gachaShow(r, rates = GACHA_RATES) {
     // 違和感どうしは重ならない:逆さまの「刻」が出ているときはBGM消えを出さない(そのぶん割合を上げて、★4以上全体で GACHA_MUTE_RATE に保つ)
     const mute = top >= 4 && !puchunAt && sakasa < 0 && Math.random() < GACHA_MUTE_RATE / (1 - GACHA_PUCHUN_RATE) / (1 - GACHA_SAKASA_RATE);
     let taps = 0, broke = false, skipped = false, busyFlip = false, hiFlipped = 0, curFlip = null;
+    const lockUntil = Date.now() + (rb ? 1100 : 500);   // 引いてから0.5秒は押せない(虹のぽきゅんは演出が長いので、終わるまで)
+    const locked = () => Date.now() < lockUntil;
     const cardHtml = (x, i) => `<div class="gc-card r${x.c.rarity} back${i === sakasa ? ' sakasa' : ''}" data-i="${i}">${x.fresh ? '<i class="new">NEW</i>' : ''}${iconHtml(x.c, 'lg')}<div>${rarHtml(x.c)}</div><span class="nm">${escHtml(x.c.name)}</span></div>`;
     const crack = (e) => {   // タップした場所から、ひびを足す
       const rc = pane.getBoundingClientRect(), x0 = e && e.clientX ? e.clientX - rc.left : rc.width / 2, y0 = e && e.clientY ? e.clientY - rc.top : rc.height / 2;
@@ -6843,7 +6845,7 @@ function gachaShow(r, rates = GACHA_RATES) {
       if (mute && !skipped) Bgm.duck('mute');   // めくる画面になった瞬間にBGMが消える
     };
     pane.onclick = async (e) => {
-      if (broke || skipped) return;
+      if (broke || skipped || locked()) return;
       taps++;
       if (taps === puchunAt) {   // プチュン:画面が切れて暗転 → 無音 → そのままめくる画面へ
         broke = true;
@@ -6872,7 +6874,7 @@ function gachaShow(r, rates = GACHA_RATES) {
     all.onclick = async () => { if (busyFlip) return; for (const el of left()) { await flip(el, false); await sleep(90); } };
     // スキップ:伏せたままの★4以上があれば、プチュンしてから全部表にする
     skip.onclick = async () => {
-      if (skipped) return;
+      if (skipped || locked()) return;
       skipped = true; broke = true;
       if (!res.children.length) reveal();
       const hi = left().some((el) => r[+el.dataset.i].c.rarity >= 4), sec = left().some((el) => el !== curFlip && r[+el.dataset.i].c.rarity >= 5);   // めくっている途中の★5は、その演出がそのまま続く
