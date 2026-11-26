@@ -59,6 +59,10 @@
     -webkit-background-clip: text; background-clip: text; color: transparent;
   }
   h2 { font-size: 1rem; margin: 0 0 8px; }
+  /* 左上のロゴ(三すくみの紋+斬り線の「刻戦」) */
+  h1.logo { background: none; line-height: 0; letter-spacing: 0; }
+  h1.logo img { height: 40px; width: auto; display: block; }
+  body.in-battle h1.logo img { height: 24px; }
   .clock {
     width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--gold);
     position: relative; flex: none; box-shadow: 0 0 10px #f5c45166;
@@ -850,8 +854,7 @@
 </noscript>
 <main id="main">
   <header>
-    <div class="clock"><i></i></div>
-    <h1>刻戦</h1>
+    <h1 class="logo"><img src="img/logo-head.webp" alt="刻戦" width="483" height="160"></h1>
     <div class="opts">
       <button id="optBgm" class="hidden">曲 ON</button>
       <button id="optSound">音 ON</button>
