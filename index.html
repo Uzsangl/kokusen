@@ -493,6 +493,10 @@
   #groupHub .hubbig button { max-height: none; }   /* 陣営・回廊・降臨の選択:ボタンが少なくても線まで埋める */
   #groupHub.gq .hubbig { justify-content: flex-start; }   /* 降臨(エモ降臨・リズ降臨)だけ:細くして上に詰める(下は空いてよい) */
   #groupHub.gq .hubbig button { flex: 0 0 auto; min-height: 110px; max-height: none; }
+  #groupHub.gq .hubbig button { position: relative; overflow: hidden; isolation: isolate; }
+  #groupHub.gq .hubbig button::before { content: ''; position: absolute; inset: 0; z-index: -1; background-size: 115% auto; background-position: 50% 27%; opacity: .26; filter: saturate(.8); -webkit-mask-image: linear-gradient(90deg, transparent, #000 25%, #000 75%, transparent); mask-image: linear-gradient(90deg, transparent, #000 25%, #000 75%, transparent); }   /* うっすら目元 */
+  #groupHub.gq .hubbig button[data-g="emo"]::before { background-image: url(icons/emo.webp); }
+  #groupHub.gq .hubbig button[data-g="rizu"]::before { background-image: url(icons/rizu.webp); background-position: 50% 26%; }
   .stages .gh { display: none !important; }   /* ソロ:選んだ陣営・回廊のステージだけ出す */
   /* 陣営・回廊を選んだあとのステージ:横長のボタンを縦に並べる(左に★、まん中に敵、右に名前) */
   .stages.vlist { grid-template-columns: 1fr !important; gap: 8px; }
