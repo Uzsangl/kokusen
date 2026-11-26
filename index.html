@@ -6049,9 +6049,12 @@ const RULEBOOK = {
     <h3>知っておくと得</h3>
     <ul class="rb sm">
       <li>ATKは1000より下がらない</li>
-      <li>交代なしで12ラリー → お互いのHPが減っていく</li>
       <li>100ラリーで決着なし → 残り体数、次に残りHPで判定</li>
-    </ul>`,
+    </ul>
+    <h3>刻の抜け落ち</h3>
+    <ul class="rb sm"><li>交代なしで12ラリーをこえると、<b>毎ラリー最大HPの◯%減る</b></li></ul>
+    <div class="rbflow"><span>13<small>3%</small></span><i>›</i><span>14<small>6%</small></span><i>›</i><span>15<small>9%</small></span><i>›</i><span>…<small>+3%ずつ</small></span></div>
+    <p class="rbnote">交代から◯ラリー目 ・ ソロではなし</p>`,
   'BREAK': `<ul class="rb">
       <li><b>3連勝</b>でBREAK</li>
       <li>好きな手が<b>必ず通る</b>(DFS無視)</li>
