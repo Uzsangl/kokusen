@@ -1807,8 +1807,8 @@ Object.assign(ENEMIES, {
       rock:     { name: '圧し止め', rate: RATE.huge, selfPerm: { atk: 2000 }, seal: 1 },
       scissors: { name: '先喰い',   rate: RATE.max, mods: [foeDfs(3000, 3)] },
       paper:    { name: '呑み戻し', rate: RATE.big, noheal: 3, seal: 1 } } },
-  xa_spirit: { ...ENEMIES.xeno_spirit, name: 'ゼノ【適応】・精神離脱体', secret: null, hp: 30000, atk: 7000, dfs: 0, phys: 1.0,
-    traits: [{ key: 'rewindRite', name: '巻き戻しの儀・適応', desc: '7ラリーで倒せないと刻が巻き戻る', limit: 7 },
+  xa_spirit: { ...ENEMIES.xeno_spirit, name: 'ゼノ【適応】・精神離脱体', secret: null, hp: 300000, atk: 7000, dfs: 0, phys: 1.0,
+    traits: [{ key: 'rewindRite', name: '巻き戻しの儀・適応', desc: '7ラリーで倒せないと刻が巻き戻る。巻き戻ったあとは、減らされたHPの半分だけ回復したところから再開する', limit: 7, carry: 0.5 },
       { key: 'undying', name: '不滅・適応', desc: `HPが2以上なら、どんな一撃もHP1で耐える。HP1からは${BREAK_NAME}でしかとどめを刺せない`, hard: true },
       { key: 'lastPierce', name: '素通し', desc: '相手のDFSを無視して攻撃する', below: 9 }],
     actions: {
@@ -2447,7 +2447,10 @@ function rewindMatch(S, log) {
   const fresh = newMatch(me.cards.map((c) => c.ch), foe.cards.map((c) => c.ch));
   const bi = foe.idx - 1;   // 肉体の位置(精神離脱体のひとつ前)
   if (!keepMe) Object.assign(me, { idx: 0, wins: bi, streak: 0, breakReady: false, sealed: false, keep: false, cards: fresh.teams[0].cards });
+  const oldSp = foe.cards[bi + 1], carry = (traitOf(oldSp, 'rewindRite') || {}).carry;
   foe.cards[bi] = fresh.teams[1].cards[bi]; foe.cards[bi + 1] = fresh.teams[1].cards[bi + 1];
+  // ゼノ【適応】:精神離脱体は、減らされたHPの半分だけ回復したところから再開する(例:300000→250000で巻き戻ると275000から)
+  if (carry) { const sp = foe.cards[bi + 1]; sp.hp = Math.min(sp.max, Math.max(1, oldSp.hp) + Math.round((sp.max - Math.max(1, oldSp.hp)) * carry)); }
   Object.assign(foe, { idx: bi, wins: 0, streak: 0, breakReady: false, sealed: false, keep: false });
   const body = foe.cards[bi];
   const hs = traitOf(body, 'hardshell');
