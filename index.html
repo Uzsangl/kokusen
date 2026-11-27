@@ -6357,7 +6357,7 @@ function pageTitle(panel) {
   if (krSel()) return ['ソロ', 'スコアアタック'];
   const g = SOLO.group;
   if (g == null) return 'ソロ';
-  if (questSel()) return ['降臨', g === 'rizu' ? 'リズ降臨' : 'エモ降臨'];
+  if (questSel()) return ['降臨', g === 'rizu' ? 'リズ降臨' : g === 'kasane' ? '共闘降臨' : 'エモ降臨'];
   return typeof g === 'number' ? ['アドバンス', CORRIDORS[g]] : ['ベーシック', g];
 }
 // ソロの入り口:ベーシック・アドバンス・スコアアタック・降臨
@@ -8182,7 +8182,7 @@ function pvpKindNg(fp) {
 }
 // 相手を決める画面の「キャラを選ぶ」を押せるか
 function canPick() {
-  if (MODE === 'solo') { const st = STAGES.find((x) => x.id === SOLO.stage); return !!st && !st.chainFrom && corrOpen(st) && (!st.quest || questOpen()); }
+  if (MODE === 'solo') { const st = STAGES.find((x) => x.id === SOLO.stage); return !!st && !st.chainFrom && corrOpen(st) && (!st.quest || questOpen() || (st.coop && IS_MASTER)); }   // 共闘降臨をマスターがソロで試すときは時間外でも
   if (MODE === 'pvp') { const f = pvpFoe(); return PVP.phase !== 'idle' && !PVP.spec && !!f && !pvpKindNg(f.presence); }
   return true;
 }
@@ -8333,7 +8333,7 @@ function start() {
 }
 // opt:level はCPUの深さ、read はボスが読みに頼る割合、stage はソロのステージ、noDecay は刻の抜け落ちを止める
 const startSolo = (mine, st, seed) => {
-  if (st.quest && !questOpen()) { openSheet('降臨', `<p class="sub">降臨は時間外です。${questWhen()}</p>`); renderStages(); return; }
+  if (st.quest && !questOpen() && !(st.coop && IS_MASTER)) { openSheet('降臨', `<p class="sub">降臨は時間外です。${questWhen()}</p>`); renderStages(); return; }
   const sc = stageStamina(st), sn = stamNow();
   if (sc && sn && sn.val < sc.cost) { openStamina(sc.cost); return; }   // スタミナが足りない:回復の画面へ(クリアしたときに消費する)
   const sd = st.kr ? (seed != null ? seed : Math.floor(Math.random() * 2147483647)) : 0;   // 刻練場:敵の並びを決める種
@@ -8471,7 +8471,8 @@ function coopRender() {
   let body;
   if (!COOP.code) {
     body = `<div class="row"><input id="coCode" maxlength="12" placeholder="合言葉(英数字)" autocomplete="off" style="flex:1"><button id="coJoin">入る</button></div>
-      <div class="row"><button id="coMake">合言葉を作って部屋を開く</button></div>`;
+      <div class="row"><button id="coMake">合言葉を作って部屋を開く</button></div>
+      ${IS_MASTER ? `<div class="row"><button id="coSolo" style="border-color:var(--gold);color:var(--gold)">マスター:${'★'.repeat(st.stars)} ${escHtml(boss)}にソロで挑む</button></div>` : ''}`;
   } else {
     const ids = COOP.players.map((p) => p.ch).filter(Boolean), ng = ids.length === COOP_MAX ? teamNg(ids, 'advance') : '';
     const verNg = COOP.players.some((p) => p.v !== RULES_VER);
@@ -8498,6 +8499,7 @@ function coopRender() {
   const q = (sel) => B.querySelector(sel);
   if (q('#coJoin')) q('#coJoin').onclick = () => { Sound.click(); coopJoin(q('#coCode').value.trim()); };
   if (q('#coMake')) q('#coMake').onclick = () => { Sound.click(); coopJoin(rndCode().slice(0, 6)); };
+  if (q('#coSolo')) q('#coSolo').onclick = () => { Sound.click(); coopSoloMaster(); };
   if (q('#coLeave')) q('#coLeave').onclick = () => { Sound.click(); coopLeave(); };
   if (q('#coStart')) q('#coStart').onclick = () => { Sound.click(); coopGo(); };
   B.querySelectorAll('[data-stg]').forEach((b) => { b.onclick = () => { if (COOP.code && !COOP.host) return; Sound.click(); COOP.stage = b.dataset.stg; if (COOP.host) coopLobbySync(); else coopRender(); }; });
@@ -8508,6 +8510,15 @@ function coopRender() {
   }; });
 }
 
+// マスターだけ:共闘降臨のボスに、自分の3体でソロで挑む(テスト用。読みはふつうのボスと同じで、自分の手をまとめて読む)
+function coopSoloMaster() {
+  if (!IS_MASTER) return;
+  const stage = COOP.stage;
+  COOP.sheet = false; coopClose(); $('sheet').classList.add('hidden');
+  openSolo('quest', 'kasane');
+  SOLO.stage = stage; renderStages(); renderSelect();
+  setStep('pick');
+}
 // ----- 出撃 -----
 async function coopGo() {
   if (!COOP.host || COOP.playing) return;
