@@ -150,6 +150,23 @@
   .rar.r1, .rar.r2 { color: #9aa0b4; } .rar.r3 { color: #f5c451; } .rar.r4 { color: #b57bff; } .rar.r5 { color: #ff2a3d; }
   #pickSide button.picked[data-s="foe"] { border-color: #ff8a95; color: #ff8a95; box-shadow: 0 0 12px #ff4d5e44; }
   .cdetail .crow { margin-bottom: 8px; }
+  .cdB { display: grid; gap: 10px; }
+  .cdB .cdtop { display: grid; grid-template-columns: 104px 1fr; gap: 12px; align-items: center; }
+  .cdB .cdtop .cico.lg { width: 104px; height: 104px; border-radius: 14px; }
+  .cdB .name { font-weight: 900; font-size: 1.1rem; line-height: 1.25; } .cdB .role { display: block; margin: 0; font-size: .72rem; }   /* キャッチコピーは名前の下の行に */
+  .cdbars { display: grid; gap: 4px; margin-top: 6px; }
+  .cdbar { display: grid; grid-template-columns: 30px 1fr 44px; gap: 6px; align-items: center; font-size: .72rem; font-weight: 900; }
+  .cdbar > span:last-child { text-align: right; }
+  .cdbar .t { height: 8px; border-radius: 4px; background: #ffffff14; overflow: hidden; } .cdbar .t i { display: block; height: 100%; }
+  .cdbar.hp { color: #6af0a0; } .cdbar.hp i { background: linear-gradient(90deg, #2fae6a, #6af0a0); }
+  .cdbar.atk { color: #ff8a95; } .cdbar.atk i { background: linear-gradient(90deg, #c2182b, #ff6a7a); }
+  .cdbar.dfs { color: #ffd76a; } .cdbar.dfs i { background: linear-gradient(90deg, #b8862a, #ffd76a); }
+  .cdsec { border: 1px solid #f5c45155; border-radius: 12px; overflow: hidden; background: #0c0f24; }
+  .cdsec h5 { margin: 0; padding: 4px 10px; font-size: .78rem; color: #241a00; background: linear-gradient(180deg, #ffd76a, #b8862a); letter-spacing: .1em; }
+  .cdsec .bd { padding: 8px 10px; font-size: .82rem; line-height: 1.5; }
+  .cdtr b { color: #ffd76a; } .cdtr + .cdtr { margin-top: 6px; padding-top: 6px; border-top: 1px dashed #ffffff22; }
+  .cdac { display: grid; grid-template-columns: 26px 1fr; gap: 6px; align-items: start; } .cdac + .cdac { margin-top: 6px; }
+  .cdac .h { font-size: 1.2rem; line-height: 1.2; } .cdac b { color: #fff; } .cdac small { display: block; color: #b8c0e0; }
   /* 文字を長押ししても、選択やコピーのメニューを出さない(入力欄だけは使えるように) */
   body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
   input, textarea { -webkit-user-select: text; user-select: text; -webkit-touch-callout: default; }
@@ -7061,13 +7078,19 @@ function openCharDetail(ch, back) {   // back:閉じたあとに戻る画面(ガ
   const clash = order < 0 && (sameClash(ch, picked) || highFull(ch, picked));
   const onPick = !$('select').classList.contains('hidden') && $('select').dataset.step === 'pick' && !(!$('sheet').classList.contains('hidden') && $('sheetTitle').textContent === 'キャラ一覧');   // パーティを選んでいる画面から開いたときだけ
   const canToggle = onPick && !back && unlocked && !(PVP.on && PVP.phase === 'ready') && (order >= 0 || (!clash && picked.length < TEAM_SIZE));
-  openSheet(dispName(ch), `<div class="cdetail"><div class="crow">${iconHtml(ch, 'lg')}<div>` +
+  // 詳細(カード型):左に大きいアイコン、右に名前・★・能力値の棒。下に特性と技を、金の見出しの箱で
+  const bar = (c, l, v, m) => `<div class="cdbar ${c}"><span>${l}</span><span class="t"><i style="width:${Math.min(100, v / m * 100)}%"></i></span><span>${v}</span></div>`;
+  const trs = traitsOf(ch);
+  openSheet(dispName(ch), `<div class="cdetail cdB"><div class="cdtop">${iconHtml(ch, 'lg')}<div>` +
     `<div class="name">${dispName(ch)}${hide ? '' : `<span class="role">${ch.role || ''}</span>`}</div>` +
     (hide ? '' : `<div>${rarHtml(ch)}${ch.gacha || ch.adv ? ' <small class="sub">アドバンス専用</small>' : ''}</div>`) +
+    (hide ? '' : `<div class="cdbars">${bar('hp', 'HP', ch.hp, 20000)}${bar('atk', 'ATK', ch.atk, 5000)}${bar('dfs', 'DFS', ch.dfs, 5000)}</div>`) +
+    `</div></div>` +
     (unlocked ? '' : `<div class="sub" style="color:var(--gold)">🔒 ${unlockText(ch)}</div>`) +
     (clash ? `<div class="sub">${sameClash(ch, picked) ? '同じ人物なので、同じパーティには入れられない' : '★4以上は1パーティに1枚まで(もう入っている)'}</div>` : '') +
-    (hide ? '' : `<div class="stats"><span class="s-hp">HP ${ch.hp}</span>　${statLine(ch)}</div><div class="trait">${traitLine(ch)}</div>` + actionList(ch, 'div', 'sub')) +
-    `</div></div>` + (canToggle ? `<div class="row"><button id="cdPick" style="border-color:var(--gold);color:var(--gold);font-weight:700">${order >= 0 ? 'パーティから外す' : `${picked.length + 1}番手に入れる`}</button></div>` : '') + (back ? '<div class="row"><button id="cdBack">◀ ガチャに戻る</button></div>' : '') + `</div>`);
+    (hide ? '' : (trs.length ? `<div class="cdsec"><h5>特性</h5><div class="bd">${trs.map((t) => `<div class="cdtr"><b>${escHtml(t.name)}</b><br>${t.desc}</div>`).join('')}</div></div>` : '') +
+      `<div class="cdsec"><h5>技</h5><div class="bd">${HAND_KEYS.map((h) => `<div class="cdac"><span class="h">${HANDS[h].icon}</span><div><b>${HANDS[h].power}「${escHtml(ch.actions[h].name)}」</b><small>${describe(ch.actions[h])}</small></div></div>`).join('')}</div></div>`) +
+    (canToggle ? `<div class="row"><button id="cdPick" style="border-color:var(--gold);color:var(--gold);font-weight:700">${order >= 0 ? 'パーティから外す' : `${picked.length + 1}番手に入れる`}</button></div>` : '') + (back ? '<div class="row"><button id="cdBack">◀ ガチャに戻る</button></div>' : '') + `</div>`);
   if (back) $('cdBack').onclick = () => { Sound.click(); back(); };
   if (canToggle) $('cdPick').onclick = () => { if (order >= 0) picked.splice(order, 1); else picked.push(ch.id); $('sheet').classList.add('hidden'); Sound.click(); renderSelect(); };
 }
