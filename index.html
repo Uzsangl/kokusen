@@ -1093,6 +1093,7 @@
   .stages.vlist button b .stk { display: flex; width: 48px; justify-content: center; align-items: center; margin: 0; }   /* ★1〜★5の真ん中を、同じ位置にそろえる */
   .stages.vlist button b .stk:not(.one) { flex-direction: column; }
   .stages.vlist button b { display: flex; flex-direction: column; align-items: flex-start; } .stages.vlist button b .stcost { width: 48px; display: flex; justify-content: center; }
+  .stk.pile.n3, .stk.pile.n4 { line-height: .82; } .stk.pile.n3 u, .stk.pile.n4 u { margin: 0 .1em; }   /* ★3・★4は少し散らして、★2・★5と同じくらい横長に */
   .stk.heap { line-height: .9; } .stk.heap u { margin: 0 -.06em; }   /* 少しだけ寄せる */
   .stk.ring { position: relative; display: inline-block; width: 2.6em; height: 2.6em; vertical-align: middle; } .stk.ring i { position: absolute; transform: translate(-50%, -50%); line-height: 1; }
 </style>
@@ -6403,7 +6404,7 @@ const starStack = (n) => {
     const r = n === 3 ? 0.42 : n === 4 ? 0.48 : 0.52, rot = n === 4 ? 45 : 0;
     return `<span class="stk ring">${Array.from({ length: n }, (_, k) => { const a = (rot + 360 * k / n - 90) * Math.PI / 180; return `<i style="left:${(50 + 50 * r * Math.cos(a)).toFixed(1)}%;top:${(50 + 50 * r * Math.sin(a)).toFixed(1)}%">★</i>`; }).join('')}</span>`;
   }
-  return `<span class="stk ${STAR_SHAPE}">${STAR_ROWS[STAR_SHAPE][n].map(row).join('')}</span>`;
+  return `<span class="stk ${STAR_SHAPE} n${n}">${STAR_ROWS[STAR_SHAPE][n].map(row).join('')}</span>`;
 };
 const FACES_ON = false;   // ボタンの後ろのキャラの目元は出さない(ver1.93〜)。戻すときは true
 function addFace(b, key) {
