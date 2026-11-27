@@ -1087,7 +1087,8 @@
   /* 横長のボタンの紺:下に行くほど暗くする(ノイズはなし) */
   .hubbig button, .hubbig button.hasface, .stages.vlist button { background: linear-gradient(180deg, #252c5a 0%, #181d3e 55%, #0c0f24 100%) padding-box, var(--goldGrad) border-box; }
   .stages.vlist button.picked { background: linear-gradient(180deg, #2d3568 0%, #1d2348 55%, #11142d 100%) padding-box, var(--goldGrad) border-box; }
-  .stk { display: inline-flex; flex-direction: column; align-items: center; line-height: .95; letter-spacing: 0; } .stk i { font-style: normal; }   /* ★4・★5は積んで出す */
+  .stk { display: inline-flex; flex-direction: column; align-items: center; line-height: .95; letter-spacing: 0; } .stk i { font-style: normal; }   /* ★3〜★5は丸く積む */
+  .stk.ring { position: relative; display: inline-block; width: 2.6em; height: 2.6em; vertical-align: middle; } .stk.ring i { position: absolute; transform: translate(-50%, -50%); line-height: 1; }
 </style>
 </head>
 <body>
@@ -6386,7 +6387,17 @@ const FACES = {
   'g:1': [['xeno_spirit', 0.46]], 'g:2': [['g_z4', 0.38]], 'g:3': [['g_y4', 0.25]], 'g:4': [['g_a4', 0.21]],
   'g:emo': [['emo', 0.31]], 'g:rizu': [['rizu', 0.35]],
 };
-const starStack = (n) => (n <= 3 ? '★'.repeat(n) : `<span class="stk">${(n === 4 ? [2, 2] : [1, 2, 2]).map((k) => `<i>${'★'.repeat(k)}</i>`).join('')}</span>`);
+// ★を丸く積む。STAR_SHAPE:ring(円に並べる)/ dice(サイコロの目)/ diamond(ひし形)
+let STAR_SHAPE = 'ring';
+const STAR_ROWS = { dice: { 3: [1, 2], 4: [2, 2], 5: [2, 1, 2] }, diamond: { 3: [1, 2], 4: [1, 2, 1], 5: [1, 3, 1] } };
+const starStack = (n) => {
+  if (n <= 2) return '★'.repeat(n);
+  if (STAR_SHAPE === 'ring') {   // 円の上に等間隔で(上から時計回り)。★3は三角、★4は四角、★5は五角
+    const r = n === 3 ? 0.42 : n === 4 ? 0.48 : 0.52, rot = n === 4 ? 45 : 0;
+    return `<span class="stk ring">${Array.from({ length: n }, (_, k) => { const a = (rot + 360 * k / n - 90) * Math.PI / 180; return `<i style="left:${(50 + 50 * r * Math.cos(a)).toFixed(1)}%;top:${(50 + 50 * r * Math.sin(a)).toFixed(1)}%">★</i>`; }).join('')}</span>`;
+  }
+  return `<span class="stk">${STAR_ROWS[STAR_SHAPE][n].map((k) => `<i>${'★'.repeat(k)}</i>`).join('')}</span>`;
+};
 const FACES_ON = false;   // ボタンの後ろのキャラの目元は出さない(ver1.93〜)。戻すときは true
 function addFace(b, key) {
   if (!FACES_ON) return;
