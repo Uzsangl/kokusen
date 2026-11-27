@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>遊び方・ルール | 刻戦(コクセン)</title>
+<meta name="description" content="刻戦(コクセン)の遊び方とルール。3体のチームで戦うじゃんけん対戦ゲーム。勝った手で出る技が変わる心理戦、3連勝で発動するBREAKなどを解説します。">
+<link rel="canonical" href="https://kokusen.org/howto.html">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="刻戦">
+<meta property="og:title" content="遊び方・ルール | 刻戦">
+<meta property="og:description" content="刻戦(コクセン)の遊び方とルール。3体のチームで戦うじゃんけん対戦ゲーム。勝った手で出る技が変わる心理戦、3連勝で発動するBREAKなどを解説します。">
+<meta property="og:url" content="https://kokusen.org/howto.html">
+<meta property="og:image" content="https://kokusen.org/img/og.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/app/favicon-32.png">
+<meta name="theme-color" content="#090b16">
+<style>
+  :root { --bg: #090b16; --panel: #141830; --text: #eef0ff; --sub: #9aa0c3; --line: #2b3157; --gold: #f5c451; --violet: #8b6cff; --red: #ff4d5e; --hp: #4ade80; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 0 16px 56px; color: var(--text); line-height: 1.8;
+    background: radial-gradient(1200px 600px at 50% -10%, #1c2250 0%, var(--bg) 60%) fixed var(--bg);
+    font-family: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif; }
+  main, header.site, footer.site { max-width: 720px; margin: 0 auto; }
+  header.site { padding: 14px 0 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; border-bottom: 1px solid var(--line); }
+  header.site .logo { font-weight: 900; font-size: 1.25rem; color: var(--gold); text-decoration: none; letter-spacing: .08em; }
+  header.site nav { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: .9rem; }
+  header.site nav a { color: var(--sub); text-decoration: none; padding: 2px 0; }
+  header.site nav a.on { color: var(--text); border-bottom: 2px solid var(--gold); }
+  a { color: var(--gold); }
+  h1 { font-size: 1.5rem; line-height: 1.4; margin: 22px 0 6px; }
+  h2 { font-size: 1.15rem; margin: 34px 0 8px; color: var(--gold); border-left: 4px solid var(--gold); padding-left: 10px; }
+  h3 { font-size: 1rem; margin: 18px 0 4px; }
+  p, li, td, th { color: #d5d8f0; font-size: .95rem; }
+  .lead { color: var(--sub); margin: 0 0 8px; }
+  .play { display: block; margin: 18px 0; padding: 14px; border-radius: 12px; text-align: center; font-weight: 900; font-size: 1.05rem; text-decoration: none;
+    color: #1a1304; background: linear-gradient(180deg, #ffe08a, #f5c451); }
+  table.t { border-collapse: collapse; width: 100%; margin: 8px 0; font-size: .9rem; }
+  table.t th, table.t td { border: 1px solid var(--line); padding: 6px 8px; text-align: left; vertical-align: top; }
+  table.t th { background: var(--panel); white-space: nowrap; }
+  table.t td:nth-child(-n+2) { white-space: nowrap; }
+  .toc { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; padding: 0; list-style: none; }
+  .toc a { display: block; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; text-decoration: none; font-size: .85rem; background: var(--panel); }
+  .char { display: grid; grid-template-columns: 84px 1fr; gap: 6px 12px; margin: 12px 0; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); }
+  .char img { width: 84px; height: 84px; border-radius: 12px; object-fit: cover; background: #0c0f22; }
+  .char .noimg { width: 84px; height: 84px; border-radius: 12px; background: #0c0f22; display: grid; place-items: center; font-size: 2rem; font-weight: 900; color: var(--sub); }
+  .char h3 { margin: 0; font-size: 1.1rem; }
+  .char .meta { color: var(--sub); font-size: .82rem; }
+  .char .stars { color: var(--gold); letter-spacing: .05em; }
+  .char .stats { font-weight: 800; font-size: .9rem; display: flex; flex-wrap: wrap; gap: 4px 12px; }
+  .char .stats .hp { color: var(--hp); } .char .stats .atk { color: var(--red); } .char .stats .dfs { color: var(--gold); }
+  .char .body { grid-column: 1 / -1; }
+  .char dl { margin: 6px 0 0; }
+  .char dt { font-weight: 800; color: #ffe08a; font-size: .9rem; margin-top: 6px; }
+  .char dd { margin: 0; font-size: .88rem; color: #d5d8f0; line-height: 1.6; }
+  .char h4 { margin: 10px 0 0; font-size: .8rem; color: var(--sub); font-weight: 700; letter-spacing: .1em; }
+  footer.site { margin-top: 44px; padding-top: 14px; border-top: 1px solid var(--line); color: var(--sub); font-size: .82rem; }
+  footer.site a { color: var(--sub); }
+  .rainbow { color: var(--gold); font-weight: 900; }
+.rainbow, .break { background: linear-gradient(90deg, rgb(255, 77, 94), rgb(245, 196, 81), rgb(74, 222, 128), rgb(56, 189, 248), rgb(139, 108, 255), rgb(255, 77, 94)) 0% 0% / 200% 100% text; color: transparent; animation: 1.2s linear 0s infinite normal none running hue; }
+.rb { list-style: none; margin: 8px 0px; padding: 0px; display: grid; gap: 6px; }
+.rb li { position: relative; padding: 8px 10px 8px 26px; border-radius: 10px; background: rgba(255, 255, 255, 0.04); font-size: 0.95rem; line-height: 1.4; }
+.rb li::before { content: "◆"; position: absolute; left: 9px; top: 9px; font-size: 0.6rem; color: rgb(240, 192, 64); }
+.rb li b { color: rgb(255, 224, 138); }
+.rb.sm li { padding: 6px 10px 6px 24px; font-size: 0.86rem; }
+.rb.sm li::before { top: 7px; }
+.rbflow { display: flex; flex-wrap: nowrap; align-items: center; justify-content: center; gap: 4px; margin: 10px 0px 4px; }
+.rbflow span { flex: 1 1 0px; min-width: 0px; padding: 6px 4px; border-radius: 10px; text-align: center; font-weight: 700; font-size: 1rem; border: 2px solid transparent; background: linear-gradient(180deg, #1d2246, #141833) padding-box, var(--goldThin) border-box; }
+.rbflow span small { display: block; font-size: 0.6rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; color: #9aa0c3; }
+.rbflow i { font-style: normal; color: rgb(240, 192, 64); font-weight: 900; }
+.rbnote { text-align: center; font-size: 0.8rem; color: #9aa0c3; margin: 4px 0px 8px; }
+.rbt { width: 100%; border-collapse: collapse; margin: 6px 0px; font-size: 0.88rem; }
+.rbt td { padding: 6px 8px; border-bottom: 1px solid rgba(240, 192, 64, 0.18); }
+.rbt td:first-child { width: 6.5em; color: rgb(255, 224, 138); font-weight: 700; white-space: nowrap; }
+ section h3 { color: #ffe08a; }</style>
+</head>
+<body>
+<!-- このファイルは tools/build-pages.js が書き出したもの。直接は書き換えず、スクリプトを直して作り直す -->
+<header class="site"><a class="logo" href="./">刻戦</a><nav><a href="./">ゲームで遊ぶ</a><a href="howto.html" class="on">遊び方</a><a href="characters.html">キャラクター</a><a href="world.html">世界観</a></nav></header>
+<main>
+<h1>刻戦の遊び方</h1>
+<p class="lead">一手を読み合え。刻戦(コクセン)は、じゃんけんで読み合う対戦ゲームです。ブラウザで無料、登録なしですぐ遊べます。</p>
+<h2>刻戦はどんなゲーム?</h2>
+<p>キャラクターを3体選んでチームを組み、相手のチームと勝ち抜き戦を行います。操作はじゃんけんだけ。グー・チョキ・パーのどれかを出して、<b>じゃんけんに勝った側だけが、出した手に割り当てられた技を使えます。</b></p>
+<p>技はキャラクターごと、手ごとに違います。大きなダメージを与える手、回復する手、味方を強くする手。相手が今いちばん出したい手はどれかを読み、その裏をかく。ただのじゃんけんが、ここで心理戦に変わります。</p>
+<p>じゃんけんに3回続けて勝つと「BREAK」が発動し、じゃんけんなしで技が確定で決まります。あと1勝でBREAKという場面で、相手は何を出して止めに来るのか。勝負どころの読み合いが、刻戦のいちばんの見せ場です。</p>
+<table class="t"><tr><th>手</th><th>時間の力</th><th>勝てる相手</th></tr>
+<tr><td>✊ グー</td><td>停止</td><td>✌️ チョキ(跳躍)</td></tr>
+<tr><td>✌️ チョキ</td><td>跳躍</td><td>🖐️ パー(遡行)</td></tr>
+<tr><td>🖐️ パー</td><td>遡行</td><td>✊ グー(停止)</td></tr></table>
+<p>それぞれのキャラクターの技は<a href="characters.html">キャラクター紹介</a>で、三つの力の意味は<a href="world.html">世界観</a>で読めます。</p>
+<h2>ルールブック</h2>
+<p class="lead">ここから下は、ゲームの中の「ルールブック」と同じ内容です(ver 1.95 時点)。</p>
+<ul class="toc"><li><a href="#rule0">基本</a></li><li><a href="#rule1">BREAK</a></li><li><a href="#rule2">特性・陣営</a></li><li><a href="#rule3">ソロ</a></li><li><a href="#rule4">対人</a></li><li><a href="#rule5">ランク戦</a></li></ul>
+<section id="rule0"><h2>基本</h2>
+<ul class="rb">
+      <li><b>3体ずつ</b>の勝ち抜き戦</li>
+      <li>じゃんけんに<b>勝った方の技だけ</b>出る</li>
+      <li>相手の<b>3体を全部倒したら勝ち</b></li>
+    </ul>
+    <div class="rbflow"><span>✊<small>停止</small></span><i>›</i><span>✌️<small>跳躍</small></span><i>›</i><span>🖐<small>遡行</small></span><i>›</i><span>✊<small>停止</small></span></div>
+    <p class="rbnote">左が右に勝つ ・ あいこは何も起きない</p>
+    <h3>知っておくと得</h3>
+    <ul class="rb sm">
+      <li>ATKは<b>1000〜99999</b></li>
+      <li>DFSは<b>9000まで</b>(受けるダメージ−90%)</li>
+      <li>100ラリーで決着なし → 残り体数、次に残りHPで判定</li>
+    </ul>
+    <h3>刻の抜け落ち</h3>
+    <ul class="rb sm"><li>交代なしで12ラリーをこえると、<b>毎ラリー最大HPの◯%減る</b></li></ul>
+    <div class="rbflow"><span>13<small>3%</small></span><i>›</i><span>14<small>6%</small></span><i>›</i><span>15<small>9%</small></span><i>›</i><span>…<small>+3%ずつ</small></span></div>
+    <p class="rbnote">交代から◯ラリー目 ・ ソロではなし</p>
+</section>
+<section id="rule1"><h2>BREAK</h2>
+<ul class="rb">
+      <li><b>3連勝</b>でBREAK</li>
+      <li>好きな手が<b>必ず通る</b>(DFS無視)</li>
+    </ul>
+    <h3>予兆の色</h3>
+    <div class="rbflow"><span style="color:#6aa8ff">青</span><i>›</i><span style="color:#4ade80">緑</span><i>›</i><span style="color:var(--red)">赤<small>勝ち確定</small></span><i>›</i><span><b class="rainbow">虹</b><small>撃破/BREAK</small></span></div>
+    <h3>ダメージの色</h3>
+    <div class="rbflow"><span>白</span><i>›</i><span style="color:var(--red)">赤<small>3000〜</small></span><i>›</i><span style="color:var(--gold)">金<small>5000〜</small></span><i>›</i><span><b class="rainbow">虹</b><small>大撃破</small></span></div>
+</section>
+<section id="rule2"><h2>特性・陣営</h2>
+<ul class="rb">
+      <li>キャラごとに<b>特性</b>がある(長押しで見られる)</li>
+      <li><b>同じ陣営3体</b>でボーナス</li>
+    </ul>
+    <div class="rbflow"><span>錨<small>DFS+1000</small></span><span>零<small>最大HP+2000</small></span><span>矢<small>ATK+1000</small></span></div>
+    <p class="rbnote">隔絶のキャラはボーナスなし</p>
+    <h3>ことば</h3>
+    <table class="rbt">
+      <tr><td>(3)</td><td>3ラリーの間だけ</td></tr>
+      <tr><td>永続</td><td>試合が終わるまで消えない</td></tr>
+      <tr><td>重複可能</td><td>何回でも足される</td></tr>
+      <tr><td>重複不可</td><td>強いほう1つだけ</td></tr>
+      <tr><td>刻紋</td><td>ずっと残る強化</td></tr>
+      <tr><td>刻印</td><td>ずっと残る弱体</td></tr>
+      <tr><td>時蝕</td><td>毎ラリーHPが減る</td></tr>
+      <tr><td>回復封じ</td><td>回復できない</td></tr>
+    </table>
+    <p class="rbnote">同じ強化を重ねると、強いほうの値で、ラリー数は足し算</p>
+</section>
+<section id="rule3"><h2>ソロ</h2>
+<ul class="rb">
+      <li>ボスは<b>手のクセを読む</b></li>
+      <li>ボスラッシュ:1体倒すたびに<b>全回復</b></li>
+    </ul>
+    <h3>スタミナとLv</h3>
+    <ul class="rb sm">
+      <li>⚡は<b>クリアしたときだけ減る</b>(負けたら減らない)</li>
+      <li>3分で⚡1回復 ・ カケラ25で最大値ぶん回復</li>
+      <li>クリアで経験値 → <b>Lv</b>が上がる。Lv2つごとに⚡最大+1</li>
+    </ul>
+    <div class="rbflow"><span>★1・2<small>⚡10 経験1</small></span><span>★3<small>⚡20 経験20</small></span><span>★4<small>⚡20 経験100</small></span><span>★5<small>⚡25 経験200</small></span></div>
+    <p class="rbnote">刻の回廊・降臨も同じ。スコアアタックはなし ・ ログイン中だけ</p>
+    <h3>★5のボスの性格</h3>
+    <ul class="rb sm">
+      <li>★5のボスは<b>3つの性格</b>を持ち、あなたのクセを見て切り替える</li>
+      <li>ログの一言で、いまの性格がわかる(ときどきウソ)</li>
+      <li>ステージの <b>i</b> で、ボスの<b>性格</b>のヒントが読める</li>
+    </ul>
+    <table class="rbt"><tr><td>捕食</td><td>同じ手が2回続いたら、3回目を狙う</td></tr><tr><td>巻戻</td><td>負け・あいこの直後のクセを読む</td></tr><tr><td>天眼</td><td>直前2手の並びから次を読む</td></tr><tr><td>激昂</td><td>一番火力の出る技で攻める</td></tr><tr><td>偏り読み</td><td>一番多く出す手に勝つ手を出す</td></tr><tr><td>狩り</td><td>ピンチの回復・守りの技を狙う</td></tr><tr><td>撒き餌</td><td>わざと負けて、偏りを育てる</td></tr><tr><td>ティルト</td><td>連敗で崩れ、手がばらばらになる</td></tr><tr><td>裏読み</td><td>読まれていると気づくと、その対策の裏をかく。対策を変えるまで続く</td></tr></table>
+    <p class="rbnote">ソロではHPが減っていくことも、100ラリー判定もない</p>
+</section>
+<section id="rule4"><h2>対人</h2>
+<table class="rbt">
+      <tr><td>フリー</td><td>自動で相手を探す</td></tr>
+      <tr><td>プラベ</td><td>合言葉で友だちと</td></tr>
+      <tr><td>ランク</td><td>ログインして、レートが動く</td></tr>
+    </table>
+    <h3>パーティ</h3>
+    <ul class="rb sm">
+      <li>★4以上は<b>1体まで</b></li>
+      <li>同じ人物は<b>1体まで</b></li>
+      <li>ベーシックは<b>アドバンス専用キャラなし</b>(ガチャ・降臨のキャラ)</li>
+    </ul>
+    <h3>放置・切断</h3>
+    <ul class="rb sm">
+      <li>60秒手を出さない → <b>自動で手が出る</b></li>
+      <li>2回続けて自動 → <b>負け</b></li>
+    </ul>
+    <p class="rbnote">「版が違います」と出たら、ページを開き直す</p>
+</section>
+<section id="rule5"><h2>ランク戦</h2>
+<ul class="rb">
+      <li><b>3本勝負</b>。先に2勝で勝ち</li>
+    </ul>
+    <div class="rbflow"><span>ベーシック</span><i>›</i><span>アドバンス</span><i>›</i><span>ベーシック</span></div>
+    <h3>毎試合の流れ</h3>
+    <div class="rbflow"><span>BAN<small>1体ずつ</small></span><i>›</i><span>取り合い<small>交互に3体</small></span><i>›</i><span>並べる</span></div>
+    <ul class="rb sm">
+      <li>取れるのは<b>持っているキャラだけ</b></li>
+      <li>レートは3本勝負ごとに1回動く(勝つと+1)</li>
+      <li>同じ相手とは1日5回まで</li>
+      <li>途中で抜ける・放置 → <b>3本勝負ごと負け</b></li>
+    </ul>
+</section>
+<a class="play" href="./">▶ 刻戦を無料で遊ぶ(ブラウザ・登録なし)</a>
+</main>
+<footer class="site">
+  <p><a href="./">刻戦</a> ・ <a href="howto.html">遊び方</a> ・ <a href="characters.html">キャラクター</a> ・ <a href="world.html">世界観</a> ・ <a href="terms.html">利用規約</a> ・ <a href="privacy.html">プライバシーポリシー</a> ・ <a href="https://x.com/kokusenofficial" target="_blank" rel="noopener">X「刻戦公式」</a></p>
+  <p>音楽:<a href="https://nagumorizu.com/" target="_blank" rel="noopener">なぐもりずの音楽室</a>(南雲莉翠)</p>
+</footer>
+</body>
+</html>

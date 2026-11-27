@@ -1,0 +1,469 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>キャラクター紹介 | 刻戦(コクセン)</title>
+<meta name="description" content="刻戦(コクセン)のキャラクター48体の一覧。錨・零・矢の陣営ごとに、能力値、特性、グー・チョキ・パーで出る技を紹介します。">
+<link rel="canonical" href="https://kokusen.org/characters.html">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="刻戦">
+<meta property="og:title" content="キャラクター紹介 | 刻戦">
+<meta property="og:description" content="刻戦(コクセン)のキャラクター48体の一覧。錨・零・矢の陣営ごとに、能力値、特性、グー・チョキ・パーで出る技を紹介します。">
+<meta property="og:url" content="https://kokusen.org/characters.html">
+<meta property="og:image" content="https://kokusen.org/img/og.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/app/favicon-32.png">
+<meta name="theme-color" content="#090b16">
+<style>
+  :root { --bg: #090b16; --panel: #141830; --text: #eef0ff; --sub: #9aa0c3; --line: #2b3157; --gold: #f5c451; --violet: #8b6cff; --red: #ff4d5e; --hp: #4ade80; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 0 16px 56px; color: var(--text); line-height: 1.8;
+    background: radial-gradient(1200px 600px at 50% -10%, #1c2250 0%, var(--bg) 60%) fixed var(--bg);
+    font-family: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif; }
+  main, header.site, footer.site { max-width: 720px; margin: 0 auto; }
+  header.site { padding: 14px 0 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; border-bottom: 1px solid var(--line); }
+  header.site .logo { font-weight: 900; font-size: 1.25rem; color: var(--gold); text-decoration: none; letter-spacing: .08em; }
+  header.site nav { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: .9rem; }
+  header.site nav a { color: var(--sub); text-decoration: none; padding: 2px 0; }
+  header.site nav a.on { color: var(--text); border-bottom: 2px solid var(--gold); }
+  a { color: var(--gold); }
+  h1 { font-size: 1.5rem; line-height: 1.4; margin: 22px 0 6px; }
+  h2 { font-size: 1.15rem; margin: 34px 0 8px; color: var(--gold); border-left: 4px solid var(--gold); padding-left: 10px; }
+  h3 { font-size: 1rem; margin: 18px 0 4px; }
+  p, li, td, th { color: #d5d8f0; font-size: .95rem; }
+  .lead { color: var(--sub); margin: 0 0 8px; }
+  .play { display: block; margin: 18px 0; padding: 14px; border-radius: 12px; text-align: center; font-weight: 900; font-size: 1.05rem; text-decoration: none;
+    color: #1a1304; background: linear-gradient(180deg, #ffe08a, #f5c451); }
+  table.t { border-collapse: collapse; width: 100%; margin: 8px 0; font-size: .9rem; }
+  table.t th, table.t td { border: 1px solid var(--line); padding: 6px 8px; text-align: left; vertical-align: top; }
+  table.t th { background: var(--panel); white-space: nowrap; }
+  table.t td:nth-child(-n+2) { white-space: nowrap; }
+  .toc { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; padding: 0; list-style: none; }
+  .toc a { display: block; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; text-decoration: none; font-size: .85rem; background: var(--panel); }
+  .char { display: grid; grid-template-columns: 84px 1fr; gap: 6px 12px; margin: 12px 0; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); }
+  .char img { width: 84px; height: 84px; border-radius: 12px; object-fit: cover; background: #0c0f22; }
+  .char .noimg { width: 84px; height: 84px; border-radius: 12px; background: #0c0f22; display: grid; place-items: center; font-size: 2rem; font-weight: 900; color: var(--sub); }
+  .char h3 { margin: 0; font-size: 1.1rem; }
+  .char .meta { color: var(--sub); font-size: .82rem; }
+  .char .stars { color: var(--gold); letter-spacing: .05em; }
+  .char .stats { font-weight: 800; font-size: .9rem; display: flex; flex-wrap: wrap; gap: 4px 12px; }
+  .char .stats .hp { color: var(--hp); } .char .stats .atk { color: var(--red); } .char .stats .dfs { color: var(--gold); }
+  .char .body { grid-column: 1 / -1; }
+  .char dl { margin: 6px 0 0; }
+  .char dt { font-weight: 800; color: #ffe08a; font-size: .9rem; margin-top: 6px; }
+  .char dd { margin: 0; font-size: .88rem; color: #d5d8f0; line-height: 1.6; }
+  .char h4 { margin: 10px 0 0; font-size: .8rem; color: var(--sub); font-weight: 700; letter-spacing: .1em; }
+  footer.site { margin-top: 44px; padding-top: 14px; border-top: 1px solid var(--line); color: var(--sub); font-size: .82rem; }
+  footer.site a { color: var(--sub); }
+  .rainbow { color: var(--gold); font-weight: 900; }
+</style>
+</head>
+<body>
+<!-- このファイルは tools/build-pages.js が書き出したもの。直接は書き換えず、スクリプトを直して作り直す -->
+<header class="site"><a class="logo" href="./">刻戦</a><nav><a href="./">ゲームで遊ぶ</a><a href="howto.html">遊び方</a><a href="characters.html" class="on">キャラクター</a><a href="world.html">世界観</a></nav></header>
+<main>
+<h1>キャラクター紹介</h1>
+<p class="lead">刻戦(コクセン)に登場するキャラクター 48体の、能力値・特性・技の一覧です(ver 1.95 時点)。</p>
+<p>キャラクターごとに、グー(停止)・チョキ(跳躍)・パー(遡行)で出る技が違います。じゃんけんに勝った側だけが、出した手の技を使えます。「この相手は、どの手で勝ちたいか」を知っておくことが、読み合いの第一歩です。遊び方は<a href="howto.html">遊び方・ルール</a>を見てください。</p>
+<ul class="toc"><li><a href="#f-錨">維持派「錨」(14)</a></li><li><a href="#f-零">回帰派「零」(15)</a></li><li><a href="#f-矢">前進派「矢」(14)</a></li><li><a href="#f-隔絶">隔絶(5)</a></li></ul>
+<section id="f-錨"><h2>維持派「錨」</h2><p class="lead">停止の力を得意とし、今の時間を守ろうとする陣営。</p>
+<article class="char" id="kaji">
+  <img src="icons/kaji.webp" alt="カジのアイコン" width="84" height="84" loading="lazy">
+  <div><h3>カジ</h3>
+    <div class="meta"><span class="stars" aria-label="レア度3">★★★</span> ・ 一発逆転</div>
+    <div class="stats"><span class="hp">HP 7250</span><span class="atk">ATK 3250</span><span class="dfs">DFS 1100</span></div></div>
+  <div class="body"><h4>特性</h4><dl><dt>背水</dt><dd>残りHPが半分以下でATK+1250</dd></dl>
+    <h4>技</h4><dl><dt>✊ 停止「堰切り」</dt><dd>特大ダメージ(残りHP半分以下で極大)</dd><dt>✌️ 跳躍「踏み越し」</dt><dd>通常攻撃、自分のATK+1000(3ラリー)</dd><dt>🖐️ 遡行「構え直し」</dt><dd>通常攻撃、次の攻撃ATK+2250、相手のDFS−1000(2ラリー)</dd></dl></div>
+</article>
+<article class="char" id="tomari">
+  <img src="icons/tomari.webp" alt="トマリのアイコン" width="84" height="84" loading="lazy">
+  <div><h3>トマリ</h3>
+    <div class="meta"><span class="stars" aria-label="レア度3">★★★</span> ・ 耐久</div>
+    <div class="stats"><span class="hp">HP 15300</span><span class="atk">ATK 1600</span><span class="dfs">DFS 2000</span></div></div>
+  <div class="body"><h4>特性</h4><dl><dt>不動</dt><dd>攻撃を受けるたびにDFS+500(場にいる間・最大+3000)</dd></dl>
+    <h4>技</h4><dl><dt>✊ 停止「凪」</dt><dd>通常攻撃、自分のDFS+3000(2ラリー)</dd><dt>✌️ 跳躍「先着」</dt><dd>大ダメージ(不動が最大のとき特大)、相手のATK−600(3ラリー)</dd><dt>🖐️ 遡行「繕い」</dt><dd>通常攻撃、HP1500回復</dd></dl></div>
+</article>
+<article class="char" id="mio">
+  <img src="icons/mio.webp" alt="ミオのアイコン" width="84" height="84" loading="lazy">
+  <div><h3>ミオ</h3>
+    <div class="meta"><span class="stars" aria-label="レア度3">★★★</span> ・ 支援・継承</div>
+    <div class="stats"><span class="hp">HP 9100</span><span class="atk">ATK 2500</span><span class="dfs">DFS 1400</span></div></div>
+  <div class="body"><h4>特性</h4><dl><dt>記録</dt><dd>倒れたとき、次の番手にATK+1000・DFS+1500を渡す(刻紋。永続・重複可能)</dd></dl>
+    <h4>技</h4><dl><dt>✊ 停止「留め置き」</dt><dd>大ダメージ、次の番手の最初の攻撃ATK+1500(重複不可)</dd><dt>✌️ 跳躍「水先」</dt><dd>通常攻撃、相手のDFS−1000(3ラリー)、相手のATK−500(3ラリー)</dd><dt>🖐️ 遡行「澪標」</dt><dd>通常攻撃、HP900回復、次の番手が最初に攻撃を受けるときDFS+3000(重複不可)</dd></dl></div>
+</article>
+<article class="char" id="moyai">
+  <img src="icons/moyai.webp" alt="モヤイのアイコン" width="84" height="84" loading="lazy">
+  <div><h3>モヤイ</h3>
+    <div class="meta"><span class="stars" aria-label="レア度3">★★★</span> ・ チーム強化</div>
+    <div class="stats"><span class="hp">HP 15700</span><span class="atk">ATK 1900</span><span class="dfs">DFS 1700</span></div></div>
+  <div class="body"><h4>特性</h4><dl><dt>舫い</dt><dd>倒れたとき、控えの味方全員にDFS+1000・最大HP+1500(刻紋。永続・重複可能)</dd><dt>一点留め</dt><dd>ソロのボス戦(相手がボス1体)のとき、ATK+1200・DFS+800</dd></dl>
+    <h4>技</h4><dl><dt>✊ 停止「結び留め」</dt><dd>通常攻撃、相手のATK−600(3ラリー)</dd><dt>✌️ 跳躍「投げ綱」</dt><dd>大ダメージ、相手のDFS−800(3ラリー)</dd><dt>🖐️ 遡行「繋ぎ直し」</dt><dd>通常攻撃、味方全員(控えも)のDFS+300(刻紋。永続・重複可能。最大+1200)</dd></dl></div>
+</article>
+<article class="char" id="shio">
+  <img src="icons/shio.webp" alt="シオのアイコン" width="84" height="84" loading="lazy">
+  <div><h3>シオ</h3>
+    <div class="meta"><span class="stars" aria-label="レア度3">★★★</span> ・ 回復・回復封じ</div>
+    <div class="stats"><span class="hp">HP 14450</span><span class="atk">ATK 1800</span><span class="dfs">DFS 1500</span></div></div>
+  <div class="body"><h4>特性</h4><dl><dt>満ち潮</dt><dd>ラリーが終わるたびにHP350回復</dd><dt>一点留め</dt><dd>ソロのボス戦(相手がボス1体)のとき、ATK+1200・DFS+800</dd></dl>
+    <h4>技</h4><dl><dt>✊ 停止「凪ぎ払い」</dt><dd>通常攻撃、相手の回復を3ラリー封じる</dd><dt>✌️ 跳躍「引き潮」</dt><dd>通常攻撃、相手のATK−500(2ラリー)</dd><dt>🖐️ 遡行「潮満ち」</dt><dd>通常攻撃、HP2200回復、自分のデバフと時蝕を消す</dd></dl></div>
+</article>
+<article class="char" id="p_kaji_shi">
+  <img src="icons/kaji_shi.webp" alt="カジ【始】のアイコン" width="84" height="84" loading="lazy">
+  <div><h3>カジ【始】</h3>
+    <div class="meta"><span class="stars" aria-label="レア度4">★★★★</span> ・ 始まり</div>
+    <div class="stats"><span class="hp">HP 9999</span><span class="atk">ATK 3600</span><span class="dfs">DFS 1400</span></div></div>
+  <div class="body"><h4>特性</h4><dl><dt>始の刻</dt><dd>BREAKするたびにATK+1000(刻紋。永続・重複可能)</dd><dt>背水・始</dt><dd>残りHPが半分以下でATK+1000・DFS+1000</dd></dl>
+    <h4>技</h4><dl><dt>✊ 停止「始の一閃」</dt><dd>特大ダメージ</dd><dt>✌️ 跳躍「間を跳ぶ」</dt><dd>通常攻撃、自分の連勝+1</dd><dt>🖐️ 遡行「流れ戻し」</dt><dd>通常攻撃、HP1500回復</dd></dl></div>
+</article>
+<article class="char" id="k_yuragi">
+  <img src="icons/k_yuragi.webp" alt="ユラギのアイコン" width="84" height="84" loading="lazy">
+  <div><h3>ユラギ</h3>
+    <div class="meta"><span class="stars" aria-label="レア度3">★★★</span> ・ 迷い・攻守が揺れる</div>
+    <div class="stats"><span class="hp">HP 12500</span><span class="atk">ATK 2300</span><span class="dfs">DFS 1500</span></div></div>
+  <div class="body"><h4>特性</h4><dl><dt>揺らぎ</dt><dd>場に出て奇数ラリーはATK+2500・DFS−1000、偶数ラリーはDFS+2500・ATK−1000</dd></dl>
+    <h4>技</h4><dl><dt>✊ 停止「迷い打ち」</dt><dd>大ダメージ(奇数ラリーは極大)</dd><dt>✌️ 跳躍「揺れ戻し」</dt><dd>通常攻撃、自分のDFS+800(2ラリー)</dd><dt>🖐️ 遡行「ためらい」</dt><dd>通常攻撃、相手のATK−600(2ラリー)</dd></dl></div>
+</article>
+<article class="char" id="k_setsuna">
+  <img src="icons/k_setsuna.webp" alt="セツナのアイコン" width="84" height="84" loading="lazy">
+  <div><h3>セツナ</h3>
+    <div class="meta"><span class="stars" aria-label="レア度4">★★★★</span> ・ 切なさ・散り際に託す</div>
+    <div class="stats"><span class="hp">HP 14000</span><span class="atk">ATK 2600</span><span class="dfs">DFS 1800</span></div></div>
+  <div class="body"><h4>特性</h4><dl><dt>散り際</dt><dd>倒れたとき、場にいたラリー数×200を、控えの味方全員のATKに足す(刻紋。永続・重複可能。最大+10000)</dd></dl>
+    <h4>技</h4><dl><dt>✊ 停止「名残」</dt><dd>大ダメージ</dd><dt>✌️ 跳躍「引き留め」</dt><dd>通常攻撃、相手のATK−800(刻印。永続・重複可能)</dd><dt>🖐️ 遡行「寄り添い」</dt><dd>通常攻撃、控えの味方全員のDFS+500(刻紋。永続・重複可能)</dd></dl></div>
+</article>
+<article class="char" id="g_a1">
+  <img src="icons/g_a1.webp" alt="ハシケのアイコン" width="84" height="84" loading="lazy">
+  <div><h3>ハシケ</h3>
+    <div class="meta"><span class="stars" aria-label="レア度1">★</span> ・ (仮) ・ アドバンス専用</div>
+    <div class="stats"><span class="hp">HP 7000</span><span class="atk">ATK 1400</span><span class="dfs">DFS 1200</span></div></div>
+  <div class="body">
+    <h4>技</h4><dl><dt>✊ 停止「盾当て」</dt><dd>通常攻撃</dd><dt>✌️ 跳躍「渡し」</dt><dd>通常攻撃</dd><dt>🖐️ 遡行「漕ぎ戻し」</dt><dd>通常攻撃</dd></dl></div>
+</article>
+<article class="char" id="g_a2">
+  <img src="icons/g_a2.webp" alt="オモリのアイコン" width="84" height="84" loading="lazy">
+  <div><h3>オモリ</h3>
+    <div class="meta"><span class="stars" aria-label="レア度2">★★</span> ・ デカブツ ・ アドバンス専用</div>
+    <div class="stats"><span class="hp">HP 30000</span><span class="atk">ATK 700</span><span class="dfs">DFS 0</span></div></div>
+  <div class="body">
+    <h4>技</h4><dl><dt>✊ 停止「のしかかり」</dt><dd>通常攻撃</dd><dt>✌️ 跳躍「転がり」</dt><dd>通常攻撃</dd><dt>🖐️ 遡行「据え置き」</dt><dd>通常攻撃</dd></dl></div>
+</article>
+<article class="char" id="g_a3a">
+  <img src="icons/g_a3a.webp" alt="ツナギのアイコン" width="84" height="84" loading="lazy">
+  <div><h3>ツナギ</h3>
+    <div class="meta"><span class="stars" aria-label="レア度3">★★★</span> ・ 継承 ・ アドバンス専用</div>
+    <div class="stats"><span class="hp">HP 6500</span><span class="atk">ATK 1000</span><span class="dfs">DFS 1000</span></div></div>
+  <div class="body"><h4>特性</h4><dl><dt>継ぎ</dt><dd>倒れたとき、自分のATKとDFS(永続の強化も込み)をそのまま次の番手に足す(刻紋。永続・重複可能)</dd></dl>
+    <h4>技</h4><dl><dt>✊ 停止「旗打ち」</dt><dd>大ダメージ</dd><dt>✌️ 跳躍「旗掲げ」</dt><dd>通常攻撃、自分のDFS+1000(2ラリー)</dd><dt>🖐️ 遡行「託し」</dt><dd>通常攻撃、自分のATK+500・DFS+500(刻紋。永続・重複可能)</dd></dl></div>
+</article>
+<article class="char" id="g_a3b">
+  <img src="icons/g_a3b.webp" alt="イソのアイコン" width="84" height="84" loading="lazy">
+  <div><h3>イソ</h3>
+    <div class="meta"><span class="stars" aria-label="レア度3">★★★</span> ・ 回復耐久 ・ アドバンス専用</div>
+    <div class="stats"><span class="hp">HP 18600</span><span class="atk">ATK 1500</span><span class="dfs">DFS 1900</span></div></div>
+  <div class="body"><h4>特性</h4><dl><dt>潮だまり</dt><dd>ラリーが終わるたびにHP400回復</dd></dl>
+    <h4>技</h4><dl><dt>✊ 停止「潮受け」</dt><dd>通常攻撃、相手のATK−500(2ラリー)</dd><dt>✌️ 跳躍「しぶき」</dt><dd>通常攻撃</dd><dt>🖐️ 遡行「満ち潮」</dt><dd>通常攻撃、HP1600回復</dd></dl></div>
+</article>
+<article class="char" id="g_a3c">
+  <img src="icons/g_a3c.webp" alt="カイのアイコン" width="84" height="84" loading="lazy">
+  <div><h3>カイ</h3>
+    <div class="meta"><span class="stars" aria-label="レア度3">★★★</span> ・ 硬い相手を割る ・ アドバンス専用</div>
+    <div class="stats"><span class="hp">HP 12300</span><span class="atk">ATK 2600</span><span class="dfs">DFS 1300</span></div></div>
+  <div class="body">
+    <h4>技</h4><dl><dt>✊ 停止「大鎚」</dt><dd>特大ダメージ(相手のDFSが2000以上なら極大)</dd><dt>✌️ 跳躍「鋲打ち」</dt><dd>通常攻撃、相手のDFS−800(3ラリー)</dd><dt>🖐️ 遡行「櫂返し」</dt><dd>通常攻撃</dd></dl></div>
+</article>
+<article class="char" id="g_a4">
+  <img src="icons/g_a4.webp" alt="トモシのアイコン" width="84" height="84" loading="lazy">
+  <div><h3>トモシ</h3>
+    <div class="meta"><span class="stars" aria-label="レア度4">★★★★</span> ・ 抜け落ち勝ち ・ アドバンス専用</div>
+    <div class="stats"><span class="hp">HP 23000</span><span class="atk">ATK 1500</span><span class="dfs">DFS 2600</span></div></div>
+  <div class="body"><h4>特性</h4><dl><dt>錨泊</dt><dd>刻の抜け落ちを受けない。相手が受ける抜け落ちダメージ+50%</dd><dt>消えぬ灯</dt><dd>BREAKで受けるダメージ半減</dd></dl>
+    <h4>技</h4><dl><dt>✊ 停止「灯台守り」</dt><dd>通常攻撃、自分のDFS+2000(2ラリー)</dd><dt>✌️ 跳躍「灯し火」</dt><dd>通常攻撃</dd><dt>🖐️ 遡行「常夜灯」</dt><dd>通常攻撃、HP3000回復</dd></dl></div>
+</article>
+</section>
+<section id="f-零"><h2>回帰派「零」</h2><p class="lead">遡行の力を得意とし、時の始まりからやり直そうとする陣営。</p>
+<article class="char" id="rei">
+  <img src="icons/rei.webp" alt="レイのアイコン" width="84" height="84" loading="lazy">
+  <div><h3>レイ</h3>
+    <div class="meta"><span class="stars" aria-label="レア度3">★★★</span> ・ 変身</div>
+    <div class="stats"><span class="hp">HP 7350</span><span class="atk">ATK 2000</span><span class="dfs">DFS 1200</span></div></div>
+  <div class="body"><h4>特性</h4><dl><dt>仮面割れ</dt><dd>場に出て5ラリー目に変身し、ATK3750・DFS2500になって技も強くなる</dd></dl>
+    <h4>技</h4><dl><dt>✊ 停止「白紙」</dt><dd>大ダメージ</dd><dt>✌️ 跳躍「先消し」</dt><dd>通常攻撃、相手のATK−600(2ラリー)、相手の次の勝ちを連勝に数えない(連勝封じ)</dd><dt>🖐️ 遡行「無かったこと」</dt><dd>通常攻撃、HP600回復、自分のデバフと時蝕を消す、次に負けても連勝が途切れない(連勝保護)</dd></dl></div>
+</article>
+<article class="char" id="hajime">
+  <img src="icons/hajime.webp" alt="ハジメのアイコン" width="84" height="84" loading="lazy">
+  <div><h3>ハジメ</h3>
+    <div class="meta"><span class="stars" aria-label="レア度3">★★★</span> ・ 回復</div>
+    <div class="stats"><span class="hp">HP 11700</span><span class="atk">ATK 1750</span><span class="dfs">DFS 1600</span></div></div>
+  <div class="body"><h4>特性</h4><dl><dt>処置</dt><dd>ラリーが終わるたびにHP400回復</dd></dl>
+    <h4>技</h4><dl><dt>✊ 停止「止血」</dt><dd>大ダメージ、相手のATK−600(2ラリー)</dd><dt>✌️ 跳躍「先診」</dt><dd>通常攻撃、自分のDFS+2000(3ラリー)</dd><dt>🖐️ 遡行「無傷」</dt><dd>通常攻撃、HP2250回復、自分の時蝕を消す</dd></dl></div>
+</article>
+<article class="char" id="uro">
+  <img src="icons/uro.webp" alt="ウロのアイコン" width="84" height="84" loading="lazy">
+  <div><h3>ウロ</h3>
+    <div class="meta"><span class="stars" aria-label="レア度3">★★★</span> ・ 時蝕</div>
+    <div class="stats"><span class="hp">HP 10100</span><span class="atk">ATK 2250</span><span class="dfs">DFS 1300</span></div></div>
+  <div class="body"><h4>特性</h4><dl><dt>古傷</dt><dd>時蝕は重ねがけで毎ラリーのダメージが加算。時蝕中の相手を攻撃するときATK+750</dd></dl>
+    <h4>技</h4><dl><dt>✊ 停止「疼き」</dt><dd>特大ダメージ(時蝕を2回以上重ねた相手には極大)</dd><dt>✌️ 跳躍「膿み先」</dt><dd>通常攻撃、時蝕3ラリー</dd><dt>🖐️ 遡行「古傷返し」</dt><dd>通常攻撃、相手のDFS−1000(3ラリー)、時蝕4ラリー</dd></dl></div>
+</article>
+<article class="char" id="moto">
+  <img src="icons/moto.webp" alt="モトのアイコン" width="84" height="84" loading="lazy">
+  <div><h3>モト</h3>
+    <div class="meta"><span class="stars" aria-label="レア度3">★★★</span> ・ バフ消し</div>
+    <div class="stats"><span class="hp">HP 17250</span><span class="atk">ATK 2100</span><span class="dfs">DFS 1400</span></div></div>
+  <div class="body"><h4>特性</h4><dl><dt>白紙化</dt><dd>場に出たとき、相手のラリー数つきの強化を消す(永続の強化は消えない)</dd><dt>巻き戻しの刃</dt><dd>ソロのボス戦(相手がボス1体)のとき、ATK+1200・DFS+800</dd></dl>
+    <h4>技</h4><dl><dt>✊ 停止「元に戻す」</dt><dd>大ダメージ、相手のラリー数つきの強化を消す(永続の強化は消えない)</dd><dt>✌️ 跳躍「遡り読み」</dt><dd>通常攻撃、相手の次の勝ちを連勝に数えない(連勝封じ)</dd><dt>🖐️ 遡行「原点回帰」</dt><dd>通常攻撃、HP1500回復、自分のデバフと時蝕を消す</dd></dl></div>
+</article>
+<article class="char" id="kasumi">
+  <img src="icons/kasumi.webp" alt="カスミのアイコン" width="84" height="84" loading="lazy">
+  <div><h3>カスミ</h3>
+    <div class="meta"><span class="stars" aria-label="レア度3">★★★</span> ・ 刻印(弱体)</div>
+    <div class="stats"><span class="hp">HP 12500</span><span class="atk">ATK 2200</span><span class="dfs">DFS 1300</span></div></div>
+  <div class="body"><h4>特性</h4><dl><dt>霞の刻</dt><dd>技を当てるたびに相手のATK−250(刻印。永続・重複可能。最大−1500)</dd><dt>巻き戻しの刃</dt><dd>ソロのボス戦(相手がボス1体)のとき、ATK+1200・DFS+800</dd></dl>
+    <h4>技</h4><dl><dt>✊ 停止「霞斬り」</dt><dd>通常攻撃、相手のDFS−600(刻印。永続・重複可能。最大−3000)</dd><dt>✌️ 跳躍「朧」</dt><dd>通常攻撃、時蝕3ラリー</dd><dt>🖐️ 遡行「霞隠れ」</dt><dd>通常攻撃、自分のDFS+2500(2ラリー)</dd></dl></div>
+</article>
+<article class="char" id="p_awai">
+  <img src="icons/awai.webp" alt="アワイのアイコン" width="84" height="84" loading="lazy">
+  <div><h3>アワイ</h3>
+    <div class="meta"><span class="stars" aria-label="レア度4">★★★★</span> ・ レイの支え</div>
+    <div class="stats"><span class="hp">HP 7000</span><span class="atk">ATK 1500</span><span class="dfs">DFS 5000</span></div></div>
+  <div class="body"><h4>特性</h4><dl><dt>継ぎ刻</dt><dd>後ろの番手の味方は、BREAKで与えるダメージが1.1倍。レイなら効果がアップする</dd><dt>零の綴じ</dt><dd>陣営ボーナスが発動していたら、次の番手のATK+1000(永続・重複不可)。レイなら効果がアップする</dd></dl>
+    <h4>技</h4><dl><dt>✊ 停止「縫い止め」</dt><dd>通常攻撃、相手のATK−800(刻印。永続・重複可能)</dd><dt>✌️ 跳躍「刻寄せ」</dt><dd>通常攻撃、次の番手が受けるダメージ−5%(永続・重複不可)。レイなら効果がアップする</dd><dt>🖐️ 遡行「綴じ直し」</dt><dd>通常攻撃、控えの味方全員のATK+300(刻紋。永続・重複可能)。レイなら効果がアップする</dd></dl></div>
+</article>
+<article class="char" id="k_urei">
+  <img src="icons/k_urei.webp" alt="ウレイのアイコン" width="84" height="84" loading="lazy">
+  <div><h3>ウレイ</h3>
+    <div class="meta"><span class="stars" aria-label="レア度3">★★★</span> ・ 憂い・ATKとDFSを入れ替える</div>
+    <div class="stats"><span class="hp">HP 11500</span><span class="atk">ATK 2200</span><span class="dfs">DFS 1300</span></div></div>
+  <div class="body"><h4>特性</h4><dl><dt>憂い</dt><dd>場に出たとき、相手のDFSがATKより高ければ、相手のATKとDFS(強化込み)を入れ替える(その相手が倒れるまで。上限を超えた分は切り捨て)</dd></dl>
+    <h4>技</h4><dl><dt>✊ 停止「鬱ぎ」</dt><dd>大ダメージ</dd><dt>✌️ 跳躍「翳り」</dt><dd>通常攻撃、相手のDFS−800(3ラリー)</dd><dt>🖐️ 遡行「憂さ晴らし」</dt><dd>通常攻撃、自分のATK+800(3ラリー)</dd></dl></div>
+</article>
+<article class="char" id="k_osore">
+  <img src="icons/k_osore.webp" alt="オソレのアイコン" width="84" height="84" loading="lazy">
+  <div><h3>オソレ</h3>
+    <div class="meta"><span class="stars" aria-label="レア度4">★★★★</span> ・ 恐れ・強い相手をすくませる</div>
+    <div class="stats"><span class="hp">HP 15000</span><span class="atk">ATK 1500</span><span class="dfs">DFS 1500</span></div></div>
+  <div class="body"><h4>特性</h4><dl><dt>怯え</dt><dd>CPU戦・対人のときだけ(ソロでは効かない):自分が場に出たときと、相手が場に出たとき、相手のATKとDFSの合計(強化込み)が10000以上なら、両方を50%減らす(その相手が倒れるまで)</dd></dl>
+    <h4>技</h4><dl><dt>✊ 停止「竦み」</dt><dd>極大ダメージ、自分のATK+1000(刻紋。永続・重複可能)</dd><dt>✌️ 跳躍「震え」</dt><dd>通常攻撃、相手の次の勝ちを連勝に数えない(連勝封じ)</dd><dt>🖐️ 遡行「立て直し」</dt><dd>通常攻撃、HP1000回復</dd></dl></div>
+</article>
+<article class="char" id="q_rizu">
+  <img src="icons/rizu.webp" alt="リズのアイコン" width="84" height="84" loading="lazy">
+  <div><h3>リズ</h3>
+    <div class="meta"><span class="stars" aria-label="レア度3">★★★</span> ・ 論理・癖を解析する ・ アドバンス専用</div>
+    <div class="stats"><span class="hp">HP 14000</span><span class="atk">ATK 2300</span><span class="dfs">DFS 1600</span></div></div>
+  <div class="body"><h4>特性</h4><dl><dt>解析</dt><dd>相手が同じ手を2回続けたら、次のラリーは自分の技が1段階強くなる</dd><dt>棄却</dt><dd>相手のチョキ(跳躍)の技は、効果のないただの大ダメージになる</dd><dt>結論</dt><dd>パーティが全員零陣営なら、倒れたとき控えの味方全員に最大HP+2000・HP+2000</dd></dl>
+    <h4>技</h4><dl><dt>✊ 停止「証明終了」</dt><dd>大ダメージ(解析が効いているときは極大)、相手の全員(控えも)のATK−300(刻印。永続・重複可能。最大−1500)</dd><dt>✌️ 跳躍「反証」</dt><dd>通常攻撃、HP2000回復、相手の全員(控えも)のDFS−300(刻印。永続・重複可能。最大−1500)</dd><dt>🖐️ 遡行「最適化」</dt><dd>通常攻撃、自分のDFS+1500(2ラリー)、相手の全員(控えも)のATK−150(刻印。永続・重複可能。最大−1500)、相手の全員(控えも)のDFS−150(刻印。永続・重複可能。最大−1500)</dd></dl></div>
+</article>
+<article class="char" id="g_z1">
+  <img src="icons/g_z1.webp" alt="カラのアイコン" width="84" height="84" loading="lazy">
+  <div><h3>カラ</h3>
+    <div class="meta"><span class="stars" aria-label="レア度1">★</span> ・ (仮) ・ アドバンス専用</div>
+    <div class="stats"><span class="hp">HP 6000</span><span class="atk">ATK 1800</span><span class="dfs">DFS 800</span></div></div>
+  <div class="body">
+    <h4>技</h4><dl><dt>✊ 停止「空打ち」</dt><dd>通常攻撃</dd><dt>✌️ 跳躍「すり抜け」</dt><dd>通常攻撃</dd><dt>🖐️ 遡行「やり直し」</dt><dd>通常攻撃</dd></dl></div>
+</article>
+<article class="char" id="g_z2">
+  <img src="icons/g_z2.webp" alt="アキのアイコン" width="84" height="84" loading="lazy">
+  <div><h3>アキ</h3>
+    <div class="meta"><span class="stars" aria-label="レア度2">★★</span> ・ 弱い時蝕 ・ アドバンス専用</div>
+    <div class="stats"><span class="hp">HP 8000</span><span class="atk">ATK 1600</span><span class="dfs">DFS 1000</span></div></div>
+  <div class="body">
+    <h4>技</h4><dl><dt>✊ 停止「砂留め」</dt><dd>通常攻撃、時蝕2ラリー</dd><dt>✌️ 跳躍「こぼれ砂」</dt><dd>通常攻撃</dd><dt>🖐️ 遡行「砂戻し」</dt><dd>通常攻撃</dd></dl></div>
+</article>
+<article class="char" id="g_z3a">
+  <img src="icons/g_z3a.webp" alt="シラのアイコン" width="84" height="84" loading="lazy">
+  <div><h3>シラ</h3>
+    <div class="meta"><span class="stars" aria-label="レア度3">★★★</span> ・ 相手全体に永続デバフ ・ アドバンス専用</div>
+    <div class="stats"><span class="hp">HP 13500</span><span class="atk">ATK 1900</span><span class="dfs">DFS 1300</span></div></div>
+  <div class="body"><h4>特性</h4><dl><dt>呪い</dt><dd>技を当てるたびに、相手の全員(控えも)のATK−150(刻印。永続・重複可能。最大−2000)</dd></dl>
+    <h4>技</h4><dl><dt>✊ 停止「白封じ」</dt><dd>通常攻撃</dd><dt>✌️ 跳躍「白紙送り」</dt><dd>大ダメージ</dd><dt>🖐️ 遡行「名消し」</dt><dd>通常攻撃、相手の全員(控えも)のDFS−200(刻印。永続・重複可能。最大−2000)</dd></dl></div>
+</article>
+<article class="char" id="g_z3b">
+  <img src="icons/g_z3b.webp" alt="マタのアイコン" width="84" height="84" loading="lazy">
+  <div><h3>マタ</h3>
+    <div class="meta"><span class="stars" aria-label="レア度3">★★★</span> ・ 一度だけ耐える ・ アドバンス専用</div>
+    <div class="stats"><span class="hp">HP 13300</span><span class="atk">ATK 2300</span><span class="dfs">DFS 1100</span></div></div>
+  <div class="body"><h4>特性</h4><dl><dt>立ち直り</dt><dd>一度だけ、倒れたときにHP30%で立ち上がる</dd></dl>
+    <h4>技</h4><dl><dt>✊ 停止「踏みとどまり」</dt><dd>大ダメージ</dd><dt>✌️ 跳躍「返し刃」</dt><dd>通常攻撃</dd><dt>🖐️ 遡行「縫い直し」</dt><dd>通常攻撃、HP600回復</dd></dl></div>
+</article>
+<article class="char" id="g_z3c">
+  <img src="icons/g_z3c.webp" alt="アイのアイコン" width="84" height="84" loading="lazy">
+  <div><h3>アイ</h3>
+    <div class="meta"><span class="stars" aria-label="レア度3">★★★</span> ・ あいこで連勝 ・ アドバンス専用</div>
+    <div class="stats"><span class="hp">HP 17300</span><span class="atk">ATK 2100</span><span class="dfs">DFS 1200</span></div></div>
+  <div class="body"><h4>特性</h4><dl><dt>逆巻き</dt><dd>あいこでも連勝が1増える</dd></dl>
+    <h4>技</h4><dl><dt>✊ 停止「合わせ鏡」</dt><dd>通常攻撃</dd><dt>✌️ 跳躍「相打ち」</dt><dd>大ダメージ</dd><dt>🖐️ 遡行「映し戻し」</dt><dd>通常攻撃</dd></dl></div>
+</article>
+<article class="char" id="g_z4">
+  <img src="icons/g_z4.webp" alt="カガミのアイコン" width="84" height="84" loading="lazy">
+  <div><h3>カガミ</h3>
+    <div class="meta"><span class="stars" aria-label="レア度4">★★★★</span> ・ 相手のATKで殴る ・ アドバンス専用</div>
+    <div class="stats"><span class="hp">HP 28800</span><span class="atk">ATK 1000</span><span class="dfs">DFS 1300</span></div></div>
+  <div class="body"><h4>特性</h4><dl><dt>鏡写し</dt><dd>攻撃するとき、自分のATKの代わりに相手の今のATKを使う</dd></dl>
+    <h4>技</h4><dl><dt>✊ 停止「鏡面」</dt><dd>大ダメージ</dd><dt>✌️ 跳躍「映し誘い」</dt><dd>通常攻撃、相手のATK+500(2ラリー)</dd><dt>🖐️ 遡行「鏡の修復」</dt><dd>通常攻撃、HP1500回復</dd></dl></div>
+</article>
+</section>
+<section id="f-矢"><h2>前進派「矢」</h2><p class="lead">跳躍の力を得意とし、滅びの先の未来へ跳ぼうとする陣営。</p>
+<article class="char" id="tsuru">
+  <img src="icons/tsuru.webp" alt="ツルのアイコン" width="84" height="84" loading="lazy">
+  <div><h3>ツル</h3>
+    <div class="meta"><span class="stars" aria-label="レア度3">★★★</span> ・ BREAK特化</div>
+    <div class="stats"><span class="hp">HP 10600</span><span class="atk">ATK 2400</span><span class="dfs">DFS 1100</span></div></div>
+  <div class="body"><h4>特性</h4><dl><dt>先見</dt><dd>BREAKの一撃はATK+1250</dd></dl>
+    <h4>技</h4><dl><dt>✊ 停止「張り詰め」</dt><dd>大ダメージ(BREAK中は極大)</dd><dt>✌️ 跳躍「先読み」</dt><dd>通常攻撃、自分の連勝+1</dd><dt>🖐️ 遡行「引き絞り」</dt><dd>通常攻撃、自分のATK+1100(3ラリー)</dd></dl></div>
+</article>
+<article class="char" id="haya">
+  <img src="icons/haya.webp" alt="ハヤのアイコン" width="84" height="84" loading="lazy">
+  <div><h3>ハヤ</h3>
+    <div class="meta"><span class="stars" aria-label="レア度3">★★★</span> ・ 短期決戦</div>
+    <div class="stats"><span class="hp">HP 6550</span><span class="atk">ATK 3750</span><span class="dfs">DFS 1000</span></div></div>
+  <div class="body"><h4>特性</h4><dl><dt>先駆け</dt><dd>場に出て1〜3ラリー目はATK+1900、7ラリー目以降はATK−1100</dd></dl>
+    <h4>技</h4><dl><dt>✊ 停止「射止め」</dt><dd>特大ダメージ(3ラリー目までは極大)</dd><dt>✌️ 跳躍「二の矢」</dt><dd>大ダメージ、次の攻撃ATK+1100</dd><dt>🖐️ 遡行「矢返し」</dt><dd>通常攻撃、相手のDFS−1000(3ラリー)</dd></dl></div>
+</article>
+<article class="char" id="yajiri">
+  <img src="icons/yajiri.webp" alt="ヤジリのアイコン" width="84" height="84" loading="lazy">
+  <div><h3>ヤジリ</h3>
+    <div class="meta"><span class="stars" aria-label="レア度3">★★★</span> ・ DFS貫通</div>
+    <div class="stats"><span class="hp">HP 11850</span><span class="atk">ATK 2600</span><span class="dfs">DFS 1100</span></div></div>
+  <div class="body"><h4>特性</h4><dl><dt>貫き</dt><dd>相手のDFSを1000低いものとして攻撃する</dd><dt>大物狙い</dt><dd>ソロのボス戦(相手がボス1体)のとき、ATK+1200・DFS+800</dd></dl>
+    <h4>技</h4><dl><dt>✊ 停止「穿ち」</dt><dd>特大ダメージ</dd><dt>✌️ 跳躍「刻み矢」</dt><dd>通常攻撃、相手のDFS−700(刻印。永続・重複可能。最大−3000)</dd><dt>🖐️ 遡行「矢じり研ぎ」</dt><dd>通常攻撃、自分のATK+800(3ラリー)</dd></dl></div>
+</article>
+<article class="char" id="hane">
+  <img src="icons/hane.webp" alt="ハネのアイコン" width="84" height="84" loading="lazy">
+  <div><h3>ハネ</h3>
+    <div class="meta"><span class="stars" aria-label="レア度3">★★★</span> ・ チーム強化・連勝</div>
+    <div class="stats"><span class="hp">HP 9550</span><span class="atk">ATK 2300</span><span class="dfs">DFS 1200</span></div></div>
+  <div class="body"><h4>特性</h4><dl><dt>羽渡し</dt><dd>倒れたとき、控えの味方全員にATK+800(刻紋。永続・重複可能)</dd><dt>大物狙い</dt><dd>ソロのボス戦(相手がボス1体)のとき、ATK+1200・DFS+800</dd></dl>
+    <h4>技</h4><dl><dt>✊ 停止「羽撃ち」</dt><dd>大ダメージ</dd><dt>✌️ 跳躍「風読み」</dt><dd>通常攻撃、自分の連勝+1</dd><dt>🖐️ 遡行「追い風」</dt><dd>通常攻撃、味方全員(控えも)のATK+250(刻紋。永続・重複可能。最大+1000)</dd></dl></div>
+</article>
+<article class="char" id="yugake">
+  <img src="icons/yugake.webp" alt="ユガケのアイコン" width="84" height="84" loading="lazy">
+  <div><h3>ユガケ</h3>
+    <div class="meta"><span class="stars" aria-label="レア度3">★★★</span> ・ あいこで回復</div>
+    <div class="stats"><span class="hp">HP 11000</span><span class="atk">ATK 2500</span><span class="dfs">DFS 1200</span></div></div>
+  <div class="body"><h4>特性</h4><dl><dt>残心</dt><dd>あいこのたびにHP2000回復</dd></dl>
+    <h4>技</h4><dl><dt>✊ 停止「射抜き」</dt><dd>大ダメージ</dd><dt>✌️ 跳躍「番え直し」</dt><dd>通常攻撃、自分のATK+700(3ラリー)</dd><dt>🖐️ 遡行「間合い」</dt><dd>通常攻撃、相手のATK−500(2ラリー)</dd></dl></div>
+</article>
+<article class="char" id="k_hare">
+  <img src="icons/k_hare.webp" alt="ハレのアイコン" width="84" height="84" loading="lazy">
+  <div><h3>ハレ</h3>
+    <div class="meta"><span class="stars" aria-label="レア度3">★★★</span> ・ 喜び・零殺しの支え</div>
+    <div class="stats"><span class="hp">HP 9500</span><span class="atk">ATK 1800</span><span class="dfs">DFS 1200</span></div></div>
+  <div class="body"><h4>特性</h4><dl><dt>晴れ渡り</dt><dd>相手が零の陣営なら、与えるダメージ+30%。さらに、相手の「受けるダメージを減らす効果」を無効にする</dd><dt>日差し</dt><dd>倒れたとき、次の番手は連勝+2の状態から始まる</dd></dl>
+    <h4>技</h4><dl><dt>✊ 停止「照らし」</dt><dd>通常攻撃(相手が零なら特大)</dd><dt>✌️ 跳躍「はしゃぎ」</dt><dd>通常攻撃、自分の連勝+1、控えの味方全員の「BREAKの一撃 ATK」+500(刻紋。永続・重複可能。最大+1500)</dd><dt>🖐️ 遡行「晴れ間」</dt><dd>通常攻撃、相手のDFS−1000(3ラリー)</dd></dl></div>
+</article>
+<article class="char" id="k_isami">
+  <img src="icons/k_isami.webp" alt="イサミのアイコン" width="84" height="84" loading="lazy">
+  <div><h3>イサミ</h3>
+    <div class="meta"><span class="stars" aria-label="レア度4">★★★★</span> ・ 勇気・連勝を積む</div>
+    <div class="stats"><span class="hp">HP 9000</span><span class="atk">ATK 3500</span><span class="dfs">DFS 1200</span></div></div>
+  <div class="body"><h4>特性</h4><dl><dt>勇み足</dt><dd>残りHPが75%・50%・25%を切るたびにATK+800(最大+2400)</dd><dt>奮起</dt><dd>HPが半分を切ったとき、一度だけ連勝+1</dd></dl>
+    <h4>技</h4><dl><dt>✊ 停止「踏み込み」</dt><dd>特大ダメージ(残りHP半分以下で極大)、自分の連勝+1</dd><dt>✌️ 跳躍「鼓舞」</dt><dd>通常攻撃、自分の連勝+1</dd><dt>🖐️ 遡行「構え」</dt><dd>通常攻撃、自分のATK+1000(3ラリー)、自分の連勝+1</dd></dl></div>
+</article>
+<article class="char" id="q_emo">
+  <img src="icons/emo.webp" alt="エモのアイコン" width="84" height="84" loading="lazy">
+  <div><h3>エモ</h3>
+    <div class="meta"><span class="stars" aria-label="レア度3">★★★</span> ・ 感情・ごきげんで強くなる ・ アドバンス専用</div>
+    <div class="stats"><span class="hp">HP 13000</span><span class="atk">ATK 2600</span><span class="dfs">DFS 1100</span></div></div>
+  <div class="body"><h4>特性</h4><dl><dt>ごきげん</dt><dd>勝つたびにATK+500(場にいる間・最大+2500)。負けると半分になる</dd></dl>
+    <h4>技</h4><dl><dt>✊ 停止「全力ハグ」</dt><dd>特大ダメージ(ごきげんが最大なら極大)</dd><dt>✌️ 跳躍「ひらめき」</dt><dd>通常攻撃、自分の連勝+1</dd><dt>🖐️ 遡行「ありがと!」</dt><dd>通常攻撃、HP1500回復、自分の連勝+1、控えの味方全員のDFS+300(刻紋。永続・重複可能)</dd></dl></div>
+</article>
+<article class="char" id="g_y1">
+  <img src="icons/g_y1.webp" alt="ハズのアイコン" width="84" height="84" loading="lazy">
+  <div><h3>ハズ</h3>
+    <div class="meta"><span class="stars" aria-label="レア度1">★</span> ・ (仮) ・ アドバンス専用</div>
+    <div class="stats"><span class="hp">HP 5500</span><span class="atk">ATK 2000</span><span class="dfs">DFS 700</span></div></div>
+  <div class="body">
+    <h4>技</h4><dl><dt>✊ 停止「筈当て」</dt><dd>通常攻撃</dd><dt>✌️ 跳躍「空振り」</dt><dd>通常攻撃</dd><dt>🖐️ 遡行「矢拾い」</dt><dd>通常攻撃</dd></dl></div>
+</article>
+<article class="char" id="g_y2">
+  <img src="icons/g_y2.webp" alt="サキのアイコン" width="84" height="84" loading="lazy">
+  <div><h3>サキ</h3>
+    <div class="meta"><span class="stars" aria-label="レア度2">★★</span> ・ 出だしだけ ・ アドバンス専用</div>
+    <div class="stats"><span class="hp">HP 7000</span><span class="atk">ATK 2200</span><span class="dfs">DFS 900</span></div></div>
+  <div class="body"><h4>特性</h4><dl><dt>出鼻</dt><dd>場に出て1ラリー目だけATK+800</dd></dl>
+    <h4>技</h4><dl><dt>✊ 停止「初手」</dt><dd>大ダメージ</dd><dt>✌️ 跳躍「駆け抜け」</dt><dd>通常攻撃</dd><dt>🖐️ 遡行「息継ぎ」</dt><dd>通常攻撃</dd></dl></div>
+</article>
+<article class="char" id="g_y3a">
+  <img src="icons/g_y3a.webp" alt="カブラのアイコン" width="84" height="84" loading="lazy">
+  <div><h3>カブラ</h3>
+    <div class="meta"><span class="stars" aria-label="レア度3">★★★</span> ・ 永続デバフ ・ アドバンス専用</div>
+    <div class="stats"><span class="hp">HP 16500</span><span class="atk">ATK 2400</span><span class="dfs">DFS 1100</span></div></div>
+  <div class="body"><h4>特性</h4><dl><dt>穿ち</dt><dd>技を当てるたびに、場の相手のDFS−250(刻印。永続・重複可能。最大−1500)</dd></dl>
+    <h4>技</h4><dl><dt>✊ 停止「鏑止め」</dt><dd>通常攻撃</dd><dt>✌️ 跳躍「鳴り鏑」</dt><dd>大ダメージ</dd><dt>🖐️ 遡行「研ぎ直し」</dt><dd>通常攻撃、相手のATK−400(2ラリー)</dd></dl></div>
+</article>
+<article class="char" id="g_y3b">
+  <img src="icons/g_y3b.webp" alt="マトのアイコン" width="84" height="84" loading="lazy">
+  <div><h3>マト</h3>
+    <div class="meta"><span class="stars" aria-label="レア度3">★★★</span> ・ BREAK特化 ・ アドバンス専用</div>
+    <div class="stats"><span class="hp">HP 11500</span><span class="atk">ATK 2600</span><span class="dfs">DFS 1000</span></div></div>
+  <div class="body"><h4>特性</h4><dl><dt>必中</dt><dd>BREAKの一撃はATK+2000</dd></dl>
+    <h4>技</h4><dl><dt>✊ 停止「狙い澄まし」</dt><dd>大ダメージ</dd><dt>✌️ 跳躍「一矢」</dt><dd>通常攻撃、自分の連勝+1</dd><dt>🖐️ 遡行「残心」</dt><dd>通常攻撃</dd></dl></div>
+</article>
+<article class="char" id="g_y3c">
+  <img src="icons/g_y3c.webp" alt="エビラのアイコン" width="84" height="84" loading="lazy">
+  <div><h3>エビラ</h3>
+    <div class="meta"><span class="stars" aria-label="レア度3">★★★</span> ・ 連続で勝つほど強い ・ アドバンス専用</div>
+    <div class="stats"><span class="hp">HP 15300</span><span class="atk">ATK 2300</span><span class="dfs">DFS 1000</span></div></div>
+  <div class="body"><h4>特性</h4><dl><dt>連射</dt><dd>勝つたびに次の攻撃のATK+400が重なる(負けると消える)</dd></dl>
+    <h4>技</h4><dl><dt>✊ 停止「速射」</dt><dd>通常攻撃</dd><dt>✌️ 跳躍「乱れ撃ち」</dt><dd>大ダメージ</dd><dt>🖐️ 遡行「矢継ぎ」</dt><dd>通常攻撃</dd></dl></div>
+</article>
+<article class="char" id="g_y4">
+  <img src="icons/g_y4.webp" alt="ナガレのアイコン" width="84" height="84" loading="lazy">
+  <div><h3>ナガレ</h3>
+    <div class="meta"><span class="stars" aria-label="レア度4">★★★★</span> ・ フルパワー→減速 ・ アドバンス専用</div>
+    <div class="stats"><span class="hp">HP 10000</span><span class="atk">ATK 10000</span><span class="dfs">DFS 1100</span></div></div>
+  <div class="body"><h4>特性</h4><dl><dt>全力</dt><dd>場に出てから勝ち負けが3回つくまで(あいこは数えない)、技がすべて極大。そのあとは毎ラリーATK−1000(最大−8000)</dd></dl>
+    <h4>技</h4><dl><dt>✊ 停止「流星」</dt><dd>特大ダメージ</dd><dt>✌️ 跳躍「尾を引く矢」</dt><dd>大ダメージ</dd><dt>🖐️ 遡行「燃え残り」</dt><dd>通常攻撃</dd></dl></div>
+</article>
+</section>
+<section id="f-隔絶"><h2>隔絶</h2><p class="lead">どの陣営にも属さない者たち。</p>
+<article class="char" id="p_tokibami">
+  <img src="icons/tokibami.webp" alt="トキバミのアイコン" width="84" height="84" loading="lazy">
+  <div><h3>トキバミ</h3>
+    <div class="meta"><span class="stars" aria-label="レア度4">★★★★</span> ・ 耐久・吸収</div>
+    <div class="stats"><span class="hp">HP 20000</span><span class="atk">ATK 2000</span><span class="dfs">DFS 1000</span></div></div>
+  <div class="body"><h4>特性</h4><dl><dt>時の外側</dt><dd>受けるダメージ−20%</dd><dt>刻喰い</dt><dd>与えたダメージの20%回復</dd></dl>
+    <h4>技</h4><dl><dt>✊ 停止「止め喰い」</dt><dd>大ダメージ、相手のATK−600(3ラリー)</dd><dt>✌️ 跳躍「先喰い」</dt><dd>特大ダメージ</dd><dt>🖐️ 遡行「呑み戻し」</dt><dd>通常攻撃、HP1200回復、相手のラリー数つきの強化を消す(永続の強化は消えない)</dd></dl></div>
+</article>
+<article class="char" id="p_xeno_adapt">
+  <img src="icons/xa_body.webp" alt="ゼノ【適応】のアイコン" width="84" height="84" loading="lazy">
+  <div><h3>ゼノ【適応】</h3>
+    <div class="meta"><span class="stars" aria-label="レア度5">★★★★★</span> ・ トキバミに負けてたら... ・ アドバンス専用</div>
+    <div class="stats"><span class="hp">HP 9000</span><span class="atk">ATK 3000</span><span class="dfs">DFS 4000</span></div></div>
+  <div class="body"><h4>特性</h4><dl><dt>鋼の刻・適応</dt><dd>DFSはデバフ・刻印・貫きで下がらない</dd><dt>離脱・適応</dt><dd>倒れたとき一度だけ、精神離脱体(HP5000・ATK5000・DFS0。ステータスは固定で、強化も弱体も効かない。相手のDFSを無視して攻撃する。技はすべて極大)として場に残る</dd></dl>
+    <h4>技</h4><dl><dt>✊ 停止「圧し止め」</dt><dd>特大ダメージ、相手の次の勝ちを連勝に数えない(連勝封じ)、自分のATK+500(刻紋。永続・重複可能)</dd><dt>✌️ 跳躍「先喰い」</dt><dd>特大ダメージ、相手のDFS−1500(3ラリー)</dd><dt>🖐️ 遡行「呑み戻し」</dt><dd>大ダメージ、相手の次の勝ちを連勝に数えない(連勝封じ)、相手の回復を2ラリー封じる</dd></dl></div>
+</article>
+<article class="char" id="k_utsuro">
+  <img src="icons/k_utsuro.webp" alt="ウツロのアイコン" width="84" height="84" loading="lazy">
+  <div><h3>ウツロ</h3>
+    <div class="meta"><span class="stars" aria-label="レア度4">★★★★</span> ・ 無・あいこを支配する</div>
+    <div class="stats"><span class="hp">HP 13000</span><span class="atk">ATK 3200</span><span class="dfs">DFS 2000</span></div></div>
+  <div class="body"><h4>特性</h4><dl><dt>虚ろ</dt><dd>ATK・DFS・最大HPは元の値のまま変わらない。強化も弱体も刻印も、味方から受け継ぐ強化も受けない</dd><dt>無の間</dt><dd>あいこのたびに、相手に大ダメージ(大の技1回分)</dd></dl>
+    <h4>技</h4><dl><dt>✊ 停止「空」</dt><dd>特大ダメージ</dd><dt>✌️ 跳躍「虚」</dt><dd>大ダメージ、次のあいこの「無の間」のダメージが2倍</dd><dt>🖐️ 遡行「無」</dt><dd>通常攻撃</dd></dl></div>
+</article>
+<article class="char" id="q_kasane">
+  <img src="icons/kasane.webp" alt="カサネのアイコン" width="84" height="84" loading="lazy">
+  <div><h3>カサネ</h3>
+    <div class="meta"><span class="stars" aria-label="レア度3">★★★</span> ・ 重ね刻・固くて全体を削る</div>
+    <div class="stats"><span class="hp">HP 15000</span><span class="atk">ATK 2400</span><span class="dfs">DFS 1500</span></div></div>
+  <div class="body"><h4>特性</h4><dl><dt>重ね身</dt><dd>攻撃を受けるたびにDFS+300(場にいる間・最大+1500)</dd><dt>重ね戻り</dt><dd>ラリーが終わるたびにHP400回復</dd><dt>刻の傷跡</dt><dd>倒れたとき、味方トキバミの特性『時の外側』『刻喰い』の効果を2倍にする</dd></dl>
+    <h4>技</h4><dl><dt>✊ 停止「時針・重ね打ち」</dt><dd>特大ダメージ、相手の全員(控えも)のATK−200(刻印。永続・重複可能。最大−1000)</dd><dt>✌️ 跳躍「秒針・先送り」</dt><dd>通常攻撃、相手の全員(控えも)のDFS−200(刻印。永続・重複可能。最大−1000)</dd><dt>🖐️ 遡行「分針・巻き重ね」</dt><dd>通常攻撃、HP2000回復、自分のDFS+1000(2ラリー)</dd></dl></div>
+</article>
+<article class="char" id="g_z5">
+  <img src="icons/g_z5.webp" alt="ゼノ【仮面】のアイコン" width="84" height="84" loading="lazy">
+  <div><h3>ゼノ【仮面】</h3>
+    <div class="meta"><span class="stars" aria-label="レア度5">★★★★★</span> ・ 10ラリー目からBREAK10倍 ・ アドバンス専用</div>
+    <div class="stats"><span class="hp">HP 11500</span><span class="atk">ATK 2500</span><span class="dfs">DFS 1500</span></div></div>
+  <div class="body"><h4>特性</h4><dl><dt>遅咲きの刻</dt><dd>場に出て10ラリー目以降、BREAKの一撃だけATKが10倍</dd><dt>凪の間</dt><dd>あいこのたびにHP1000回復</dd></dl>
+    <h4>技</h4><dl><dt>✊ 停止「針止め」</dt><dd>通常攻撃</dd><dt>✌️ 跳躍「十の跳躍」</dt><dd>極大ダメージ</dd><dt>🖐️ 遡行「仮面の内」</dt><dd>通常攻撃、HP3000回復、自分のDFS+1500(2ラリー)、次に負けても連勝が途切れない(連勝保護)</dd></dl></div>
+</article>
+</section>
+<a class="play" href="./">▶ 刻戦を無料で遊ぶ(ブラウザ・登録なし)</a>
+</main>
+<footer class="site">
+  <p><a href="./">刻戦</a> ・ <a href="howto.html">遊び方</a> ・ <a href="characters.html">キャラクター</a> ・ <a href="world.html">世界観</a> ・ <a href="terms.html">利用規約</a> ・ <a href="privacy.html">プライバシーポリシー</a> ・ <a href="https://x.com/kokusenofficial" target="_blank" rel="noopener">X「刻戦公式」</a></p>
+  <p>音楽:<a href="https://nagumorizu.com/" target="_blank" rel="noopener">なぐもりずの音楽室</a>(南雲莉翠)</p>
+</footer>
+</body>
+</html>

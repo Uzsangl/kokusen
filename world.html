@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>世界観 | 刻戦(コクセン)</title>
+<meta name="description" content="刻戦(コクセン)の世界観。時間が「刻」という物質として流れる世界、停止・跳躍・遡行の三つの力、錨・零・矢の三つの陣営について。">
+<link rel="canonical" href="https://kokusen.org/world.html">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="刻戦">
+<meta property="og:title" content="世界観 | 刻戦">
+<meta property="og:description" content="刻戦(コクセン)の世界観。時間が「刻」という物質として流れる世界、停止・跳躍・遡行の三つの力、錨・零・矢の三つの陣営について。">
+<meta property="og:url" content="https://kokusen.org/world.html">
+<meta property="og:image" content="https://kokusen.org/img/og.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/app/favicon-32.png">
+<meta name="theme-color" content="#090b16">
+<style>
+  :root { --bg: #090b16; --panel: #141830; --text: #eef0ff; --sub: #9aa0c3; --line: #2b3157; --gold: #f5c451; --violet: #8b6cff; --red: #ff4d5e; --hp: #4ade80; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 0 16px 56px; color: var(--text); line-height: 1.8;
+    background: radial-gradient(1200px 600px at 50% -10%, #1c2250 0%, var(--bg) 60%) fixed var(--bg);
+    font-family: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif; }
+  main, header.site, footer.site { max-width: 720px; margin: 0 auto; }
+  header.site { padding: 14px 0 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; border-bottom: 1px solid var(--line); }
+  header.site .logo { font-weight: 900; font-size: 1.25rem; color: var(--gold); text-decoration: none; letter-spacing: .08em; }
+  header.site nav { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: .9rem; }
+  header.site nav a { color: var(--sub); text-decoration: none; padding: 2px 0; }
+  header.site nav a.on { color: var(--text); border-bottom: 2px solid var(--gold); }
+  a { color: var(--gold); }
+  h1 { font-size: 1.5rem; line-height: 1.4; margin: 22px 0 6px; }
+  h2 { font-size: 1.15rem; margin: 34px 0 8px; color: var(--gold); border-left: 4px solid var(--gold); padding-left: 10px; }
+  h3 { font-size: 1rem; margin: 18px 0 4px; }
+  p, li, td, th { color: #d5d8f0; font-size: .95rem; }
+  .lead { color: var(--sub); margin: 0 0 8px; }
+  .play { display: block; margin: 18px 0; padding: 14px; border-radius: 12px; text-align: center; font-weight: 900; font-size: 1.05rem; text-decoration: none;
+    color: #1a1304; background: linear-gradient(180deg, #ffe08a, #f5c451); }
+  table.t { border-collapse: collapse; width: 100%; margin: 8px 0; font-size: .9rem; }
+  table.t th, table.t td { border: 1px solid var(--line); padding: 6px 8px; text-align: left; vertical-align: top; }
+  table.t th { background: var(--panel); white-space: nowrap; }
+  table.t td:nth-child(-n+2) { white-space: nowrap; }
+  .toc { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; padding: 0; list-style: none; }
+  .toc a { display: block; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; text-decoration: none; font-size: .85rem; background: var(--panel); }
+  .char { display: grid; grid-template-columns: 84px 1fr; gap: 6px 12px; margin: 12px 0; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); }
+  .char img { width: 84px; height: 84px; border-radius: 12px; object-fit: cover; background: #0c0f22; }
+  .char .noimg { width: 84px; height: 84px; border-radius: 12px; background: #0c0f22; display: grid; place-items: center; font-size: 2rem; font-weight: 900; color: var(--sub); }
+  .char h3 { margin: 0; font-size: 1.1rem; }
+  .char .meta { color: var(--sub); font-size: .82rem; }
+  .char .stars { color: var(--gold); letter-spacing: .05em; }
+  .char .stats { font-weight: 800; font-size: .9rem; display: flex; flex-wrap: wrap; gap: 4px 12px; }
+  .char .stats .hp { color: var(--hp); } .char .stats .atk { color: var(--red); } .char .stats .dfs { color: var(--gold); }
+  .char .body { grid-column: 1 / -1; }
+  .char dl { margin: 6px 0 0; }
+  .char dt { font-weight: 800; color: #ffe08a; font-size: .9rem; margin-top: 6px; }
+  .char dd { margin: 0; font-size: .88rem; color: #d5d8f0; line-height: 1.6; }
+  .char h4 { margin: 10px 0 0; font-size: .8rem; color: var(--sub); font-weight: 700; letter-spacing: .1em; }
+  footer.site { margin-top: 44px; padding-top: 14px; border-top: 1px solid var(--line); color: var(--sub); font-size: .82rem; }
+  footer.site a { color: var(--sub); }
+  .rainbow { color: var(--gold); font-weight: 900; }
+</style>
+</head>
+<body>
+<!-- このファイルは tools/build-pages.js が書き出したもの。直接は書き換えず、スクリプトを直して作り直す -->
+<header class="site"><a class="logo" href="./">刻戦</a><nav><a href="./">ゲームで遊ぶ</a><a href="howto.html">遊び方</a><a href="characters.html">キャラクター</a><a href="world.html" class="on">世界観</a></nav></header>
+<main>
+<h1>刻戦の世界観</h1>
+<p class="lead">刻戦(コクセン)の舞台となる世界と、三つの時間の力、三つの陣営について。</p>
+<h2>刻(とき)が流れる世界</h2>
+<p>この世界では、時間が「刻(とき)」という目に見える物質として流れています。人の体力や寿命も、刻でできています。</p>
+<p>けれど、世界の刻は少しずつ減っています。朝が来なくなった村。一晩で老いてしまう森。各地で、時間が抜け落ちる現象が起きています。</p>
+<p>この世界の戦いは、時間の流れに沿った普通の戦いです。ただ、そこで有利を取る手段として、人々は時間そのものを扱うようになりました。戦いの中で使える時間の力は三つ。どれも、扱えるのは数秒が限度です。</p>
+<h2>三つの時間の力</h2>
+<p>刻戦のじゃんけんは、この三つの力のぶつかり合いを表しています。</p>
+<table class="t"><tr><th>力</th><th>手</th><th>勝てる相手</th><th>理由</th></tr>
+<tr><td>停止</td><td>✊ グー</td><td>跳躍</td><td>停止が止めるのは、現在から未来まで。跳んだ先の時間も、止まっている。</td></tr>
+<tr><td>跳躍</td><td>✌️ チョキ</td><td>遡行</td><td>過去を書き換えても、すでに先の時点に立っている者には届かない。確定するのは、いつも先にいる側。</td></tr>
+<tr><td>遡行</td><td>🖐️ パー</td><td>停止</td><td>過去は、停止の力が届かない場所にある。</td></tr></table>
+<p>同じ力がぶつかれば、打ち消し合って「あいこ」になります。そして、じゃんけんに3回続けて勝つと「BREAK」が発動します。</p>
+<h2>三つの陣営</h2>
+<p>減っていく刻を前にして、人々は三つの考えに分かれました。誰もが三つの力をすべて使えますが、陣営ごとに得意な力が一つあります。</p>
+<table class="t"><tr><th>陣営</th><th>得意な力</th><th>目的</th><th>そのために手放すもの</th></tr>
+<tr><td>維持派「錨」</td><td>停止</td><td>今の時間を守る</td><td>未来。滅びを先送りにしているだけかもしれない。</td></tr>
+<tr><td>回帰派「零」</td><td>遡行</td><td>時の始まりからやり直す</td><td>今を生きる人々。やり直せば、いなかったことになる。</td></tr>
+<tr><td>前進派「矢」</td><td>跳躍</td><td>滅びの先の未来へ、世界ごと跳ぶ</td><td>途中の時間。人々の残りの人生が、飛ばされる。</td></tr></table>
+<p>錨は港の衛士や船乗りのような姿で、鎖や錨、羅針盤を身につけています。零は黒い長衣や仮面をまとい、割れた文字盤や針のない時計を持ちます。矢は軽い旅装束で、羽根や弦、矢羽の飾りが、いつも前へなびいています。</p>
+<p>三つの陣営の力関係も、三つの力と同じ三つ巴です。錨は矢に強く、矢は零に強く、零は錨に強い。どの陣営にも、それぞれの言い分があります。</p>
+<p>それぞれの陣営に属するキャラクターは、<a href="characters.html">キャラクター紹介</a>で見られます。</p>
+<a class="play" href="./">▶ 刻戦を無料で遊ぶ(ブラウザ・登録なし)</a>
+</main>
+<footer class="site">
+  <p><a href="./">刻戦</a> ・ <a href="howto.html">遊び方</a> ・ <a href="characters.html">キャラクター</a> ・ <a href="world.html">世界観</a> ・ <a href="terms.html">利用規約</a> ・ <a href="privacy.html">プライバシーポリシー</a> ・ <a href="https://x.com/kokusenofficial" target="_blank" rel="noopener">X「刻戦公式」</a></p>
+  <p>音楽:<a href="https://nagumorizu.com/" target="_blank" rel="noopener">なぐもりずの音楽室</a>(南雲莉翠)</p>
+</footer>
+</body>
+</html>
