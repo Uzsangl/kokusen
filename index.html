@@ -1044,6 +1044,24 @@
   .gc-pk > span { font-size: .85rem; font-weight: 700; }
   .gc-pk small { display: block; font-weight: 400; color: var(--sub); font-size: .72rem; min-height: 1.5em; }
   .gc-pk .seg4 { display: flex; } .gc-pk .seg4 button { flex: 1; }
+  /* 共闘降臨:部屋の画面と、戦いの「だれの番か」の帯 */
+  .co-slots { list-style: none; margin: 6px 0; padding: 0; display: grid; gap: 6px; }
+  .co-slot { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 12px; border: 1px solid #ffffff22; background: #ffffff08; }
+  .co-slot.me { border-color: var(--gold); }
+  .co-slot.empty { color: var(--sub); }
+  .co-no { font-size: .72rem; color: var(--gold); width: 3.2em; flex-shrink: 0; }
+  .co-nm { flex: 1; min-width: 0; display: grid; } .co-nm small { color: var(--sub); font-size: .72rem; }
+  .co-mv { display: flex; gap: 4px; } .co-mv button { min-width: 34px; min-height: 30px; padding: 0; }
+  .co-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; max-height: 40vh; overflow-y: auto; padding: 2px; }
+  .co-ch { display: grid; justify-items: center; gap: 2px; padding: 4px 2px; min-height: 0; font-size: .66rem; border-radius: 10px; }
+  .co-ch small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .co-ch.on { border-color: var(--gold); box-shadow: 0 0 0 2px var(--gold) inset; }
+  .coopbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 10px; margin: 4px 0; padding: 4px 10px; border-radius: 10px; background: #00000055; border: 1px solid #f5c45155; font-size: .8rem; min-height: 2.2em; }
+  .coopbar:empty { display: none; }
+  .coopbar b { color: var(--gold); }
+  .co-st { display: inline-flex; align-items: center; gap: 4px; } .co-st button { min-width: 38px; min-height: 32px; padding: 0; font-size: 1.1rem; }
+  .co-st button.on { border-color: var(--gold); }
+  .co-tips { display: inline-flex; gap: 6px; } .co-tip { padding: 0 6px; border-radius: 8px; background: #ffffff14; }
 </style>
 </head>
 <body>
@@ -1504,6 +1522,13 @@ const SPECIAL_CHARS = [
       rock:     { name: '証明終了', rate: RATE.big, foeTeamMark: { stat: 'atk', v: 300, cap: 1500 }, up: { rate: RATE.max, when: 'analyzed', text: '解析が効いているときは極大' } },
       scissors: { name: '反証',     rate: RATE.normal, heal: 2000, foeTeamMark: { stat: 'dfs', v: 300, cap: 1500 } },
       paper:    { name: '最適化',   rate: RATE.normal, foeTeamMark: [{ stat: 'atk', v: 150, cap: 1500 }, { stat: 'dfs', v: 150, cap: 1500 }], mods: [selfDfs(1500, 2)] } } },
+  // 共闘降臨で仲間になるカサネ(仮。性能はあとで決める)
+  { id: 'q_kasane', name: 'カサネ', faction: '隔絶', group: '隔絶', adv: true, rarity: 3, role: '重ね刻・読まれにくい(仮)', unlock: 'kasane', hp: 13500, atk: 2500, dfs: 1400, phys: 1.0,
+    traits: [{ key: 'kasaneP', name: '重ね刻', desc: '(仮)性能はあとで決める' }],
+    actions: {
+      rock:     { name: '時針・重ね打ち', rate: RATE.big },
+      scissors: { name: '秒針・先送り',   rate: RATE.normal, foeTeamMark: { stat: 'atk', v: 200, cap: 1000 } },
+      paper:    { name: '分針・巻き重ね', rate: RATE.normal, heal: 2000, mods: [selfDfs(1000, 2)] } } },
 ];
 
 // ===== ガチャキャラ(仮。名前・技名はあとで決める)=====
@@ -1579,6 +1604,13 @@ const ENEMIES = {
       rock:     { name: 'キック', rate: RATE.huge },
       scissors: { name: 'おやつ休憩', rate: RATE.normal, heal: 3000 },
       paper:    { name: '盗み食い', rate: RATE.normal, heal: 4000 } } },
+  // --- 共闘降臨(3人マルチ)のボス:カサネ。過去・今・未来の3本の時間軸が重なって固まった「重ね刻」。強さはステージの over で決める ---
+  qb_kasane: { name: 'カサネ', faction: '隔絶', hp: 30000, atk: 2800, dfs: 2200, phys: 1.0, boss: true,
+    traits: [{ key: 'kasane', name: '重ね刻', desc: '前に出ているプレイヤーごとに、別々に癖を読む(共闘降臨)' }],
+    actions: {
+      rock:     { name: '時針・重ね打ち', rate: RATE.huge },
+      scissors: { name: '秒針・先送り',   rate: RATE.normal, foeTeamMark: { stat: 'atk', v: 400, cap: 2000 } },
+      paper:    { name: '分針・巻き重ね', rate: RATE.normal, heal: 3000, mods: [selfDfs(1500, 2)] } } },
   // --- 降臨クエストのボス(2階)。技と特性はプレイヤー用のエモ・リズと同じ。強さはステージの倍率で上げる ---
   qb_emo: { name: 'エモ', faction: '矢', hp: 30000, atk: 2800, dfs: 2500, phys: 1.0, boss: true,
     traits: [{ key: 'mood', name: 'ごきげん', desc: '勝つたびにATK+500(場にいる間・最大+2500)。負けると半分になる', step: 500, cap: 2500 },
@@ -1833,6 +1865,8 @@ const STAGES = [
   { id: 'qr3', quest: 'rizu', qfmt: 'basic',   faction: '零', stars: 3, name: 'リズ降臨', foes: ['z_mask', 'z_wind', 'qz_justice', 'qb_rizu'], level: 4, read: 0.35, hp: 0.73, atk: 1.0, justice: [[0.55, 'Jzz'], [0.45, 'JzJ']], over: { qz_justice: { hp: 10000, atk: 2300, dfs: 2000 }, qb_rizu: { hp: 30000, atk: 2800, dfs: 1200 } }, bossBgm: 'cirque', reward: [100, 10], drop: 0.002 },
   { id: 'qr4', quest: 'rizu', qfmt: 'basic',   faction: '零', stars: 4, name: 'リズ降臨', foes: ['z_mask', 'z_wind', 'qz_justice', 'qb_rizu'], level: 4, read: 0.6, hp: 1.118, atk: 1.15, justice: [[0.55, 'Jzz'], [0.45, 'JzJ']], over: { qz_justice: { hp: 16000, atk: 2650, dfs: 2500 }, qb_rizu: { hp: 80000, atk: 3600, dfs: 1500 } }, bossBgm: 'cirque', reward: [200, 20], drop: 0.005 },
   { id: 'qr5', quest: 'rizu', qfmt: 'basic',   faction: '零', stars: 5, name: 'リズ降臨', foes: ['z_mask', 'z_wind', 'qz_justice', 'qb_rizu'], level: 4, read: 1, hp: 1.904, atk: 1.3, justice: [[0.55, 'Jzz'], [0.45, 'JzJ']], over: { qz_justice: { hp: 25000, atk: 3000 }, qb_rizu: { hp: 200000, atk: 4750 } }, bossBgm: 'majo', bossAura: 'red', reward: [1000, 30], drop: 0.25 },
+  // 共闘降臨(3人マルチ専用):1人1体ずつ出し合う。開催は降臨と同じ時間。ソロの一覧には出さない
+  { id: 'mk5', quest: 'kasane', coop: true, qfmt: 'advance', faction: '隔絶', stars: 5, name: 'カサネ降臨', foes: ['qb_kasane'], level: 4, read: 1, hp: 1, atk: 1, over: { qb_kasane: { hp: 150000, atk: 4500 } }, bossBgm: 'majo', bossAura: 'red', reward: [1000, 30], drop: 0.25 },
 ];
 // ステージの敵を、倍率を掛けた能力値で作る(元のデータは書き換えない)
 // ----- 刻練場(百刻スコアアタック) -----
@@ -2866,6 +2900,7 @@ const ADAPT = {
   c5_nagare:    { kinds: ['rage', 'prey', 'hunt'],   map: { chain: 'prey', winStay: 'prey', skew: 'rage', pinch: 'hunt', lure: 'rage' } },
   c5_tsuru1:    { kinds: ['sight', 'bias', 'bait'],  map: { chain: 'sight', winStay: 'sight', skew: 'bias', pinch: 'bias', lure: 'bait' } },
   c5_tsuru:     { kinds: ['sight', 'bias', 'bait'],  map: { chain: 'sight', winStay: 'sight', skew: 'bias', pinch: 'bias', lure: 'bait' } },
+  qb_kasane:    { kinds: ['rewind', 'bias', 'sight'], map: { chain: 'sight', winStay: 'rewind', skew: 'bias', pinch: 'rewind', lure: 'sight' } },   // 共闘降臨:プレイヤーごとに別々に読む
 };
 const guardHand = (c, h) => { const a = c && c.actions[h]; return !!a && !!(a.heal || a.dfsUp || a.nextDfsUp || (a.team && a.team.stat === 'dfs')); };
 // プレイヤー(side の相手)の手を5つの法則で採点する。当てはまる場面が3回未満の法則は採点しない
@@ -3967,6 +4002,15 @@ const HINT_LINES = {
     bias: ['その手、多いね', '好きな手は、未来でも同じ', '……また、それ'],
     bait: ['勝っていいよ。どうせ', '……どうぞ', 'その手のままで、いい'],
   },
+  // カサネ:3つの声が重なる。過去形・今・未来形が混ざる(巻戻=過去の残像、偏り読み=今の本体、天眼=未来の残像)
+  qb_kasane: {
+    base: ['……重なっている。重なる。重なっていた', 'あなたの刻、少し、ちょうだい', '……ほどけない。ほどけた。ほどける'],
+    tilt: ['三つが、ずれる……ほどける……', '……どれが、今?', '針が、ばらばらに……'],
+    ura: ['読んでいるのは、どっち? 読まれているのは、どっち?', 'その読みも、もう重なっていた', '……裏の、裏。重ねて、返す'],
+    rewind: ['さっき負けたね。次も、同じことをする', '負けたあとのあなたは、いつも同じ', '……そのあとを、覚えている。覚えていた'],
+    bias: ['その手。今も、その手', '今のあなたは、その手が多い', '……数えている。今も'],
+    sight: ['次の次まで、もう並んでいる', 'その並びの先は、もう見えていた', '……順番は、未来で決まっている'],
+  },
 };
 const HINT_ALIAS = { c5_xeno_body: 'xeno_body', c5_xeno_spirit: 'xeno_spirit', c5_tsuru1: 'c5_tsuru' };
 // 性格の名前と短い説明(ステージの ⓘ・ルールブック)
@@ -3978,6 +4022,7 @@ const PERSONA_INFO = {
 };
 // ボスの取扱説明書:1つの文に3つの性格のヒント(どの部分がどの性格かは書かない)
 const BOSS_MANUAL = {
+  qb_kasane: [['rewind', '遅れてついてくる残像は、つまずいた直後の足取りを覚えていて'], ['bias', '真ん中の本体は、いちばん多く重なった手を数え'], ['sight', '半歩先を行く残像は、並んだ手の続きを先に見ている。しかも三つとも、前に立つ人ごとに数え直す']],
   qb_emo: [['prey', '楽しいリズムが続くと次も同じだと信じて待ちかまえ'], ['bias', 'あなたのお気に入りは本人より先に覚えていて'], ['bait', '負けてもにこにこしているけれど、その笑顔が本心とは限らない']],
   qb_rizu: [['sight', '並んだものには必ず続きがあると考え'], ['rewind', '失敗した直後の人間の動きを何より信用し'], ['bias', '最後に頼るのは感情ではなく回数を数えた結果']],
   xeno_body: [['prey', '同じ足跡を二度見せた相手を三歩目で待ち'], ['hunt', '弱って守りに入った瞬間を見逃さず'], ['bait', 'それでいて勝たせることを恐れない']],
@@ -4195,13 +4240,14 @@ function render(view) {
     b.innerHTML = r.html;
     b.classList.toggle('hot', r.hot);
     b.classList.toggle('warm', r.warm);
-    b.disabled = S.over || busy || pvpLocked() || S.spectate;
+    b.disabled = S.over || busy || pvpLocked() || S.spectate || coopLocked();
   });
   $('cpuActs').innerHTML = HAND_KEYS.map((h) => {
     const r = actHtml(foe, me, h, cpu.breakReady);
     return `<div class="act${r.hot ? ' hot' : r.warm ? ' warm' : ''}">${r.html}</div>`;
   }).join('');
   $('hands').classList.toggle('breaking', you.breakReady && !busy);
+  coopBar();
   $('retry').classList.toggle('hidden', !S.over);
   $('chain').classList.toggle('hidden', !(S.over && S.winner === 0 && S.stage && STAGES.some((x) => x.chainFrom === S.stage.id) && !S.resign));
   $('resign').classList.toggle('hidden', S.over && !S.spectate);
@@ -4749,7 +4795,7 @@ async function finale() {
         let r = null;
         r = await soloRewardOnce();   // 降臨は、勝ちが決まった瞬間に聞いておいた結果
         walletSet(r); soloUnlocked(r);
-        S.questGot = r && Array.isArray(r.unlocked) ? r.unlocked.filter((id) => ['emo', 'rizu'].includes(id)) : [];
+        S.questGot = r && Array.isArray(r.unlocked) ? r.unlocked.filter((id) => QUEST_LINES[id]) : [];
         n = r ? r.given : 0; total = shardCount(); first = !!(r && r.first);
       } else { n = S.stage.reward[firstClear ? 0 : 1]; total = await shardAdd(n); }
       if (n) {
@@ -4894,7 +4940,8 @@ async function cpuBreak(forced) {
   Sound.breakIn();
   await cutin(BREAK_NAME, '相手の時間だけが動く', 'violet', 1000);
   const b = before();
-  const h = forced || (S.cpuLevel >= 2 ? aiBreakHand(S, 1) : pickBreakHand(S, 1));
+  const pickB = () => (S.cpuLevel >= 2 ? aiBreakHand(S, 1) : pickBreakHand(S, 1));
+  const h = forced || (S.coop ? coopRng('b', pickB) : pickB());   // 共闘降臨:3人の端末で同じくじを引く
   if (!PVP.on && !S.spectate) whRec({ t: 'b', s: 1, h });
   breakRally(S, 1, h, logLater);
   const o = outcome(b);
@@ -4912,6 +4959,7 @@ async function cpuBreak(forced) {
 
 async function play(hand) {
   if (PVP.on) return pvpPick(hand);
+  if (S && S.coop) return coopPick(hand);   // 共闘降臨:手は全員に送ってから、全員の端末で同じ順に計算する
   if (busy || !S || S.over) return;
   busy = true;
   Sound.lever();
@@ -5548,11 +5596,11 @@ async function pvpAfkLose(who) {
 function askResign() {
   if (S && S.spectate) { if (FW.on) fwStop(); else specStop(); return; }
   if (!S || S.over) return;
-  const canRetry = MODE !== 'pvp' && LAST_MATCH;   // 再挑戦はCPU戦とソロだけ(対人は相手がいるため)
+  const canRetry = MODE !== 'pvp' && LAST_MATCH && !S.coop;   // 共闘降臨は3人そろって始めるので、やり直しはなし   // 再挑戦はCPU戦とソロだけ(対人は相手がいるため)
   openSheet('リタイア', `<p>${canRetry ? '同じチーム・同じ相手で最初からやり直すか、リタイアして負けにするかを選んでください。' : `この対戦をリタイアしますか? あなたの負けになります。${MODE === 'pvp' && PVP.rank ? 'ランク戦なので、この3本勝負の負けになります。' : MODE === 'pvp' && PVP.foeAcc && PVP.rated ? 'ランク戦なので、負けとして記録されます。' : ''}`}</p>
     ${canRetry ? '<div class="row"><button id="rsRetry" style="border-color:var(--gold);color:var(--gold);font-weight:700">再挑戦</button></div>' : ''}
     <div class="row"><button id="rsYes" style="border-color:#ff4d5e;color:#ff8a95;font-weight:700">リタイアする</button></div>`);
-  $('rsYes').onclick = () => { $('sheet').classList.add('hidden'); endByResign('me'); };
+  $('rsYes').onclick = () => { $('sheet').classList.add('hidden'); if (S.coop) coopSend({ t: 'rs' }); else endByResign('me'); };
   if (canRetry) $('rsRetry').onclick = () => { $('sheet').classList.add('hidden'); retryMatch(); };
 }
 // 再挑戦:今の対戦をやめて、同じチーム・同じ相手・同じ設定で最初から始める(記録には残さない)
@@ -6277,7 +6325,7 @@ function addFace(b, key) {
 const SOLO_GROUPS = {
   basic: [['錨', '★〜★★★・カジの★★★★・★★★★★'], ['零', '★〜★★★のステージ'], ['矢', '★〜★★★のステージ'], ['隔絶', '刻喰らいの淵・始まりの前・ボスラッシュ']],
   advance: Object.entries(CORRIDORS).map(([k, v]) => [+k, v, '★★〜★★★★★']),
-  quest: [['emo', 'エモ降臨', 'アドバンスで組む・★★★〜★★★★★'], ['rizu', 'リズ降臨', 'ベーシックで組む・★★★〜★★★★★']],
+  quest: [['emo', 'エモ降臨', 'アドバンスで組む・★★★〜★★★★★'], ['rizu', 'リズ降臨', 'ベーシックで組む・★★★〜★★★★★'], ['kasane', '共闘降臨', '3人マルチ・1人1体ずつ出し合う・★★★★★']],
 };
 let groupFmt = 'basic';
 function showGroupHub(f) {
@@ -6289,7 +6337,7 @@ function showGroupHub(f) {
   const named = f === 'advance' || f === 'quest';   // 回廊・降臨は名前と説明、陣営は陣営の名前と説明
   $('groupBtns').innerHTML = SOLO_GROUPS[f].map((g) => `<button data-g="${g[0]}">${named ? g[1] : g[0]}<small>${named ? g[2] : g[1]}</small></button>`).join('');
   $('groupBtns').querySelectorAll('button').forEach((b) => addFace(b, 'g:' + b.dataset.g));
-  $('groupBtns').querySelectorAll('button').forEach((b) => { b.onclick = () => { Sound.click(); openSolo(f, f === 'advance' ? +b.dataset.g : b.dataset.g); }; });
+  $('groupBtns').querySelectorAll('button').forEach((b) => { b.onclick = () => { Sound.click(); if (f === 'quest' && b.dataset.g === 'kasane') { coopOpen(); return; } openSolo(f, f === 'advance' ? +b.dataset.g : b.dataset.g); }; });
   mountTop($('groupHub'));
 }
 function openSolo(f, group) {
@@ -6766,6 +6814,7 @@ const HIGH_MAX = 1;
 const QUEST_LINES = {
   emo: ['えへへ…負けちゃった。でも、楽しかった!', 'よーし、いっしょに行こっ!'],
   rizu: ['…計算外。いえ、あなたが正しかったのね', '論理的に考えて、あなたと組むのが最適解よ'],
+  kasane: ['……ほどけた。ほどける。もう、ほどけていた', 'いっしょに、重なろう。……重なっていた'],
 };
 const QUEST_HOURS = [8, 9, 12, 13, 18, 19, 21, 22, 23];   // 開いている「時」の一覧(続いている時は1つの枠)
 const questEnd = (h) => { let e = h; while (QUEST_HOURS.includes(e)) e++; return e; };   // h時から続く枠の終わり
@@ -8200,8 +8249,269 @@ const startSolo = (mine, st, seed) => {
 // ソロの勝ちの報告は1回だけ(カケラ・称号・降臨の抽選・スタミナと経験値を、まとめてサーバーが返す)
 function soloRewardOnce() {
   if (S.soloRewardP) return S.soloRewardP;
-  return (S.soloRewardP = (async () => { const run = S.soloRun && await S.soloRun; if (!run) return null; try { return await verRpc('solo_reward', { p_run: run }); } catch (e) { if (e.code === 'KV001') verOld(); return null; } })());
+  const coopRoom = S.coop && S.coop.room;
+  return (S.soloRewardP = (async () => {
+    const run = S.soloRun && await S.soloRun; if (!run) return null;
+    let r;
+    try { r = await verRpc('solo_reward', { p_run: run }); } catch (e) { if (e.code === 'KV001') verOld(); return null; }
+    // 共闘降臨:キャラの抽選は部屋ごとに1回(当たれば3人とも)。勝った記録を見せて受け取る
+    if (r && coopRoom) { try { const c = await verRpc('coop_claim', { p_room: coopRoom, p_run: run }); if (c && Array.isArray(c.unlocked)) r.unlocked = [...(r.unlocked || []), ...c.unlocked]; } catch (e) { /* 受け取れなくても報酬はそのまま */ } }
+    return r;
+  })());
 }
+// ===== 共闘降臨(3人マルチ専用)=====
+// 合言葉で3人が同じ部屋に入り、1人1体ずつキャラを出し合ってボス(カサネ)と戦う。ログインが必要(スタミナ・報酬のため)。
+// 通信:先に入った人(ホスト)が部屋を開き、あとの2人はホストにつなぐ(PeerJS)。知らせはすべてホストを通して全員に配る。
+//   自分の知らせも、ホストから届いてから使う(全員が同じ順に受け取るため)。
+// 計算:ルールに乱数はない。ボスの手のくじは「部屋の種+ラリー数」から作った乱数で引くので、3人の端末で同じ結果になる。
+// 手を出すのは、前に出ているキャラの持ち主だけ。ほかの2人は「この手が来そう」を送れる。
+// ボスは、前に出ている人の手の記録だけを見て、その人の癖を読む(人ごとに読み直す)。
+// キャラの抽選(25%)は、ホストが部屋を開くときにサーバーで1回だけ引く。当たっていれば、勝った3人ともが受け取る。
+const COOP_STAGE = 'mk5', COOP_MAX = 3;
+const COOP = { peer: null, conns: [], hostConn: null, host: false, code: '', me: '', players: [], ch: null, playing: false, start: null,
+  n: 0, queue: {}, sent: -1, draining: false, afkT: 0, gone: new Set(), stamps: {}, note: '', sheet: false };
+const COOP_SWAP = ['……替わった。替わる。もう、替わっていた', '今度は、あなた。……あなただった', '新しい刻。数え直す。数え直していた'];
+const coopHash = (str) => { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };
+// 共闘降臨のくじ:この間だけ Math.random を、部屋の種とラリー数から作った乱数に差し替える
+function coopRng(tag, fn) {
+  let a = coopHash(`${COOP.start ? COOP.start.seed : ''}|${S.rally}|${S.hist.length}|${tag}`);
+  const r0 = Math.random;
+  Math.random = () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  try { return fn(); } finally { Math.random = r0; }
+}
+const coopName = (id) => { const p = COOP.players.find((x) => x.id === id); return p ? p.nm : '?'; };
+const coopTurnOwner = () => (S && S.coop ? S.coop.owners[S.teams[0].idx] : null);
+const coopMine = () => coopTurnOwner() === COOP.me;
+const coopLocked = () => !!(S && S.coop) && (!coopMine() || COOP.sent === COOP.n);
+const coopMeObj = () => ({ id: COOP.me, nm: ACC.profile ? String(ACC.profile.name).slice(0, 12) : 'ゲスト', ch: COOP.ch, v: RULES_VER });
+
+// ----- 通信 -----
+function coopSend(msg) {
+  msg.from = COOP.me;
+  if (COOP.host) { coopBroadcast(msg); coopHandle(msg); }
+  else if (COOP.hostConn && COOP.hostConn.open) COOP.hostConn.send(msg);
+}
+function coopBroadcast(msg) { COOP.conns.forEach((c) => { try { if (c.open) c.send(msg); } catch (e) { /* 送れなければその人は切れている */ } }); }
+function coopLobbySync() { if (!COOP.host) return; const m = { t: 'lobby', players: COOP.players }; coopBroadcast(m); coopHandle(m); }
+async function coopJoin(code) {
+  if (!/^[0-9a-zA-Z]{2,12}$/.test(code)) { COOP.note = '合言葉は、英数字2〜12文字で入れてください。'; coopRender(); return; }
+  if (!(window.Peer || await loadScript('vendor/peerjs.min.js')) || !window.Peer) { COOP.note = '通信の準備ができませんでした。'; coopRender(); return; }
+  coopClose();
+  COOP.me = COOP.me || 'p' + rnd().slice(0, 10);
+  COOP.code = code; COOP.note = '接続しています…'; COOP.players = [];
+  const hostId = 'kokusen-coop-' + code.toLowerCase();
+  const host = COOP.peer = new window.Peer(hostId);
+  host.on('open', () => { COOP.host = true; COOP.players = [coopMeObj()]; COOP.note = '部屋を開きました。仲間を待っています'; coopLobbySync(); });
+  host.on('connection', (c) => {
+    c.on('open', () => { if (COOP.playing || COOP.players.length >= COOP_MAX) { try { c.send({ t: 'full' }); } catch (e) { /* 閉じるだけ */ } setTimeout(() => c.close(), 300); return; } COOP.conns.push(c); });
+    c.on('data', (d) => { if (!d || typeof d !== 'object' || COOP.peer !== host) return; coopHostRecv(c, d); });
+    c.on('close', () => coopDrop(c)); c.on('error', () => coopDrop(c));
+  });
+  host.on('error', (e) => {
+    if (COOP.peer !== host) return;
+    if (e.type !== 'unavailable-id') { COOP.note = `接続できませんでした(${e.type})`; coopRender(); return; }
+    host.destroy();   // その合言葉の部屋はもう開いている → 参加する側になる
+    const guest = COOP.peer = new window.Peer();
+    guest.on('open', () => {
+      const c = COOP.hostConn = guest.connect(hostId, { reliable: true, serialization: 'json' });
+      c.on('open', () => { COOP.note = '部屋に入りました'; coopSend({ t: 'me', p: coopMeObj() }); coopRender(); });
+      c.on('data', (d) => { if (d && typeof d === 'object' && COOP.peer === guest) coopHandle(d); });
+      c.on('close', () => { if (COOP.peer === guest) coopHostLost(); });
+    });
+    guest.on('error', (e2) => { if (COOP.peer === guest) { COOP.note = e2.type === 'peer-unavailable' ? 'その合言葉の部屋はありません' : `接続できませんでした(${e2.type})`; coopRender(); } });
+  });
+  coopRender();
+}
+// ホスト:仲間からの知らせ。名乗り(me)は部屋の名簿に入れ、それ以外は全員に配る
+function coopHostRecv(c, d) {
+  if (d.t === 'me' && d.p && typeof d.p === 'object') {
+    c.pid = d.from;
+    const p = { id: String(d.from).slice(0, 20), nm: String(d.p.nm || '?').slice(0, 12), ch: d.p.ch && charById(d.p.ch) ? d.p.ch : null, v: String(d.p.v || '') };
+    const i = COOP.players.findIndex((x) => x.id === p.id);
+    if (i >= 0) COOP.players[i] = p; else if (!COOP.playing && COOP.players.length < COOP_MAX) COOP.players.push(p);
+    coopLobbySync(); return;
+  }
+  if (['hand', 'stamp', 'rs'].includes(d.t)) { coopBroadcast(d); coopHandle(d); }
+}
+// ホスト:仲間の接続が切れた。部屋で待っている間は名簿から外し、戦っている間はその人の番をCPUが代わりに打つ
+function coopDrop(c) {
+  COOP.conns = COOP.conns.filter((x) => x !== c);
+  if (!c.pid) return;
+  if (COOP.playing) { COOP.gone.add(c.pid); if (S && S.coop && !S.over) { log(`📡 ${coopName(c.pid)}さんの通信が切れました。そのキャラはCPUが動かします`); coopTurnStart(); } return; }
+  COOP.players = COOP.players.filter((x) => x.id !== c.pid);
+  coopLobbySync();
+}
+function coopHostLost() {
+  COOP.note = '部屋を開いた人が抜けました';
+  if (COOP.playing && S && S.coop && !S.over) { log('📡 部屋を開いた人の通信が切れたため、共闘を続けられません'); endByResign('me'); }
+  COOP.hostConn = null; coopRender();
+}
+// 全員(ホストも):届いた知らせを使う
+function coopHandle(d) {
+  if (d.t === 'lobby' && Array.isArray(d.players)) { COOP.players = d.players; coopRender(); return; }
+  if (d.t === 'full') { COOP.note = 'その部屋は満員か、もう始まっています'; coopRender(); return; }
+  if (d.t === 'start') { coopBattle(d); return; }
+  if (!S || !S.coop || S.over) return;
+  if (d.t === 'hand' && Number.isInteger(d.n) && HAND_KEYS.includes(d.h)) { if (d.n >= COOP.n) { COOP.queue[d.n] = d.h; coopDrain(); } return; }
+  if (d.t === 'stamp' && d.n === COOP.n && HAND_KEYS.includes(d.h) && d.from !== coopTurnOwner()) { COOP.stamps[d.from] = d.h; log(`📣 ${coopName(d.from)}「${HANDS[d.h].icon}が来そう」`); coopBar(); return; }
+  if (d.t === 'rs') { log(`${coopName(d.from)}さんがリタイアしました`); endByResign('me'); }
+}
+function coopClose() {
+  clearTimeout(COOP.afkT);
+  try { if (COOP.peer) COOP.peer.destroy(); } catch (e) { /* すでに閉じている */ }
+  Object.assign(COOP, { peer: null, conns: [], hostConn: null, host: false, code: '', players: [], playing: false, start: null, gone: new Set() });
+}
+function coopLeave() { coopClose(); COOP.note = ''; coopRender(); }
+
+// ----- 部屋の画面(下から出る画面)-----
+function coopOpen() {
+  if (!ACC.profile) { openSheet('🤝 共闘降臨', '<p>共闘降臨は、ログインして遊びます(スタミナと報酬のため)。タイトルの「アカウント」からログインしてください。</p>'); return; }
+  COOP.sheet = true; coopRender();
+}
+function coopRender() {
+  if (!COOP.sheet || COOP.playing) return;
+  const st = STAGES.find((x) => x.id === COOP_STAGE), sc = stageStamina(st);
+  const open = questOpen(), me = COOP.players.find((x) => x.id === COOP.me);
+  const intro = `<p class="sub">3人で1体ずつキャラを出し合い、カサネと戦います。手を出すのは、前に出ているキャラの持ち主です。ほかの2人は「来そうな手」を伝えられます。<br>${escHtml(questWhen())}・消費 ⚡${sc ? sc.cost : 0}・勝つと25%でカサネが仲間に(当たれば3人とも)</p>${COOP.code ? '' : bossPersonaHtml(st)}`;
+  let body;
+  if (!COOP.code) {
+    body = `<div class="row"><input id="coCode" maxlength="12" placeholder="合言葉(英数字)" autocomplete="off" style="flex:1"><button id="coJoin">入る</button></div>
+      <div class="row"><button id="coMake">合言葉を作って部屋を開く</button></div>`;
+  } else {
+    const ids = COOP.players.map((p) => p.ch).filter(Boolean), ng = ids.length === COOP_MAX ? teamNg(ids, 'advance') : '';
+    const verNg = COOP.players.some((p) => p.v !== RULES_VER);
+    const slots = Array.from({ length: COOP_MAX }, (_, i) => {
+      const p = COOP.players[i], ch = p && p.ch && charById(p.ch);
+      if (!p) return `<li class="co-slot empty"><span class="co-no">${i + 1}番手</span>待っています…</li>`;
+      const mv = COOP.host ? `<span class="co-mv">${i > 0 ? `<button data-up="${i}" aria-label="上へ">▲</button>` : ''}${i < COOP.players.length - 1 ? `<button data-dn="${i}" aria-label="下へ">▼</button>` : ''}</span>` : '';
+      return `<li class="co-slot${p.id === COOP.me ? ' me' : ''}"><span class="co-no">${i + 1}番手</span>${ch ? iconHtml(ch, 'sm') : '<span class="cico sm none">?</span>'}<span class="co-nm">${escHtml(p.nm)}${p.id === COOP.me ? '(あなた)' : ''}<small>${ch ? escHtml(ch.name) : 'キャラを選んでいます'}${p.v !== RULES_VER ? '・<b style="color:#ff8a95">版が違います</b>' : ''}</small></span>${mv}</li>`;
+    }).join('');
+    const pool = ALL_CHARS.filter((c) => charUnlocked(c) && inFormat(c, 'advance'));   // 自分が使えるキャラ(アドバンスと同じ)
+    const sn = stamNow(), lowSt = sc && sn && sn.val < sc.cost;
+    const grid = `<div class="co-grid">${pool.map((c) => `<button class="co-ch${COOP.ch === c.id ? ' on' : ''}" data-ch="${c.id}" title="${escHtml(c.name)}">${iconHtml(c, 'md')}<small>${escHtml(c.name)}</small></button>`).join('')}</div>`;
+    const canStart = COOP.host && COOP.players.length === COOP_MAX && ids.length === COOP_MAX && !ng && !verNg && open;
+    body = `<p class="sub">合言葉 <b style="color:var(--gold)">${escHtml(COOP.code)}</b>・${escHtml(COOP.note)}</p>
+      <ol class="co-slots">${slots}</ol>
+      ${ng ? `<p class="sub" style="color:#ff8a95">${escHtml(ng)}</p>` : ''}${verNg ? '<p class="sub" style="color:#ff8a95">ゲームの版がそろっていません。全員ページを読み込み直してください</p>' : ''}
+      ${lowSt ? `<p class="sub" style="color:#ff8a95">スタミナが足りません(⚡${sn.val}/${sc.cost})。このままでは報酬をもらえません</p>` : ''}
+      ${me ? `<p class="sub" style="margin-top:8px">あなたが出すキャラ(1体)</p>${grid}` : ''}
+      ${COOP.host ? `<div class="row"><button id="coStart"${canStart ? '' : ' disabled'}>${!open ? '開催時間外です' : COOP.players.length < COOP_MAX ? `あと${COOP_MAX - COOP.players.length}人` : ids.length < COOP_MAX ? 'キャラ選び待ち' : '出撃'}</button></div><p class="sub">番手は ▲▼ で入れ替えられます(部屋を開いた人だけ)</p>` : '<p class="sub">部屋を開いた人が出撃を押すと始まります</p>'}
+      <div class="row"><button id="coLeave">部屋を出る</button></div>`;
+  }
+  openSheet('🤝 共闘降臨', intro + body);
+  const B = $('sheetBody');
+  const q = (sel) => B.querySelector(sel);
+  if (q('#coJoin')) q('#coJoin').onclick = () => { Sound.click(); coopJoin(q('#coCode').value.trim()); };
+  if (q('#coMake')) q('#coMake').onclick = () => { Sound.click(); coopJoin(rndCode().slice(0, 6)); };
+  if (q('#coLeave')) q('#coLeave').onclick = () => { Sound.click(); coopLeave(); };
+  if (q('#coStart')) q('#coStart').onclick = () => { Sound.click(); coopGo(); };
+  B.querySelectorAll('[data-ch]').forEach((b) => { b.onclick = () => { Sound.click(); COOP.ch = b.dataset.ch; if (COOP.host) { const p = COOP.players.find((x) => x.id === COOP.me); if (p) p.ch = COOP.ch; coopLobbySync(); } else coopSend({ t: 'me', p: coopMeObj() }); }; });
+  B.querySelectorAll('[data-up],[data-dn]').forEach((b) => { b.onclick = () => {
+    const i = +(b.dataset.up ?? b.dataset.dn), j = b.dataset.up != null ? i - 1 : i + 1, P = COOP.players;
+    if (!P[i] || !P[j]) return; [P[i], P[j]] = [P[j], P[i]]; coopLobbySync();
+  }; });
+}
+
+// ----- 出撃 -----
+async function coopGo() {
+  if (!COOP.host || COOP.playing) return;
+  if (!questOpen()) { COOP.note = '開催時間外です'; coopRender(); return; }
+  let room = null;
+  try { room = await verRpc('coop_open', { p_stage: COOP_STAGE }); } catch (e) {
+    if (e.code === 'KV001') { verOld(); return; }
+    COOP.note = isMissingFn(e) ? '共闘降臨は準備中です(サーバーの更新待ち)' : `始められませんでした(${e.message || e.code || 'エラー'})`; coopRender(); return;
+  }
+  coopSend({ t: 'start', seed: rnd(), order: COOP.players.map((p) => p.id), chars: COOP.players.map((p) => p.ch), room });
+}
+function coopBattle(d) {
+  const st = STAGES.find((x) => x.id === COOP_STAGE), chars = (d.chars || []).map(charById);
+  if (!st || chars.length !== COOP_MAX || chars.some((c) => !c)) return;
+  COOP.playing = true; COOP.sheet = false; COOP.start = d; COOP.n = 0; COOP.queue = {}; COOP.sent = -1; COOP.stamps = {};
+  $('sheet').classList.add('hidden');
+  ['hub', 'soloHub', 'groupHub', 'select'].forEach((id) => $(id).classList.add('hidden'));
+  MODE = 'solo'; PVP.on = false;
+  startMatch(chars, stageFoes(st), st.name, { level: st.level, read: st.read, stage: st, noDecay: true, label0: '共闘',
+    coop: { owners: d.order.slice(), room: d.room || null, adapt: {}, histOwner: [], last: null } });
+  setTimeout(coopTurnStart, 50);
+}
+// 部屋に戻る(勝っても負けても、もう一度同じ3人で挑める)
+function coopBackToLobby() {
+  clearTimeout(COOP.afkT);
+  COOP.playing = false; COOP.start = null;
+  Bgm.play('menu');
+  $('battle').classList.add('hidden'); document.body.classList.remove('in-battle');
+  showGroupHub('quest');
+  showNewTitles();
+  if (COOP.code && (COOP.host || (COOP.hostConn && COOP.hostConn.open))) { COOP.gone = new Set(); COOP.sheet = true; coopRender(); }
+  else { coopClose(); }
+}
+
+// ----- 戦い -----
+function coopPick(hand) {
+  if (busy || !S || S.over || !coopMine() || COOP.sent === COOP.n) return;
+  COOP.sent = COOP.n; clearTimeout(COOP.afkT);
+  coopSend({ t: 'hand', n: COOP.n, h: hand });
+  render();
+}
+async function coopDrain() {
+  if (COOP.draining) return;
+  COOP.draining = true;
+  try {
+    while (S && S.coop && !S.over && COOP.queue[COOP.n] != null) {
+      const h = COOP.queue[COOP.n]; delete COOP.queue[COOP.n];
+      await coopRally(h);
+      COOP.n++; COOP.stamps = {};
+    }
+  } finally { COOP.draining = false; coopTurnStart(); }
+}
+// 1ラリー:普段の play と同じ流れ。ボスの手は、前に出ている人の手の記録だけを見て決める
+async function coopRally(hand) {
+  busy = true; Sound.lever(); render();
+  const owner = coopTurnOwner(), len = S.hist.length;
+  try {
+    if (S.teams[0].breakReady) await playerBreak(hand);
+    else { const ai = coopAi(owner); await normalRally(hand, ai.hand, ai.why); }
+  } finally {
+    for (let i = len; i < S.hist.length; i++) S.coop.histOwner[i] = owner;
+    busy = false; flushLog(); render(); tickLoop();
+  }
+}
+function coopAi(owner) {
+  const C = S.coop, v = Object.create(S);
+  v.hist = S.hist.filter((_, i) => C.histOwner[i] === owner);   // その人の手だけ
+  v.adapt = C.adapt[owner];                                       // その人用の読み(負けの数・ティルト・裏読みも人ごと)
+  let ai;
+  coopRng('a', () => {
+    ai = aiHand(v, 1, S.cpuLevel);
+    if (C.last !== owner) { if (C.last != null) log(`💬 ${nameOf(active(S.teams[1]))}「${pickOne(COOP_SWAP)}」`); C.last = owner; }
+    bossHint(v);
+  });
+  C.adapt[owner] = v.adapt;
+  return ai;
+}
+// 番が来た:自分の番なら60秒で自動の手。通信が切れた人の番は、ホストが代わりに出す
+function coopTurnStart() {
+  clearTimeout(COOP.afkT);
+  if (!S || !S.coop || S.over) { coopBar(); return; }
+  const o = coopTurnOwner();
+  if (o === COOP.me && COOP.sent !== COOP.n) COOP.afkT = setTimeout(() => { if (coopMine() && COOP.sent !== COOP.n && !busy) { log('60秒手を出さなかったので、自動で手を出した'); coopPick(randomHand()); } }, 60000);
+  else if (COOP.host && COOP.gone.has(o)) COOP.afkT = setTimeout(() => { if (S && S.coop && !S.over && coopTurnOwner() === o) coopSend({ t: 'hand', n: COOP.n, h: randomHand() }); }, 1500);
+  render();
+}
+// 手のボタンの上の帯:だれの番か。ほかの2人は「来そうな手」を送れる
+function coopBar() {
+  let el = $('coopBar');
+  if (!S || !S.coop) { if (el) el.remove(); return; }
+  if (!el) { el = document.createElement('div'); el.id = 'coopBar'; el.className = 'coopbar'; $('result').after(el); }   // 結果の文の下に、画面の横幅いっぱいで
+  if (S.over) { el.innerHTML = ''; return; }
+  const o = coopTurnOwner(), mine = o === COOP.me;
+  const tips = Object.entries(COOP.stamps).map(([id, h]) => `<span class="co-tip">${escHtml(coopName(id))} ${HANDS[h].icon}</span>`).join('');
+  el.innerHTML = mine
+    ? `<b>あなたの番です</b>${tips ? `<span class="co-tips">来そう:${tips}</span>` : ''}`
+    : `<b>${escHtml(coopName(o))}さんの番</b>${COOP.gone.has(o) ? '(CPUが代わりに出します)' : ''}<span class="co-st">来そうな手:${HAND_KEYS.map((h) => `<button data-st="${h}"${COOP.stamps[COOP.me] === h ? ' class="on"' : ''}>${HANDS[h].icon}</button>`).join('')}</span>`;
+  el.querySelectorAll('[data-st]').forEach((b) => { b.onclick = () => { Sound.click(); coopSend({ t: 'stamp', n: COOP.n, h: b.dataset.st }); }; });
+}
+
 let LAST_MATCH = null;   // 再挑戦用:直前に始めた対戦の中身
 async function startMatch(mine, theirs, foeLabel, opt = {}) {
   Sound.preload();   // プチュンの音(音声ファイル)を先に読み込む
@@ -8223,6 +8533,7 @@ async function startMatch(mine, theirs, foeLabel, opt = {}) {
   S.stage = opt.stage || null;
   S.soloRun = soloRun;
   S.noDecay = !!opt.noDecay;
+  S.coop = opt.coop || null;   // 共闘降臨:{ owners:各カードの持ち主, room, adapt:持ち主ごとの読み, histOwner:各ラリーの手を出した人 }
   if (opt.stage && opt.stage.kr) {
     S.kr = true; S.krSeed = opt.krSeed; S.teams[0].cards.forEach((c) => { c.dfsCap = 5000; });   // 刻練場:こちらのDFSは5000まで
     // ログイン中は、サーバーに挑戦の開始を知らせる(SQLの13回目。終わりの記録と突き合わせる)
@@ -8294,6 +8605,7 @@ function init() {
   };
   $('retry').onclick = () => {
     clearTimeout(tickTimer);
+    if (S && S.coop) { coopBackToLobby(); return; }   // 共闘降臨:部屋に戻る
     Bgm.play('menu');
     $('battle').classList.add('hidden');
     $('select').classList.remove('hidden');
@@ -8313,6 +8625,7 @@ function init() {
   try { SOLO.stage = localStorage.getItem('kokusen.stage') || 'a1'; SOLO.cleared = readCleared(GUEST_KEY); SOLO.rush = Number(localStorage.getItem('kokusen.rush')) || 0; } catch (e) { /* 保存できなくても動く */ }
   if (!STAGES.some((x) => x.id === SOLO.stage)) SOLO.stage = 'a1';
   STAGES.forEach((st) => {
+    if (st.coop) return;   // 共闘降臨は、降臨の入り口から部屋に入って遊ぶ
     if (st.kr) {   // 刻練場は「スコアアタック」を選んだときの一覧に、1つだけ
       const b = document.createElement('button'); b.dataset.id = st.id; b.classList.add('s0');
       b.onclick = () => { SOLO.stage = st.id; renderStages(); goPickNow(); };
@@ -8379,7 +8692,7 @@ function init() {
   $('tTitles').onclick = openTitles;
   $('tDaily').onclick = () => openDaily();
   $('tGacha').onclick = () => openGacha();
-  $('sheetClose').onclick = () => $('sheet').classList.add('hidden');
+  $('sheetClose').onclick = () => { $('sheet').classList.add('hidden'); if (COOP.sheet && !COOP.playing) { COOP.sheet = false; coopClose(); } };   // 共闘降臨の部屋の画面を閉じたら、部屋を出る
   $('sheetX').onclick = () => $('sheetClose').click();
   // ガチャを閉じたら(ほかのシートに切り替えたときも)、前の曲に戻す。ガチャから開いたキャラの説明の間はそのまま
   new MutationObserver(() => {
