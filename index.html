@@ -1799,7 +1799,7 @@ Object.assign(ENEMIES, {
   c5_xeno_body: { ...ENEMIES.xeno_body, hp: 20900, phys: 1.25 },
   c5_xeno_spirit: { ...ENEMIES.xeno_spirit, hp: 41800, phys: 1.1, traits: ENEMIES.xeno_spirit.traits.map((t) => (t.key === 'rewindRite' ? { ...t, desc: '7ラリーで倒せないと刻が巻き戻る(巻き戻るのはゼノだけ。こちらは今のまま)', limit: 7, keepMe: true } : t)) },
   // 共闘降臨★5:ゼノ【適応】。トキバミの抜け落ちが本来より進んだ世界線で、時間移動で肉体が弱るボトルネックを解消したゼノ(始まりの前のゼノの完全上位互換)
-  xa_body: { ...ENEMIES.xeno_body, name: 'ゼノ【適応】', secret: null, hp: 20000,
+  xa_body: { ...ENEMIES.xeno_body, name: 'ゼノ【適応】', secret: null, hp: 15000,
     traits: [{ key: 'hardshell', name: '鋼の刻・適応', desc: 'DFSは下げられない。巻き戻っても下がらない', noHalf: true },
       { key: 'regen', name: '刻戻り', desc: 'ラリーが終わるたびにHP2500回復', heal: 2500 },
       { key: 'unbreak', name: '適応した肉体', desc: `${BREAK_NAME}で受けるダメージ半減`, cut: 0.5 }],
