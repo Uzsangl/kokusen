@@ -1134,6 +1134,9 @@
   .brib { position: absolute; top: 6px; right: 8px; z-index: 3; padding: 1px 10px; border-radius: 10px; font-size: .62rem; font-weight: 900; letter-spacing: 0; line-height: 1.5; color: #ffe9a6; background: #000000aa; border: 1px solid #f5c45188; white-space: nowrap; pointer-events: none; }
   .brib.off { color: var(--sub); border-color: #ffffff33; }
   .hubbig button.tagged { position: relative; padding-top: 22px; height: 92px !important; min-height: 92px !important; }
+  .stag { position: absolute; top: -9px; right: 44px; z-index: 3; display: inline-flex; align-items: center; padding: 1px 8px; border-radius: 8px; font-size: .6rem; font-weight: 900; letter-spacing: 0; line-height: 1.5; white-space: nowrap; background: #0b0e22; border: 1px solid #f5c45188; box-shadow: 0 1px 4px #000a; pointer-events: none; }
+  .stag .st { color: #9fe7ff; } .stag .fr { color: #ffd76a; display: inline-flex; align-items: center; gap: 1px; } .stag .st + .fr { margin-left: 6px; padding-left: 6px; border-left: 1px solid #ffffff33; } .stag .shardic { width: 1.1em; height: 1.1em; }
+  .stages.vlist { padding-top: 6px; } .stages.vlist button { overflow: visible; }
   .stages.vlist button .btag.first { top: 3px; bottom: auto; left: auto; right: 46px; font-size: .56rem; padding: 0 6px; display: inline-flex; align-items: center; gap: 2px; } .btag .shardic { width: 1.1em; height: 1.1em; }
 </style>
 </head>
@@ -6937,11 +6940,13 @@ function renderStages() {
     const boss = `<span class="foes">${star ? iconHtml(star, 'md') : ''}</span>`;
     const head = s.kr ? '刻練場' : s.corridor || s.quest || (SOLO.group != null && !s.rush) ? starStack(s.stars) : `${s.faction} ${'★'.repeat(s.stars)}`;   // 陣営を選んだあとは★だけ   // 回廊は見出しに名前があるので★だけ
     const sc = STAM.on && stageStamina(s);
-    b.innerHTML = `<b>${head}${sc ? `<span class="stcost">⚡${sc.cost}</span>` : ''}</b>${boss}${s.name}<span class="sinfo" data-info="${s.id}" role="button" aria-label="説明">i</span>`;
+    b.innerHTML = `<b>${head}</b>${boss}${s.name}<span class="sinfo" data-info="${s.id}" role="button" aria-label="説明">i</span>`;
     b.classList.toggle('chain', !!s.chainFrom);
     b.classList.toggle('picked', b.dataset.id === SOLO.stage);
     b.classList.toggle('cleared', SOLO.cleared.includes(b.dataset.id));
-    if (s.reward && !SOLO.cleared.includes(s.id) && corrOpen(s)) b.insertAdjacentHTML('beforeend', `<span class="btag gold first">初回${SHARD_IC}${s.reward[0]}</span>`);
+    // 右上の札:消費スタミナと、まだクリアしていなければ初回のカケラ(1つの札にまとめる。枠に少しかかる高さ)
+    const fst = s.reward && !SOLO.cleared.includes(s.id) && corrOpen(s);
+    if ((sc || fst) && corrOpen(s)) b.insertAdjacentHTML('beforeend', `<span class="stag">${sc ? `<span class="st">⚡${sc.cost}</span>` : ''}${fst ? `<span class="fr">初回${SHARD_IC}${s.reward[0]}</span>` : ''}</span>`);
     b.classList.toggle('locked', !corrOpen(s) || (!!s.quest && !questOpen()));
     if (!corrOpen(s)) b.innerHTML = `<b>${head}</b><span class="foes">🔒</span>${s.name}<span class="sinfo" data-info="${s.id}" role="button" aria-label="説明">i</span>`;
   });
