@@ -3495,6 +3495,7 @@ const Sound = (() => {
   return {
     setOn(v) { on = v; if (master) master.gain.value = v ? LEVEL * FX.seVol : 0; },
     setVol() { if (master) master.gain.value = on ? LEVEL * FX.seVol : 0; },
+    hush(off) { if (!master) return; const t = ctx.currentTime, v = on ? LEVEL * FX.seVol : 0; master.gain.cancelScheduledValues(t); master.gain.setValueAtTime(master.gain.value, t); master.gain.linearRampToValueAtTime(off ? 0.0001 : v, t + (off ? 0.06 : 0.25)); },
     wake: ac,
     // 背景で鳴り続ける時計
     tick(n) { tone(n % 2 ? 1500 : 1900, 0.025, { type: 'square', vol: 0.022 }); },
@@ -3843,6 +3844,8 @@ const Bgm = (() => {
       startTrack(name);
     },
     stop() { want = false; Object.keys(src).forEach((n) => stopTrack(n)); buf.climax = null; buf.xeno = null; },
+    // ページが裏に回る・閉じるとき:いきなり止めると「プツッ」と鳴るので、一瞬で音量を0に下げてから止める
+    hush(off) { if (!ctx) return; const t = ctx.currentTime; Object.values(gain).forEach((g) => { g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(g.gain.value, t); g.gain.linearRampToValueAtTime(off ? 0.0001 : level(), t + (off ? 0.06 : 0.25)); }); },
     // 曲を切り替える(前の曲を小さくしながら、次の曲を頭から流す)
     switchTo(name) {
       if (name === now || missing[name]) return;
@@ -8035,16 +8038,13 @@ async function openDaily() {
 }
 // 起動したとき:最初のガラスが割れて、ログインできていたら、ログインボーナスを受け取ってからデイリーを出す(1回だけ)
 async function dailyIntro() {
-  if (!DAILY.splashed || DAILY.introDone || !shardOnAcc()) return;
+  if (!DAILY.splashed || DAILY.introDone) return;
+  if (!shardOnAcc()) return;
   DAILY.introDone = true;
   await dailyLogin();
   if (DAILY.ready && !verBusy() && !document.getElementById('verBlock')) await openDaily();
-  // デイリーを閉じたら、共闘降臨の案内(1日1回)
-  const waitClosed = () => new Promise((ok) => { const t = setInterval(() => { if ($('sheet').classList.contains('hidden')) { clearInterval(t); ok(); } }, 300); });
-  await waitClosed();
-  coopAd();
 }
-// ----- 共闘降臨の案内(ログインボーナスのあと、1日1回)。画像を左右に送れる。「挑む」で部屋の画面へ -----
+// ----- 共闘降臨の案内(タイトルで「刻む」を押してメニューに入ったとき、1日1回)。画像を左右に送れる。「挑む」で部屋の画面へ -----
 const COOP_ADS = [{ img: 'img/ad-kasane.webp', stage: 'mk5' }, { img: 'img/ad-xeno-adapt.webp', stage: 'mx5' }];
 function coopAd(force) {
   const day = jstNow().toISOString().slice(0, 10);
@@ -8871,7 +8871,7 @@ function init() {
   // タイトル画面
   $('tVer').textContent = `ver ${APP_VER}`;
   $('tVer').title = `ルール ${RULES_VER.slice(0, 6)}`;   // 対人の版合わせに使うルールの番号
-  $('tPlay').onclick = () => { Sound.wake(); Bgm.unlock && Bgm.unlock(); showTitle(false); };
+  $('tPlay').onclick = () => { Sound.wake(); Bgm.unlock && Bgm.unlock(); showTitle(false); setTimeout(() => { if ($('sheet').classList.contains('hidden')) coopAd(); }, 400); };   // 刻むを押したら、共闘降臨の案内(1日1回。デイリーが開いていれば出さない)
   $('toTitle').onclick = () => {   // ハブ → タイトル、ソロの入り口 → ハブ、メニュー → ハブ(ソロはソロの入り口)
     if (!$('hub').classList.contains('hidden')) showTitle(true);
     else if (!$('groupHub').classList.contains('hidden')) showSoloHub();
@@ -8936,13 +8936,16 @@ function init() {
   // ・このページが裏に回ったら、音を止める。表に戻ったら、続きから鳴らす(iPhoneでは次に画面に触れたとき)
   // ・新しいタブでゲームを開いたら、前から開いていたタブの音を止める
   const audioCtx = () => Sound.wake();
+  // 音を止めるときは、先に音量を0まで下げてから(いきなり止めると「プツッ」と鳴る)
+  let quietT = 0;
+  const quiet = (c) => { Sound.hush(true); Bgm.hush(true); clearTimeout(quietT); quietT = setTimeout(() => { if (document.hidden) c.suspend().catch(() => {}); }, 90); };
   document.addEventListener('visibilitychange', () => {
     const c = audioCtx();
     if (!c) return;
-    if (document.hidden) c.suspend().catch(() => {});
-    else if (!SILENCED) c.resume().catch(() => {});
+    if (document.hidden) quiet(c);
+    else if (!SILENCED) c.resume().then(() => { Sound.hush(false); Bgm.hush(false); }).catch(() => {});
   });
-  window.addEventListener('pagehide', () => { const c = audioCtx(); if (c) c.suspend().catch(() => {}); });
+  window.addEventListener('pagehide', () => { const c = audioCtx(); if (c) quiet(c); });
   try {
     const bc = new BroadcastChannel('kokusen-audio');
     bc.onmessage = (e) => {
