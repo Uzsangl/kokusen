@@ -221,7 +221,8 @@
   :is(#aura, #tAura) .flame.l { left: -4vw; } :is(#aura, #tAura) .flame.r { right: -4vw; animation-delay: -1.3s; }
   :is(#aura, #tAura) i { position: absolute; top: 100%; display: block; background: linear-gradient(160deg, #fff6d0, #f5c451 45%, #ff9d2e); box-shadow: 0 0 10px #f5c451, 0 0 18px #ff9d2e88; animation: auraRise linear forwards; will-change: transform, opacity; }
   :is(#aura, #tAura) i.spark { border-radius: 50%; background: #fff6d0; box-shadow: 0 0 6px #ffe9a8, 0 0 12px #f5c451; }
-  #tAura { z-index: -1; }   /* タイトル:背景のすぐ手前(ロゴや絵・ボタンより後ろ) */
+  #tAura { z-index: 1; }   /* タイトル:キャラの絵(.tkv)の手前、ロゴやボタンより後ろ */
+
   #tAura::after { opacity: .6; }
   /* 赤い版(★5ツル戦は、初めから禍々しい深い赤のオーラが流れる。あとひと刻で金色に変わる) */
   #aura.red::before { height: 55vh; background: radial-gradient(70% 100% at 50% 100%, #6e000eaa, #2a000566 45%, transparent 75%); animation-duration: 2.4s; }
@@ -3883,7 +3884,7 @@ const Aura = (() => {
     // タイトル画面:同じガラスの破片を、背景のすぐ手前で静かに流す(あとひと刻より少なめ)
     title(on) {
       let el = $('tAura');
-      if (!el) { el = document.createElement('div'); el.id = 'tAura'; el.setAttribute('aria-hidden', 'true'); document.body.appendChild(el); }
+      if (!el) { el = document.createElement('div'); el.id = 'tAura'; el.setAttribute('aria-hidden', 'true'); $('title').appendChild(el); }
       clearInterval(Aura.tTimer); Aura.tTimer = null;
       if (!on || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) { el.classList.remove('on'); setTimeout(() => { if (!Aura.tTimer) el.innerHTML = ''; }, 700); return; }
       el.classList.add('on');
