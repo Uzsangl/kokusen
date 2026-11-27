@@ -1903,8 +1903,8 @@ const STAGES = [
   { id: 'qr4', quest: 'rizu', qfmt: 'basic',   faction: '零', stars: 4, name: 'リズ降臨', foes: ['z_mask', 'z_wind', 'qz_justice', 'qb_rizu'], level: 4, read: 0.6, hp: 1.118, atk: 1.15, justice: [[0.55, 'Jzz'], [0.45, 'JzJ']], over: { qz_justice: { hp: 16000, atk: 2650, dfs: 2500 }, qb_rizu: { hp: 80000, atk: 3600, dfs: 1500 } }, bossBgm: 'cirque', reward: [200, 20], drop: 0.005 },
   { id: 'qr5', quest: 'rizu', qfmt: 'basic',   faction: '零', stars: 5, name: 'リズ降臨', foes: ['z_mask', 'z_wind', 'qz_justice', 'qb_rizu'], level: 4, read: 1, hp: 1.904, atk: 1.3, justice: [[0.55, 'Jzz'], [0.45, 'JzJ']], over: { qz_justice: { hp: 25000, atk: 3000 }, qb_rizu: { hp: 200000, atk: 4750 } }, bossBgm: 'majo', bossAura: 'red', reward: [1000, 30], drop: 0.25 },
   // 共闘降臨(3人マルチ専用):1人1体ずつ出し合う。開催は降臨と同じ時間。ソロの一覧には出さない
-  { id: 'mk5', quest: 'kasane', coop: true, qfmt: 'advance', faction: '隔絶', stars: 4, name: 'カサネ降臨', foes: ['qb_kasane'], level: 4, read: 1, hp: 1, atk: 1, over: { qb_kasane: { hp: 270000, atk: 12000, dfs: 500 } }, bossBgm: 'cirque', bossAura: 'red', reward: [1000, 30], drop: 0.25 },
-  { id: 'mx5', quest: 'kasane', coop: true, qfmt: 'advance', faction: '始', stars: 5, name: 'ゼノ【適応】', foes: ['xa_body', 'xa_spirit'], level: 4, read: 1, hp: 1, atk: 1, bgm: 'xeno', reward: [1000, 30] },
+  { id: 'mk5', quest: 'kasane', coop: true, qfmt: 'advance', faction: '隔絶', stars: 4, name: 'カサネ降臨', foes: ['qb_kasane'], level: 4, read: 1, hp: 1, atk: 1, over: { qb_kasane: { hp: 270000, atk: 12000, dfs: 500 } }, bgm: 'cirque', bossBgm: 'cirque', bossAura: 'red', reward: [1000, 30], drop: 0.25 },
+  { id: 'mx5', quest: 'kasane', coop: true, qfmt: 'advance', faction: '始', stars: 5, name: 'ゼノ【適応】', foes: ['xa_body', 'xa_spirit'], level: 4, read: 1, hp: 1, atk: 1, bgm: 'majo', bossBgm: 'majo', bossAura: 'red', reward: [1000, 30] },
 ];
 // ステージの敵を、倍率を掛けた能力値で作る(元のデータは書き換えない)
 // ----- 刻練場(百刻スコアアタック) -----
@@ -4666,17 +4666,17 @@ async function entryFx() {
   if (!S || S.over) return;
   // 降臨:1階(門下生3体)と2階(ボス)の始まりにカットイン
   if (S.stage && S.stage.quest) {
-    const n = S.teams[1].idx, floor = n >= 3 ? 2 : 1;
+    const n = S.teams[1].idx, floor = S.stage.coop || n >= 3 ? 2 : 1;   // 共闘降臨は前座なしで、最初からボス
     if (floor !== S.questFloor) {
       S.questFloor = floor;
-      const boss = S.teams[1].cards[3];
+      const boss = S.stage.coop ? S.teams[1].cards[0] : S.teams[1].cards[3];
       Sound.cue(floor === 2 ? 3 : 1);
       if (floor === 2) {
         flash('#ffffff'); shake(true);
         if (S.stage.bossBgm && Bgm.current() !== S.stage.bossBgm) Bgm.switchTo(S.stage.bossBgm);   // 2階:ボスの曲(★3・★4はLe Cirque du Diable、★5はエモがいつもの★5、リズが黒翼の魔女)
         if (S.stage.bossAura) Aura.start(S.stage.bossAura);   // リズ★5:赤いオーラ
       }
-      await cutin(`${floor}階`, floor === 2 ? `${boss ? dispName(boss.ch) : 'ボス'}降臨` : '門下生3体', floor === 2 ? 'evil' : 'gold', floor === 2 ? 1500 : 900);
+      await cutin(S.stage.coop ? '共闘降臨' : `${floor}階`, floor === 2 ? `${boss ? dispName(boss.ch) : 'ボス'}降臨` : '門下生3体', floor === 2 ? 'evil' : 'gold', floor === 2 ? 1500 : 900);
     }
   }
   // 刻練場:新しい層に入ったら、層の番号を出す
