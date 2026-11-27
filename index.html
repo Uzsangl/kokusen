@@ -1080,6 +1080,10 @@
   .coad-when { margin: 0; font-size: .75rem; color: var(--sub); }
   #tAcc .nm-top { display: flex; align-items: center; gap: 4px; flex-wrap: nowrap; line-height: 1.2; min-width: 0; }
   #tAcc .nm-top .lvtag { flex-shrink: 0; } #tAcc .nm-top .ttl { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 0; }   /* タイトルのアカウント欄:1行目にレベルと称号、2行目に名前 */
+  /* 横長の選択ボタンは2種類の大きさに統一して、上に詰める(下は空いてよい):大きいボタン(メニュー・陣営・回廊・降臨)80px、ステージの行52px */
+  #hub .hubbig, #soloHub .hubbig, #groupHub .hubbig { flex: 0 0 auto; justify-content: flex-start; }
+  #hub .hubbig button, #soloHub .hubbig button, #groupHub .hubbig button, #groupHub.gq .hubbig button { flex: 0 0 auto; height: 80px; min-height: 80px; max-height: none; }
+  .stages.vlist button { min-height: 52px; }
 </style>
 </head>
 <body>
@@ -6320,19 +6324,16 @@ function fitHub(panel) {
   const safe = parseFloat(getComputedStyle(pr).paddingBottom) || 0; pr.remove();   // iPhoneの下端の余白
   panel.style.minHeight = Math.max(0, window.innerHeight - top - AD_RESERVE - safe) + 'px';
 }
-// 陣営・回廊のステージ一覧:パネルの下の端を同じ線にそろえ、余った高さはステージのボタンを大きくして埋める
+// 陣営・回廊のステージ一覧:ボタンの高さは決まった大きさ(上に詰める)。パネルの下の端だけ、ほかの画面と同じ線にそろえる(下は空いてよい)
 function fitStages() {
-  const list = krSel() ? [...$('krStages').children] : questSel() ? [...$('questStages').children] : [...$('stages').children, ...$('corrStages').children];
-  const btns = list.filter((b) => b.dataset.id && !b.classList.contains('gh'));
   [...$('stages').children, ...$('corrStages').children, ...$('questStages').children, ...$('krStages').children].forEach((b) => { b.style.minHeight = ''; b.style.height = ''; });
-  if (MODE !== 'solo' || (SOLO.group == null && !krSel() && !questSel()) || $('select').classList.contains('hidden') || !btns.length) return;
+  const sel = $('select');
+  sel.style.minHeight = '';
+  if (MODE !== 'solo' || (SOLO.group == null && !krSel() && !questSel()) || sel.classList.contains('hidden')) return;
   const pr = document.createElement('div'); pr.style.cssText = 'position:fixed;bottom:0;height:0;padding-bottom:env(safe-area-inset-bottom,0px);visibility:hidden'; document.body.appendChild(pr);
   const safe = parseFloat(getComputedStyle(pr).paddingBottom) || 0; pr.remove();
-  const sel = $('select'), bottom = sel.getBoundingClientRect().bottom + window.scrollY, line = window.innerHeight - AD_RESERVE - safe;
-  const extra = line - bottom;   // 足りなければ縮め、余れば広げる(ボタンの高さは44〜150px)
-  const rows = questSel() && SOLO.group == null ? Math.ceil(btns.length / 2) : btns.length;   // 降臨を全部出すときは2列
-  const h = btns[0].getBoundingClientRect().height, nh = Math.max(42, Math.min(rows === 1 ? 260 : 150, h + extra / rows));
-  btns.forEach((b) => { b.style.minHeight = b.style.height = nh + 'px'; });
+  const top = sel.getBoundingClientRect().top + window.scrollY;
+  sel.style.minHeight = Math.max(0, window.innerHeight - top - AD_RESERVE - safe) + 'px';
 }
 window.addEventListener('resize', () => { ['hub', 'soloHub', 'groupHub'].forEach((id) => { if (!$(id).classList.contains('hidden')) fitHub($(id)); }); fitStages(); });
 function mountTop(panel) {
