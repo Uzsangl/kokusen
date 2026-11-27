@@ -6443,12 +6443,13 @@ function backToHub() {
   renderHub();
 }
 // キャラ一覧:陣営ごとに全キャラ。押すと詳しい説明(持っていないキャラは薄く)
-function openCharList() {
+function openCharList(scroll) {
   const isoChar = (c) => c.id === 'g_z5' || !['錨', '零', '矢'].includes(c.faction);   // ゼノ【仮面】は隔絶に入れる
   const groups = [['錨', (c) => c.faction === '錨'], ['零', (c) => c.faction === '零' && !isoChar(c)], ['矢', (c) => c.faction === '矢'], ['隔絶', isoChar]];
   const list = ALL_CHARS.filter((c) => !c.boss);
   openSheet('キャラ一覧', `<div class="charlist">${groups.map(([g, f]) => { const cs = list.filter(f); return cs.length ? `<h3>${g}</h3><div class="cl">${cs.map((c) => `<button data-id="${c.id}" class="${charUnlocked(c) ? '' : 'lock'}">${iconHtml(c, 'md')}<span>${escHtml(dispName(c))}</span></button>`).join('')}</div>` : ''; }).join('')}</div>`);
-  document.querySelectorAll('#sheetBody .charlist button[data-id]').forEach((b) => { const go = () => openCharDetail(charById(b.dataset.id)); bindPress(b, go, go); });   // タップでも長押しでも名前とステータス(「ガチャに戻る」は出さない)
+  document.querySelectorAll('#sheetBody .charlist button[data-id]').forEach((b) => { const go = () => { const y = $('sheet').querySelector('.box').scrollTop; openCharDetail(charById(b.dataset.id)); SHEET.back = () => openCharList(y); }; bindPress(b, go, go); });
+  if (scroll) $('sheet').querySelector('.box').scrollTop = scroll;   // タップでも長押しでも名前とステータス(「ガチャに戻る」は出さない)
 }
 // アカウント欄:お気に入りキャラ・称号・名前・レート・勝敗・クリア数・称号の数
 function renderTitleAcc() {
@@ -6471,7 +6472,10 @@ function renderTitleAcc() {
   $('tAccBtn').onclick = () => accOpen();
 }
 // 汎用のシート
+// SHEET.back:閉じたときに戻る画面(キャラ一覧 → キャラの詳細 → 閉じると一覧へ)。SHEET.t:開いた時刻(長押しで開いた直後に、指を離したタップで閉じないように)
+const SHEET = { back: null, t: 0 };
 function openSheet(title, html) {
+  SHEET.back = null; SHEET.t = Date.now();
   $('sheetTitle').textContent = title;
   $('sheetBody').innerHTML = html;
   $('sheet').classList.remove('hidden');
@@ -8809,7 +8813,11 @@ function init() {
   $('tTitles').onclick = openTitles;
   $('tDaily').onclick = () => openDaily();
   $('tGacha').onclick = () => openGacha();
-  $('sheetClose').onclick = () => { $('sheet').classList.add('hidden'); if (COOP.sheet && !COOP.playing) { COOP.sheet = false; coopClose(); } };   // 共闘降臨の部屋の画面を閉じたら、部屋を出る
+  $('sheetClose').onclick = () => {
+    if (Date.now() - SHEET.t < 450) return;   // 開いた直後のタップ(長押しで開いて指を離したとき)は無視
+    if (SHEET.back) { const b = SHEET.back; SHEET.back = null; b(); return; }   // キャラの詳細 → キャラ一覧へ戻る
+    $('sheet').classList.add('hidden'); if (COOP.sheet && !COOP.playing) { COOP.sheet = false; coopClose(); }
+  };   // 共闘降臨の部屋の画面を閉じたら、部屋を出る
   $('sheetX').onclick = () => $('sheetClose').click();
   // ガチャを閉じたら(ほかのシートに切り替えたときも)、前の曲に戻す。ガチャから開いたキャラの説明の間はそのまま
   new MutationObserver(() => {
@@ -8820,7 +8828,7 @@ function init() {
   // シートが開いている間は、後ろの画面をスクロールさせない(iPhoneで中身のスクロールが後ろに取られないように)
   const sheetLock = () => document.body.classList.toggle('sheet-open', !$('sheet').classList.contains('hidden') || !$('accModal').classList.contains('hidden'));
   ['sheet', 'accModal'].forEach((id) => new MutationObserver(sheetLock).observe($(id), { attributes: true, attributeFilter: ['class'] }));
-  $('sheet').onclick = (e) => { if (e.target === $('sheet')) $('sheet').classList.add('hidden'); };
+  $('sheet').onclick = (e) => { if (e.target === $('sheet')) $('sheetClose').click(); };   // 外側を押したときも、閉じるボタンと同じ扱い
   showTitle(true);
   Bgm.stop();               // 最初の画面では曲を流さない(ガラスが砕け終わってから流す)
   // 別のタブや裏に回ったページから音が鳴り続けないようにする
