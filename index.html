@@ -8033,7 +8033,11 @@ async function openDaily() {
 }
 // 起動したとき:最初のガラスが割れて、ログインできていたら、ログインボーナスを受け取ってからデイリーを出す(1回だけ)
 async function dailyIntro() {
-  if (!DAILY.splashed || DAILY.introDone || !shardOnAcc()) return;
+  if (!DAILY.splashed || DAILY.introDone) return;
+  if (!shardOnAcc()) {   // ログインしていなくても、起動したら共闘降臨の案内は出す(ログインの確かめが終わるまで少し待つ)
+    if (!DAILY.guestWait) { DAILY.guestWait = true; setTimeout(() => { if (!DAILY.introDone && !shardOnAcc()) { DAILY.introDone = true; coopAd(); } }, 2500); }
+    return;
+  }
   DAILY.introDone = true;
   await dailyLogin();
   if (DAILY.ready && !verBusy() && !document.getElementById('verBlock')) await openDaily();
@@ -8042,11 +8046,9 @@ async function dailyIntro() {
   await waitClosed();
   coopAd();
 }
-// ----- 共闘降臨の案内(ログインボーナスのあと、1日1回)。画像を左右に送れる。「挑む」で部屋の画面へ -----
+// ----- 共闘降臨の案内(起動するたびに、ログインボーナスのあと)。画像を左右に送れる。「挑む」で部屋の画面へ -----
 const COOP_ADS = [{ img: 'img/ad-kasane.webp', stage: 'mk5' }, { img: 'img/ad-xeno-adapt.webp', stage: 'mx5' }];
 function coopAd(force) {
-  const day = jstNow().toISOString().slice(0, 10);
-  try { if (!force && localStorage.getItem('kokusen.coopAd') === day) return; localStorage.setItem('kokusen.coopAd', day); } catch (e) { /* 保存できなくても出す */ }
   if (verBusy() || document.getElementById('coopAd')) return;
   let i = 0;
   const el = document.createElement('div'); el.id = 'coopAd'; el.className = 'coad';
