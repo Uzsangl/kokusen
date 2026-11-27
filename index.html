@@ -1064,6 +1064,17 @@
   .co-st { display: inline-flex; align-items: center; gap: 4px; } .co-st button { min-width: 38px; min-height: 32px; padding: 0; font-size: 1.1rem; }
   .co-st button.on { border-color: var(--gold); }
   .co-tips { display: inline-flex; gap: 6px; } .co-tip { padding: 0 6px; border-radius: 8px; background: #ffffff14; }
+  /* 共闘降臨の案内(ログインボーナスのあと) */
+  .coad { position: fixed; inset: 0; z-index: 60; background: #000000cc; display: grid; place-items: center; padding: 16px; animation: coadIn .25s ease-out; }
+  @keyframes coadIn { from { opacity: 0; } }
+  .coad-box { position: relative; width: min(100%, 420px); display: grid; gap: 10px; justify-items: center; }
+  .coad-box img { width: 100%; max-height: 68vh; object-fit: contain; border-radius: 14px; border: 2px solid transparent; background: linear-gradient(#000, #000) padding-box, var(--goldGrad) border-box; box-shadow: 0 10px 40px #000a; touch-action: pan-y; user-select: none; -webkit-user-drag: none; }
+  .coad-x { position: absolute; top: -6px; right: -6px; z-index: 2; width: 40px; height: 40px; min-height: 0; padding: 0; border-radius: 50%; font-size: 1.1rem; }
+  .coad-nav { width: 44px; height: 34px; min-height: 0; padding: 0; font-size: 1.4rem; line-height: 1; border-radius: 10px; }
+  .coad-dots { display: flex; gap: 10px; align-items: center; }   /* 画像の文字にかぶらないように、送るボタンは点の左右に */ .coad-dots i { width: 8px; height: 8px; border-radius: 50%; background: #ffffff44; } .coad-dots i.on { background: var(--gold); }
+  .coad-btns { display: flex; gap: 10px; width: 100%; } .coad-btns button { flex: 1; min-height: 48px; font-size: 1rem; }
+  .coad-go { color: var(--gold); font-weight: 900; }
+  .coad-when { margin: 0; font-size: .75rem; color: var(--sub); }
 </style>
 </head>
 <body>
@@ -6375,7 +6386,7 @@ function addFace(b, key) {
 const SOLO_GROUPS = {
   basic: [['錨', '★〜★★★・カジの★★★★・★★★★★'], ['零', '★〜★★★のステージ'], ['矢', '★〜★★★のステージ'], ['隔絶', '刻喰らいの淵・始まりの前・ボスラッシュ']],
   advance: Object.entries(CORRIDORS).map(([k, v]) => [+k, v, '★★〜★★★★★']),
-  quest: [['emo', 'エモ降臨', 'アドバンスで組む・★★★〜★★★★★'], ['rizu', 'リズ降臨', 'ベーシックで組む・★★★〜★★★★★'], ['kasane', '共闘降臨', '3人マルチ・1人1体ずつ出し合う・★★★★']],
+  quest: [['emo', 'エモ降臨', 'アドバンスで組む・★★★〜★★★★★'], ['rizu', 'リズ降臨', 'ベーシックで組む・★★★〜★★★★★'], ['kasane', '共闘降臨', '3人マルチ・1人1体ずつ出し合う・★★★★/★★★★★']],
 };
 let groupFmt = 'basic';
 function showGroupHub(f) {
@@ -7912,6 +7923,35 @@ async function dailyIntro() {
   DAILY.introDone = true;
   await dailyLogin();
   if (DAILY.ready && !verBusy() && !document.getElementById('verBlock')) await openDaily();
+  // デイリーを閉じたら、共闘降臨の案内(1日1回)
+  const waitClosed = () => new Promise((ok) => { const t = setInterval(() => { if ($('sheet').classList.contains('hidden')) { clearInterval(t); ok(); } }, 300); });
+  await waitClosed();
+  coopAd();
+}
+// ----- 共闘降臨の案内(ログインボーナスのあと、1日1回)。画像を左右に送れる。「挑む」で部屋の画面へ -----
+const COOP_ADS = [{ img: 'img/ad-kasane.webp', stage: 'mk5' }, { img: 'img/ad-xeno-adapt.webp', stage: 'mx5' }];
+function coopAd(force) {
+  const day = jstNow().toISOString().slice(0, 10);
+  try { if (!force && localStorage.getItem('kokusen.coopAd') === day) return; localStorage.setItem('kokusen.coopAd', day); } catch (e) { /* 保存できなくても出す */ }
+  if (verBusy() || document.getElementById('coopAd')) return;
+  let i = 0;
+  const el = document.createElement('div'); el.id = 'coopAd'; el.className = 'coad';
+  const draw = () => {
+    el.innerHTML = `<div class="coad-box"><button class="coad-x" aria-label="閉じる">✕</button>
+      <img src="${COOP_ADS[i].img}" alt="共闘降臨の案内">
+      ${COOP_ADS.length > 1 ? `<div class="coad-dots"><button class="coad-nav l" aria-label="前へ">‹</button>${COOP_ADS.map((_, k) => `<i class="${k === i ? 'on' : ''}"></i>`).join('')}<button class="coad-nav r" aria-label="次へ">›</button></div>` : ''}
+      <div class="coad-btns"><button class="coad-go">挑む</button><button class="coad-close">閉じる</button></div><p class="coad-when">${escHtml(questWhen())}</p></div>`;
+    const close = () => { el.remove(); };
+    el.querySelector('.coad-x').onclick = el.querySelector('.coad-close').onclick = () => { Sound.click(); close(); };
+    el.querySelector('.coad-go').onclick = () => { Sound.click(); close(); COOP.stage = COOP_ADS[i].stage; showTitle(false); showGroupHub('quest'); coopOpen(); };
+    const go = (d) => { i = (i + d + COOP_ADS.length) % COOP_ADS.length; Sound.click(); draw(); };
+    if (el.querySelector('.coad-nav')) { el.querySelector('.coad-nav.l').onclick = () => go(-1); el.querySelector('.coad-nav.r').onclick = () => go(1); }
+    let sx = null; const img = el.querySelector('img');
+    img.addEventListener('pointerdown', (e) => { sx = e.clientX; });
+    img.addEventListener('pointerup', (e) => { if (sx != null && Math.abs(e.clientX - sx) > 40) go(e.clientX < sx ? 1 : -1); sx = null; });
+  };
+  draw();
+  document.body.appendChild(el);
 }
 
 // ----- メールボックス:運営からのお知らせとプレゼント(ログインが必要)-----
