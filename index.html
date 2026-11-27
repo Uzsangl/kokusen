@@ -1107,6 +1107,14 @@
   .tlogo img { display: block; margin: 0 auto; }   /* 光の帯の形をロゴにぴったり重ねる */
   h1.logo::after { -webkit-mask-position: left center; mask-position: left center; }
   @media (prefers-reduced-motion: reduce) { .tlogo::after, h1.logo::after { animation: none; opacity: 0; } }
+  /* ボタンの札(左上)とリボン(右上) */
+  .btag { position: absolute; top: 6px; left: 8px; z-index: 3; padding: 1px 8px; border-radius: 6px; font-size: .62rem; font-weight: 900; letter-spacing: 0; line-height: 1.5; color: #fff; background: linear-gradient(180deg, #7b5cff, #4a2fd0); box-shadow: 0 1px 3px #000a; pointer-events: none; }
+  .btag.red { background: linear-gradient(180deg, #ff5a6e, #b3001b); } .btag.teal { background: linear-gradient(180deg, #4fdcff, #1677a8); }
+  .btag.gold { color: #241a00; background: linear-gradient(180deg, #ffd76a, #b8862a); }
+  .brib { position: absolute; top: 6px; right: 8px; z-index: 3; padding: 1px 10px; border-radius: 10px; font-size: .62rem; font-weight: 900; letter-spacing: 0; line-height: 1.5; color: #ffe9a6; background: #000000aa; border: 1px solid #f5c45188; white-space: nowrap; pointer-events: none; }
+  .brib.off { color: var(--sub); border-color: #ffffff33; }
+  .hubbig button.tagged { position: relative; padding-top: 22px; height: 92px !important; min-height: 92px !important; }
+  .stages.vlist button .btag.first { top: 3px; bottom: auto; left: auto; right: 46px; font-size: .56rem; padding: 0 6px; display: inline-flex; align-items: center; gap: 2px; } .btag .shardic { width: 1.1em; height: 1.1em; }
 </style>
 </head>
 <body>
@@ -6391,6 +6399,7 @@ function pageTitle(panel) {
 }
 // ソロの入り口:ベーシック・アドバンス・スコアアタック・降臨
 function showSoloHub() {
+  soloHubTags();
   $('hub').classList.add('hidden'); $('select').classList.add('hidden'); $('groupHub').classList.add('hidden'); $('soloHub').classList.remove('hidden');
   window.scrollTo(0, 0);
   mountTop($('soloHub'));
@@ -6430,7 +6439,7 @@ function addFace(b, key) {
 const SOLO_GROUPS = {
   basic: [['錨', '★〜★★★・カジの★★★★・★★★★★'], ['零', '★〜★★★のステージ'], ['矢', '★〜★★★のステージ'], ['隔絶', '刻喰らいの淵・始まりの前・ボスラッシュ']],
   advance: Object.entries(CORRIDORS).map(([k, v]) => [+k, v, '★★〜★★★★★']),
-  quest: [['emo', 'エモ降臨', 'アドバンスで組む・★★★〜★★★★★'], ['rizu', 'リズ降臨', 'ベーシックで組む・★★★〜★★★★★'], ['kasane', '共闘降臨', '3人マルチ・1人1体ずつ出し合う・★★★★/★★★★★']],
+  quest: [['emo', 'エモ降臨', 'アドバンスで組む・★★★〜★★★★★'], ['rizu', 'リズ降臨', 'ベーシックで組む・★★★〜★★★★★'], ['kasane', '共闘降臨', '3人マルチ・1人1体ずつ出し合う']],
 };
 let groupFmt = 'basic';
 function showGroupHub(f) {
@@ -6442,8 +6451,28 @@ function showGroupHub(f) {
   const named = f === 'advance' || f === 'quest';   // 回廊・降臨は名前と説明、陣営は陣営の名前と説明
   $('groupBtns').innerHTML = SOLO_GROUPS[f].map((g) => `<button data-g="${g[0]}">${named ? g[1] : g[0]}<small>${named ? g[2] : g[1]}</small></button>`).join('');
   $('groupBtns').querySelectorAll('button').forEach((b) => addFace(b, 'g:' + b.dataset.g));
+  groupTags();
   $('groupBtns').querySelectorAll('button').forEach((b) => { b.onclick = () => { Sound.click(); if (f === 'quest' && b.dataset.g === 'kasane') { coopOpen(); return; } openSolo(f, f === 'advance' ? +b.dataset.g : b.dataset.g); }; });
   mountTop($('groupHub'));
+}
+// 降臨の選択のボタンに、左上の札と右上のリボン(開催の様子)を付ける
+function groupTags() {
+  if (groupFmt !== 'quest') return;
+  const q = questShort();
+  $('groupBtns').querySelectorAll('button').forEach((b) => {
+    b.querySelectorAll('.btag, .brib').forEach((e) => e.remove());
+    const coop = b.dataset.g === 'kasane';
+    b.classList.add('tagged');
+    b.insertAdjacentHTML('beforeend', `<span class="btag ${coop ? 'teal' : 'red'}">${coop ? '3人共闘' : '降臨'}</span><span class="brib${q.on ? '' : ' off'}">${coop ? '★4カサネ・★5ゼノ【適応】' : q.t}</span>`);
+  });
+}
+// ソロの入り口の「降臨」にも、開催の様子のリボン
+function soloHubTags() {
+  const b = document.querySelector('#soloHub [data-sf="quest"]'); if (!b) return;
+  const q = questShort();
+  b.querySelectorAll('.btag, .brib').forEach((e) => e.remove());
+  b.classList.add('tagged');
+  b.insertAdjacentHTML('beforeend', `<span class="btag red">期間限定</span><span class="brib${q.on ? '' : ' off'}">${q.t}</span>`);
 }
 function openSolo(f, group) {
   SOLO.group = group == null ? null : group;
@@ -6892,6 +6921,7 @@ function renderStages() {
     b.classList.toggle('chain', !!s.chainFrom);
     b.classList.toggle('picked', b.dataset.id === SOLO.stage);
     b.classList.toggle('cleared', SOLO.cleared.includes(b.dataset.id));
+    if (s.reward && !SOLO.cleared.includes(s.id) && corrOpen(s)) b.insertAdjacentHTML('beforeend', `<span class="btag gold first">初回${SHARD_IC}${s.reward[0]}</span>`);
     b.classList.toggle('locked', !corrOpen(s) || (!!s.quest && !questOpen()));
     if (!corrOpen(s)) b.innerHTML = `<b>${head}</b><span class="foes">🔒</span>${s.name}<span class="sinfo" data-info="${s.id}" role="button" aria-label="説明">i</span>`;
   });
@@ -6940,6 +6970,8 @@ function questWhen() {   // 開催中なら残り、閉じていれば次の開�
   const nx = QUEST_HOURS.find((x) => x > h);
   return nx != null ? `次の降臨:今日 ${nx}:00〜${questEnd(nx)}:00` : `次の降臨:明日 ${QUEST_HOURS[0]}:00〜${questEnd(QUEST_HOURS[0])}:00`;
 }
+// 札・リボン用の短い開催表示
+const questShort = () => { const n = jstNow(), h = n.getUTCHours(), m = n.getUTCMinutes(); if (QUEST_HOURS.includes(h)) { const left = (questEnd(h) - h) * 60 - m; return { on: true, t: `開催中 あと${left >= 60 ? `${Math.floor(left / 60)}時間` : ''}${left % 60 ? `${left % 60}分` : ''}` }; } const nx = QUEST_HOURS.find((x) => x > h); return { on: false, t: `次 ${nx != null ? nx : QUEST_HOURS[0]}:00〜` }; };
 const questSel = () => { const st = typeof SOLO !== 'undefined' && STAGES.find((x) => x.id === SOLO.stage); return !!(st && st.quest); };
 const krSel = () => { const st = typeof SOLO !== 'undefined' && STAGES.find((x) => x.id === SOLO.stage); return !!(st && st.kr); };   // 刻練場を選んでいるか
 const highLimit = () => MODE !== 'solo' || krSel();   // 降臨は★4以上の制限なし   // 刻練場は★4以上1体まで
@@ -8803,7 +8835,7 @@ function init() {
   try { const v = JSON.parse(localStorage.getItem('kokusen.vol') || 'null'); if (v) { FX.bgmVol = +v.b >= 0 ? +v.b : 1; FX.seVol = +v.s >= 0 ? +v.s : 1; } } catch (e) { /* 保存できなくても動く */ }
   accInit();
   setInterval(pvpWatch, 1000);
-  setInterval(() => { if (MODE === 'solo' && questSel() && !$('select').classList.contains('hidden')) renderStages(); }, 30000);   // 降臨の残り時間・開始の表示を更新
+  setInterval(() => { if (MODE === 'solo' && questSel() && !$('select').classList.contains('hidden')) renderStages(); if (!$('groupHub').classList.contains('hidden')) groupTags(); if (!$('soloHub').classList.contains('hidden')) soloHubTags(); }, 30000);   // 降臨の残り時間・開始の表示を更新
   // タイトル画面
   $('tVer').textContent = `ver ${APP_VER}`;
   $('tVer').title = `ルール ${RULES_VER.slice(0, 6)}`;   // 対人の版合わせに使うルールの番号
