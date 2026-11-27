@@ -8196,6 +8196,12 @@ async function inviteUse(code) {
 // ----- マイセット:好きなパーティ(並び順つき)を5つまで保存する -----
 // ログイン中はアカウント(progress の stats.mysets)、ログインしていないときはこの端末に保存する
 const MYSET_MAX = 5;
+// 初心者おすすめ編成(最初から使える15体だけ。総当たりのシミュレーションで上位の、陣営をそろえた3つ)
+const STARTER_SETS = [
+  { n: '矢単・BREAK', d: 'ハネが倒れて控えのATKを上げ、ユガケがあいこで粘り、ツルのBREAKで決める', ids: ['hane', 'yugake', 'tsuru'] },
+  { n: '錨単・舫い', d: 'モヤイが倒れて控えを固くし、ミオが力を渡し、カジの背水で逆転する', ids: ['moyai', 'mio', 'kaji'] },
+  { n: '零単・レイ', d: 'ハジメが回復で粘り、ウロの時蝕で削り、変身したレイで押し切る', ids: ['hajime', 'uro', 'rei'] },
+];
 const mysetKey = () => (accUid() ? `kokusen.mysets.${accUid()}` : 'kokusen.mysets');
 function mysetLoad() {
   let a = null;
@@ -8230,8 +8236,10 @@ function openMyset() {
       `<button data-a="name" data-i="${i}"${m ? '' : ' disabled'} aria-label="名前を変える">✎</button>` +
       `<button data-a="del" data-i="${i}"${m ? '' : ' disabled'} aria-label="削除">🗑</button></div></div>`;
   }).join('');
-  openSheet('マイセット', `<p class="sub">好きなパーティを、並び順ごと${MYSET_MAX}つまで保存できます。${accUid() ? 'アカウントに保存されます。' : 'この端末に保存されます(ログインするとアカウントに保存)。'}${full ? '' : ' 保存するには、先に3枚選んでください。'}</p>${rows}`);
-  $('sheetBody').querySelectorAll('.ms button').forEach((b) => {
+  const starter = `<h4 style="margin:0 0 4px">初心者おすすめ</h4><div class="ms-st">${STARTER_SETS.map((m, i) => { const chars = m.ids.map(charById); return `<div class="ms"><div class="ic">${chars.map((c) => iconHtml(c, 'sm')).join('')}</div><div class="nm">${escHtml(m.n)}<small>${chars.map(dispName).join(' → ')}</small><small>${escHtml(m.d)}</small></div><div class="bt"><button class="go" data-st="${i}"${lockedPick ? ' disabled' : ''}>呼び出す</button></div></div>`; }).join('')}</div><h4 style="margin:10px 0 4px">マイセット</h4>`;
+  openSheet('マイセット', starter + `<p class="sub">好きなパーティを、並び順ごと${MYSET_MAX}つまで保存できます。${accUid() ? 'アカウントに保存されます。' : 'この端末に保存されます(ログインするとアカウントに保存)。'}${full ? '' : ' 保存するには、先に3枚選んでください。'}</p>${rows}`);
+  $('sheetBody').querySelectorAll('[data-st]').forEach((b) => { b.onclick = () => { picked = STARTER_SETS[+b.dataset.st].ids.slice(); $('sheet').classList.add('hidden'); Sound.click(); renderSelect(); }; });
+  $('sheetBody').querySelectorAll('.ms button:not([data-st])').forEach((b) => {
     b.onclick = async () => {
       const i = +b.dataset.i, a = b.dataset.a, cur = mysetLoad();
       if (a === 'load') { picked = cur[i].ids.slice(); $('sheet').classList.add('hidden'); Sound.click(); renderSelect(); return; }
