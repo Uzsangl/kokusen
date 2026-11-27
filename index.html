@@ -154,6 +154,8 @@
   .cdB .cdtop { display: grid; grid-template-columns: 104px 1fr; gap: 12px; align-items: center; }
   .cdB .cdtop .cico.lg { width: 104px; height: 104px; border-radius: 14px; }
   .cdB .name { font-weight: 900; font-size: 1.1rem; line-height: 1.25; } .cdB .role { display: block; margin: 0; font-size: .72rem; }   /* キャッチコピーは名前の下の行に */
+  .cdstats { display: flex; flex-wrap: wrap; gap: 4px 6px; margin-top: 6px; } .cdstats span { padding: 1px 8px; border-radius: 8px; font-size: .78rem; font-weight: 900; background: #ffffff10; border: 1px solid #ffffff22; }
+  .cdstats .hp { color: #6af0a0; } .cdstats .atk { color: #ff8a95; } .cdstats .dfs { color: #ffd76a; }
   .cdbars { display: grid; gap: 4px; margin-top: 6px; }
   .cdbar { display: grid; grid-template-columns: 30px 1fr 44px; gap: 6px; align-items: center; font-size: .72rem; font-weight: 900; }
   .cdbar > span:last-child { text-align: right; }
@@ -7079,13 +7081,12 @@ function openCharDetail(ch, back) {   // back:閉じたあとに戻る画面(ガ
   const clash = order < 0 && (sameClash(ch, picked) || highFull(ch, picked));
   const onPick = !$('select').classList.contains('hidden') && $('select').dataset.step === 'pick' && !(!$('sheet').classList.contains('hidden') && $('sheetTitle').textContent === 'キャラ一覧');   // パーティを選んでいる画面から開いたときだけ
   const canToggle = onPick && !back && unlocked && !(PVP.on && PVP.phase === 'ready') && (order >= 0 || (!clash && picked.length < TEAM_SIZE));
-  // 詳細(カード型):棒がいっぱいになるのは HP27000・ATK9000・DFS9000。左に大きいアイコン、右に名前・★・能力値の棒。下に特性と技を、金の見出しの箱で
-  const bar = (c, l, v, m) => `<div class="cdbar ${c}"><span>${l}</span><span class="t"><i style="width:${Math.min(100, v / m * 100)}%"></i></span><span>${v}</span></div>`;
+  // 詳細(カード型):左に大きいアイコン、右に名前・★・能力値(色分けの数字)。下に特性と技を、金の見出しの箱で
   const trs = traitsOf(ch);
   openSheet(dispName(ch), `<div class="cdetail cdB"><div class="cdtop">${iconHtml(ch, 'lg')}<div>` +
     `<div class="name">${dispName(ch)}${hide ? '' : `<span class="role">${ch.role || ''}</span>`}</div>` +
     (hide ? '' : `<div>${rarHtml(ch)}${ch.gacha || ch.adv ? ' <small class="sub">アドバンス専用</small>' : ''}</div>`) +
-    (hide ? '' : `<div class="cdbars">${bar('hp', 'HP', ch.hp, 27000)}${bar('atk', 'ATK', ch.atk, 9000)}${bar('dfs', 'DFS', ch.dfs, 9000)}</div>`) +
+    (hide ? '' : `<div class="cdstats"><span class="hp">HP ${ch.hp}</span><span class="atk">ATK ${ch.atk}</span><span class="dfs">DFS ${ch.dfs}</span></div>`) +
     `</div></div>` +
     (unlocked ? '' : `<div class="sub" style="color:var(--gold)">🔒 ${unlockText(ch)}</div>`) +
     (clash ? `<div class="sub">${sameClash(ch, picked) ? '同じ人物なので、同じパーティには入れられない' : '★4以上は1パーティに1枚まで(もう入っている)'}</div>` : '') +
