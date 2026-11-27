@@ -1526,7 +1526,7 @@ const SPECIAL_CHARS = [
   { id: 'q_kasane', name: 'カサネ', faction: '隔絶', group: '隔絶', rarity: 3, role: '重ね刻・固くて全体を削る', unlock: 'kasane', hp: 15000, atk: 2400, dfs: 1500, phys: 1.0,
     traits: [{ key: 'immovable', name: '重ね身', desc: '攻撃を受けるたびにDFS+300(場にいる間・最大+1500)', gain: 300, cap: 1500 },
       { key: 'regen', name: '重ね戻り', desc: 'ラリーが終わるたびにHP400回復', heal: 400 },
-      { key: 'kasaneAmp', name: '刻の傷跡', desc: 'パーティの味方の特性「時の外側」と「刻喰い」の効果が1.5倍(倒れたあとも)', mul: 1.5 }],
+      { key: 'kasaneAmp', name: '刻の傷跡', desc: '倒れると、パーティの味方の特性「時の外側」と「刻喰い」の効果が1.5倍になる(刻紋。試合の終わりまで)', mul: 1.5 }],
     actions: {
       rock:     { name: '時針・重ね打ち', rate: RATE.huge, foeTeamMark: { stat: 'atk', v: 200, cap: 1000 } },
       scissors: { name: '秒針・先送り',   rate: RATE.normal, foeTeamMark: { stat: 'dfs', v: 200, cap: 1000 } },
@@ -1953,8 +1953,8 @@ const pct = (x) => Math.round(x * 100) + '%';
 // 特性は1つ(trait)か複数(traits)
 const traitsOf = (ch) => ch.traits || (ch.trait ? [ch.trait] : []);
 const traitOf = (card, key) => traitsOf(card.ch).find((t) => t.key === key) || null;
-// カサネの「刻の傷跡」:同じパーティにいれば、味方の「時の外側」「刻喰い」が強くなる倍率
-const kasaneAmp = (S, card) => { const tm = S && S.teams ? S.teams.find((t) => t.cards.includes(card)) : null, k = tm && tm.cards.map((c) => traitOf(c, 'kasaneAmp')).find(Boolean); return k ? k.mul : 1; };
+// カサネの「刻の傷跡」:同じパーティのカサネが倒れていれば、味方の「時の外側」「刻喰い」が強くなる倍率
+const kasaneAmp = (S, card) => { const tm = S && S.teams ? S.teams.find((t) => t.cards.includes(card)) : null, k = tm && tm.cards.filter((c) => c.hp <= 0).map((c) => traitOf(c, 'kasaneAmp')).find(Boolean); return k ? k.mul : 1; };
 
 // バフ・デバフ(mods)の合計。ATK も DFS も実数の足し引き
 const modSum = (c, stat) => c.mods.reduce((s, m) => s + (m.stat === stat ? m.v : 0), 0);
