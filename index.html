@@ -6897,7 +6897,7 @@ function soloUnlocked(r) { if (r && Array.isArray(r.unlocked) && r.unlocked.leng
 const unlockHas = (id) => (UNL.ready ? UNL.ids.includes(id) : myTitles().includes(id));
 const charUnlocked = (ch) => IS_MASTER || (ch.gacha ? gachaOwned(ch.id) > 0 : !ch.unlock || unlockHas(ch.unlock));
 // 解放キャラの条件の書き方(隠し称号は、解放するまで名前を伏せる)
-const unlockText = (ch) => { if (ch.gacha) return 'ガチャで手に入れると使える(ログインが必要)'; const t = titleOf(ch.unlock); return `称号「${t.hidden ? '？？？' : t.name}」${t.hidden ? '(隠し称号)' : ''}を解放すると使える(ログインが必要)`; };
+const unlockText = (ch) => { if (ch.gacha) return 'ガチャで手に入れると使える(ログインが必要)'; if (ch.unlock === 'kasane') return '共闘降臨で勝つと25%で仲間になる(ログインが必要)'; const t = titleOf(ch.unlock); if (!t) return '降臨で仲間にすると使える(ログインが必要)'; return `称号「${t.hidden ? '？？？' : t.name}」${t.hidden ? '(隠し称号)' : ''}を解放すると使える(ログインが必要)`; };
 // 押す・長押しを分ける(長押し、またはパソコンの右クリックで詳細を出す)
 function bindPress(el, onTap, onLong) {
   let timer = null, long = false, sx = 0, sy = 0;
