@@ -1080,6 +1080,9 @@
   #hub .hubbig, #soloHub .hubbig, #groupHub .hubbig { flex: 0 0 auto; justify-content: flex-start; }
   #hub .hubbig button, #soloHub .hubbig button, #groupHub .hubbig button, #groupHub.gq .hubbig button { flex: 0 0 auto; height: 80px; min-height: 80px; max-height: none; }
   .stages.vlist button { min-height: 52px; }
+  /* 横長のボタンの紺:下に行くほど暗くする(ノイズはなし) */
+  .hubbig button, .hubbig button.hasface, .stages.vlist button { background: linear-gradient(180deg, #252c5a 0%, #181d3e 55%, #0c0f24 100%) padding-box, var(--goldGrad) border-box; }
+  .stages.vlist button.picked { background: linear-gradient(180deg, #2d3568 0%, #1d2348 55%, #11142d 100%) padding-box, var(--goldGrad) border-box; }
 </style>
 </head>
 <body>
