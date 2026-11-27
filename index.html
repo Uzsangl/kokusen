@@ -730,8 +730,7 @@
     height: 40px; display: flex; align-items: center; padding: 0 44px 0 calc(var(--pbx, 14px) + 4px);
     background: linear-gradient(180deg, #3a3418 0%, #6b5a22 45%, #4a3f18 100%); border: 2px solid #f0c040; border-left: none; border-radius: 0 22px 22px 0;
     box-shadow: 0 3px 8px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,240,180,.35); }
-  #soloHub #toTitle, #groupHub #toTitle, #select #toTitle { display: none; }   /* バナーの ◀ があるので、上の「もどる」は最初のメニュー(タイトルへ)だけ */
-  #hub #pageBanner { display: none; }   /* 最初のメニューは出さない(下の小さいボタンまで広告の線に収めるため) */
+  #hub #toTitle, #soloHub #toTitle, #groupHub #toTitle, #select #toTitle { display: none; }   /* バナーの ◀ があるので、上の「もどる」は出さない(最初のメニューも、バナーの ◀ でタイトルへ) */
   #pageBanner::after { content: '◆'; position: absolute; right: 14px; color: #f0c040; font-size: .8rem; opacity: .85; }
   #pageBanner .pbBack { flex: 0 0 auto; width: 34px; height: 30px; min-height: 0; padding: 0; margin-right: 10px; border-radius: 10px; border: 2px solid #f0c040; background: linear-gradient(180deg, #2a2510, #4a3f18); color: #f0c040; font-size: .85rem; line-height: 1; box-shadow: inset 0 1px 0 rgba(255,240,180,.3); }
   #pageBanner span i { font-style: normal; font-size: .9rem; letter-spacing: .08em; color: #e8d9a8; }
@@ -6354,7 +6353,7 @@ function mountTop(panel) {
 }
 // いまの画面の名前(上のバナーに出す)
 function pageTitle(panel) {
-  if (panel.id === 'hub') return 'メニュー';
+  if (panel.id === 'hub') return ['タイトルへ', 'メニュー'];   // ◀ でタイトルへ
   if (panel.id === 'soloHub') return 'ソロ';
   const FMT = { basic: 'ベーシック', advance: 'アドバンス', quest: '降臨' };
   if (panel.id === 'groupHub') return ['ソロ', FMT[groupFmt] || 'ソロ'];
