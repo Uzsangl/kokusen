@@ -1610,8 +1610,8 @@ const ENEMIES = {
     traits: [{ key: 'immovable', name: '重ね身', desc: '攻撃を受けるたびにDFS+300(場にいる間・最大+1500)', gain: 300, cap: 1500 },
       { key: 'regen', name: '重ね戻り', desc: 'ラリーが終わるたびにHP1000回復', heal: 1000 }],
     actions: {
-      rock:     { name: '時針・重ね打ち', rate: RATE.max, foeTeamMark: { stat: 'atk', v: 500, cap: 2500 } },
-      scissors: { name: '秒針・先送り',   foeTeamMark: { stat: 'dfs', v: 500, cap: 2500 } },
+      rock:     { name: '時針・重ね打ち', rate: RATE.max, foeTeamMark: { stat: 'atk', v: 500, cap: 0 } },
+      scissors: { name: '秒針・先送り',   foeTeamMark: { stat: 'dfs', v: 500, cap: 0 } },
       paper:    { name: '分針・巻き重ね', heal: 3000, mods: [selfDfs(1500, 2)] } } },
   // --- 降臨クエストのボス(2階)。技と特性はプレイヤー用のエモ・リズと同じ。強さはステージの倍率で上げる ---
   qb_emo: { name: 'エモ', faction: '矢', hp: 30000, atk: 2800, dfs: 2500, phys: 1.0, boss: true,
@@ -2083,7 +2083,7 @@ function describe(a, rate, short) {
   if (a.voidCharge) parts.push(short ? '次のあいこ×2' : '次のあいこの「無の間」のダメージが2倍');
   if (a.purge) parts.push(short ? '強化・弱体消し' : '相手の強化と弱体をすべて消す');
   if (a.nextCut) parts.push(short ? '次番手被ダメ↓' : '次の番手が受けるダメージ−5%(永続・重複不可)。レイなら効果がアップする');
-  if (a.foeTeamMark) [].concat(a.foeTeamMark).forEach((fm) => { const L = fm.stat === 'atk' ? 'ATK' : 'DFS'; parts.push(short ? `敵全員${L}−${fm.v}` : `相手の全員(控えも)の${L}−${fm.v}(刻印。永続・重複可能。最大−${fm.cap})`); });
+  if (a.foeTeamMark) [].concat(a.foeTeamMark).forEach((fm) => { const L = fm.stat === 'atk' ? 'ATK' : 'DFS'; parts.push(short ? `敵全員${L}−${fm.v}` : `相手の全員(控えも)の${L}−${fm.v}(刻印。永続・重複可能。${fm.cap ? `最大−${fm.cap}` : '上限なし'})`); });
   if (a.selfPerm) { const sp = [a.selfPerm.atk && `ATK+${a.selfPerm.atk}`, a.selfPerm.dfs && `DFS+${a.selfPerm.dfs}`].filter(Boolean).join('・'); parts.push(short ? `自${sp}永続` : `自分の${sp}(刻紋。永続・重複可能)`); }
   if (a.team) { const L = a.team.stat === 'atk' ? 'ATK' : 'DFS'; parts.push(short ? `${a.team.bench ? '控え' : '全員'}${L}+${a.team.v}` : a.team.bench ? `控えの味方全員の${L}+${a.team.v}(刻紋。永続・重複可能)${a.team.rei ? '。レイなら効果がアップする' : ''}` : `味方全員(控えも)の${L}+${a.team.v}(刻紋。永続・重複可能。最大+${a.team.cap})`); }
   if (a.nextAtkUp) parts.push(short ? `次番手ATK+${a.nextAtkUp}` : `次の番手の最初の攻撃ATK+${a.nextAtkUp}(重複不可)`);
@@ -2334,7 +2334,7 @@ function act(S, side, hand, log, isBreak) {
   }
   if (a.foeTeamMark) [].concat(a.foeTeamMark).forEach((fm) => {   // 相手の控えも含めた全員に、消えない弱体(ATKとDFSの両方もある)
     const k = fm.stat === 'atk' ? 'markAtk' : 'markDfs', label = fm.stat === 'atk' ? 'ATK' : 'DFS';
-    lt.cards.forEach((c) => { if (c.result !== 'lose' && !traitOf(c, 'void')) c[k] = Math.max(-fm.cap, c[k] - fm.v); });
+    lt.cards.forEach((c) => { if (c.result !== 'lose' && !traitOf(c, 'void')) c[k] = fm.cap ? Math.max(-fm.cap, c[k] - fm.v) : c[k] - fm.v; });   // cap 0 は上限なし(ATKは1000、DFSは0より下がらない)
     S.events.push({ type: 'mod', side: 1 - side, text: `全員${label}刻印`, good: false });
     log(`　${lt.label}の全員に${label}の刻印(${label}${l[k]})`);
   });
