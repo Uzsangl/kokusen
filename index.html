@@ -277,6 +277,9 @@
   .team { border: 1px solid var(--line); border-radius: 8px; padding: 3px 6px; background: var(--panel); min-width: 0; }
   #you { border-color: #6b5a2a; } #cpu { border-color: #453a86; }
   .team .head { display: flex; justify-content: space-between; gap: 4px; color: var(--sub); white-space: nowrap; }
+  .team .head > span:first-child { display: flex; gap: 4px; min-width: 0; }   /* 名前が長いときは名前のほうを…で切り、撃破の数と連勝の●・リーチは必ず見せる */
+  .team .head .hn { min-width: 0; overflow: hidden; text-overflow: ellipsis; } .team .head .score { flex-shrink: 0; }
+  .team .head .streak { flex-shrink: 0; }
   .team .chips { margin: 2px 0 0; gap: 2px; }
   .team .chip { font-size: .6rem; padding: 0 3px; border-radius: 6px; }
   #battle .stage { padding: 6px 8px; gap: 3px 8px; }
@@ -4158,7 +4161,7 @@ function teamHead(el, t) {
   const streak = t.breakReady
     ? `<span class="break">${BREAK_NAME}!</span>`
     : '●'.repeat(t.streak) + '○'.repeat(Math.max(0, BREAK_STREAK - t.streak)) + (reach ? ' リーチ!' : '');
-  el.innerHTML = `<div class="head"><span>${escHtml(t.label)}${t === S.teams[1] && !PVP.on ? `(${S.stage ? (S.stage.rush ? '連戦' : S.stage.kr ? '刻練場' : '★'.repeat(S.stage.stars)) : AI_LEVELS[S.cpuLevel].name})` : ''} <span class="score">撃破${t.wins}</span></span>
+  el.innerHTML = `<div class="head"><span><span class="hn">${escHtml(t.label)}${t === S.teams[1] && !PVP.on ? `(${S.stage ? (S.stage.rush ? '連戦' : S.stage.kr ? '刻練場' : '★'.repeat(S.stage.stars)) : AI_LEVELS[S.cpuLevel].name})` : ''}</span> <span class="score">撃破${t.wins}</span></span>
     <span class="streak${reach ? ' reach' : ''}">${streak}</span></div>
     <div class="chips">${chips}</div>`;
 }
