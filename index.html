@@ -1522,12 +1522,14 @@ const SPECIAL_CHARS = [
       rock:     { name: '証明終了', rate: RATE.big, foeTeamMark: { stat: 'atk', v: 300, cap: 1500 }, up: { rate: RATE.max, when: 'analyzed', text: '解析が効いているときは極大' } },
       scissors: { name: '反証',     rate: RATE.normal, heal: 2000, foeTeamMark: { stat: 'dfs', v: 300, cap: 1500 } },
       paper:    { name: '最適化',   rate: RATE.normal, foeTeamMark: [{ stat: 'atk', v: 150, cap: 1500 }, { stat: 'dfs', v: 150, cap: 1500 }], mods: [selfDfs(1500, 2)] } } },
-  // 共闘降臨で仲間になるカサネ(仮。性能はあとで決める)
-  { id: 'q_kasane', name: 'カサネ', faction: '隔絶', group: '隔絶', adv: true, rarity: 3, role: '重ね刻・読まれにくい(仮)', unlock: 'kasane', hp: 13500, atk: 2500, dfs: 1400, phys: 1.0,
-    traits: [{ key: 'kasaneP', name: '重ね刻', desc: '(仮)性能はあとで決める' }],
+  // 共闘降臨で仲間になるカサネ。ベーシックでも使える。固くて、相手の全員を少しずつ削る。トキバミの傷から生まれたので、トキバミの力を強める
+  { id: 'q_kasane', name: 'カサネ', faction: '隔絶', group: '隔絶', rarity: 3, role: '重ね刻・固くて全体を削る', unlock: 'kasane', hp: 15000, atk: 2400, dfs: 1500, phys: 1.0,
+    traits: [{ key: 'immovable', name: '重ね身', desc: '攻撃を受けるたびにDFS+300(場にいる間・最大+1500)', gain: 300, cap: 1500 },
+      { key: 'regen', name: '重ね戻り', desc: 'ラリーが終わるたびにHP400回復', heal: 400 },
+      { key: 'kasaneAmp', name: '刻の傷跡', desc: 'パーティの味方の特性「時の外側」と「刻喰い」の効果が1.5倍(倒れたあとも)', mul: 1.5 }],
     actions: {
-      rock:     { name: '時針・重ね打ち', rate: RATE.big },
-      scissors: { name: '秒針・先送り',   rate: RATE.normal, foeTeamMark: { stat: 'atk', v: 200, cap: 1000 } },
+      rock:     { name: '時針・重ね打ち', rate: RATE.huge, foeTeamMark: { stat: 'atk', v: 200, cap: 1000 } },
+      scissors: { name: '秒針・先送り',   rate: RATE.normal, foeTeamMark: { stat: 'dfs', v: 200, cap: 1000 } },
       paper:    { name: '分針・巻き重ね', rate: RATE.normal, heal: 2000, mods: [selfDfs(1000, 2)] } } },
 ];
 
@@ -1951,6 +1953,8 @@ const pct = (x) => Math.round(x * 100) + '%';
 // 特性は1つ(trait)か複数(traits)
 const traitsOf = (ch) => ch.traits || (ch.trait ? [ch.trait] : []);
 const traitOf = (card, key) => traitsOf(card.ch).find((t) => t.key === key) || null;
+// カサネの「刻の傷跡」:同じパーティにいれば、味方の「時の外側」「刻喰い」が強くなる倍率
+const kasaneAmp = (S, card) => { const tm = S && S.teams ? S.teams.find((t) => t.cards.includes(card)) : null, k = tm && tm.cards.map((c) => traitOf(c, 'kasaneAmp')).find(Boolean); return k ? k.mul : 1; };
 
 // バフ・デバフ(mods)の合計。ATK も DFS も実数の足し引き
 const modSum = (c, stat) => c.mods.reduce((s, m) => s + (m.stat === stat ? m.v : 0), 0);
@@ -2051,7 +2055,7 @@ function damage(S, att, def, rate, isBreak) {
   // 特性「継ぎ刻」(アワイ):前の番手にアワイがいた味方の BREAK は強くなる(レイはさらに)
   let tk = 1;
   if (isBreak) { const tm = S.teams.find((t) => t.cards.includes(att)), i = tm ? tm.cards.indexOf(att) : -1, sc = i > 0 ? tm.cards.slice(0, i).find((c) => traitOf(c, 'tsugiKoku')) : null, src = sc && traitOf(sc, 'tsugiKoku'); if (src) { tk = att.ch.id === 'rei' ? src.rei : src.mul; trig(sc, 'tsugiKoku'); } }
-  return Math.round(atk * rate * att.ch.phys * (1 - dfsVs(att, def, isBreak) / 10000) * (ub ? 1 - ub.cut : 1) * (out ? 1 - out.cut : 1) * tk * (def.cut && !seeOn ? 1 - def.cut : 1) * (hsOn ? hs.mul : 1));
+  return Math.round(atk * rate * att.ch.phys * (1 - dfsVs(att, def, isBreak) / 10000) * (ub ? 1 - ub.cut : 1) * (out ? 1 - Math.min(0.95, out.cut * kasaneAmp(S, def)) : 1) * tk * (def.cut && !seeOn ? 1 - def.cut : 1) * (hsOn ? hs.mul : 1));
 }
 
 const modText = (m, short) => (short
@@ -2280,7 +2284,7 @@ function act(S, side, hand, log, isBreak) {
     if ((t = traitOf(w, 'devour')) && d > 0 && w.noHeal <= 0 && w.hp < w.max && !(S.kr && side === 0)) {
       trig(w, 'devour');
       const before = w.hp;
-      w.hp = Math.min(w.max, w.hp + Math.round(d * t.rate));
+      w.hp = Math.min(w.max, w.hp + Math.round(d * t.rate * kasaneAmp(S, w)));
       S.hit.heal += w.hp - before;
       log(`　${nameOf(w)}は刻を喰らって${w.hp - before}回復`);
     }
