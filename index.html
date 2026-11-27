@@ -6378,7 +6378,9 @@ const FACES = {
   'g:1': [['xeno_spirit', 0.46]], 'g:2': [['g_z4', 0.38]], 'g:3': [['g_y4', 0.25]], 'g:4': [['g_a4', 0.21]],
   'g:emo': [['emo', 0.31]], 'g:rizu': [['rizu', 0.35]],
 };
+const FACES_ON = false;   // ボタンの後ろのキャラの目元は出さない(ver1.93〜)。戻すときは true
 function addFace(b, key) {
+  if (!FACES_ON) return;
   const f = FACES[key];
   if (!b || !f || b.querySelector('.faces')) return;
   const w = document.createElement('span');
