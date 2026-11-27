@@ -1870,7 +1870,7 @@ const STAGES = [
   { id: 'qr4', quest: 'rizu', qfmt: 'basic',   faction: '零', stars: 4, name: 'リズ降臨', foes: ['z_mask', 'z_wind', 'qz_justice', 'qb_rizu'], level: 4, read: 0.6, hp: 1.118, atk: 1.15, justice: [[0.55, 'Jzz'], [0.45, 'JzJ']], over: { qz_justice: { hp: 16000, atk: 2650, dfs: 2500 }, qb_rizu: { hp: 80000, atk: 3600, dfs: 1500 } }, bossBgm: 'cirque', reward: [200, 20], drop: 0.005 },
   { id: 'qr5', quest: 'rizu', qfmt: 'basic',   faction: '零', stars: 5, name: 'リズ降臨', foes: ['z_mask', 'z_wind', 'qz_justice', 'qb_rizu'], level: 4, read: 1, hp: 1.904, atk: 1.3, justice: [[0.55, 'Jzz'], [0.45, 'JzJ']], over: { qz_justice: { hp: 25000, atk: 3000 }, qb_rizu: { hp: 200000, atk: 4750 } }, bossBgm: 'majo', bossAura: 'red', reward: [1000, 30], drop: 0.25 },
   // 共闘降臨(3人マルチ専用):1人1体ずつ出し合う。開催は降臨と同じ時間。ソロの一覧には出さない
-  { id: 'mk5', quest: 'kasane', coop: true, qfmt: 'advance', faction: '隔絶', stars: 5, name: 'カサネ降臨', foes: ['qb_kasane'], level: 4, read: 1, hp: 1, atk: 1, over: { qb_kasane: { hp: 270000, atk: 12000, dfs: 500 } }, bossBgm: 'majo', bossAura: 'red', reward: [1000, 30], drop: 0.25 },
+  { id: 'mk5', quest: 'kasane', coop: true, qfmt: 'advance', faction: '隔絶', stars: 4, name: 'カサネ降臨', foes: ['qb_kasane'], level: 4, read: 1, hp: 1, atk: 1, over: { qb_kasane: { hp: 270000, atk: 12000, dfs: 500 } }, bossBgm: 'cirque', bossAura: 'red', reward: [1000, 30], drop: 0.25 },
 ];
 // ステージの敵を、倍率を掛けた能力値で作る(元のデータは書き換えない)
 // ----- 刻練場(百刻スコアアタック) -----
@@ -2953,7 +2953,7 @@ function personaTarget(S, side, kind, me) {
 // 毎手の前に呼ぶ:負けを数え、くじで決めた回数に届いたら性格を選び直す
 function adaptKind(S, side, me) {
   const tbl = ADAPT[me.ch.id];
-  if (!tbl || !S.stage || S.stage.stars !== 5) return null;
+  if (!tbl || !S.stage || (S.stage.stars !== 5 && !S.stage.coop)) return null;   // ★5と共闘降臨(★4)
   const r3 = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
   const A = S.adapt || (S.adapt = { seen: 0, lost: 0, next: r3(3, 5), streak: 0, tiltAt: r3(5, 7), tilt: 0, kind: null, low: [], tgt: [], ura: 0, uraFrom: 0, uraT: [] });
   const foe = active(S.teams[1 - side]);
@@ -3104,7 +3104,7 @@ function aiHand(S, side, level) {
   }
   // ★5のボス:性格ごとの決め打ち。狙いの手があれば、決めた割合でそれを出す(外れたら上で決めた手のまま)
   if (kind === 'tilt' || me.ch.id === 'qz_justice') { hand = randomHand(); mood = 'calm'; }   // ティルト:3つの手を33%ずつ。ジャスティスはずっとティルト
-  else if (side === 1 && ADAPT[me.ch.id] && S.stage && S.stage.stars === 5) {
+  else if (side === 1 && ADAPT[me.ch.id] && S.stage && (S.stage.stars === 5 || S.stage.coop)) {
     const A = S.adapt;
     if (kind === 'ura') {   // 裏読み:本来の狙いに勝つ手(=相手の対策)に、さらに勝つ手
       const t0 = personaTarget(S, side, A.kind, me);
@@ -4040,7 +4040,7 @@ const BOSS_MANUAL = {
 };
 // ステージの ⓘ に出す「ボスの取扱説明書」
 function bossPersonaHtml(st) {
-  if (!st || st.stars !== 5) return '';
+  if (!st || (st.stars !== 5 && !st.coop)) return '';
   const done = new Set();
   return stageFoes(st).filter((f) => ADAPT[f.id]).map((f) => {
     const key = HINT_ALIAS[f.id] || f.id, man = BOSS_MANUAL[key];
@@ -4051,7 +4051,7 @@ function bossPersonaHtml(st) {
 }
 function bossHint(S) {
   const me = active(S.teams[1]), id = HINT_ALIAS[me.ch.id] || me.ch.id, L = HINT_LINES[id];
-  if (!L || !S.stage || S.stage.stars !== 5 || !S.adapt) return;
+  if (!L || !S.stage || (S.stage.stars !== 5 && !S.stage.coop) || !S.adapt) return;
   const key = S.adapt.tilt > 0 ? 'tilt' : S.adapt.ura > 0 ? 'ura' : (S.adapt.kind && L[S.adapt.kind] ? S.adapt.kind : 'base');
   if (key === me.hintKey && S.rally - (me.hintAt || 0) < 3) return;
   me.hintKey = key; me.hintAt = S.rally;
@@ -6331,7 +6331,7 @@ function addFace(b, key) {
 const SOLO_GROUPS = {
   basic: [['錨', '★〜★★★・カジの★★★★・★★★★★'], ['零', '★〜★★★のステージ'], ['矢', '★〜★★★のステージ'], ['隔絶', '刻喰らいの淵・始まりの前・ボスラッシュ']],
   advance: Object.entries(CORRIDORS).map(([k, v]) => [+k, v, '★★〜★★★★★']),
-  quest: [['emo', 'エモ降臨', 'アドバンスで組む・★★★〜★★★★★'], ['rizu', 'リズ降臨', 'ベーシックで組む・★★★〜★★★★★'], ['kasane', '共闘降臨', '3人マルチ・1人1体ずつ出し合う・★★★★★']],
+  quest: [['emo', 'エモ降臨', 'アドバンスで組む・★★★〜★★★★★'], ['rizu', 'リズ降臨', 'ベーシックで組む・★★★〜★★★★★'], ['kasane', '共闘降臨', '3人マルチ・1人1体ずつ出し合う・★★★★']],
 };
 let groupFmt = 'basic';
 function showGroupHub(f) {
@@ -6965,6 +6965,7 @@ function stageStamina(st) {
   if (st.rush) return { cost: 25, exp: 2000 };
   if (st.id === 'x5') return { cost: 25, exp: 1000 };    // ベーシックのゼノ「始まりの前」
   if (st.id === 'r4_5') return { cost: 25, exp: 3000 };  // 刻の回廊「天眼の果て」
+  if (st.coop) return { cost: 25, exp: 2000 };   // 共闘降臨(表記は★4。消費と経験値は★5と同じ)
   return ({ 1: { cost: 10, exp: 10 }, 2: { cost: 10, exp: 10 }, 3: { cost: 20, exp: 200 }, 4: { cost: 20, exp: 1000 }, 5: { cost: 25, exp: 2000 } })[st.stars] || null;
 }
 const STAM = { on: false, val: 0, max: 50, next: 0, at: 0 };   // at:サーバーから受け取った時刻(端末の時計)
