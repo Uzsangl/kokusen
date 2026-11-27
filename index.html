@@ -137,7 +137,7 @@
   .ctile .cico { width: 100%; max-width: 76px; height: auto; aspect-ratio: 1; pointer-events: none; }
   .ctile .nm { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; pointer-events: none; font-size: .7rem; }   /* アイコンの下に名前 */
   .ctile.picked { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent), 0 0 12px #f5c45144; }
-  .ctile .ord { position: absolute; top: 2px; left: 4px; font-style: normal; font-weight: 700; color: var(--gold); font-size: .72rem; }
+  .ctile .ord { position: absolute; top: 6px; left: 6px; z-index: 2; width: 20px; height: 20px; display: grid; place-items: center; border-radius: 50%; background: var(--gold); color: #1a1200; font-style: normal; font-weight: 900; font-size: .72rem; line-height: 1; box-shadow: 0 1px 4px #000a; }   /* 選んだ順番:枠に重ならないように、内側の丸い札で */
   .ctile.off { opacity: .4; }
   .ctile.locked .cico { filter: grayscale(1) brightness(.6); }
   .ctile .lk { position: absolute; top: 2px; right: 4px; font-size: .7rem; }
@@ -1003,6 +1003,9 @@
   .ab .nm { grid-column: 1 / -1; display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: .95rem; min-width: 0; }
   .ab .nm .ttl { margin: 0; }
   .ab .nm #accOpen { margin-left: auto; padding: 2px 10px; font-size: .72rem; min-height: 0; }
+  .ab .nm > span:not(.lvtag):not(.ttl) { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }   /* 長い名前・称号は…で切り、アカウントのボタンは1行のまま */
+  .ab .nm .ttl { min-width: 0; max-width: 9em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex-shrink: 1; }
+  .ab .nm .lvtag, .ab .nm #accOpen { flex-shrink: 0; white-space: nowrap; }
   .ab-bars { display: grid; grid-template-columns: 4.4em 1fr auto; align-items: center; gap: 4px 6px; min-width: 0; }   /* 2本の棒の長さをそろえたまま、数値の幅は中身に合わせる */
   .ab-bars .bar2 { display: contents; }
   #acct:has(.ab) { padding-top: 6px; padding-bottom: 6px; }
@@ -1044,7 +1047,7 @@
   .gc-pk small { display: block; font-weight: 400; color: var(--sub); font-size: .72rem; min-height: 1.5em; }
   .gc-pk .seg4 { display: flex; } .gc-pk .seg4 button { flex: 1; }
   /* 共闘降臨:部屋の画面と、戦いの「だれの番か」の帯 */
-  .co-stage { width: 100%; margin: 0 0 8px; } .co-stage button { flex: 1; min-height: 38px; }
+  .co-stage { width: 100%; margin: 0 0 8px; } .co-stage button { flex: 1; min-height: 38px; font-size: .74rem; white-space: nowrap; padding: 6px 4px; }
   .co-stage button.on { background: linear-gradient(180deg, #3a2f12, #241c0a); color: var(--gold); font-weight: 900; }
   .co-slots { list-style: none; margin: 6px 0; padding: 0; display: grid; gap: 6px; }
   .co-slot { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 12px; border: 1px solid #ffffff22; background: #ffffff08; }
@@ -1079,10 +1082,12 @@
   /* 横長の選択ボタンは2種類の大きさに統一して、上に詰める(下は空いてよい):大きいボタン(メニュー・陣営・回廊・降臨)80px、ステージの行52px */
   #hub .hubbig, #soloHub .hubbig, #groupHub .hubbig { flex: 0 0 auto; justify-content: flex-start; }
   #hub .hubbig button, #soloHub .hubbig button, #groupHub .hubbig button, #groupHub.gq .hubbig button { flex: 0 0 auto; height: 80px; min-height: 80px; max-height: none; }
-  .stages.vlist button { min-height: 52px; }
+  .stages.vlist button { min-height: 52px; padding-right: 72px; grid-template-columns: 52px auto 1fr; gap: 8px; line-height: 1.25; font-size: .86rem; }   /* 右端の i とクリアの ✓ のぶんは、文字を置かない(どの行も同じ位置で折り返す) */
+  .stages.vlist button.cleared::after { right: 48px; }
   /* 横長のボタンの紺:下に行くほど暗くする(ノイズはなし) */
   .hubbig button, .hubbig button.hasface, .stages.vlist button { background: linear-gradient(180deg, #252c5a 0%, #181d3e 55%, #0c0f24 100%) padding-box, var(--goldGrad) border-box; }
   .stages.vlist button.picked { background: linear-gradient(180deg, #2d3568 0%, #1d2348 55%, #11142d 100%) padding-box, var(--goldGrad) border-box; }
+  .stk { display: inline-flex; flex-direction: column; align-items: center; line-height: .95; letter-spacing: 0; } .stk i { font-style: normal; }   /* ★4・★5は積んで出す */
 </style>
 </head>
 <body>
@@ -6381,6 +6386,7 @@ const FACES = {
   'g:1': [['xeno_spirit', 0.46]], 'g:2': [['g_z4', 0.38]], 'g:3': [['g_y4', 0.25]], 'g:4': [['g_a4', 0.21]],
   'g:emo': [['emo', 0.31]], 'g:rizu': [['rizu', 0.35]],
 };
+const starStack = (n) => (n <= 3 ? '★'.repeat(n) : `<span class="stk">${(n === 4 ? [2, 2] : [1, 2, 2]).map((k) => `<i>${'★'.repeat(k)}</i>`).join('')}</span>`);
 const FACES_ON = false;   // ボタンの後ろのキャラの目元は出さない(ver1.93〜)。戻すときは true
 function addFace(b, key) {
   if (!FACES_ON) return;
@@ -6845,11 +6851,12 @@ function renderStages() {
     { const s0 = STAGES.find((x) => x.id === b.dataset.id); b.classList.toggle('gh', SOLO.group != null && !s0.kr && stageGroup(s0) !== SOLO.group); }   // 回廊の見出し
     // 敵のアイコンも出す(★1・★2は兵士3体を小さく、★3以上はボス)。ゼノは名前が明かされるまでシルエット
     const s = STAGES.find((x) => x.id === b.dataset.id);
+    // ★の並べ方:3つまでは1列。4つは2+2、5つは1+2+2の山形に積む(ステージの行の幅をそろえるため)
     // 敵のアイコンは1つだけ:そのステージで注目のキャラ(ボスがいればボス。連戦は最後のボス、兵士だけのステージは最後の1体)
     const fs = s.kr ? [] : stageFoes(s).filter((f) => !f.hiddenUntilActive);
     const star = s.feature ? fs.find((f) => f.id === s.feature) : fs.filter((f) => f.boss).pop() || fs[fs.length - 1];
     const boss = `<span class="foes">${star ? iconHtml(star, 'md') : ''}</span>`;
-    const head = s.kr ? '刻練場' : s.corridor || s.quest || (SOLO.group != null && !s.rush) ? '★'.repeat(s.stars) : `${s.faction} ${'★'.repeat(s.stars)}`;   // 陣営を選んだあとは★だけ   // 回廊は見出しに名前があるので★だけ
+    const head = s.kr ? '刻練場' : s.corridor || s.quest || (SOLO.group != null && !s.rush) ? starStack(s.stars) : `${s.faction} ${'★'.repeat(s.stars)}`;   // 陣営を選んだあとは★だけ   // 回廊は見出しに名前があるので★だけ
     const sc = STAM.on && stageStamina(s);
     b.innerHTML = `<b>${head}${sc ? `<span class="stcost">⚡${sc.cost}</span>` : ''}</b>${boss}${s.name}<span class="sinfo" data-info="${s.id}" role="button" aria-label="説明">i</span>`;
     b.classList.toggle('chain', !!s.chainFrom);
