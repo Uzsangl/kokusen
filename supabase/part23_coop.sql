@@ -1,7 +1,7 @@
 -- ===== 23回目:共闘降臨(3人マルチ)。★4はカサネ(mk5)、★5はゼノ【適応】(mx5) =====
 -- ・ステージは mk5(★4)と mx5(★5)。どちらも消費スタミナ25・経験値2000、カケラは★5降臨と同じ(初回1000・2回目から30)
 -- ・開催は降臨と同じ時間。quest_drops に当たり0%の行を入れて、solo_start の時間の確かめに乗せる
--- ・カサネの抽選(25%。★4だけ)は、部屋を開くとき(coop_open)にサーバーで1回だけ引く。勝った人は coop_claim で受け取る(当たれば3人とも)
+-- ・仲間になるキャラの抽選は、部屋を開くとき(coop_open)にサーバーで1回だけ引く(★4カサネ25%・★5ゼノ【適応】100%)。勝った人は coop_claim で受け取る(当たれば3人とも)
 -- ・同じ勝ちの記録で受け取れるのは1回だけ。1つの部屋で受け取れるのは3人まで
 
 insert into public.stage_stamina (stage, cost, exp) values ('mk5', 25, 2000), ('mx5', 25, 2000)
@@ -42,7 +42,7 @@ begin
     raise exception '少し時間をおいてください' using errcode = 'CO001';
   end if;
   delete from public.coop_rooms where created_at < now() - interval '2 days';
-  insert into public.coop_rooms (stage, host, hit) values (p_stage, me, p_stage = 'mk5' and random() < 0.25) returning id into rid;
+  insert into public.coop_rooms (stage, host, hit) values (p_stage, me, p_stage = 'mx5' or random() < 0.25) returning id into rid;
   return rid;
 end $$;
 
@@ -61,7 +61,7 @@ begin
   insert into public.coop_claims (run, room, user_id) values (p_run, p_room, me) on conflict (run) do nothing;
   if not found then return json_build_object('unlocked', got); end if;
   if rm.hit then
-    with ins as (insert into public.unlocks (user_id, id) values (me, 'kasane') on conflict do nothing returning id)
+    with ins as (insert into public.unlocks (user_id, id) values (me, case rm.stage when 'mx5' then 'xeno_adapt' else 'kasane' end) on conflict do nothing returning id)
     select coalesce(array_agg(id), '{}') into got from ins;
   end if;
   return json_build_object('unlocked', got);
