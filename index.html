@@ -1045,6 +1045,8 @@
   .gc-pk small { display: block; font-weight: 400; color: var(--sub); font-size: .72rem; min-height: 1.5em; }
   .gc-pk .seg4 { display: flex; } .gc-pk .seg4 button { flex: 1; }
   /* 共闘降臨:部屋の画面と、戦いの「だれの番か」の帯 */
+  .co-stage { width: 100%; margin: 0 0 8px; } .co-stage button { flex: 1; min-height: 38px; }
+  .co-stage button.on { background: linear-gradient(180deg, #3a2f12, #241c0a); color: var(--gold); font-weight: 900; }
   .co-slots { list-style: none; margin: 6px 0; padding: 0; display: grid; gap: 6px; }
   .co-slot { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 12px; border: 1px solid #ffffff22; background: #ffffff08; }
   .co-slot.me { border-color: var(--gold); }
@@ -1796,6 +1798,23 @@ Object.assign(ENEMIES, {
   // ゼノ(ソロの強化個体):巻き戻しの儀は7ラリー
   c5_xeno_body: { ...ENEMIES.xeno_body, hp: 20900, phys: 1.25 },
   c5_xeno_spirit: { ...ENEMIES.xeno_spirit, hp: 41800, phys: 1.1, traits: ENEMIES.xeno_spirit.traits.map((t) => (t.key === 'rewindRite' ? { ...t, desc: '7ラリーで倒せないと刻が巻き戻る(巻き戻るのはゼノだけ。こちらは今のまま)', limit: 7, keepMe: true } : t)) },
+  // 共闘降臨★5:ゼノ【適応】。トキバミの抜け落ちが本来より進んだ世界線で、時間移動で肉体が弱るボトルネックを解消したゼノ(始まりの前のゼノの完全上位互換)
+  xa_body: { ...ENEMIES.xeno_body, name: 'ゼノ【適応】', secret: null, hp: 20000,
+    traits: [{ key: 'hardshell', name: '鋼の刻・適応', desc: 'DFSは下げられない。巻き戻っても下がらない', noHalf: true },
+      { key: 'regen', name: '刻戻り', desc: 'ラリーが終わるたびにHP2500回復', heal: 2500 },
+      { key: 'unbreak', name: '適応した肉体', desc: `${BREAK_NAME}で受けるダメージ半減`, cut: 0.5 }],
+    actions: {
+      rock:     { name: '圧し止め', rate: RATE.huge, selfPerm: { atk: 2000 }, seal: 1 },
+      scissors: { name: '先喰い',   rate: RATE.max, mods: [foeDfs(3000, 3)] },
+      paper:    { name: '呑み戻し', rate: RATE.big, noheal: 3, seal: 1 } } },
+  xa_spirit: { ...ENEMIES.xeno_spirit, name: 'ゼノ【適応】・精神離脱体', secret: null, hp: 30000, atk: 7000, dfs: 0, phys: 1.0,
+    traits: [{ key: 'rewindRite', name: '巻き戻しの儀・適応', desc: '7ラリーで倒せないと刻が巻き戻る', limit: 7 },
+      { key: 'undying', name: '不滅・適応', desc: `HPが2以上なら、どんな一撃もHP1で耐える。HP1からは${BREAK_NAME}でしかとどめを刺せない`, hard: true },
+      { key: 'lastPierce', name: '素通し', desc: '相手のDFSを無視して攻撃する', below: 9 }],
+    actions: {
+      rock:     { name: '静止の手',   rate: RATE.max, seal: 1 },
+      scissors: { name: '先回りの手', rate: RATE.max },
+      paper:    { name: '戻しの手',   rate: RATE.max, streak: 2 } } },
   c5_mask: gBoss('g_z5', { hp: 197670, phys: 1.8,
     traits: [{ key: 'lateBreak', name: '遅咲きの刻', desc: `場に出て6ラリー目以降、${BREAK_NAME}の一撃だけATKが10倍`, from: 6, mul: 10 },
       { key: 'drawHeal', name: '凪の間', desc: 'あいこのたびにHP2000回復', heal: 2000 },
@@ -1871,6 +1890,7 @@ const STAGES = [
   { id: 'qr5', quest: 'rizu', qfmt: 'basic',   faction: '零', stars: 5, name: 'リズ降臨', foes: ['z_mask', 'z_wind', 'qz_justice', 'qb_rizu'], level: 4, read: 1, hp: 1.904, atk: 1.3, justice: [[0.55, 'Jzz'], [0.45, 'JzJ']], over: { qz_justice: { hp: 25000, atk: 3000 }, qb_rizu: { hp: 200000, atk: 4750 } }, bossBgm: 'majo', bossAura: 'red', reward: [1000, 30], drop: 0.25 },
   // 共闘降臨(3人マルチ専用):1人1体ずつ出し合う。開催は降臨と同じ時間。ソロの一覧には出さない
   { id: 'mk5', quest: 'kasane', coop: true, qfmt: 'advance', faction: '隔絶', stars: 4, name: 'カサネ降臨', foes: ['qb_kasane'], level: 4, read: 1, hp: 1, atk: 1, over: { qb_kasane: { hp: 270000, atk: 12000, dfs: 500 } }, bossBgm: 'cirque', bossAura: 'red', reward: [1000, 30], drop: 0.25 },
+  { id: 'mx5', quest: 'kasane', coop: true, qfmt: 'advance', faction: '始', stars: 5, name: 'ゼノ【適応】', foes: ['xa_body', 'xa_spirit'], level: 4, read: 1, hp: 1, atk: 1, bgm: 'xeno', reward: [1000, 30] },
 ];
 // ステージの敵を、倍率を掛けた能力値で作る(元のデータは書き換えない)
 // ----- 刻練場(百刻スコアアタック) -----
@@ -2409,8 +2429,9 @@ function act(S, side, hand, log, isBreak) {
 
 // 特性「不滅」:BREAK以外ではHP1で耐える。初めてHP1になったら知らせる
 function undyingCheck(S, c, isBreak, side, log) {
-  if (!traitOf(c, 'undying')) return;
-  if (c.hp <= 0 && !isBreak) c.hp = 1;
+  const ud = traitOf(c, 'undying');
+  if (!ud) return;
+  if (c.hp <= 0 && (!isBreak || (ud.hard && !c.lastBreath))) c.hp = 1;   // 不滅・適応:まだHP1になっていなければ、BREAKでも1で耐える
   if (c.hp === 1 && !c.lastBreath) {
     c.lastBreath = true;
     S.events.push({ type: 'lastBreath', side });
@@ -2429,11 +2450,12 @@ function rewindMatch(S, log) {
   foe.cards[bi] = fresh.teams[1].cards[bi]; foe.cards[bi + 1] = fresh.teams[1].cards[bi + 1];
   Object.assign(foe, { idx: bi, wins: 0, streak: 0, breakReady: false, sealed: false, keep: false });
   const body = foe.cards[bi];
-  body.dfs = Math.round(body.ch.dfs / Math.pow(2, S.rewinds));
+  const hs = traitOf(body, 'hardshell');
+  if (!(hs && hs.noHalf)) body.dfs = Math.round(body.ch.dfs / Math.pow(2, S.rewinds));   // ゼノ【適応】は下がらない
   S.boutRally = 0;
   S.events.push({ type: 'rewind', dfs: body.dfs });
   enterAll(S, log);
-  log(`　刻が戦いの前に巻き戻された(${S.rewinds}回目)。${keepMe ? 'こちらは巻き戻らず、今のまま。' : ''}${nameOf(body)}のDFSは${body.dfs}に下がった`);
+  log(`　刻が戦いの前に巻き戻された(${S.rewinds}回目)。${keepMe ? 'こちらは巻き戻らず、今のまま。' : ''}${nameOf(body)}のDFSは${body.dfs}${hs && hs.noHalf ? 'のまま' : 'に下がった'}`);
 }
 
 // バフ消し:相手(side の反対側)の場のカードの、ラリー数つきの強化だけを消す。
@@ -2882,7 +2904,7 @@ const PERSONA_OF = {
   c2_3a: 'rage', c2_3b: 'rage', c2_3c: 'prey', c2_4a: 'guard', c2_4b: 'guard', c2_4c: 'rage',
   c3_mata: 'rewind', c3_ai: 'rewind', c3_ebira: 'rage', c3_iso: 'guard',
   c4_toki: 'prey', c4_kagami: 'sight', c4_nagare: 'rage', c4_tomoshi: 'guard',
-  c5_xeno_body: 'rage', c5_xeno_spirit: 'abyss', c5_mask: 'sight', c5_nagare: 'rage', c5_tsuru: 'sight', c5_tsuru1: 'sight',
+  c5_xeno_body: 'rage', c5_xeno_spirit: 'abyss', xa_body: 'rage', xa_spirit: 'abyss', c5_mask: 'sight', c5_nagare: 'rage', c5_tsuru: 'sight', c5_tsuru1: 'sight',
 };
 // カジ【始】は残りHPで性格が変わる(激昂 → 天眼 → 捕食)。性格は裏の数値なので画面には出さない
 const personaOf = (c) => (c.ch.id === 'b_kaji_shi' ? (c.hp > c.max * 0.67 ? 'rage' : c.hp > c.max * 0.34 ? 'sight' : 'prey') : PERSONA_OF[c.ch.id] || 'guard');
@@ -2902,6 +2924,8 @@ const ADAPT = {
   b_kaji_shi:   { kinds: ['rage', 'sight', 'prey'],  map: { chain: 'prey', winStay: 'prey', skew: 'sight', pinch: 'rage', lure: 'sight' } },
   c5_xeno_body: { kinds: ['prey', 'hunt', 'bait'],   map: { chain: 'prey', winStay: 'prey', skew: 'bait', pinch: 'hunt', lure: 'bait' } },
   c5_xeno_spirit: { kinds: ['sight', 'prey', 'bait'], map: { chain: 'prey', winStay: 'sight', skew: 'sight', pinch: 'prey', lure: 'bait' } },
+  xa_body:      { kinds: ['prey', 'hunt', 'bait'],   map: { chain: 'prey', winStay: 'prey', skew: 'bait', pinch: 'hunt', lure: 'bait' } },
+  xa_spirit:    { kinds: ['sight', 'prey', 'bait'],  map: { chain: 'prey', winStay: 'sight', skew: 'sight', pinch: 'prey', lure: 'bait' } },
   c5_mask:      { kinds: ['rewind', 'bias', 'bait'], map: { chain: 'bias', winStay: 'rewind', skew: 'bias', pinch: 'rewind', lure: 'bait' } },
   c5_nagare:    { kinds: ['rage', 'prey', 'hunt'],   map: { chain: 'prey', winStay: 'prey', skew: 'rage', pinch: 'hunt', lure: 'rage' } },
   c5_tsuru1:    { kinds: ['sight', 'bias', 'bait'],  map: { chain: 'sight', winStay: 'sight', skew: 'bias', pinch: 'bias', lure: 'bait' } },
@@ -3156,7 +3180,7 @@ const PERSONA_LINES = {
   bait:   L(['好きにしな', 'その手でいいよ'], ['どうぞ', '気持ちよく出しな'], ['もう、こちらの番だ'], ['……', 'いい手だね']),
 };
 const LINE_ALIAS = { p_tsuru_ten: 'tsuru', b_tomari: 'tomari', b_rei: 'rei', b_tsuru: 'tsuru', p_xeno: 'xeno_body', b_kaji: 'kaji', p_kaji_shi: 'b_kaji_shi',
-  c5_xeno_body: 'xeno_body', c5_xeno_spirit: 'xeno_spirit', c5_tsuru: 'tsuru', c5_tsuru1: 'tsuru' };   // 刻の回廊のボスは元のキャラのセリフ
+  c5_xeno_body: 'xeno_body', c5_xeno_spirit: 'xeno_spirit', c5_tsuru: 'tsuru', c5_tsuru1: 'tsuru', xa_body: 'xeno_body', xa_spirit: 'xeno_spirit' };   // 刻の回廊のボスは元のキャラのセリフ
 // トキバミは自分の声を持たず、喰った者たちの声で、過去・現在・未来を混ぜて話す(場面は分けない)
 const TOKIBAMI_VOICE = [
   'おまえは出した。おまえは出す。だから、ここにいる',
@@ -3254,7 +3278,7 @@ const ICON_ALIAS = { q_emo: 'emo', qb_emo: 'emo', q_rizu: 'rizu', qb_rizu: 'rizu
   c2_1a: 'g_a1', c2_1b: 'g_z1', c2_1c: 'g_y1', c2_2a: 'g_z1', c2_2b: 'g_z2', c2_2c: 'g_a2', c2_3a: 'g_y1', c2_3b: 'g_y2', c2_3c: 'g_z2', c2_4a: 'g_a1', c2_4b: 'g_a2', c2_4c: 'g_y2',
   c3_mata: 'g_z3b', c3_ai: 'g_z3c', c3_ebira: 'g_y3c', c3_iso: 'g_a3b',
   c4_toki: 'tokibami', c4_kagami: 'g_z4', c4_nagare: 'g_y4', c4_tomoshi: 'g_a4',
-  c5_xeno_body: 'xeno_body', c5_xeno_spirit: 'xeno_spirit', c5_mask: 'g_z5', c5_nagare: 'g_y4', c5_tsuru: 'tsuru2', c5_tsuru1: 'tsuru' };   // 天眼の果ての第2形態は、目隠しを外したツル(icons/tsuru2.webp)
+  c5_xeno_body: 'xeno_body', c5_xeno_spirit: 'xeno_spirit', xa_body: 'xeno_body', xa_spirit: 'xeno_spirit', c5_mask: 'g_z5', c5_nagare: 'g_y4', c5_tsuru: 'tsuru2', c5_tsuru1: 'tsuru' };   // 天眼の果ての第2形態は、目隠しを外したツル(icons/tsuru2.webp)
 // 絵を差し替えたアイコンは、番号を上げてブラウザに古い絵を使わせない
 const ICON_REV = { g_z5: 2, rei: 2 };
 // 変身したあとの絵(バトル中だけ):レイは仮面が割れたら素顔の絵
@@ -4018,7 +4042,7 @@ const HINT_LINES = {
     sight: ['次の次まで、もう並んでいる', 'その並びの先は、もう見えていた', '……順番は、未来で決まっている'],
   },
 };
-const HINT_ALIAS = { c5_xeno_body: 'xeno_body', c5_xeno_spirit: 'xeno_spirit', c5_tsuru1: 'c5_tsuru' };
+const HINT_ALIAS = { c5_xeno_body: 'xeno_body', c5_xeno_spirit: 'xeno_spirit', c5_tsuru1: 'c5_tsuru', xa_body: 'xeno_body', xa_spirit: 'xeno_spirit' };
 // 性格の名前と短い説明(ステージの ⓘ・ルールブック)
 const PERSONA_INFO = {
   prey: ['捕食', '同じ手が2回続いたら、3回目を狙う'], rewind: ['巻戻', '負け・あいこの直後のクセを読む'], sight: ['天眼', '直前2手の並びから次を読む'],
@@ -4233,7 +4257,7 @@ function render(view) {
   stageSide($('hpCpu'), cpu, foe);
   const n = S.boutRally + 1, decayOn = !S.noDecay, decay = decayOn && n > DECAY_FROM;   // ソロ(抜け落ちなし)では出さない
   // ★5:精神離脱体がHP1になったあとは、やることを常に出しておく
-  const hint = S.breakHint && !S.over && ['xeno_spirit', 'c5_xeno_spirit'].includes(active(S.teams[1]).ch.id);
+  const hint = S.breakHint && !S.over && ['xeno_spirit', 'c5_xeno_spirit', 'xa_spirit'].includes(active(S.teams[1]).ch.id);
   $('boutInfo').textContent = S.over ? '' : hint ? `${BREAK_NAME}で刻を巻き戻せ!` : `交代から${n}ラリー目` + (decay ? '　刻の抜け落ち!' : decayOn && n === DECAY_FROM ? '　次から刻の抜け落ち' : '');
   $('boutInfo').className = 'boutinfo' + (hint ? ' hint' : decay ? ' warn' : '');
 
@@ -4671,7 +4695,7 @@ async function aftermath(o) {
   const w = o.boutWin;
   // ★5:肉体を倒しきると、時間が止まり、精神離脱体が現れる
   // (相打ちで同時に倒れたときも、ここを通す)
-  if (['xeno_body', 'c5_xeno_body'].includes(o.cards[1].ch.id) && o.cards[1].hp <= 0 && !S.over) {
+  if (['xeno_body', 'c5_xeno_body', 'xa_body'].includes(o.cards[1].ch.id) && o.cards[1].hp <= 0 && !S.over) {
     Particles.crumble(panelOf(1).getBoundingClientRect(), COLORS.violet);
     Bgm.switchTo('tick');
     freeze(true); flash('#3a0010'); shake(true); Sound.breakIn();
@@ -8274,8 +8298,8 @@ function soloRewardOnce() {
 // 手を出すのは、前に出ているキャラの持ち主だけ。ほかの2人は「この手が来そう」を送れる。
 // ボスは、前に出ている人の手の記録だけを見て、その人の癖を読む(人ごとに読み直す)。
 // キャラの抽選(25%)は、ホストが部屋を開くときにサーバーで1回だけ引く。当たっていれば、勝った3人ともが受け取る。
-const COOP_STAGE = 'mk5', COOP_MAX = 3;
-const COOP = { peer: null, conns: [], hostConn: null, host: false, code: '', me: '', players: [], ch: null, playing: false, start: null,
+const COOP_STAGES = ['mk5', 'mx5'], COOP_MAX = 3;   // ★4 カサネ / ★5 ゼノ【適応】。どちらで戦うかは部屋を開いた人が選ぶ
+const COOP = { stage: 'mk5', peer: null, conns: [], hostConn: null, host: false, code: '', me: '', players: [], ch: null, playing: false, start: null,
   n: 0, queue: {}, sent: -1, draining: false, afkT: 0, gone: new Set(), stamps: {}, note: '', sheet: false };
 const COOP_SWAP = ['……替わった。替わる。もう、替わっていた', '今度は、あなた。……あなただった', '新しい刻。数え直す。数え直していた'];
 const coopHash = (str) => { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };
@@ -8299,7 +8323,7 @@ function coopSend(msg) {
   else if (COOP.hostConn && COOP.hostConn.open) COOP.hostConn.send(msg);
 }
 function coopBroadcast(msg) { COOP.conns.forEach((c) => { try { if (c.open) c.send(msg); } catch (e) { /* 送れなければその人は切れている */ } }); }
-function coopLobbySync() { if (!COOP.host) return; const m = { t: 'lobby', players: COOP.players }; coopBroadcast(m); coopHandle(m); }
+function coopLobbySync() { if (!COOP.host) return; const m = { t: 'lobby', players: COOP.players, stage: COOP.stage }; coopBroadcast(m); coopHandle(m); }
 async function coopJoin(code) {
   if (!/^[0-9a-zA-Z]{2,12}$/.test(code)) { COOP.note = '合言葉は、英数字2〜12文字で入れてください。'; coopRender(); return; }
   if (!(window.Peer || await loadScript('vendor/peerjs.min.js')) || !window.Peer) { COOP.note = '通信の準備ができませんでした。'; coopRender(); return; }
@@ -8355,7 +8379,7 @@ function coopHostLost() {
 }
 // 全員(ホストも):届いた知らせを使う
 function coopHandle(d) {
-  if (d.t === 'lobby' && Array.isArray(d.players)) { COOP.players = d.players; coopRender(); return; }
+  if (d.t === 'lobby' && Array.isArray(d.players)) { COOP.players = d.players; if (COOP_STAGES.includes(d.stage)) COOP.stage = d.stage; coopRender(); return; }
   if (d.t === 'full') { COOP.note = 'その部屋は満員か、もう始まっています'; coopRender(); return; }
   if (d.t === 'start') { coopBattle(d); return; }
   if (!S || !S.coop || S.over) return;
@@ -8377,9 +8401,11 @@ function coopOpen() {
 }
 function coopRender() {
   if (!COOP.sheet || COOP.playing) return;
-  const st = STAGES.find((x) => x.id === COOP_STAGE), sc = stageStamina(st);
+  const st = STAGES.find((x) => x.id === COOP.stage), sc = stageStamina(st);
   const open = questOpen(), me = COOP.players.find((x) => x.id === COOP.me);
-  const intro = `<p class="sub">3人で1体ずつキャラを出し合い、カサネと戦います。手を出すのは、前に出ているキャラの持ち主です。ほかの2人は「来そうな手」を伝えられます。<br>${escHtml(questWhen())}・消費 ⚡${sc ? sc.cost : 0}・勝つと25%でカサネが仲間に(当たれば3人とも)</p>${COOP.code ? '' : bossPersonaHtml(st)}`;
+  const boss = st.id === 'mx5' ? 'ゼノ【適応】' : 'カサネ';
+  const pickSt = `<div class="seg co-stage">${COOP_STAGES.map((id) => { const x = STAGES.find((y) => y.id === id); return `<button data-stg="${id}" class="${COOP.stage === id ? 'on' : ''}"${COOP.code && !COOP.host ? ' disabled' : ''}>${'★'.repeat(x.stars)} ${escHtml(x.id === 'mx5' ? 'ゼノ【適応】' : 'カサネ')}</button>`; }).join('')}</div>`;
+  const intro = pickSt + `<p class="sub">3人で1体ずつキャラを出し合い、${boss}と戦います。手を出すのは、前に出ているキャラの持ち主です。ほかの2人は「来そうな手」を伝えられます。<br>${escHtml(questWhen())}・消費 ⚡${sc ? sc.cost : 0}・${st.id === 'mk5' ? '勝つと25%でカサネが仲間に(当たれば3人とも)' : '★5:精神離脱体は7ラリーで倒せないと刻が巻き戻る'}</p>${COOP.code ? '' : bossPersonaHtml(st)}`;
   let body;
   if (!COOP.code) {
     body = `<div class="row"><input id="coCode" maxlength="12" placeholder="合言葉(英数字)" autocomplete="off" style="flex:1"><button id="coJoin">入る</button></div>
@@ -8412,6 +8438,7 @@ function coopRender() {
   if (q('#coMake')) q('#coMake').onclick = () => { Sound.click(); coopJoin(rndCode().slice(0, 6)); };
   if (q('#coLeave')) q('#coLeave').onclick = () => { Sound.click(); coopLeave(); };
   if (q('#coStart')) q('#coStart').onclick = () => { Sound.click(); coopGo(); };
+  B.querySelectorAll('[data-stg]').forEach((b) => { b.onclick = () => { if (COOP.code && !COOP.host) return; Sound.click(); COOP.stage = b.dataset.stg; if (COOP.host) coopLobbySync(); else coopRender(); }; });
   B.querySelectorAll('[data-ch]').forEach((b) => { b.onclick = () => { Sound.click(); COOP.ch = b.dataset.ch; if (COOP.host) { const p = COOP.players.find((x) => x.id === COOP.me); if (p) p.ch = COOP.ch; coopLobbySync(); } else coopSend({ t: 'me', p: coopMeObj() }); }; });
   B.querySelectorAll('[data-up],[data-dn]').forEach((b) => { b.onclick = () => {
     const i = +(b.dataset.up ?? b.dataset.dn), j = b.dataset.up != null ? i - 1 : i + 1, P = COOP.players;
@@ -8424,14 +8451,14 @@ async function coopGo() {
   if (!COOP.host || COOP.playing) return;
   if (!questOpen()) { COOP.note = '開催時間外です'; coopRender(); return; }
   let room = null;
-  try { room = await verRpc('coop_open', { p_stage: COOP_STAGE }); } catch (e) {
+  try { room = await verRpc('coop_open', { p_stage: COOP.stage }); } catch (e) {
     if (e.code === 'KV001') { verOld(); return; }
     COOP.note = isMissingFn(e) ? '共闘降臨は準備中です(サーバーの更新待ち)' : `始められませんでした(${e.message || e.code || 'エラー'})`; coopRender(); return;
   }
-  coopSend({ t: 'start', seed: rnd(), order: COOP.players.map((p) => p.id), chars: COOP.players.map((p) => p.ch), room });
+  coopSend({ t: 'start', seed: rnd(), stage: COOP.stage, order: COOP.players.map((p) => p.id), chars: COOP.players.map((p) => p.ch), room });
 }
 function coopBattle(d) {
-  const st = STAGES.find((x) => x.id === COOP_STAGE), chars = (d.chars || []).map(charById);
+  const st = STAGES.find((x) => x.id === d.stage && x.coop), chars = (d.chars || []).map(charById);
   if (!st || chars.length !== COOP_MAX || chars.some((c) => !c)) return;
   COOP.playing = true; COOP.sheet = false; COOP.start = d; COOP.n = 0; COOP.queue = {}; COOP.sent = -1; COOP.stamps = {};
   $('sheet').classList.add('hidden');
