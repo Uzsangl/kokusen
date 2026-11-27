@@ -531,9 +531,6 @@
   .stages.vlist button.cleared::after { content: '✓'; position: absolute; right: 14px; top: 50%; transform: translateY(-50%); font-size: 1.1rem; }   /* クリア済みの印はボタンの右の端に */
   .stages.vlist button b { font-size: .85rem; letter-spacing: 0; white-space: nowrap; }
   .stages.vlist button .foes { justify-content: flex-start; margin: 0; }
-  .stages.vlist button.s0 { grid-template-columns: 96px 1fr; row-gap: 4px; align-content: center; text-align: left; padding-top: 8px; padding-bottom: 8px; }   /* 連戦:アイコンが5つ並ぶので、名前を上の段・アイコンを下の段に */
-  .stages.vlist button.s0 b { grid-row: 1 / 3; }
-  .stages.vlist button.s0 .foes { grid-column: 2; grid-row: 2; }
   /* 降臨:左にエモ降臨、右にリズ降臨(★3〜★5を上から) */
   #questStages.vlist.two { grid-template-columns: 1fr 1fr !important; grid-template-rows: repeat(3, auto); grid-auto-flow: column; }
   #questStages.vlist.two button { grid-column: auto !important; grid-template-columns: auto 1fr; padding: 4px 10px; }
@@ -6839,7 +6836,10 @@ function renderStages() {
     { const s0 = STAGES.find((x) => x.id === b.dataset.id); b.classList.toggle('gh', SOLO.group != null && !s0.kr && stageGroup(s0) !== SOLO.group); }   // 回廊の見出し
     // 敵のアイコンも出す(★1・★2は兵士3体を小さく、★3以上はボス)。ゼノは名前が明かされるまでシルエット
     const s = STAGES.find((x) => x.id === b.dataset.id);
-    const boss = s.kr ? '<span class="foes"></span>' : `<span class="foes">${stageFoes(s).filter((f) => !f.hiddenUntilActive && (!s.quest || f.boss)).map((f) => iconHtml(f, s.stars >= 3 ? 'md' : 'sm')).join('')}</span>`;   // 降臨はボスだけ
+    // 敵のアイコンは1つだけ:そのステージで注目のキャラ(ボスがいればボス。連戦は最後のボス、兵士だけのステージは最後の1体)
+    const fs = s.kr ? [] : stageFoes(s).filter((f) => !f.hiddenUntilActive);
+    const star = s.feature ? fs.find((f) => f.id === s.feature) : fs.filter((f) => f.boss).pop() || fs[fs.length - 1];
+    const boss = `<span class="foes">${star ? iconHtml(star, 'md') : ''}</span>`;
     const head = s.kr ? '刻練場' : s.corridor || s.quest || (SOLO.group != null && !s.rush) ? '★'.repeat(s.stars) : `${s.faction} ${'★'.repeat(s.stars)}`;   // 陣営を選んだあとは★だけ   // 回廊は見出しに名前があるので★だけ
     const sc = STAM.on && stageStamina(s);
     b.innerHTML = `<b>${head}${sc ? `<span class="stcost">⚡${sc.cost}</span>` : ''}</b>${boss}${s.name}<span class="sinfo" data-info="${s.id}" role="button" aria-label="説明">i</span>`;
