@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>刻戦(コクセン)| 本格じゃんけん競技・無料ブラウザゲーム</title>
 <!-- 検索サイト向け:このページの正式なURLと、ゲームの説明 -->
-<link rel="canonical" href="https://uzsangl.github.io/kokusen/">
+<link rel="canonical" href="https://kokusen.org/">
 <!-- Google Search Console の所有権の確認(消すと確認が外れる) -->
 <meta name="google-site-verification" content="e-gZmxXl0H4a82RamW_BcrYN9bGPi2yoEKBShiCMStY" />
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"VideoGame","name":"刻戦","alternateName":["コクセン","Kokusen"],"url":"https://uzsangl.github.io/kokusen/","image":"https://uzsangl.github.io/kokusen/img/og.jpg","description":"一手を読み合え。本格じゃんけん競技「刻戦」。勝った手で出る技が変わる、手軽にできる心理戦競技。ブラウザで無料、登録なしですぐ遊べます。","genre":["対戦ゲーム","じゃんけん","心理戦"],"gamePlatform":"Web Browser","applicationCategory":"Game","operatingSystem":"Any","inLanguage":"ja","offers":{"@type":"Offer","price":"0","priceCurrency":"JPY"},"sameAs":["https://x.com/kokusenofficial"]}
+{"@context":"https://schema.org","@type":"VideoGame","name":"刻戦","alternateName":["コクセン","Kokusen"],"url":"https://kokusen.org/","image":"https://kokusen.org/img/og.jpg","description":"一手を読み合え。本格じゃんけん競技「刻戦」。勝った手で出る技が変わる、手軽にできる心理戦競技。ブラウザで無料、登録なしですぐ遊べます。","genre":["対戦ゲーム","じゃんけん","心理戦"],"gamePlatform":"Web Browser","applicationCategory":"Game","operatingSystem":"Any","inLanguage":"ja","offers":{"@type":"Offer","price":"0","priceCurrency":"JPY"},"sameAs":["https://x.com/kokusenofficial"]}
 </script>
 <!-- リンクを貼ったとき(X・LINEなど)に出るタイトル・説明・絵 -->
 <meta name="description" content="刻戦(コクセン)は、じゃんけんで読み合う対戦ゲーム。一手を読み合え。本格じゃんけん競技。勝った手で出る技が変わる、手軽にできる心理戦競技。ブラウザで無料、登録なしですぐ遊べます。">
@@ -17,8 +17,8 @@
 <meta property="og:site_name" content="刻戦">
 <meta property="og:title" content="刻戦 | 一手を読み合え。本格じゃんけん競技">
 <meta property="og:description" content="手軽にできる心理戦競技。ブラウザで無料、登録なしですぐ遊べます。">
-<meta property="og:url" content="https://uzsangl.github.io/kokusen/">
-<meta property="og:image" content="https://uzsangl.github.io/kokusen/img/og.jpg">
+<meta property="og:url" content="https://kokusen.org/">
+<meta property="og:image" content="https://kokusen.org/img/og.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
@@ -5889,7 +5889,7 @@ function renderMode() {
   $('cpuOpts').classList.toggle('hidden', MODE !== 'cpu');
   $('soloOpts').classList.toggle('hidden', MODE !== 'solo');
   $('netOpts').classList.toggle('hidden', MODE !== 'pvp');
-  if (PVP.on && !PVP.room) pvpStatus('この画面では、オンライン対人は使えません。公開サイト版(https://uzsangl.github.io/kokusen/)を、二人とも開いてください。');
+  if (PVP.on && !PVP.room) pvpStatus('この画面では、オンライン対人は使えません。公開サイト版(https://kokusen.org/)を、二人とも開いてください。');
   else if (PVP.on && PVP.phase === 'idle' && PVP.kind === 'rated' && ACC.profile) { if (!RANK.searching) pvpStatus('「相手を探す」を押すと、レートの近い相手を自動で探します。'); }
   else if (PVP.on && PVP.phase === 'idle' && PVP.kind === 'random') { if (!RND.searching) pvpStatus(PVP.room && !PVP.room.direct ? 'この画面では、フリー戦(ランダムマッチ)は使えません。プラベをお使いください。' : '「相手を探す」を押すと、ランダムな相手を自動で探します。'); }
   else if (PVP.on && PVP.phase === 'idle') pvpStatus('相手と決めた合言葉を入れて、「部屋に入る」を押してください。対戦を見るだけなら「観戦する」。');
@@ -5948,7 +5948,7 @@ const RATING_START = 1500, RATING_K = 32;
 // アカウントを使ってよいのは、自分たち専用のサイトだけ。
 // raw.githack.com のように誰でもページを置けるサイトでは、ブラウザの保存領域がほかの人のページと共有され、
 // 保存したログイン情報を読まれるおそれがある。そういうサイトではログインさせず、残っているログイン情報も消す
-const HOME_URL = 'https://uzsangl.github.io/kokusen/';
+const HOME_URL = 'https://kokusen.org/';
 const isSharedOrigin = (host) => /(^|\.)githack\.com$|(^|\.)githubusercontent\.com$|(^|\.)htmlpreview\.github\.io$|(^|\.)jsdelivr\.net$|(^|\.)rawgit\.com$/.test(host);
 const ACC = { session: null, profile: null, ranking: null, tab: 'login', shared: isSharedOrigin(location.hostname) };
 const escHtml = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));

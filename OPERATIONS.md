@@ -10,7 +10,8 @@
 - 方向:気軽に遊べる。Web版は残す。強さは売らない(課金を入れるなら見た目だけ)
 - 一般公開:2026年11月23日(当初の予定は24日)
 - 連絡先・告知:X の「刻戦公式」 @kokusenofficial(https://x.com/kokusenofficial)。規約・ポリシー・ゲーム内のアカウント画面に記載済み
-- 公開URL:https://uzsangl.github.io/kokusen/
+- 公開URL:https://kokusen.org/ (2026年11月27日に独自ドメインへ移行。以前の https://uzsangl.github.io/kokusen/ は自動で転送される)
+- ドメイン:kokusen.org はエックスサーバードメインで取得(自動更新・Whois代理公開あり。期限は毎年11月27日)。ネームサーバーは XServer Domain、DNS は A×4(185.199.108〜111.153)と www の CNAME(uzsangl.github.io)。リポジトリ直下の CNAME ファイルは消さない
 - 公式オープンチャット(LINE):「刻戦〜本格じゃんけん競技〜」 https://line.me/ti/g2/-5DyDGVxiRfsG2cihgbqj2cae0sPVaB6C-ZtPA (ゲーム内のアカウント画面からリンク。通報は受け付けず、X のDMへ案内する)
 - Google Search Console:登録済み(2026年11月23日)。index.html の google-site-verification の行は消さない
 - 商標:「刻戦」「コクセン」は確認済み(J-PlatPat)
