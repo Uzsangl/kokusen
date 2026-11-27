@@ -1441,8 +1441,8 @@ const SPECIAL_CHARS = [
   // 共闘降臨★5で仲間になるゼノ【適応】(★5):ゼノの完全上位互換。ゼノとは同じパーティに入れられない。精神離脱体は相手のDFSを無視して攻撃する
   { id: 'p_xeno_adapt', name: 'ゼノ【適応】', faction: '始', rarity: 5, sameAs: 'p_xeno', role: 'トキバミに負けてたら...', unlock: 'xeno_adapt', hp: 9000, atk: 3000, dfs: 4000, phys: 1.1,
     traits: [{ key: 'hardshell', name: '鋼の刻・適応', desc: 'DFSはデバフ・刻印・貫きで下がらない' },
-      { key: 'detach', name: '離脱・適応', desc: '倒れたとき一度だけ、精神離脱体(HP5000・ATK5000・DFS0固定。相手のDFSを無視して攻撃する。技はすべて極大)として場に残る',
-        formName: 'ゼノ【適応】・精神離脱体', hp: 5000, atk: 5000, dfs: 0, pierceAll: true, dfsFixed: true,
+      { key: 'detach', name: '離脱・適応', desc: '倒れたとき一度だけ、精神離脱体(HP5000・ATK5000・DFS0。ステータスは固定で、強化も弱体も効かない。相手のDFSを無視して攻撃する。技はすべて極大)として場に残る',
+        formName: 'ゼノ【適応】・精神離脱体', hp: 5000, atk: 5000, dfs: 0, pierceAll: true, statFixed: true,
         actions: {
           rock:     { name: '静止の手',   rate: RATE.max, seal: 1 },
           scissors: { name: '先回りの手', rate: RATE.max },
@@ -1994,11 +1994,12 @@ const modSum = (c, stat) => c.mods.reduce((s, m) => s + (m.stat === stat ? m.v :
 // 現在のATK(変身・渡された強化・バフ/デバフ込み。次の攻撃だけの上乗せ atkUp は含めない)
 const ATK_MIN = 1000;   // ATKはこれより小さくならない(全体のルール)
 const ATK_MAX = 99999;   // ATKの上限
-const baseAtk = (c) => (traitOf(c, 'void') ? c.atk : Math.min(ATK_MAX, Math.max(ATK_MIN, c.atk + c.atkBonus + c.teamAtk + c.markAtk + (c.facAtk || 0) + (c.growAtk || 0) + modSum(c, 'atk'))));   // ウツロの「虚ろ」:ATKは元の値のまま(上がりも下がりもしない)
+const formFixed = (c) => { if (!c.form) return false; const dt = traitOf(c, 'detach'); return !!(dt && dt.statFixed); };   // ゼノ【適応】の精神離脱体:ステータスは固定(強化・弱体・継承・刻印が効かない)
+const baseAtk = (c) => (traitOf(c, 'void') || formFixed(c) ? c.atk : Math.min(ATK_MAX, Math.max(ATK_MIN, c.atk + c.atkBonus + c.teamAtk + c.markAtk + (c.facAtk || 0) + (c.growAtk || 0) + modSum(c, 'atk'))));   // ウツロの「虚ろ」:ATKは元の値のまま(上がりも下がりもしない)
 // 現在のDFS(変身・特性・渡された強化・バフ/デバフ込み。次の被弾だけの上乗せ dfsUp は含めない)
 const baseDfs = (c) => {
   if (traitOf(c, 'void')) return c.dfs;
-  if (c.form) { const dt = traitOf(c, 'detach'); if (dt && dt.dfsFixed) return 0; }   // ゼノ【適応】の精神離脱体:DFSは0のまま(強化も継承も効かない)   // ウツロの「虚ろ」:DFSも元の値のまま
+  if (formFixed(c)) return c.dfs;   // ゼノ【適応】の精神離脱体:DFSは固定(強化も継承も効かない)   // ウツロの「虚ろ」:DFSも元の値のまま
   const v = c.dfs + c.dfsGain + c.dfsBonus + c.teamDfs + c.markDfs + (c.wearDfs || 0) + (c.facDfs || 0) + modSum(c, 'dfs');
   // 特性「鋼の刻」:DFSはデバフや刻印で下がらない
   return Math.max(0, Math.min(c.dfsCap || DFS_MAX, traitOf(c, 'hardshell') ? Math.max(c.dfs, v) : v));
@@ -2074,7 +2075,7 @@ function traitAtk(S, att, def, isBreak) {
 function damage(S, att, def, rate, isBreak) {
   // 特性「鏡写し」:自分のATKの代わりに、相手の今のATKで攻撃する
   if (traitOf(att, 'mirrorAtk')) trig(att, 'mirrorAtk');
-  let atk = Math.max(ATK_MIN, (traitOf(att, 'mirrorAtk') ? baseAtk(def) : baseAtk(att)) + att.atkUp + traitAtk(S, att, def, isBreak));
+  let atk = Math.max(ATK_MIN, (traitOf(att, 'mirrorAtk') ? baseAtk(def) : baseAtk(att)) + (formFixed(att) ? 0 : att.atkUp + traitAtk(S, att, def, isBreak)));
   // 特性「遅咲きの刻」:場に出て一定ラリー以降の BREAK だけ、ATKが何倍にもなる
   const lb = isBreak ? traitOf(att, 'lateBreak') : null;
   if (lb && att.turn >= lb.from) { atk *= lb.mul; trig(att, 'lateBreak'); }
