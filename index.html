@@ -1438,6 +1438,20 @@ const SPECIAL_CHARS = [
       rock:     { name: '圧し止め', rate: RATE.big, mods: [foeAtk(800, 3)] },
       scissors: { name: '先喰い',   rate: RATE.huge, mods: [foeDfs(1000, 3)] },
       paper:    { name: '呑み戻し', rate: RATE.normal, seal: 1 } } },
+  // 共闘降臨★5で仲間になるゼノ【適応】(★5):ゼノの完全上位互換。ゼノとは同じパーティに入れられない。精神離脱体は相手のDFSを無視して攻撃する
+  { id: 'p_xeno_adapt', name: 'ゼノ【適応】', faction: '始', rarity: 5, sameAs: 'p_xeno', role: '二段構え・適応', unlock: 'xeno_adapt', hp: 11000, atk: 3000, dfs: 4000, phys: 1.1,
+    traits: [{ key: 'hardshell', name: '鋼の刻・適応', desc: 'DFSはデバフ・刻印・貫きで下がらない' },
+      { key: 'unbreak', name: '適応した肉体', desc: `${BREAK_NAME}で受けるダメージ半減`, cut: 0.5 },
+      { key: 'detach', name: '離脱・適応', desc: '倒れたとき一度だけ、精神離脱体(HP5000・ATK7500・DFS0。相手のDFSを無視して攻撃する。技はすべて極大)として場に残る',
+        formName: 'ゼノ【適応】・精神離脱体', hp: 5000, atk: 7500, dfs: 0, pierceAll: true,
+        actions: {
+          rock:     { name: '静止の手',   rate: RATE.max, seal: 1 },
+          scissors: { name: '先回りの手', rate: RATE.max },
+          paper:    { name: '戻しの手',   rate: RATE.max } } }],
+    actions: {
+      rock:     { name: '圧し止め', rate: RATE.huge, selfPerm: { atk: 500 }, seal: 1 },
+      scissors: { name: '先喰い',   rate: RATE.huge, mods: [foeDfs(1500, 3)] },
+      paper:    { name: '呑み戻し', rate: RATE.big, noheal: 2, seal: 1 } } },
   // 錨のタブに並ぶ解放キャラ(group)。陣営ボーナスの対象(bonusOk)。カジとは同じパーティに入れられない(sameAs)
   { id: 'p_kaji_shi', name: 'カジ【始】', faction: '錨', group: '錨', bonusOk: true, sameAs: 'kaji', role: '始まり', unlock: 'shiToki', hp: 9999, atk: 3600, dfs: 1400, phys: 1.5,
     traits: [
@@ -1997,6 +2011,8 @@ const traitDfs = (c) => { const t = traitOf(c, 'backwaterAll'), w = traitOf(c, '
 const dfsOf = (def, isBreak) => (isBreak ? 0 : traitOf(def, 'void') ? Math.min(def.dfsCap || DFS_MAX, def.dfs) : Math.min(def.dfsCap || DFS_MAX, baseDfs(def) + def.dfsUp + giantDfs(def) + traitDfs(def)));
 // 攻撃する側から見た相手のDFS(特性「貫き」はDFSを一定量無視する)
 const dfsVs = (att, def, isBreak) => {
+  const dtp = att.form && traitOf(att, 'detach');   // ゼノ【適応】の精神離脱体:相手のDFSを無視
+  if (dtp && dtp.pierceAll) return 0;
   const z = traitOf(att, 'lastPierce');   // 特性「見切り」:自分の残りHPが少ないとき、相手のDFSを0として攻撃する
   if (z && att.hp <= att.max * z.below) { trig(att, 'lastPierce'); return 0; }
   const p = traitOf(att, 'pierce');
@@ -3182,7 +3198,7 @@ const PERSONA_LINES = {
   hunt:   L(['弱ったな', '守りに入ったか'], ['まだ追わない', '息が上がるのを待つ'], ['逃がさない'], ['……', '血の匂い']),
   bait:   L(['好きにしな', 'その手でいいよ'], ['どうぞ', '気持ちよく出しな'], ['もう、こちらの番だ'], ['……', 'いい手だね']),
 };
-const LINE_ALIAS = { p_tsuru_ten: 'tsuru', b_tomari: 'tomari', b_rei: 'rei', b_tsuru: 'tsuru', p_xeno: 'xeno_body', b_kaji: 'kaji', p_kaji_shi: 'b_kaji_shi',
+const LINE_ALIAS = { p_xeno_adapt: 'xeno_body', p_tsuru_ten: 'tsuru', b_tomari: 'tomari', b_rei: 'rei', b_tsuru: 'tsuru', p_xeno: 'xeno_body', b_kaji: 'kaji', p_kaji_shi: 'b_kaji_shi',
   c5_xeno_body: 'xeno_body', c5_xeno_spirit: 'xeno_spirit', c5_tsuru: 'tsuru', c5_tsuru1: 'tsuru', xa_body: 'xeno_body', xa_spirit: 'xeno_spirit' };   // 刻の回廊のボスは元のキャラのセリフ
 // トキバミは自分の声を持たず、喰った者たちの声で、過去・現在・未来を混ぜて話す(場面は分けない)
 const TOKIBAMI_VOICE = [
@@ -3200,7 +3216,7 @@ function speak(c, mood) {
   const who = (t) => `${nameOf(c)}「${t}」`;
   if (id === 'tokibami' || id === 'p_tokibami' || id === 'c4_toki') return who(pickOne(TOKIBAMI_VOICE));
   // 精神離脱体は、プレイヤー用ゼノでは肉体と同じカードのまま形が変わる
-  const key = id === 'p_xeno' && c.form ? 'xeno_spirit' : LINE_ALIAS[id] || id;
+  const key = (id === 'p_xeno' || id === 'p_xeno_adapt') && c.form ? 'xeno_spirit' : LINE_ALIAS[id] || id;
   const set = CPU_LINES[key] || PERSONA_LINES[personaOf(c)];
   const pool = Math.random() < 0.2 ? set.idle : set[mood] || set.calm;
   let t = pickOne(pool);
@@ -3276,7 +3292,7 @@ const ICON_IDS = new Set(['kaji', 'tomari', 'mio', 'moyai', 'shio', 'rei', 'haji
   'tsuru', 'haya', 'yajiri', 'hane', 'tokibami', 'kasane', 'xa_body', 'xa_spirit', 'xeno_body', 'xeno_spirit', 'kaji_shi', 'tsuru2', 'yugake', 'awai', 'k_hare', 'k_urei', 'k_yuragi', 'k_setsuna', 'k_isami', 'k_osore', 'k_utsuro',
   'rei_open', 'emo', 'rizu', 'justice', 'g_a1', 'g_a2', 'g_a3a', 'g_a3b', 'g_a3c', 'g_a4', 'g_z1', 'g_z2', 'g_z3a', 'g_z3b', 'g_z3c', 'g_z4', 'g_z5', 'g_y1', 'g_y2', 'g_y3a', 'g_y3b', 'g_y3c', 'g_y4',
   'a_guard', 'a_chain', 'a_lamp', 'z_mask', 'z_wind', 'z_sand', 'y_runner', 'y_archer', 'y_seer']);
-const ICON_ALIAS = { q_kasane: 'kasane', qb_kasane: 'kasane', q_emo: 'emo', qb_emo: 'emo', q_rizu: 'rizu', qb_rizu: 'rizu', qz_justice: 'justice', p_tsuru_ten: 'tsuru2', p_awai: 'awai', b_tomari: 'tomari', b_rei: 'rei', b_tsuru: 'tsuru', p_tokibami: 'tokibami', p_xeno: 'xeno_body', b_kaji: 'kaji', b_kaji_shi: 'kaji_shi', p_kaji_shi: 'kaji_shi',
+const ICON_ALIAS = { p_xeno_adapt: 'xa_body', q_kasane: 'kasane', qb_kasane: 'kasane', q_emo: 'emo', qb_emo: 'emo', q_rizu: 'rizu', qb_rizu: 'rizu', qz_justice: 'justice', p_tsuru_ten: 'tsuru2', p_awai: 'awai', b_tomari: 'tomari', b_rei: 'rei', b_tsuru: 'tsuru', p_tokibami: 'tokibami', p_xeno: 'xeno_body', b_kaji: 'kaji', b_kaji_shi: 'kaji_shi', p_kaji_shi: 'kaji_shi',
   // 刻の回廊の敵は、元のキャラのアイコン
   c2_1a: 'g_a1', c2_1b: 'g_z1', c2_1c: 'g_y1', c2_2a: 'g_z1', c2_2b: 'g_z2', c2_2c: 'g_a2', c2_3a: 'g_y1', c2_3b: 'g_y2', c2_3c: 'g_z2', c2_4a: 'g_a1', c2_4b: 'g_a2', c2_4c: 'g_y2',
   c3_mata: 'g_z3b', c3_ai: 'g_z3c', c3_ebira: 'g_y3c', c3_iso: 'g_a3b',
@@ -6931,7 +6947,7 @@ function soloUnlocked(r) { if (r && Array.isArray(r.unlocked) && r.unlocked.leng
 const unlockHas = (id) => (UNL.ready ? UNL.ids.includes(id) : myTitles().includes(id));
 const charUnlocked = (ch) => IS_MASTER || (ch.gacha ? gachaOwned(ch.id) > 0 : !ch.unlock || unlockHas(ch.unlock));
 // 解放キャラの条件の書き方(隠し称号は、解放するまで名前を伏せる)
-const unlockText = (ch) => { if (ch.gacha) return 'ガチャで手に入れると使える(ログインが必要)'; if (ch.unlock === 'kasane') return '共闘降臨で勝つと25%で仲間になる(ログインが必要)'; const t = titleOf(ch.unlock); if (!t) return '降臨で仲間にすると使える(ログインが必要)'; return `称号「${t.hidden ? '？？？' : t.name}」${t.hidden ? '(隠し称号)' : ''}を解放すると使える(ログインが必要)`; };
+const unlockText = (ch) => { if (ch.gacha) return 'ガチャで手に入れると使える(ログインが必要)'; if (ch.unlock === 'kasane') return '共闘降臨★4で勝つと25%で仲間になる(ログインが必要)'; if (ch.unlock === 'xeno_adapt') return '共闘降臨★5で勝つと仲間になる(ログインが必要)'; const t = titleOf(ch.unlock); if (!t) return '降臨で仲間にすると使える(ログインが必要)'; return `称号「${t.hidden ? '？？？' : t.name}」${t.hidden ? '(隠し称号)' : ''}を解放すると使える(ログインが必要)`; };
 // 押す・長押しを分ける(長押し、またはパソコンの右クリックで詳細を出す)
 function bindPress(el, onTap, onLong) {
   let timer = null, long = false, sx = 0, sy = 0;
