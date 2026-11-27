@@ -2588,6 +2588,7 @@ function endRally(S, log, winSide) {
     const f = active(t), dt = traitOf(f, 'detach');
     if (f.hp > 0 || !dt || f.form) return;
     Object.assign(f, { form: 1, formName: dt.formName, hp: dt.hp, max: dt.hp, atk: dt.atk, dfs: dt.dfs, actions: dt.actions, mods: [], poison: 0, poisonDmg: 0, poisonStacks: 0, noHeal: 0 });
+    if (dt.statFixed) Object.assign(f, { atkBonus: 0, dfsBonus: 0, permAtk: 0, permDfs: 0, markAtk: 0, markDfs: 0, atkUp: 0 });   // ゼノ【適応】:ステータス固定なので、肉体の強化や刻印は持ち越さない(画面にも出さない)
     S.events.push({ type: 'detach', side });
     log(`　${t.label}の${f.ch.name}の肉体が倒れた → 「${dt.formName}」として場に残る(HP${dt.hp}・ATK${dt.atk}・DFS${dt.dfs})`);
   });
@@ -3313,7 +3314,7 @@ const ICON_ALIAS = { p_xeno_adapt: 'xa_body', q_kasane: 'kasane', qb_kasane: 'ka
 // 絵を差し替えたアイコンは、番号を上げてブラウザに古い絵を使わせない
 const ICON_REV = { g_z5: 2, rei: 2 };
 // 変身したあとの絵(バトル中だけ):レイは仮面が割れたら素顔の絵
-const ICON_FORM = { rei: 'rei_open' };
+const ICON_FORM = { rei: 'rei_open', xeno_body: 'xeno_spirit', xa_body: 'xa_spirit' };   // 姿が変わったときのアイコン(ゼノの離脱は精神離脱体の絵)
 const ICON_FACTION = { '錨': 'f-anchor', '零': 'f-zero', '矢': 'f-arrow' };
 function iconHtml(ch, size, form) {
   const base = ICON_ALIAS[ch.id] || ch.id, id = (form && ICON_FORM[base]) || base;
