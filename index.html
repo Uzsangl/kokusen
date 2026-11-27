@@ -3273,7 +3273,7 @@ const $ = (id) => document.getElementById(id);
 // ソロのボスは元のキャラの絵を使う。絵がないキャラは名前の頭文字を出す。
 // ゼノは名前が明かされるまでシルエットにする。
 const ICON_IDS = new Set(['kaji', 'tomari', 'mio', 'moyai', 'shio', 'rei', 'hajime', 'uro', 'moto', 'kasumi',
-  'tsuru', 'haya', 'yajiri', 'hane', 'tokibami', 'kasane', 'xeno_body', 'xeno_spirit', 'kaji_shi', 'tsuru2', 'yugake', 'awai', 'k_hare', 'k_urei', 'k_yuragi', 'k_setsuna', 'k_isami', 'k_osore', 'k_utsuro',
+  'tsuru', 'haya', 'yajiri', 'hane', 'tokibami', 'kasane', 'xa_body', 'xa_spirit', 'xeno_body', 'xeno_spirit', 'kaji_shi', 'tsuru2', 'yugake', 'awai', 'k_hare', 'k_urei', 'k_yuragi', 'k_setsuna', 'k_isami', 'k_osore', 'k_utsuro',
   'rei_open', 'emo', 'rizu', 'justice', 'g_a1', 'g_a2', 'g_a3a', 'g_a3b', 'g_a3c', 'g_a4', 'g_z1', 'g_z2', 'g_z3a', 'g_z3b', 'g_z3c', 'g_z4', 'g_z5', 'g_y1', 'g_y2', 'g_y3a', 'g_y3b', 'g_y3c', 'g_y4',
   'a_guard', 'a_chain', 'a_lamp', 'z_mask', 'z_wind', 'z_sand', 'y_runner', 'y_archer', 'y_seer']);
 const ICON_ALIAS = { q_kasane: 'kasane', qb_kasane: 'kasane', q_emo: 'emo', qb_emo: 'emo', q_rizu: 'rizu', qb_rizu: 'rizu', qz_justice: 'justice', p_tsuru_ten: 'tsuru2', p_awai: 'awai', b_tomari: 'tomari', b_rei: 'rei', b_tsuru: 'tsuru', p_tokibami: 'tokibami', p_xeno: 'xeno_body', b_kaji: 'kaji', b_kaji_shi: 'kaji_shi', p_kaji_shi: 'kaji_shi',
@@ -3281,7 +3281,7 @@ const ICON_ALIAS = { q_kasane: 'kasane', qb_kasane: 'kasane', q_emo: 'emo', qb_e
   c2_1a: 'g_a1', c2_1b: 'g_z1', c2_1c: 'g_y1', c2_2a: 'g_z1', c2_2b: 'g_z2', c2_2c: 'g_a2', c2_3a: 'g_y1', c2_3b: 'g_y2', c2_3c: 'g_z2', c2_4a: 'g_a1', c2_4b: 'g_a2', c2_4c: 'g_y2',
   c3_mata: 'g_z3b', c3_ai: 'g_z3c', c3_ebira: 'g_y3c', c3_iso: 'g_a3b',
   c4_toki: 'tokibami', c4_kagami: 'g_z4', c4_nagare: 'g_y4', c4_tomoshi: 'g_a4',
-  c5_xeno_body: 'xeno_body', c5_xeno_spirit: 'xeno_spirit', xa_body: 'xeno_body', xa_spirit: 'xeno_spirit', c5_mask: 'g_z5', c5_nagare: 'g_y4', c5_tsuru: 'tsuru2', c5_tsuru1: 'tsuru' };   // 天眼の果ての第2形態は、目隠しを外したツル(icons/tsuru2.webp)
+  c5_xeno_body: 'xeno_body', c5_xeno_spirit: 'xeno_spirit', c5_mask: 'g_z5', c5_nagare: 'g_y4', c5_tsuru: 'tsuru2', c5_tsuru1: 'tsuru' };   // 天眼の果ての第2形態は、目隠しを外したツル(icons/tsuru2.webp)
 // 絵を差し替えたアイコンは、番号を上げてブラウザに古い絵を使わせない
 const ICON_REV = { g_z5: 2, rei: 2 };
 // 変身したあとの絵(バトル中だけ):レイは仮面が割れたら素顔の絵
