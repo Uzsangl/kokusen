@@ -1808,7 +1808,7 @@ Object.assign(ENEMIES, {
       scissors: { name: '先喰い',   rate: RATE.max, mods: [foeDfs(3000, 3)] },
       paper:    { name: '呑み戻し', rate: RATE.big, noheal: 3, seal: 1 } } },
   xa_spirit: { ...ENEMIES.xeno_spirit, name: 'ゼノ【適応】・精神離脱体', secret: null, hp: 300000, atk: 7000, dfs: 0, phys: 1.0,
-    traits: [{ key: 'rewindRite', name: '巻き戻しの儀・適応', desc: '10ラリーで倒せないと刻が巻き戻る。巻き戻ったあとは、残りHPに30000回復したところから再開する(最大HPまで)', limit: 10, carryHeal: 30000 },
+    traits: [{ key: 'rewindRite', name: '巻き戻しの儀・適応', desc: '7ラリーで倒せないと刻が巻き戻る。巻き戻ったあとは、残りHPに30000回復したところから再開する(最大HPまで)', limit: 7, carryHeal: 30000 },
       { key: 'undying', name: '不滅・適応', desc: `HPが2以上なら、どんな一撃もHP1で耐える。HP1からは${BREAK_NAME}でしかとどめを刺せない`, hard: true },
       { key: 'lastPierce', name: '素通し', desc: '相手のDFSを無視して攻撃する', below: 9 }],
     actions: {
@@ -8408,7 +8408,7 @@ function coopRender() {
   const open = questOpen(), me = COOP.players.find((x) => x.id === COOP.me);
   const boss = st.id === 'mx5' ? 'ゼノ【適応】' : 'カサネ';
   const pickSt = `<div class="seg co-stage">${COOP_STAGES.map((id) => { const x = STAGES.find((y) => y.id === id); return `<button data-stg="${id}" class="${COOP.stage === id ? 'on' : ''}"${COOP.code && !COOP.host ? ' disabled' : ''}>${'★'.repeat(x.stars)} ${escHtml(x.id === 'mx5' ? 'ゼノ【適応】' : 'カサネ')}</button>`; }).join('')}</div>`;
-  const intro = pickSt + `<p class="sub">3人で1体ずつキャラを出し合い、${boss}と戦います。手を出すのは、前に出ているキャラの持ち主です。ほかの2人は「来そうな手」を伝えられます。<br>${escHtml(questWhen())}・消費 ⚡${sc ? sc.cost : 0}・${st.id === 'mk5' ? '勝つと25%でカサネが仲間に(当たれば3人とも)' : '★5:精神離脱体は10ラリーで倒せないと刻が巻き戻る'}</p>${COOP.code ? '' : bossPersonaHtml(st)}`;
+  const intro = pickSt + `<p class="sub">3人で1体ずつキャラを出し合い、${boss}と戦います。手を出すのは、前に出ているキャラの持ち主です。ほかの2人は「来そうな手」を伝えられます。<br>${escHtml(questWhen())}・消費 ⚡${sc ? sc.cost : 0}・${st.id === 'mk5' ? '勝つと25%でカサネが仲間に(当たれば3人とも)' : '★5:精神離脱体は7ラリーで倒せないと刻が巻き戻る'}</p>${COOP.code ? '' : bossPersonaHtml(st)}`;
   let body;
   if (!COOP.code) {
     body = `<div class="row"><input id="coCode" maxlength="12" placeholder="合言葉(英数字)" autocomplete="off" style="flex:1"><button id="coJoin">入る</button></div>
