@@ -3881,7 +3881,7 @@ const Aura = (() => {
       $('aura').classList.remove('on');
       setTimeout(() => { if (!timer) $('aura').innerHTML = ''; }, 700);
     },
-    // タイトル画面:同じガラスの破片を、背景のすぐ手前で静かに流す(あとひと刻より少なめ)
+    // タイトル画面:あとひと刻の縁の光を、キャラの絵の手前にほんのり出す(破片はなし)
     title(on) {
       let el = $('tAura');
       if (!el) { el = document.createElement('div'); el.id = 'tAura'; el.setAttribute('aria-hidden', 'true'); $('title').appendChild(el); }
@@ -3889,10 +3889,7 @@ const Aura = (() => {
       if (!on || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) { el.classList.remove('on'); setTimeout(() => { if (!Aura.tTimer) el.innerHTML = ''; }, 700); return; }
       el.classList.add('on');
       if (!el.querySelector('.flame')) el.innerHTML = '<b class="flame l"></b><b class="flame r"></b>';
-      Aura.tTimer = setInterval(() => {
-        if ($('title').classList.contains('hidden') || document.hidden) return;
-        shard(false, 'tAura'); if (Math.random() < 0.5) shard(true, 'tAura');
-      }, 260);
+      // 破片は流さない(縁の金色の光と、下から立ちのぼる光だけ)
     },
   };
 })();
@@ -6341,7 +6338,7 @@ async function accLoadRanking() {
 function showTitle(on) {
   Bgm.play(on ? 'title' : 'menu');
   $('title').classList.toggle('hidden', !on);
-  Aura.title(on);   // タイトルの後ろに、あとひと刻のガラスの破片
+  Aura.title(on);   // タイトル:あとひと刻の縁の光(破片はなし)
   $('select').classList.add('hidden'); $('soloHub').classList.add('hidden'); $('groupHub').classList.add('hidden');
   $('hub').classList.toggle('hidden', on);
   document.body.classList.toggle('on-title', on);
