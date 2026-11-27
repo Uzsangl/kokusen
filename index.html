@@ -1439,7 +1439,7 @@ const SPECIAL_CHARS = [
       scissors: { name: '先喰い',   rate: RATE.huge, mods: [foeDfs(1000, 3)] },
       paper:    { name: '呑み戻し', rate: RATE.normal, seal: 1 } } },
   // 共闘降臨★5で仲間になるゼノ【適応】(★5):ゼノの完全上位互換。ゼノとは同じパーティに入れられない。精神離脱体は相手のDFSを無視して攻撃する
-  { id: 'p_xeno_adapt', name: 'ゼノ【適応】', faction: '始', rarity: 5, sameAs: 'p_xeno', role: 'トキバミに負けてたら...', unlock: 'xeno_adapt', hp: 11000, atk: 3000, dfs: 4000, phys: 1.1,
+  { id: 'p_xeno_adapt', name: 'ゼノ【適応】', faction: '始', rarity: 5, sameAs: 'p_xeno', role: 'トキバミに負けてたら...', unlock: 'xeno_adapt', hp: 9000, atk: 3000, dfs: 4000, phys: 1.1,
     traits: [{ key: 'hardshell', name: '鋼の刻・適応', desc: 'DFSはデバフ・刻印・貫きで下がらない' },
       { key: 'unbreak', name: '適応した肉体', desc: `${BREAK_NAME}で受けるダメージ半減`, cut: 0.5 },
       { key: 'detach', name: '離脱・適応', desc: '倒れたとき一度だけ、精神離脱体(HP5000・ATK5000・DFS0固定。相手のDFSを無視して攻撃する。技はすべて極大)として場に残る',
