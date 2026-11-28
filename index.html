@@ -3009,25 +3009,27 @@ const PERSONA_CAP = { guard: 0.7, rewind: 1, sight: 1.3, prey: 1, rage: 1, abyss
 const lowHp = (c) => c.hp <= c.max / 2;
 
 // ===== ★5のボス:プレイヤーの法則を見て、性格を切り替える =====
-// ボスがじゃんけんに3〜5回(毎回くじ)負けるたびに、プレイヤーのそれまでの手を5つの法則で採点し、
-// 一番当てはまった法則に合わせて、そのボスの3つの性格のどれかに切り替える。
+// ①初期性格(ボスごとの手を45%)で3ラリー → 2ラリーごとに、プレイヤーの手を5つの法則で採点し、
+// 一番当てはまった法則に合わせて、そのボスの3つの性格のどれかに切り替える(同じ性格は3回続けない)。
+// 3性格の13ラリーでプレイヤーの勝ち+あいこが6回以上なら5ラリー裏読み。裏読みで3敗、または3〜5連敗でティルト(3〜5ラリー) → ①へ
 //   chain 同じ手の連打 / winStay 勝ったら同じ手 / skew 好きな手に偏る / pinch ピンチで守り / lure 偏りを作って誘導
 // 性格:prey 捕食 / rewind 巻戻 / sight 天眼 / rage 激昂 / bias 偏り読み / hunt 狩り(ピンチの守りを突く) / bait 撒き餌(一番出す手に負ける手を6割)
+// init:①初期性格で45%出す手
 const ADAPT = {
-  qb_emo:       { kinds: ['prey', 'bias', 'bait'],   map: { chain: 'prey', winStay: 'prey', skew: 'bias', pinch: 'bias', lure: 'bait' } },
-  qb_rizu:      { kinds: ['sight', 'rewind', 'bias'], map: { chain: 'sight', winStay: 'rewind', skew: 'bias', pinch: 'rewind', lure: 'sight' } },
-  xeno_body:    { kinds: ['prey', 'hunt', 'bait'],   map: { chain: 'prey', winStay: 'prey', skew: 'bait', pinch: 'hunt', lure: 'bait' } },
-  xeno_spirit:  { kinds: ['sight', 'prey', 'bait'],  map: { chain: 'prey', winStay: 'sight', skew: 'sight', pinch: 'prey', lure: 'bait' } },
-  b_kaji_shi:   { kinds: ['rage', 'sight', 'prey'],  map: { chain: 'prey', winStay: 'prey', skew: 'sight', pinch: 'rage', lure: 'sight' } },
-  c5_xeno_body: { kinds: ['prey', 'hunt', 'bait'],   map: { chain: 'prey', winStay: 'prey', skew: 'bait', pinch: 'hunt', lure: 'bait' } },
-  c5_xeno_spirit: { kinds: ['sight', 'prey', 'bait'], map: { chain: 'prey', winStay: 'sight', skew: 'sight', pinch: 'prey', lure: 'bait' } },
-  xa_body:      { kinds: ['prey', 'hunt', 'bait'],   map: { chain: 'prey', winStay: 'prey', skew: 'bait', pinch: 'hunt', lure: 'bait' } },
-  xa_spirit:    { kinds: ['sight', 'prey', 'bait'],  map: { chain: 'prey', winStay: 'sight', skew: 'sight', pinch: 'prey', lure: 'bait' } },
-  c5_mask:      { kinds: ['rewind', 'bias', 'bait'], map: { chain: 'bias', winStay: 'rewind', skew: 'bias', pinch: 'rewind', lure: 'bait' } },
-  c5_nagare:    { kinds: ['rage', 'prey', 'hunt'],   map: { chain: 'prey', winStay: 'prey', skew: 'rage', pinch: 'hunt', lure: 'rage' } },
-  c5_tsuru1:    { kinds: ['sight', 'bias', 'bait'],  map: { chain: 'sight', winStay: 'sight', skew: 'bias', pinch: 'bias', lure: 'bait' } },
-  c5_tsuru:     { kinds: ['sight', 'bias', 'bait'],  map: { chain: 'sight', winStay: 'sight', skew: 'bias', pinch: 'bias', lure: 'bait' } },
-  qb_kasane:    { kinds: ['rewind', 'bias', 'sight'], map: { chain: 'sight', winStay: 'rewind', skew: 'bias', pinch: 'rewind', lure: 'sight' } },   // 共闘降臨:プレイヤーごとに別々に読む
+  qb_emo:       { init: 'rock', kinds: ['prey', 'bias', 'bait'],   map: { chain: 'prey', winStay: 'prey', skew: 'bias', pinch: 'bias', lure: 'bait' } },
+  qb_rizu:      { init: 'scissors', kinds: ['sight', 'rewind', 'bias'], map: { chain: 'sight', winStay: 'rewind', skew: 'bias', pinch: 'rewind', lure: 'sight' } },
+  xeno_body:    { init: 'paper', kinds: ['prey', 'hunt', 'bait'],   map: { chain: 'prey', winStay: 'prey', skew: 'bait', pinch: 'hunt', lure: 'bait' } },
+  xeno_spirit:  { init: 'rock', kinds: ['sight', 'prey', 'bait'],  map: { chain: 'prey', winStay: 'sight', skew: 'sight', pinch: 'prey', lure: 'bait' } },
+  b_kaji_shi:   { init: 'rock', kinds: ['rage', 'sight', 'prey'],  map: { chain: 'prey', winStay: 'prey', skew: 'sight', pinch: 'rage', lure: 'sight' } },
+  c5_xeno_body: { init: 'paper', kinds: ['prey', 'hunt', 'bait'],   map: { chain: 'prey', winStay: 'prey', skew: 'bait', pinch: 'hunt', lure: 'bait' } },
+  c5_xeno_spirit: { init: 'rock', kinds: ['sight', 'prey', 'bait'], map: { chain: 'prey', winStay: 'sight', skew: 'sight', pinch: 'prey', lure: 'bait' } },
+  xa_body:      { init: 'scissors', kinds: ['prey', 'hunt', 'bait'],   map: { chain: 'prey', winStay: 'prey', skew: 'bait', pinch: 'hunt', lure: 'bait' } },
+  xa_spirit:    { init: 'paper', kinds: ['sight', 'prey', 'bait'],  map: { chain: 'prey', winStay: 'sight', skew: 'sight', pinch: 'prey', lure: 'bait' } },
+  c5_mask:      { init: 'paper', kinds: ['rewind', 'bias', 'bait'], map: { chain: 'bias', winStay: 'rewind', skew: 'bias', pinch: 'rewind', lure: 'bait' } },
+  c5_nagare:    { init: 'rock', kinds: ['rage', 'prey', 'hunt'],   map: { chain: 'prey', winStay: 'prey', skew: 'rage', pinch: 'hunt', lure: 'rage' } },
+  c5_tsuru1:    { init: 'paper', kinds: ['sight', 'bias', 'bait'],  map: { chain: 'sight', winStay: 'sight', skew: 'bias', pinch: 'bias', lure: 'bait' } },
+  c5_tsuru:     { init: 'paper', kinds: ['sight', 'bias', 'bait'],  map: { chain: 'sight', winStay: 'sight', skew: 'bias', pinch: 'bias', lure: 'bait' } },
+  qb_kasane:    { init: 'scissors', kinds: ['rewind', 'bias', 'sight'], map: { chain: 'sight', winStay: 'rewind', skew: 'bias', pinch: 'rewind', lure: 'sight' } },   // 共闘降臨:プレイヤーごとに別々に読む
 };
 const guardHand = (c, h) => { const a = c && c.actions[h]; return !!a && !!(a.heal || a.dfsUp || a.nextDfsUp || (a.team && a.team.stat === 'dfs')); };
 // プレイヤー(side の相手)の手を5つの法則で採点する。当てはまる場面が3回未満の法則は採点しない
@@ -3076,46 +3078,46 @@ function adaptKind(S, side, me) {
   const tbl = ADAPT[me.ch.id];
   if (!tbl || !S.stage || (S.stage.stars !== 5 && !S.stage.coop)) return null;   // ★5と共闘降臨(★4)
   const r3 = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
-  const A = S.adapt || (S.adapt = { seen: 0, lost: 0, next: r3(3, 5), streak: 0, tiltAt: r3(5, 7), tilt: 0, kind: null, low: [], tgt: [], ura: 0, uraFrom: 0, uraT: [] });
+  // st:init ①初期性格 / persona ②③④ / ura 裏読み / tilt ティルト
+  const A = S.adapt || (S.adapt = { seen: 0, st: 'init', left: 3, gap: 0, win: 0, nl: 0, uraL: 0, streak: 0, tiltAt: r3(3, 5), kind: null, picks: [], low: [], tgt: [] });
   const foe = active(S.teams[1 - side]);
+  // 2ラリーごとの抽選:プレイヤーの癖に一番合う性格。基準(偶然より+15%)をこえた法則がなければ①へ。
+  // 2番目との差が5%以内なら点数の重みでくじ。同じ性格は3回続けて選ばない
+  const lottery = () => {
+    const { sc, cnt } = lawScores(S, side);
+    const ok = Object.keys(sc).filter((k) => sc[k] != null && sc[k] >= 0.15).sort((a, b) => sc[b] - sc[a] || cnt[b] - cnt[a]);
+    const order = [];
+    ok.forEach((k) => { if (!order.includes(tbl.map[k])) order.push(tbl.map[k]); });
+    if (order.length > 1 && sc[ok[0]] - sc[ok.find((k) => tbl.map[k] === order[1])] <= 0.05) {
+      const a = sc[ok[0]], b = sc[ok.find((k) => tbl.map[k] === order[1])];
+      if (Math.random() >= a / (a + b)) order.unshift(order.splice(1, 1)[0]);
+    }
+    order.push('init');
+    const p = A.picks, banned = p.length >= 2 && p[p.length - 1] === p[p.length - 2] ? p[p.length - 1] : null;
+    let pick = order.find((k) => k !== banned);
+    if (!pick) pick = pickOne(tbl.kinds.filter((k) => k !== banned));
+    p.push(pick); if (p.length > 2) p.shift();
+    const from = A.st;
+    if (pick === 'init') { A.st = 'init'; A.left = 3; A.kind = null; return; }
+    A.st = 'persona'; A.kind = pick; A.gap = 2;
+    if (from !== 'persona') { A.win = 0; A.nl = 0; }   // ①・裏読み・ティルトから来たら、13ラリーを数え直す
+  };
   for (; A.seen < S.hist.length; A.seen++) {
     const j = judge(S.hist[A.seen][side], S.hist[A.seen][1 - side]);
-    if (j < 0) { A.lost++; A.streak++; } else if (j > 0) A.streak = 0;   // あいこは連敗を切らない
-    if (A.tilt > 0) A.tilt--;
-    if (A.ura > 0) {
-      // 裏読みのあいだも同じ対策を出し続けたら、裏読みを1ラリー延ばす(手を変えるまで抜けられない)。明けたら、そこから数え直す
-      const t = A.uraT[A.seen];
-      if (!(t && S.hist[A.seen][1 - side] === beaterOf(t)) && --A.ura === 0) A.uraFrom = A.seen + 1;
-    }
+    if (j < 0) A.streak++; else if (j > 0) A.streak = 0;   // あいこは連敗を切らない
+    if (A.st === 'persona') { A.gap--; A.win++; if (j <= 0) A.nl++; }   // プレイヤーの勝ちとあいこを数える
+    else { A.left--; if (A.st === 'ura' && j < 0) A.uraL++; }
+    // ティルト:3〜5回(くじ)続けて負けたら、3〜5ラリー(くじ)のあいだ3つの手を33%ずつ。明けたら①へ
+    const toTilt = () => { A.st = 'tilt'; A.left = r3(3, 5); A.streak = 0; A.tiltAt = r3(3, 5); A.kind = null; A.picks = []; };
+    if (A.st !== 'tilt' && A.streak >= A.tiltAt) { toTilt(); continue; }
+    if (A.st === 'tilt') { if (A.left <= 0) { A.st = 'init'; A.left = 3; } }
+    else if (A.st === 'init') { if (A.left <= 0) lottery(); }
+    else if (A.st === 'ura') { if (A.uraL >= 3) toTilt(); else if (A.left <= 0) lottery(); }   // 裏読みの5ラリーで3回負けたらティルト
+    else if (A.win >= 13 && A.nl >= 6) { A.st = 'ura'; A.left = 5; A.uraL = 0; }   // 13ラリーでプレイヤーの勝ち+あいこが6回以上なら、5ラリー裏読み
+    else { if (A.win >= 13) { A.win = 0; A.nl = 0; } if (A.gap <= 0) lottery(); }
   }
   A.low[S.hist.length] = foe && lowHp(foe) ? HAND_KEYS.filter((h) => guardHand(foe, h)) : null;   // このラリーの前に、相手がピンチで守りの技を持っていたか
-  const repick = () => {
-    A.lost = 0; A.next = r3(3, 5);
-    const { sc, cnt } = lawScores(S, side);
-    // 基準(偶然より+15%)をこえた法則から、一番点の高いもの。2番目との差が5%以内なら、点数の重みでくじ(読まれにくくするため)
-    const ok = Object.keys(sc).filter((k) => sc[k] != null && sc[k] >= 0.15).sort((a, b) => sc[b] - sc[a] || cnt[b] - cnt[a]);
-    if (!ok.length) return;
-    let pick = ok[0];
-    if (ok[1] && sc[ok[0]] - sc[ok[1]] <= 0.05 && tbl.map[ok[0]] !== tbl.map[ok[1]]) pick = Math.random() < sc[ok[0]] / (sc[ok[0]] + sc[ok[1]]) ? ok[0] : ok[1];
-    A.kind = tbl.map[pick];
-  };
-  // ティルト:5〜7回(くじ)続けて負けたら、28〜35ラリー(くじ)のあいだ3つの手を33%ずつ出す。明けたら性格を決め直す
-  if (A.tilt === 0 && A.streak >= A.tiltAt) { A.tilt = r3(28, 35); A.streak = 0; A.tiltAt = r3(5, 7); A.wasTilt = true; }
-  if (A.tilt > 0) return 'tilt';
-  if (A.wasTilt) { A.wasTilt = false; A.ura = 0; A.uraFrom = S.hist.length; repick(); return A.kind; }
-  // 裏読み:直近10手のうち、狙いの手があったラリーが5回以上あり、その60%以上で狙いに勝つ手を出されていたら
-  // 「読まれている」とみなし、2〜3ラリーのあいだ、その対策の手に勝つ手を出す
-  if (A.ura === 0 && A.kind) {
-    let n = 0, hit = 0;
-    for (let i = Math.max(A.uraFrom, S.hist.length - 10); i < S.hist.length; i++) {
-      const t = A.tgt[i]; if (!t) continue;
-      n++; if (S.hist[i][1 - side] === beaterOf(t)) hit++;
-    }
-    if (n >= 5 && hit / n >= 0.6) A.ura = r3(2, 3);
-  }
-  if (A.ura > 0) return 'ura';
-  if (A.lost >= A.next) repick();
-  return A.kind;
+  return A.st === 'persona' ? A.kind : A.st;
 }
 
 // 相手の直前2手の並びから、次の手を読む(天眼)。end は履歴のどこまでを使うか(1手前の自分の読みを確かめるのに使う)
@@ -3198,7 +3200,8 @@ function personaHabit(S, side, kind, mix) {
 // CPUの手と、そのときのセリフ。side はCPUの側、level は難易度
 function aiHand(S, side, level) {
   const M = payoffMatrix(S, side), me = active(S.teams[side]);
-  const kind = side === 1 ? (adaptKind(S, side, me) || personaOf(me)) : 'none';   // 性格はCPUの側だけ(シミュレーターでプレイヤー役に使うときは性格なし)。★5のボスは、法則を見て切り替える
+  const ak = side === 1 ? adaptKind(S, side, me) : null;
+  const kind = side === 1 ? (ak === 'init' ? 'none' : ak || personaOf(me)) : 'none';   // 性格はCPUの側だけ(シミュレーターでプレイヤー役に使うときは性格なし)。★5のボスは、法則を見て切り替える
   let hand, mood;   // mood:read 読みに賭けた / calm 様子見 / peak 見せ場
   const pr = personaRead(S, side, kind);
 
@@ -3225,15 +3228,17 @@ function aiHand(S, side, level) {
   }
   // ★5のボス:性格ごとの決め打ち。狙いの手があれば、決めた割合でそれを出す(外れたら上で決めた手のまま)
   if (kind === 'tilt' || me.ch.id === 'qz_justice') { hand = randomHand(); mood = 'calm'; }   // ティルト:3つの手を33%ずつ。ジャスティスはずっとティルト
-  else if (side === 1 && ADAPT[me.ch.id] && S.stage && (S.stage.stars === 5 || S.stage.coop)) {
+  else if (ak === 'init') {   // ①初期性格:ボスごとに決めた手を45%、残りを27.5%ずつ
+    const h0 = ADAPT[me.ch.id].init, r = Math.random();
+    hand = r < 0.45 ? h0 : r < 0.725 ? HANDS[h0].beats : beaterOf(h0); mood = 'calm';
+  } else if (side === 1 && ADAPT[me.ch.id] && S.stage && (S.stage.stars === 5 || S.stage.coop)) {
     const A = S.adapt;
     if (kind === 'ura') {   // 裏読み:本来の狙いに勝つ手(=相手の対策)に、さらに勝つ手
       const t0 = personaTarget(S, side, A.kind, me);
-      A.uraT[S.hist.length] = t0 ? t0.hand : null;
       if (t0 && Math.random() < 0.8) { hand = beaterOf(beaterOf(t0.hand)); mood = 'read'; }
     } else {
       const t = personaTarget(S, side, kind, me);
-      if (A) A.tgt[S.hist.length] = t ? t.hand : null;   // 読まれているかを見るために、このラリーの狙いを覚えておく
+      if (A) A.tgt[S.hist.length] = t ? t.hand : null;
       if (t && Math.random() < t.p) { hand = t.hand; mood = kind === 'bait' ? 'calm' : 'read'; }
     }
   }
@@ -4147,8 +4152,8 @@ const HINT_ALIAS = { c5_xeno_body: 'xeno_body', c5_xeno_spirit: 'xeno_spirit', c
 const PERSONA_INFO = {
   prey: ['捕食', '同じ手が2回続いたら、3回目を狙う'], rewind: ['巻戻', '負け・あいこの直後のクセを読む'], sight: ['天眼', '直前2手の並びから次を読む'],
   rage: ['激昂', '一番火力の出る技で攻める'], bias: ['偏り読み', '一番多く出す手に勝つ手を出す'], hunt: ['狩り', 'ピンチの回復・守りの技を狙う'],
-  bait: ['撒き餌', 'わざと負けて、偏りを育てる'], tilt: ['ティルト', '連敗で崩れ、手がばらばらになる'],
-  ura: ['裏読み', '読まれていると気づくと、その対策の裏をかく。対策を変えるまで続く'],
+  bait: ['撒き餌', 'わざと負けて、偏りを育てる'], tilt: ['ティルト', '連敗で崩れ、しばらく手がばらばらになる'],
+  ura: ['裏読み', '勝たれすぎると、しばらく対策の裏をかく'],
 };
 // ボスの取扱説明書:1つの文に3つの性格のヒント(どの部分がどの性格かは書かない)
 const BOSS_MANUAL = {
@@ -4176,7 +4181,7 @@ function bossPersonaHtml(st) {
 function bossHint(S) {
   const me = active(S.teams[1]), id = HINT_ALIAS[me.ch.id] || me.ch.id, L = HINT_LINES[id];
   if (!L || !S.stage || (S.stage.stars !== 5 && !S.stage.coop) || !S.adapt) return;
-  const key = S.adapt.tilt > 0 ? 'tilt' : S.adapt.ura > 0 ? 'ura' : (S.adapt.kind && L[S.adapt.kind] ? S.adapt.kind : 'base');
+  const st = S.adapt.st, key = st === 'tilt' || st === 'ura' ? st : (st === 'persona' && L[S.adapt.kind] ? S.adapt.kind : 'base');
   if (key === me.hintKey && S.rally - (me.hintAt || 0) < 3) return;
   me.hintKey = key; me.hintAt = S.rally;
   const keys = Object.keys(L), shown = Math.random() < 0.9 ? key : pickOne(keys.filter((k) => k !== key));
