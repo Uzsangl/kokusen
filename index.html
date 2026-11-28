@@ -3064,7 +3064,7 @@ function personaTarget(S, side, kind, me) {
   }
   if (kind === 'sight') { const q = seqRead(S, side); return q ? { hand: beaterOf(q.top), p: 0.9 } : null; }
   if (kind === 'rage') return { hand: argmax((h) => me.actions[h].rate || 0), p: 0.8 };
-  if (kind === 'bias') { const rec = H.slice(-15).map((x) => x[foe]); return rec.length >= 3 ? { hand: beaterOf(topOf(rec)), p: 0.85 } : null; }
+  if (kind === 'bias') { const rec = H.slice(-15).map((x) => x[foe]); return rec.length >= 3 ? { hand: beaterOf(topOf(rec)), p: 0.7 } : null; }
   if (kind === 'hunt') {
     const fc = active(S.teams[foe]); if (!fc || !lowHp(fc)) return null;
     const weak = argmax((h) => (guardHand(fc, h) ? 10 : 0) - (fc.actions[h].rate || 0));   // 回復・守りの技、なければ一番火力の出ない技
