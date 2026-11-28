@@ -3235,11 +3235,11 @@ function aiHand(S, side, level) {
     const A = S.adapt;
     if (kind === 'ura') {   // 裏読み:本来の狙いに勝つ手(=相手の対策)に、さらに勝つ手
       const t0 = personaTarget(S, side, A.kind, me);
-      if (t0 && Math.random() < 0.8) { hand = beaterOf(beaterOf(t0.hand)); mood = 'read'; }
+      if (t0) { const h = beaterOf(beaterOf(t0.hand)); if (Math.random() < 0.8) { hand = h; mood = 'read'; } else hand = pickOne(HAND_KEYS.filter((x) => x !== h)); }   // 外れたら、残りの2つを半々
     } else {
       const t = personaTarget(S, side, kind, me);
       if (A) A.tgt[S.hist.length] = t ? t.hand : null;
-      if (t && Math.random() < t.p) { hand = t.hand; mood = kind === 'bait' ? 'calm' : 'read'; }
+      if (t) { if (Math.random() < t.p) { hand = t.hand; mood = kind === 'bait' ? 'calm' : 'read'; } else { hand = pickOne(HAND_KEYS.filter((x) => x !== t.hand)); mood = 'calm'; } }   // 外れたら、残りの2つを半々
     }
   }
   if (pr.peak && (mood === 'read' || kind === 'guard' || kind === 'rage') && Math.random() < 0.35) mood = 'peak';
