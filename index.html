@@ -3081,7 +3081,7 @@ function adaptKind(S, side, me) {
   // st:init ①初期性格 / persona ②③④ / ura 裏読み / tilt ティルト
   const A = S.adapt || (S.adapt = { seen: 0, st: 'init', left: 3, gap: 0, win: 0, nl: 0, uraL: 0, streak: 0, tiltAt: r3(3, 5), kind: null, picks: [], low: [], tgt: [] });
   const foe = active(S.teams[1 - side]);
-  // 2ラリーごとの抽選:プレイヤーの癖に一番合う性格。基準(偶然より+15%)をこえた法則がなければ①へ。
+  // 2ラリーごとの抽選:プレイヤーの癖に一番合う性格。基準(偶然より+15%)をこえた法則がなければ、3性格から等倍でくじ。
   // 2番目との差が5%以内なら点数の重みでくじ。同じ性格は3回続けて選ばない
   const lottery = () => {
     const { sc, cnt } = lawScores(S, side);
@@ -3092,13 +3092,11 @@ function adaptKind(S, side, me) {
       const a = sc[ok[0]], b = sc[ok.find((k) => tbl.map[k] === order[1])];
       if (Math.random() >= a / (a + b)) order.unshift(order.splice(1, 1)[0]);
     }
-    order.push('init');
     const p = A.picks, banned = p.length >= 2 && p[p.length - 1] === p[p.length - 2] ? p[p.length - 1] : null;
     let pick = order.find((k) => k !== banned);
-    if (!pick) pick = pickOne(tbl.kinds.filter((k) => k !== banned));
+    if (!pick) pick = pickOne(tbl.kinds.filter((k) => k !== banned));   // 合う性格がなければ、3性格から等倍でくじ
     p.push(pick); if (p.length > 2) p.shift();
     const from = A.st;
-    if (pick === 'init') { A.st = 'init'; A.left = 3; A.kind = null; return; }
     A.st = 'persona'; A.kind = pick; A.gap = 2;
     if (from !== 'persona') { A.win = 0; A.nl = 0; }   // ①・裏読み・ティルトから来たら、13ラリーを数え直す
   };
